@@ -1,11 +1,11 @@
+import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch
 
+from zenkai.kaku import AssessmentDict, Learner
+from zenkai.sensei.materials import DLMaterial
 from zenkai.sensei.reporting import Record
 from zenkai.sensei.teaching import Trainer, Validator, train, validation_train
-from zenkai.sensei.materials import DLMaterial
-from zenkai.kaku import Learner, AssessmentDict
 from zenkai.utils import get_model_parameters
 
 

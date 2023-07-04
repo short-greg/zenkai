@@ -1,22 +1,12 @@
-# 1st party
-from abc import ABC, abstractmethod
-import typing
-import math
-from functools import singledispatch
-import torch.nn.functional
-
 # 3rd party
 import torch
 import torch.nn as nn
-import torch.nn.functional as nn_func
-
-# Local
-from .. import utils
+import torch.nn.functional
 
 
 class Lambda(nn.Module):
     """
-    Use as a 
+    Use as a
     """
 
     def __init__(self, f):
@@ -28,7 +18,6 @@ class Lambda(nn.Module):
 
 
 class Argmax(nn.Module):
-
     def __init__(self, dim=-1):
         super().__init__()
         self._dim = dim
@@ -38,13 +27,13 @@ class Argmax(nn.Module):
 
 
 class Sign(nn.Module):
-
-    def __init__(self, grad: bool=True):
+    def __init__(self, grad: bool = True):
         super().__init__()
         self._grad = grad
 
     def forward(self, x: torch.Tensor):
-        if self._grad: return SignFG.apply(x)
+        if self._grad:
+            return SignFG.apply(x)
         return torch.sign(x)
 
 
@@ -60,14 +49,14 @@ class SignFG(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad: torch.Tensor):
         return grad
-    
-
 
 
 # ##### Least squares
 # class LinearLayer(nn.Module):
 
-#     def __init__(self, in_features: int, out_features: int, bias: bool=True, in_activation: nn.Module=None, out_activation: nn.Module=None):
+#     def __init__(
+#       self, in_features: int, out_features: int, bias: bool=True, 
+#       in_activation: nn.Module=None, out_activation: nn.Module=None):
 
 #         super().__init__()
 #         self._in_features = in_features
@@ -75,7 +64,7 @@ class SignFG(torch.autograd.Function):
 #         self.linear = nn.Linear(in_features, out_features, bias=bias)
 #         self.in_activation = in_activation
 #         self.out_activation = out_activation
-    
+
 #     @property
 #     def weight(self) -> nn.parameter.Parameter:
 #         return self.linear.weight
@@ -83,20 +72,20 @@ class SignFG(torch.autograd.Function):
 #     @property
 #     def bias(self) -> nn.parameter.Parameter:
 #         return self.linear.bias
-    
+
 #     @property
 #     def use_bias(self) -> bool:
 #         return self.linear.bias is not None
-    
+
 #     def sub(self, idx: torch.LongTensor):
 #         layer = LinearLayer(
-#             self._in_features, len(idx), self.linear.bias is not None, 
+#             self._in_features, len(idx), self.linear.bias is not None,
 #             self.in_activation, self.out_activation
 #         )
 #         layer.linear.weight = nn.parameter.Parameter(self.linear.weight[idx])
 #         layer.linear.bias = nn.parameter.Parameter(self.linear.bias[idx])
 #         return layer
-    
+
 #     @property
 #     def weight_with_bias(self) -> torch.Tensor:
 #         if self.bias is not None:
@@ -114,10 +103,6 @@ class SignFG(torch.autograd.Function):
 #         return x
 
 
-
-
-
-############ ?
 # class BatchNorm1DS(nn.BatchNorm1d):
 
 #     def forward(self, x: torch.Tensor, update_stats: bool=True):
@@ -126,7 +111,7 @@ class SignFG(torch.autograd.Function):
 #             normalized = super().forward(x)
 #             print(normalized.mean(dim=0), normalized.std(dim=0))
 #             return normalized
-        
+
 #         normalized = (x - x.mean(dim=0, keepdim=True)) / torch.sqrt(x.var(dim=0, keepdim=True) + self.eps)
 #         if self.affine:
 #             return normalized  * self.weight[None] + self.bias[None]
@@ -140,7 +125,7 @@ class SignFG(torch.autograd.Function):
 #         super().__init__()
 #         self._kl_div = nn.KLDivLoss(reduction=reduction)
 #         self._class_target = class_target
-    
+
 #     def forward(self, x: torch.Tensor, t: torch.Tensor):
 #         if self._class_target:
 #             t = torch.nn.functional.one_hot(t)
@@ -173,4 +158,3 @@ class SignFG(torch.autograd.Function):
 #         )
 #         grad_input[query] = 0
 #         return grad_input
-

@@ -1,13 +1,17 @@
-from zenkai.tansaku.core import Individual, Population
-from .fixtures import (
-    pop_x1, population1, individual1, individual2, 
-    individual_model, model1, model2, pop_x2, population1_with_assessment, population2_with_assessment,
-    x1, x2, binary_x2, binary_individual1, binary_x, binary_individual2
-)
-from zenkai import Assessment
 import torch
-from zenkai.tansaku.modifiers import SlopeModifier, BinaryProbModifier, BinaryAdjGaussianModifier, BinaryGaussianModifier
+
+from zenkai import Assessment
+from zenkai.tansaku.core import Individual, Population
+from zenkai.tansaku.modifiers import (BinaryAdjGaussianModifier,
+                                      BinaryGaussianModifier,
+                                      BinaryProbModifier, SlopeModifier)
 from zenkai.utils import get_model_parameters
+
+from .fixtures import (binary_individual1, binary_individual2, binary_x,
+                       binary_x2, individual1, individual2, individual_model,
+                       model1, model2, pop_x1, pop_x2, population1,
+                       population1_with_assessment,
+                       population2_with_assessment, x1, x2)
 
 
 class TestSlopeModifier:

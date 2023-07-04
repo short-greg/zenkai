@@ -1,19 +1,19 @@
 # 1st party
 import typing
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from functools import partial
 
 # 3rd party
 import torch.nn as nn
 
-# local
-from .nodes import Process, Info
 from .core import Func
+
+# local
+from .nodes import Info, Process
 
 
 class ProcessSpawner(nn.Module):
-    """Base class for spawning a process. Aims to improve usability
-    """
+    """Base class for spawning a process. Aims to improve usability"""
 
     @abstractmethod
     def from_(self, process: Process) -> Process:
@@ -29,10 +29,11 @@ class ProcessSpawner(nn.Module):
 
 
 class MSpawner(ProcessSpawner):
-    """Spawner for an nn.Module
-    """
-    
-    def __init__(self, module: nn.Module, name: str=None, info: Info=None) -> Process:
+    """Spawner for an nn.Module"""
+
+    def __init__(
+        self, module: nn.Module, name: str = None, info: Info = None
+    ) -> Process:
         """initializer
 
         Args:
@@ -58,10 +59,11 @@ class MSpawner(ProcessSpawner):
 
 
 class FSpawner(ProcessSpawner):
-    """Process spawner for a function
-    """
-    
-    def __init__(self, f: typing.Callable, name: str=None, info: Info=None) -> Process:
+    """Process spawner for a function"""
+
+    def __init__(
+        self, f: typing.Callable, name: str = None, info: Info = None
+    ) -> Process:
         """initializer
 
         Args:
@@ -87,9 +89,11 @@ class FSpawner(ProcessSpawner):
             Process: The resulting process
         """
         return process.to(Func(self.f, *args, **kwargs), name=self.name, info=self.info)
-    
+
     @classmethod
-    def partial(cls, f: typing.Callable, *args, name: str=None, info: Info=None, **kwargs) -> 'FSpawner':
+    def partial(
+        cls, f: typing.Callable, *args, name: str = None, info: Info = None, **kwargs
+    ) -> "FSpawner":
         """Create an FSpawner using partial to set the function args. Set them by passing
         in args and kwargs
 

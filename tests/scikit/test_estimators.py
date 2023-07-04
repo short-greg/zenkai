@@ -1,12 +1,10 @@
-import torch
-
 import pytest
+import torch
 from sklearn.linear_model import LogisticRegression, SGDRegressor
 
-from zenkai.kaku import Conn, IO, RandomFeatureIdxGen, State
-
-from zenkai.scikit.estimators import ScikitMachine, ScikitBinary, ScikitRegressor, ScikitLimitGen
-from zenkai.kaku import StepX, ThLoss
+from zenkai.kaku import IO, Conn, RandomFeatureIdxGen, State, StepX, ThLoss
+from zenkai.scikit.estimators import (ScikitBinary, ScikitLimitGen,
+                                      ScikitMachine, ScikitRegressor)
 
 
 class NullStepX(StepX):

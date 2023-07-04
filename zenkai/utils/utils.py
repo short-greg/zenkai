@@ -1,17 +1,15 @@
 # 1st Party
-from abc import abstractmethod
-from dataclasses import dataclass
-from functools import singledispatch
-from abc import ABC, abstractmethod
-import typing
 import math
+import typing
+from functools import singledispatch
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.utils as nn_utils
 
 # 3rd party
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-import torch
-import torch.nn as nn
-import numpy as np
-import torch.nn.utils as nn_utils
 from torch.utils import data as torch_data
 
 
@@ -19,7 +17,13 @@ def to_np(x: torch.Tensor) -> np.ndarray:
     return x.detach().cpu().numpy()
 
 
-def to_th(x: np.ndarray, dtype: torch.dtype, device: torch.device, requires_grad: bool=False, retains_grad: bool=False) -> torch.Tensor:
+def to_th(
+    x: np.ndarray,
+    dtype: torch.dtype,
+    device: torch.device,
+    requires_grad: bool = False,
+    retains_grad: bool = False,
+) -> torch.Tensor:
     """
 
     Args:
@@ -32,13 +36,20 @@ def to_th(x: np.ndarray, dtype: torch.dtype, device: torch.device, requires_grad
     Returns:
         torch.Tensor: _description_
     """
-    x: torch.Tensor = torch.tensor(x, dtype=dtype, requires_grad=requires_grad, device=device)
+    x: torch.Tensor = torch.tensor(
+        x, dtype=dtype, requires_grad=requires_grad, device=device
+    )
     if retains_grad:
         x.retain_grad()
     return x
 
 
-def to_th_as(x: np.ndarray, as_: torch.Tensor, requires_grad: bool=False, retains_grad: bool=False) -> torch.Tensor:
+def to_th_as(
+    x: np.ndarray,
+    as_: torch.Tensor,
+    requires_grad: bool = False,
+    retains_grad: bool = False,
+) -> torch.Tensor:
     """
 
     Args:
@@ -51,7 +62,9 @@ def to_th_as(x: np.ndarray, as_: torch.Tensor, requires_grad: bool=False, retain
         torch.Tensor: _description_
     """
 
-    x: torch.Tensor = torch.tensor(x, dtype=as_.dtype, requires_grad=requires_grad, device=as_.device)
+    x: torch.Tensor = torch.tensor(
+        x, dtype=as_.dtype, requires_grad=requires_grad, device=as_.device
+    )
     if retains_grad:
         x.retain_grad()
     return x
@@ -81,18 +94,20 @@ def batch_flatten(x: torch.Tensor):
     return x.view(x.size(0), -1)
 
 
-def expand_dim0(x: torch.Tensor, k: int, reshape: bool=True):
-    y = x[None].repeat(k, *([1] * len(x.size()))) #.transpose(0, 1)
+def expand_dim0(x: torch.Tensor, k: int, reshape: bool = True):
+    y = x[None].repeat(k, *([1] * len(x.size())))  # .transpose(0, 1)
     if reshape:
         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
     return y
 
 
-def freshen(x: torch.Tensor, requires_grad: bool=True, inplace: bool=False):
-    if not isinstance(x, torch.Tensor): return x
+def freshen(x: torch.Tensor, requires_grad: bool = True, inplace: bool = False):
+    if not isinstance(x, torch.Tensor):
+        return x
     if inplace:
         x.detach_()
-    else: x = x.detach()
+    else:
+        x = x.detach()
     x = x.requires_grad_(requires_grad)
     x.retain_grad()
     return x
@@ -104,20 +119,24 @@ def set_parameters(parameters: torch.Tensor, net: nn.Module):
 
 def get_parameters(net: nn.Module):
     return parameters_to_vector(net.parameters())
-    
+
 
 def to_float(x: typing.List[torch.Tensor]):
     return list(map(lambda xi: xi.mean().item(), x))
 
 
-def update(current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float]=None):
+def update(
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
+):
     assert lr is None or (0.0 <= lr <= 1.0)
     if lr is not None:
         new_ = (lr * new_) + (1 - lr) * (current)
     return new_
 
 
-def update_param(current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float]=None):
+def update_param(
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
+):
     p = nn.parameter.Parameter(update(current, new_, lr).detach())
     return p
 
@@ -153,12 +172,18 @@ def add_prev(cur, prev=None):
         return cur + prev
     if cur is not None:
         return cur
-    
+
     return prev
 
 
-def create_dataloader(x: torch.Tensor, t: torch.Tensor, batch_size: int=64, shuffle: bool=True, get_indices: bool=False):
-    """Create data loader to loop over an input 
+def create_dataloader(
+    x: torch.Tensor,
+    t: torch.Tensor,
+    batch_size: int = 64,
+    shuffle: bool = True,
+    get_indices: bool = False,
+):
+    """Create data loader to loop over an input
 
     Args:
         x (torch.Tensor): _description_
@@ -175,20 +200,22 @@ def create_dataloader(x: torch.Tensor, t: torch.Tensor, batch_size: int=64, shuf
         dataset = torch_data.TensorDataset(x, t, indices)
     else:
         dataset = torch_data.TensorDataset(x, t)
-    return torch_data.DataLoader(
-        dataset, batch_size, shuffle 
-    )
+    return torch_data.DataLoader(dataset, batch_size, shuffle)
 
 
-def get_indexed(x: torch.Tensor, indices: typing.Optional[torch.LongTensor]=None) -> torch.Tensor:
+def get_indexed(
+    x: torch.Tensor, indices: typing.Optional[torch.LongTensor] = None
+) -> torch.Tensor:
 
     if indices is not None:
         return x[indices]
-    
+
     return x
 
 
-def repeat_on_indices(x: torch.Tensor, t: torch.Tensor, indices: torch.LongTensor, iterations: int):
+def repeat_on_indices(
+    x: torch.Tensor, t: torch.Tensor, indices: torch.LongTensor, iterations: int
+):
     """Convenience function to loop over indieces
 
     Args:
@@ -207,6 +234,7 @@ def repeat_on_indices(x: torch.Tensor, t: torch.Tensor, indices: torch.LongTenso
     for i in range(iterations):
 
         yield x, t
+
 
 def get_model_parameters(model: nn.Module) -> torch.Tensor:
     """Convenience function to retrieve the parameters of a model
@@ -233,10 +261,10 @@ def update_model_parameters(model: nn.Module, theta: torch.Tensor):
 
 
 def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor):
-    """Calculate the mean absolute error in correlation 
+    """Calculate the mean absolute error in correlation
 
     Args:
-        x1 (torch.Tensor): 
+        x1 (torch.Tensor):
         x2 (torch.Tensor): _description_
 
     Returns:
@@ -248,21 +276,18 @@ def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor):
     return torch.abs(corr1 - corr2).mean()
 
 
-
 def calc_stride2d(x: torch.Tensor, stride):
-    return (
-        x.stride(0), x.stride(1),
-        x.stride(2), stride[0],
-        x.stride(2), stride[1]
-    )
+    return (x.stride(0), x.stride(1), x.stride(2), stride[0], x.stride(2), stride[1])
 
 
 def calc_size2d(x: torch.Tensor, stride, kernel_size):
     return (
-        x.size(0), x.size(1),
+        x.size(0),
+        x.size(1),
         (x.size(2) - (kernel_size[0] - 1)) // stride[0],
         (x.size(3) - (kernel_size[1] - 1)) // stride[1],
-        kernel_size[0], kernel_size[1]  
+        kernel_size[0],
+        kernel_size[1],
     )
 
 
@@ -283,13 +308,16 @@ def detach(x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]):
         for x_i in x:
             if isinstance(x_i, torch.Tensor):
                 result.append(x_i.detach())
-            else: result.append(x_i)
+            else:
+                result.append(x_i)
         return result
-    
+
     return x.detach() if isinstance(x, torch.Tensor) else x
 
 
-def binary_encoding(x: torch.LongTensor, n_size: int, bit_size: bool=False) -> torch.Tensor:
+def binary_encoding(
+    x: torch.LongTensor, n_size: int, bit_size: bool = False
+) -> torch.Tensor:
 
     if not bit_size:
         n_size = int(math.ceil(math.log2(n_size)))
@@ -323,4 +351,3 @@ def sequential(modules: typing.List[nn.Module], x: torch.Tensor) -> torch.Tensor
 #     @abstractmethod
 #     def validation(self) -> torch_data.Dataset:
 #         pass
-

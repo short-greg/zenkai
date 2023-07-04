@@ -6,12 +6,23 @@ import torch
 
 # local
 from .. import Assessment
-from .core import Individual, Population, select_best_individual, select_best_feature, binary_prob, gaussian_sample
 from ..utils import to_signed_neg
+from .core import (
+    Individual,
+    Population,
+    binary_prob,
+    select_best_feature,
+    select_best_individual,
+)
 from .exploration import EqualsAssessmentDist
 
 
-def keep_original(candidate: torch.Tensor, original: torch.Tensor, keep_prob: float, batch_equal: bool=False) -> torch.Tensor:
+def keep_original(
+    candidate: torch.Tensor,
+    original: torch.Tensor,
+    keep_prob: float,
+    batch_equal: bool = False,
+) -> torch.Tensor:
     """Will keep the original given the probability passed in with keep_prob
 
     Args:
@@ -24,30 +35,30 @@ def keep_original(candidate: torch.Tensor, original: torch.Tensor, keep_prob: fl
     """
     shape = candidate.shape if not batch_equal else [1, *candidate.shape[1:]]
 
-    to_keep = (torch.rand(shape, device=candidate.device) > keep_prob)
+    to_keep = torch.rand(shape, device=candidate.device) > keep_prob
     return (~to_keep).float() * candidate + to_keep.float() * original
 
 
 class Selector(ABC):
-
     @abstractmethod
     def __call__(self, population: Population) -> Individual:
         pass
 
     @abstractmethod
-    def spawn(self) -> 'Selector':
+    def spawn(self) -> "Selector":
         pass
 
 
 class StandardSelector(Selector):
-
     @abstractmethod
-    def select(self, key: str, pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def select(
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
         pass
 
     def __call__(self, population: Population) -> Individual:
         if population.assessments is None:
-            raise ValueError('Population has not been assessed')
+            raise ValueError("Population has not been assessed")
         result = {}
         assessments = population.stack_assessments()
         for k, v in population:
@@ -56,16 +67,17 @@ class StandardSelector(Selector):
 
 
 class SelectorDecorator(Selector):
-
     def __init__(self, base_selector: Selector):
         self.base_selector = base_selector
 
     @abstractmethod
-    def decorate(self, key: str, individual: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def decorate(
+        self, key: str, individual: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
         pass
-    
+
     def __call__(self, population: Population) -> Individual:
-        
+
         selected = self.base_selector(population)
 
         result = {}
@@ -74,15 +86,16 @@ class SelectorDecorator(Selector):
         return Individual(**result)
 
     @abstractmethod
-    def spawn(self) -> 'SelectorDecorator':
+    def spawn(self) -> "SelectorDecorator":
         pass
 
 
 class BestSelectorIndividual(StandardSelector):
-    """Select the best individual in the population
-    """
+    """Select the best individual in the population"""
 
-    def select(self, key: str, pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def select(
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
         """Select the best individual in the population
 
         Args:
@@ -95,13 +108,14 @@ class BestSelectorIndividual(StandardSelector):
         """
         return select_best_individual(pop_val, assessment)
 
-    def spawn(self) -> 'BestSelectorIndividual':
+    def spawn(self) -> "BestSelectorIndividual":
         return BestSelectorIndividual()
 
 
 class BestSelectorFeature(StandardSelector):
-
-    def select(self, key: str, pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def select(
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
         """Select the best features in the population
 
         Args:
@@ -114,13 +128,12 @@ class BestSelectorFeature(StandardSelector):
         """
         return select_best_feature(pop_val, assessment)
 
-    def spawn(self) -> 'BestSelectorFeature':
+    def spawn(self) -> "BestSelectorFeature":
         return BestSelectorFeature()
 
 
 class MomentumSelector(SelectorDecorator):
-
-    def __init__(self, base_selector: Selector, momentum: float=None):
+    def __init__(self, base_selector: Selector, momentum: float = None):
         """initializer
 
         Args:
@@ -135,57 +148,59 @@ class MomentumSelector(SelectorDecorator):
         self.cur = None
         self.dx = None
 
-    def decorate(self, key: str, individual: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def decorate(
+        self, key: str, individual: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
 
         if self.diff is None and self.cur is None:
             self.cur = individual
         elif self.diff is None:
             self.cur = individual
-            self.diff = (individual - self.cur)
+            self.diff = individual - self.cur
         else:
             self.cur = self.diff + individual
             self.diff = (individual - self.cur) + self._momentum * self.diff
 
         return self.cur
-    
-    def spawn(self) -> 'MomentumSelector':
-        return MomentumSelector(
-            self.base_selector.spawn(), self._momentum
-        )
+
+    def spawn(self) -> "MomentumSelector":
+        return MomentumSelector(self.base_selector.spawn(), self._momentum)
 
 
 class SlopeSelector(StandardSelector):
-    '''
+    """
     'Selects' the slope from current evaluation.
     Can be used to add to the value before 'spawning'
-    '''
+    """
 
-    def __init__(self, momentum: float=None): 
+    def __init__(self, momentum: float = None):
         if momentum is not None and momentum <= 0.0:
-            raise ValueError(f"Momentum must be greater or equal to 0 or None, not {momentum}")
+            raise ValueError(
+                f"Momentum must be greater or equal to 0 or None, not {momentum}"
+            )
         self._momentum = momentum
         self._slope = None
 
-    def select(self, key: str, pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+    def select(
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+    ) -> torch.Tensor:
         # TODO: Add in momentum for slope (?)
 
-        evaluation = assessment.value[:,:,None]
-        ssx = (pop_val ** 2).sum(0) - (1 / len(pop_val)) * (pop_val.sum(0)) ** 2
-        ssy = (pop_val * evaluation).sum(0) - (1 / len(pop_val)) * ((
-            pop_val.sum(0) * evaluation.sum(0)
-        ))
+        evaluation = assessment.value[:, :, None]
+        ssx = (pop_val**2).sum(0) - (1 / len(pop_val)) * (pop_val.sum(0)) ** 2
+        ssy = (pop_val * evaluation).sum(0) - (1 / len(pop_val)) * (
+            (pop_val.sum(0) * evaluation.sum(0))
+        )
         slope = ssy / ssx
         self._slope = (
-            self._slope * self._momentum + slope 
+            self._slope * self._momentum + slope
             if self._slope is not None and self._momentum is not None
             else slope
         )
         return self._slope
-    
-    def spawn(self) -> 'SlopeSelector':
-        return SlopeSelector(
-            self._momentum
-        )
+
+    def spawn(self) -> "SlopeSelector":
+        return SlopeSelector(self._momentum)
 
 
 class BinaryProbSelector(Selector):
@@ -193,7 +208,7 @@ class BinaryProbSelector(Selector):
     neg_count = "neg_count"
     pos_count = "pos_count"
 
-    def __init__(self, x: str="x") -> None:
+    def __init__(self, x: str = "x") -> None:
         super().__init__()
         self.x = x
 
@@ -206,22 +221,23 @@ class BinaryProbSelector(Selector):
         for i, sz in enumerate(assessment.shape):
             base_shape[i] = sz
         updated, pos_count, neg_count = binary_prob(x, loss, True)
-        return Individual(
-            x=updated, pos_count=pos_count, neg_count=neg_count
-        )
+        return Individual(x=updated, pos_count=pos_count, neg_count=neg_count)
 
-    def spawn(self) -> 'BinaryProbSelector':
+    def spawn(self) -> "BinaryProbSelector":
         return BinaryProbSelector(self.x)
 
 
 class BinaryGaussianSelector(Selector):
-    """Value based selector for binary inputs. Uses the Gaussian distribution to 
+    """Value based selector for binary inputs. Uses the Gaussian distribution to
     either select based on a sample or the mean
     """
 
     def __init__(
-        self, x: str='x', zero_neg: bool=False, to_sample: bool=True, 
-        batch_equal: bool=False
+        self,
+        x: str = "x",
+        zero_neg: bool = False,
+        to_sample: bool = True,
+        batch_equal: bool = False,
     ):
         """_summary_
 
@@ -254,5 +270,7 @@ class BinaryGaussianSelector(Selector):
             result = to_signed_neg(result)
         return Individual(**{self.x: result})
 
-    def spawn(self) -> 'BinaryGaussianSelector':
-        return BinaryGaussianSelector(self.x, self.zero_neg, self.to_sample, self.batch_equal)
+    def spawn(self) -> "BinaryGaussianSelector":
+        return BinaryGaussianSelector(
+            self.x, self.zero_neg, self.to_sample, self.batch_equal
+        )

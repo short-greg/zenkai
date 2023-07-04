@@ -1,9 +1,9 @@
 # 1st party
 import typing
 
+import torch as th
 # 3rd party
 import torch.nn as nn
-import torch as th
 
 # local
 from zenkai.tako.core import UNDEFINED, Gen

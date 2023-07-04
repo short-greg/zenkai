@@ -1,6 +1,7 @@
 import torch
 
 from zenkai.sensei import reporting
+
 from .test_base import SampleMaterial
 
 

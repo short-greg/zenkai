@@ -1,13 +1,12 @@
 # 1st party
-from abc import abstractmethod, ABC, abstractproperty
+from abc import ABC, abstractmethod
 
 # local
 from .assess import AssessmentDict
 
 
 class NNComponent(ABC):
-    """Base class for component. Use to build up a Learning Machine
-    """
+    """Base class for component. Use to build up a Learning Machine"""
 
     def is_(self, component_cls):
         if isinstance(self, component_cls):
@@ -15,8 +14,7 @@ class NNComponent(ABC):
 
 
 class Learner(NNComponent):
-    """Update the machine parameters
-    """
+    """Update the machine parameters"""
 
     @abstractmethod
     def learn(self, x, t) -> AssessmentDict:
@@ -40,8 +38,7 @@ class Learner(NNComponent):
 
 
 class SelfLearner(NNComponent):
-    """Update the machine parameters
-    """
+    """Update the machine parameters"""
 
     @abstractmethod
     def learn(self, x, y=None) -> AssessmentDict:
@@ -65,8 +62,7 @@ class SelfLearner(NNComponent):
 
 
 class Regressor(NNComponent):
-    """Output a real value
-    """
+    """Output a real value"""
 
     @abstractmethod
     def regress(self, x):
@@ -74,8 +70,7 @@ class Regressor(NNComponent):
 
 
 class Classifier(NNComponent):
-    """Output a categorical value
-    """
+    """Output a categorical value"""
 
     @abstractmethod
     def classify(self, x):
@@ -83,8 +78,7 @@ class Classifier(NNComponent):
 
 
 class Encoder(NNComponent):
-    """Output a categorical value
-    """
+    """Output a categorical value"""
 
     @abstractmethod
     def encode(self, x):
@@ -92,8 +86,7 @@ class Encoder(NNComponent):
 
 
 class Decoder(NNComponent):
-    """Output a categorical value
-    """
+    """Output a categorical value"""
 
     @abstractmethod
     def decode(self, x):
@@ -101,14 +94,11 @@ class Decoder(NNComponent):
 
 
 class Autoencoder(Encoder, Decoder):
-
     def reconstruct(self, x):
         return self.decode(self.encode(x))
 
 
 class Assessor(NNComponent):
-
     @abstractmethod
-    def assess(self, x, t, reduction_override: str=None) -> AssessmentDict:
+    def assess(self, x, t, reduction_override: str = None) -> AssessmentDict:
         pass
-

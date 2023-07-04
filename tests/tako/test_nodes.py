@@ -1,13 +1,12 @@
 # 1st party
 import pytest
-
+import torch as th
 # 3rd party
 import torch.nn as nn
-import torch as th
 
 # local
 from zenkai.tako.core import UNDEFINED, Gen
-from zenkai.tako.nodes import Layer, In, ProcessSet
+from zenkai.tako.nodes import In, Layer, ProcessSet
 
 
 class Null(nn.Module):

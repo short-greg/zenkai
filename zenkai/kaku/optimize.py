@@ -13,7 +13,6 @@ import torch.optim as optim
 
 
 class NullOptim(torch.optim.Optimizer):
-
     def __init__(self, parameters):
         self.state = {}
 
@@ -22,34 +21,39 @@ class NullOptim(torch.optim.Optimizer):
 
     def state_dict(self) -> dict:
         return {}
-    
+
     def load_state_dict(self, state_dict: dict) -> None:
         pass
 
     def zero_grad(self) -> None:
         pass
-    
+
 
 OPTIM_MAP = {
-    'sgd': torch.optim.SGD,
-    'adam': torch.optim.Adam,
-    'adadelta': torch.optim.Adadelta,
-    'adagrad': torch.optim.Adagrad,
-    'rmsprop': torch.optim.RMSprop,
-    'null': NullOptim
+    "sgd": torch.optim.SGD,
+    "adam": torch.optim.Adam,
+    "adadelta": torch.optim.Adadelta,
+    "adagrad": torch.optim.Adagrad,
+    "rmsprop": torch.optim.RMSprop,
+    "null": NullOptim,
 }
 
 
 OptimFactoryX = typing.Callable[[typing.Iterable], optim.Optimizer]
 
-class OptimFactory(object):
 
-    def __init__(self, optim: typing.Union[str, typing.Type[torch.optim.Optimizer]], *args, **kwargs):
+class OptimFactory(object):
+    def __init__(
+        self,
+        optim: typing.Union[str, typing.Type[torch.optim.Optimizer]],
+        *args,
+        **kwargs,
+    ):
 
         try:
             optim = OPTIM_MAP[optim] if isinstance(optim, str) else optim
         except KeyError:
-            raise KeyError(f'No optim named {optim} in the optim map')
+            raise KeyError(f"No optim named {optim} in the optim map")
         self._optim = optim
         self._args = args
         self._kwargs = kwargs
@@ -58,44 +62,35 @@ class OptimFactory(object):
 
         kwargs = {**self._kwargs, **kwarg_overrides}
         return self._optim(params, *self._args, **kwargs)
-    
+
     @classmethod
     def sgd(cls, *args, **kwargs):
-        return OptimFactory(
-            torch.optim.SGD, *args, **kwargs
-        )
+        return OptimFactory(torch.optim.SGD, *args, **kwargs)
 
     @classmethod
     def adam(cls, *args, **kwargs):
-        return OptimFactory(
-            torch.optim.Adam, *args, **kwargs
-        )
+        return OptimFactory(torch.optim.Adam, *args, **kwargs)
 
     @classmethod
     def adadelta(cls, *args, **kwargs):
-        return OptimFactory(
-            torch.optim.Adadelta, *args, **kwargs
-        )
+        return OptimFactory(torch.optim.Adadelta, *args, **kwargs)
 
     @classmethod
     def asgd(cls, *args, **kwargs):
-        return OptimFactory(
-            torch.optim.ASGD, *args, **kwargs
-        )
+        return OptimFactory(torch.optim.ASGD, *args, **kwargs)
 
     @classmethod
     def rmsprop(cls, *args, **kwargs):
-        return OptimFactory(
-            torch.optim.RMSprop, *args, **kwargs
-        )
+        return OptimFactory(torch.optim.RMSprop, *args, **kwargs)
 
 
 class MetaOptim(optim.Optimizer):
-
     def __init__(
-        self, p: typing.Iterable, meta_optim: OptimFactory, active_optim: OptimFactory=None,
-        copy_first: bool=False
-
+        self,
+        p: typing.Iterable,
+        meta_optim: OptimFactory,
+        active_optim: OptimFactory = None,
+        copy_first: bool = False,
     ):
         cloned = []
         base = []
@@ -126,22 +121,19 @@ class MetaOptim(optim.Optimizer):
         return self.active_optim.state
 
     def state_dict(self):
-        return {
-            'active_params': self.active_params,
-            'meta_params': self.meta_params
-        }
-    
+        return {"active_params": self.active_params, "meta_params": self.meta_params}
+
     def load_state_dict(self, state_dict):
-        
-        self.meta_params = state_dict['meta_params']
-        self.active_params = state_dict['active_params']
+
+        self.meta_params = state_dict["meta_params"]
+        self.active_params = state_dict["active_params"]
         self.meta_optim = self.meta_optim_factory(self.meta_params)
         self.active_optim = self.active_optim_factory(self.active_params)
 
     @property
     def param_groups(self):
         return self.active_optim.param_groups
-    
+
     def add_param_group(self, param_group: dict):
         self.active_optim.add_param_group(param_group)
         self.meta_optim.add_param_group(param_group)
@@ -171,21 +163,20 @@ class MetaOptim(optim.Optimizer):
         self.meta_optim.zero_grad()
         self._is_first = False
 
-    def transfer(self, clear_active_state: bool=True):
+    def transfer(self, clear_active_state: bool = True):
         for active, meta in zip(self.active_params, self.meta_params):
             active.data = meta.data
-        
+
         if clear_active_state:
             self.active_optim.state.clear()
         # self.active_optim = self.active_optim_factory(self.active_params)
 
-    def adv(self, clear_active_state: bool=True):
+    def adv(self, clear_active_state: bool = True):
         self.step_meta()
         self.transfer(clear_active_state)
 
 
 class itadaki:
-
     def __init__(self) -> None:
         raise RuntimeError("Cannot create instance of class itadaki")
 
@@ -196,8 +187,7 @@ class itadaki:
     @staticmethod
     def sgd(*args, **kwargs):
         return OptimFactory("sgd", *args, **kwargs)
-        
+
     @staticmethod
     def null():
         return OptimFactory("null")
-

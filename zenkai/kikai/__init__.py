@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 Basic learning machine classes. 
 
@@ -25,15 +27,23 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 
 """
 
+from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
 from .grad import (
-    GradLoopStepTheta, GradLoopLearner, GradLoopStepX, GradStepTheta, GradLearner,
-    GradStepX, NullStepTheta, update_x
+    GradLearner,
+    GradLoopLearner,
+    GradLoopStepTheta,
+    GradLoopStepX,
+    GradStepTheta,
+    GradStepX,
+    NullStepTheta,
+    update_x,
 )
 from .least_squares import (
-    LeastSquaresLearner, LeastSquaresRidgeSolver, LeastSquaresSolver, LeastSquaresStandardSolver,
-    LeastSquaresStepTheta, LeastSquaresStepX
+    LeastSquaresLearner,
+    LeastSquaresRidgeSolver,
+    LeastSquaresSolver,
+    LeastSquaresStandardSolver,
+    LeastSquaresStepTheta,
+    LeastSquaresStepX,
 )
 from .reversible import ReversibleMachine
-from ..kikai.hill import (
-    HillClimbBinaryStepX, HillClimbStepX
-)

@@ -1,5 +1,6 @@
-import torch
 import pytest
+import torch
+
 from zenkai.kaku import assess as _evaluation
 
 

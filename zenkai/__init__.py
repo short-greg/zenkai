@@ -1,8 +1,5 @@
-from .kaku import *
-from . import tako
-from . import tansaku
-from . import sensei
-from . import utils
-from . import kikai
+# flake8: noqa
+
 # from .perceptron import perceptron
-from . import scikit
+from . import kikai, scikit, sensei, tako, tansaku, utils
+from .kaku import *

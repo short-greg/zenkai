@@ -1,18 +1,20 @@
-from .core import (
-    ID, UNDEFINED, Func,
-    Gen, Info,
-)
-from .nodes import (
-    is_defined, get_x, to_incoming,
-    Process, Joint, Index,
-    End, Layer, In, ProcessSet,
-    ProcessVisitor, Apply, LambdaApply
-)
+# flake8: noqa
 
-from .spawning import (
-    ProcessSpawner, MSpawner, FSpawner
+from .core import ID, UNDEFINED, Func, Gen, Info
+from .nodes import (
+    Apply,
+    End,
+    In,
+    Index,
+    Joint,
+    LambdaApply,
+    Layer,
+    Process,
+    ProcessSet,
+    ProcessVisitor,
+    get_x,
+    is_defined,
+    to_incoming,
 )
-from .tako import (
-    Tako, Sequence, Filter, TagFilter,
-    layer_dive, dive, Nested, Network
-)
+from .spawning import FSpawner, MSpawner, ProcessSpawner
+from .tako import Filter, Nested, Network, Sequence, TagFilter, Tako, dive, layer_dive

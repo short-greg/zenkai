@@ -18,20 +18,22 @@ Other
 Loop - Loop over data
 """
 
-# 1st party
-from abc import abstractmethod, ABC, abstractproperty
 import typing
+
+# 1st party
+from abc import ABC, abstractmethod
 from collections import deque
 
 # 3rd party
 import torch
 import torch.nn as nn
 
-# local
-from .assess import AssessmentDict, ThLoss, Loss, Assessment
-from .state import State, IDable
-from .component import Learner
 from .. import utils as base_utils
+
+# local
+from .assess import AssessmentDict, Loss, ThLoss
+from .component import Learner
+from .state import IDable, State
 
 
 class IO(object):
@@ -39,7 +41,7 @@ class IO(object):
     to give a consistent system to handle it
     """
 
-    def __init__(self, *x, detach: bool=False, names: typing.List[str]=None):
+    def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
         """initializer
 
         Args:
@@ -47,7 +49,7 @@ class IO(object):
             names (typing.List[str], optional): The name of each value. Defaults to None.
         """
         super().__init__()
-        
+
         self._x = []
         self._freshened = False
         self._singular = len(x) == 1
@@ -58,7 +60,7 @@ class IO(object):
             self._x.append(x_i)
         self._names = enumerate(dict(names or []))
 
-    def freshen(self, inplace: bool=False) -> bool:
+    def freshen(self, inplace: bool = False) -> bool:
         """Set the values of the IO
 
         Args:
@@ -85,7 +87,7 @@ class IO(object):
             list: The values in the IO
         """
         return [*self._x]
-    
+
     def __getitem__(self, idx: int):
         """Retrieve item from the IO
 
@@ -97,7 +99,7 @@ class IO(object):
         """
         return self._x[idx]
 
-    def to(self, device) -> 'IO':
+    def to(self, device) -> "IO":
         """Change the device of all tensors in the IO
 
         Args:
@@ -109,13 +111,15 @@ class IO(object):
 
         if device is None:
             return self
-        
-        self._x = [x_i.to(device) if isinstance(x_i, torch.Tensor) else x_i for x_i in self._x]
+
+        self._x = [
+            x_i.to(device) if isinstance(x_i, torch.Tensor) else x_i for x_i in self._x
+        ]
         if self._freshened:
             self._freshened = False
             self.freshen(self._x)
         return self
-    
+
     @property
     def names(self) -> typing.List[str]:
         """
@@ -123,14 +127,14 @@ class IO(object):
             typing.List[str]: The names of all of the fields
         """
         return [*self._names]
-    
+
     def __len__(self) -> int:
         """
         Returns:
             int: The number of fields in the IO
         """
         return len(self._x)
-    
+
     def __iter__(self) -> typing.Iterator:
         """
         Returns:
@@ -138,7 +142,7 @@ class IO(object):
         """
         return iter(self._x)
 
-    def clone(self, detach: bool=True) -> 'IO':
+    def clone(self, detach: bool = True) -> "IO":
         """create a copy of the of all of the tensors
 
         Args:
@@ -148,41 +152,36 @@ class IO(object):
             IO: The cloned IO
         """
         x = [torch.clone(x_i) for x_i in self._x]
-        result = IO(
-            *x, detach=detach, names=self._names
-        )
+        result = IO(*x, detach=detach, names=self._names)
         if not detach:
             result._freshened = self._freshened
         return result
-    
-    def detach(self) -> 'IO':
 
-        return IO(
-            *self._x, detach=True, names=self._names
-        )
+    def detach(self) -> "IO":
 
-    def out(self, detach: bool=True, clone: bool=False) -> 'IO':
+        return IO(*self._x, detach=True, names=self._names)
+
+    def out(self, detach: bool = True, clone: bool = False) -> "IO":
         y = self
         if detach:
             y = y.detach()
         if clone:
             y = y.clone()
         return y
-    
+
     def is_empty(self) -> bool:
         return len(self) == 0
 
 
 class Idx(object):
-
-    def __init__(self, idx=None, dim: int=0):
+    def __init__(self, idx=None, dim: int = 0):
         """initializer
-        
-        Set an index on the IO to 
+
+        Set an index on the IO to
 
         usage: Use when the connection should retrieve a subset of the values
         in the IO
-         
+
         Args:
             idx (optional): The values to index by. Defaults to None.
         """
@@ -191,17 +190,20 @@ class Idx(object):
         self.dim = dim
         self.idx = idx
 
-    def idx_th(self, *x: torch.Tensor) -> typing.Union[typing.Tuple[torch.Tensor], torch.Tensor]:
-        
+    def idx_th(
+        self, *x: torch.Tensor
+    ) -> typing.Union[typing.Tuple[torch.Tensor], torch.Tensor]:
+
         if self.idx is not None:
             x = [x_i.index_select(self.dim, self.idx) for x_i in x]
-        
+
         return x
-    
+
     def tolist(self) -> typing.Union[None, typing.List[int]]:
-        if self.idx is None: return None
+        if self.idx is None:
+            return None
         return self.idx.tolist()
-    
+
     def idx_list(self) -> typing.List[int]:
         """
 
@@ -214,23 +216,22 @@ class Idx(object):
             result.append(self.idx[i.item()])
         return result
 
-    def __call__(self, x: IO, detach: bool=False) -> IO:
-        
+    def __call__(self, x: IO, detach: bool = False) -> IO:
+
         selected = self.idx_th(*x.vals)
 
-        result = IO(
-            *selected, detach=detach, names=x.names
-        )
+        result = IO(*selected, detach=detach, names=x.names)
         if x._freshened and not detach:
             result._freshened = True
         return result
-    
+
     def update(self, source: IO, destination: IO):
         for source_i, destination_i in zip(source, destination):
             if destination_i.requires_grad:
                 requires_grad = True
                 destination_i.detach_().requires_grad_(False)
-            else: requires_grad = False
+            else:
+                requires_grad = False
             if self.idx is not None:
                 destination_i[self.idx] = source_i
             else:
@@ -244,7 +245,7 @@ class Idx(object):
         else:
             destination[:] = source
 
-    def sub(self, idx: 'Idx') -> 'Idx':
+    def sub(self, idx: "Idx") -> "Idx":
         if not isinstance(idx, Idx):
             idx = Idx(idx)
 
@@ -260,10 +261,10 @@ class Idx(object):
 
 
 class LayerIO(object):
-    '''IO wrapper for the inputs, outputs and targets for a layer'''
+    """IO wrapper for the inputs, outputs and targets for a layer"""
 
     @staticmethod
-    def to_io(io: IO=None):
+    def to_io(io: IO = None):
         if io is None:
             return IO()
         elif not isinstance(io, IO):
@@ -271,7 +272,7 @@ class LayerIO(object):
         return io
 
     # TODO: better handle the case when None
-    def __init__(self, x: IO=None, t: IO=None, y: IO=None): #, idx: Idx=None):
+    def __init__(self, x: IO = None, t: IO = None, y: IO = None):  # , idx: Idx=None):
         """initializer
 
         Args:
@@ -285,17 +286,17 @@ class LayerIO(object):
         self._y = self.to_io(y)
 
     @property
-    def x(self) -> 'IO':
+    def x(self) -> "IO":
         """
         Returns:
-            IO: the IO for x. If an index is specified it will 
+            IO: the IO for x. If an index is specified it will
             be indexed
         """
         return self._x
-        #return self._x.get(self._idx)
+        # return self._x.get(self._idx)
 
     @x.setter
-    def x(self, x: IO) -> 'IO':
+    def x(self, x: IO) -> "IO":
         """Sets the value for x. Cannot use if is_indexed is True
 
         Args:
@@ -313,23 +314,23 @@ class LayerIO(object):
         self._x = x
 
     @property
-    def t(self) -> 'IO':
+    def t(self) -> "IO":
         return self._t
-    
+
     @t.setter
-    def t(self, t: IO) -> 'IO':
+    def t(self, t: IO) -> "IO":
         # TODO: Not sure if i want to leave this
         # if self.idx is not None:
         #    raise ValueError("Cannot set t if idx is set")
         self._t = t
 
     @property
-    def y(self) -> 'IO':
-        
-        return self._y # .get(self._idx)
-        
+    def y(self) -> "IO":
+
+        return self._y  # .get(self._idx)
+
     @y.setter
-    def y(self, y: IO) -> 'IO':
+    def y(self, y: IO) -> "IO":
         self._y = y
 
     def __iter__(self) -> typing.Iterator[IO]:
@@ -338,34 +339,40 @@ class LayerIO(object):
         yield self.y
 
     # TODO: Review if needed
-    def out(self, detach: bool=True) -> 'LayerIO':
+    def out(self, detach: bool = True) -> "LayerIO":
         x = self._x.detach() if self.x is not None and detach else self._x
         t = self._t.detach() if self.t is not None and detach else self._t
         y = self._y.detach() if self.y is not None and detach else self._y
         return LayerIO(
-            x, t, y, # idx=self._idx if use_idx else None
+            x,
+            t,
+            y,  # idx=self._idx if use_idx else None
         )
 
 
 class Conn(object):
-    """Class to connect two learning machines
-    """
+    """Class to connect two learning machines"""
 
     def __init__(
-        self, out_x: IO, out_t: IO, inp_x: IO=None, 
-        inp_t: IO=None, out_y: IO=None, inp_y: IO=None, state=None,
-        
+        self,
+        out_x: IO,
+        out_t: IO,
+        inp_x: IO = None,
+        inp_t: IO = None,
+        out_y: IO = None,
+        inp_y: IO = None,
+        state=None,
     ):
         super().__init__()
         inp_t = inp_t or out_x
         self._inp = LayerIO(inp_x, inp_t, inp_y)
         self._out = LayerIO(out_x, out_t, out_y)
-        
+
         self.state = state or State()
         self.tie_step = self.tie_inp
         self.tie_step_x = self.tie_out
 
-    def tie_inp(self, detach: bool=False) -> 'Conn':
+    def tie_inp(self, detach: bool = False) -> "Conn":
         """Set the target of the incoming layer to the same as the input of the outgoing layer
 
         Args:
@@ -379,7 +386,7 @@ class Conn(object):
             self._inp.t.detach()
         return self
 
-    def tie_out(self, detach: bool=False) -> 'Conn':
+    def tie_out(self, detach: bool = False) -> "Conn":
         """Set the input of the outgoing layer to the same as the output of the outgoing layer
 
         Args:
@@ -392,7 +399,7 @@ class Conn(object):
         if detach:
             self._out.x.detach()
         return self
-    
+
     @property
     def inp(self) -> LayerIO:
         """
@@ -400,7 +407,7 @@ class Conn(object):
             LayerIO: The indexed LayerIO for the incoming layer if index is set else the base
         """
         return self._inp
-    
+
     @property
     def out(self) -> LayerIO:
         """
@@ -408,7 +415,7 @@ class Conn(object):
             LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
         """
         return self._out
-    
+
     @property
     def step_x(self) -> LayerIO:
         """
@@ -416,7 +423,7 @@ class Conn(object):
             LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
         """
         return self.out
-    
+
     @property
     def step(self) -> LayerIO:
         """
@@ -425,7 +432,7 @@ class Conn(object):
         """
         return self.inp
 
-    def connect_in(self, from_in_x: IO=None) -> 'Conn':
+    def connect_in(self, from_in_x: IO = None) -> "Conn":
         """Connect to a new incoming layer. The current incoming layer becomes the outgoing layer
 
         Args:
@@ -435,11 +442,9 @@ class Conn(object):
         Returns:
             Conn: The connection with the incoming layer
         """
-        return Conn(
-            self._inp.x, self._inp.t, inp_x=from_in_x
-        )
+        return Conn(self._inp.x, self._inp.t, inp_x=from_in_x)
 
-    def retie(self, inp_x: IO) -> 'IO':
+    def retie(self, inp_x: IO) -> "IO":
         """
 
         Args:
@@ -451,16 +456,16 @@ class Conn(object):
         old_x = self.inp.x
         self._inp.x = inp_x
         return old_x
-    
+
     @classmethod
-    def from_layer_io(self, incoming: LayerIO, outgoing: LayerIO) -> 'Conn':
+    def from_layer_io(self, incoming: LayerIO, outgoing: LayerIO) -> "Conn":
 
         return Conn(
             outgoing.x, outgoing.t, incoming.x, incoming.t, outgoing.y, incoming.y
         )
 
 
-def idx_io(io: IO, idx: Idx=None, detach: bool=False) -> IO:
+def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:
 
     if idx is not None:
         io = idx(io)
@@ -468,16 +473,16 @@ def idx_io(io: IO, idx: Idx=None, detach: bool=False) -> IO:
     return io.out(detach)
 
 
-def idx_layer_io(layer_io: LayerIO, idx: Idx=None, detach: bool=False) -> LayerIO:
+def idx_layer_io(layer_io: LayerIO, idx: Idx = None, detach: bool = False) -> LayerIO:
 
     return LayerIO(
         idx_io(layer_io.x, idx, detach),
         idx_io(layer_io.t, idx, detach),
-        idx_io(layer_io.y, idx, detach)
+        idx_io(layer_io.y, idx, detach),
     )
 
 
-def idx_conn(conn: Conn, idx: Idx=None, detach: bool=False) -> Conn:
+def idx_conn(conn: Conn, idx: Idx = None, detach: bool = False) -> Conn:
 
     return Conn.from_layer_io(
         idx_layer_io(conn.step, idx, detach),
@@ -485,7 +490,13 @@ def idx_conn(conn: Conn, idx: Idx=None, detach: bool=False) -> Conn:
     )
 
 
-def update_step_x(source: Conn, destination: Conn, idx: Idx=None, tie_step: bool=True, detach: bool=True) -> Conn:
+def update_step_x(
+    source: Conn,
+    destination: Conn,
+    idx: Idx = None,
+    tie_step: bool = True,
+    detach: bool = True,
+) -> Conn:
 
     update_io(source.step_x.x, destination.step_x.x, idx)
     if tie_step:
@@ -493,18 +504,18 @@ def update_step_x(source: Conn, destination: Conn, idx: Idx=None, tie_step: bool
     return destination
 
 
-def idx_th(x: torch.Tensor, idx: Idx=None, detach: bool=False) -> torch.Tensor:
+def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tensor:
 
     if idx is not None:
         x = idx.idx_th(x)
-    
+
     if detach:
         x = x.detach()
     return x
 
 
 # TODO: DEBUG. This is not working for some reason
-def update_io(source: IO, destination: IO, idx: Idx=None) -> IO:
+def update_io(source: IO, destination: IO, idx: Idx = None) -> IO:
 
     if idx is None:
         idx = Idx()
@@ -512,7 +523,9 @@ def update_io(source: IO, destination: IO, idx: Idx=None) -> IO:
     return destination
 
 
-def update_tensor(source: torch.Tensor, destination: torch.Tensor, idx: Idx=None) -> torch.Tensor:
+def update_tensor(
+    source: torch.Tensor, destination: torch.Tensor, idx: Idx = None
+) -> torch.Tensor:
 
     if idx is None:
         idx = Idx()
@@ -521,8 +534,7 @@ def update_tensor(source: torch.Tensor, destination: torch.Tensor, idx: Idx=None
 
 
 class T(Conn):
-
-    def __init__(self, t: IO, inp_x: IO=None):
+    def __init__(self, t: IO, inp_x: IO = None):
         """Create a 'Target' connection for the global target
 
         Args:
@@ -533,14 +545,12 @@ class T(Conn):
 
 
 class StepXHook(ABC):
-
     @abstractmethod
     def __call__(self, conn: Conn, state: State, **kwargs) -> Conn:
         pass
 
 
 class StepHook(ABC):
-
     @abstractmethod
     def __call__(self, conn: Conn, state: State, **kwargs) -> Conn:
         pass
@@ -548,7 +558,7 @@ class StepHook(ABC):
 
 class StepX(ABC):
     """Base class for updating the input (target)
-    Use to decouple the optimization of the input from the learning 
+    Use to decouple the optimization of the input from the learning
     machine definition
     """
 
@@ -593,7 +603,7 @@ class StepX(ABC):
         Args:
             hook (StepXHook): The hook to add
         """
-        if not hasattr(self, '_step_x_hook_initialized'):
+        if not hasattr(self, "_step_x_hook_initialized"):
             self.__init__()
         self._step_x_prehooks.append(hook)
 
@@ -603,18 +613,19 @@ class StepX(ABC):
         Args:
             hook (StepXHook): The hook to add
         """
-        if not hasattr(self, '_step_x_hook_initialized'):
+        if not hasattr(self, "_step_x_hook_initialized"):
             self.__init__()
         self._step_x_posthooks.append(hook)
 
 
 class StepTheta(ABC):
     """Base class for updating the parameters
-    Use to decouple the optimization of the parameters from the core 
+    Use to decouple the optimization of the parameters from the core
     machine definition
     """
+
     def __init__(self):
-        
+
         self._step_hook_initialized = True
         self._step_prehooks = []
         self._step_posthooks = []
@@ -622,13 +633,17 @@ class StepTheta(ABC):
         self.step = self._step_hook_runner
 
     @abstractmethod
-    def step(self, conn: Conn, state: State, from_: IO=None) -> Conn:
+    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         pass
 
-    def __call__(self, conn: Conn, state: State, from_: IO=None, *args, **kwargs) -> Conn:
+    def __call__(
+        self, conn: Conn, state: State, from_: IO = None, *args, **kwargs
+    ) -> Conn:
         return self.step(conn, state, from_, *args, **kwargs)
 
-    def _step_hook_runner(self, conn: Conn, state: State, from_: IO=None, *args, **kwargs) -> Conn:
+    def _step_hook_runner(
+        self, conn: Conn, state: State, from_: IO = None, *args, **kwargs
+    ) -> Conn:
         """Call step wrapped with the hooks
 
         Args:
@@ -654,7 +669,7 @@ class StepTheta(ABC):
         Args:
             hook (StepHook): The hook to add
         """
-        if not hasattr(self, '_step_hook_initialized'):
+        if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
         self._step_prehooks.append(hook)
 
@@ -664,41 +679,40 @@ class StepTheta(ABC):
         Args:
             hook (StepHook): The hook to add
         """
-        if not hasattr(self, '_step_hook_initialized'):
+        if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
         self._step_posthooks.append(hook)
 
 
 class BatchIdxStepTheta(StepTheta):
-
     @abstractmethod
-    def step(self, conn: Conn, state: State, from_: IO=None, batch_idx: Idx=None) -> Conn:
+    def step(
+        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
+    ) -> Conn:
         pass
 
 
 class FeatureIdxStepTheta(StepTheta):
-
     @abstractmethod
-    def step(self, conn: Conn, state: State, from_: IO=None, feature_idx: Idx=None) -> Conn:
+    def step(
+        self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx = None
+    ) -> Conn:
         pass
 
 
 class BatchIdxStepX(StepX):
-
     @abstractmethod
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx=None) -> Conn:
+    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
         pass
 
 
 class FeatureIdxStepX(StepX):
-
     @abstractmethod
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx=None) -> Conn:
+    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
         pass
 
 
 class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
-
     def device(self) -> torch.device:
         """Convenience method to get the device for the machine
         Chooses the first parameter. Assumes all sub machines have the same device
@@ -712,9 +726,11 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             return p.device
         except StopIteration:
             return None
-    
-    def to_my_device(self, *io: IO) -> typing.Union[typing.Tuple[torch.device], torch.device]:
-        """Convenience method to convert x to the device of the machine. 
+
+    def to_my_device(
+        self, *io: IO
+    ) -> typing.Union[typing.Tuple[torch.device], torch.device]:
+        """Convenience method to convert x to the device of the machine.
         Assumes that the device will be the same
         """
         device = self.device()
@@ -723,43 +739,53 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         if len(io) == 1:
             return io[0].to(device)
         return tuple(io_i.to(device) for io_i in io)
-    
+
     @property
     def id(self) -> str:
         return str(id(self))
 
     @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         """Assess the learning machine
 
         Args:
             y (IO): the output of the machine
             t (IO): the target
-            reduction_override (str, optional): Value to override the reduction by. If None will not override. Defaults to None.
+            reduction_override (str, optional): Value to override
+              the reduction by. If None will not override. Defaults to None.
 
         Returns:
             AssessmentDict: The assessment of the machine
         """
         pass
 
-    def assess(self, x: IO, t: IO, reduction_override: str=None, state: State=None, detach: bool=False) ->  AssessmentDict:
+    def assess(
+        self,
+        x: IO,
+        t: IO,
+        reduction_override: str = None,
+        state: State = None,
+        detach: bool = False,
+    ) -> AssessmentDict:
         """Assess the learning machine
 
         Args:
             x (IO): _description_
             t (IO): _description_
-            reduction_override (str, optional): Value to override the reduction by. If None will not override. Defaults to None.
+            reduction_override (str, optional): Value to override the
+              reduction by. If None will not override. Defaults to None.
             state (State, optional): Defaults to None.
-            detach (bool, optional): Whether to detach the output. Defaults to False.
+            detach (bool, optional): Whether to detach the output.
+              Defaults to False.
 
         Returns:
             AssessmentDict: The assessment of the machine
         """
         y = self(x, state=state, detach=detach)
         return self.assess_y(y, t, reduction_override=reduction_override)
-    
+
     @abstractmethod
-    def forward(self, x: IO, state: State, detach: bool=True) -> IO:
+    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         """
         Args:
             x (IO): The input to the machine
@@ -770,8 +796,8 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             IO: The output fo the machine
         """
         raise NotImplementedError
-    
-    def __call__(self, x: IO, state: State=None, detach: bool=True) -> IO:
+
+    def __call__(self, x: IO, state: State = None, detach: bool = True) -> IO:
         """
         Args:
             x (IO): The input to the machine
@@ -782,10 +808,15 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             IO: The output fo the machine
         """
         return super().__call__(x, state or State(), detach)
-    
+
     def learn(
-        self, x: IO, t: IO, state: State=None, return_x_step: bool=False, 
-        clear_state: bool=False, reduction_override: str=None
+        self,
+        x: IO,
+        t: IO,
+        state: State = None,
+        return_x_step: bool = False,
+        clear_state: bool = False,
+        reduction_override: str = None,
     ) -> AssessmentDict:
         """Learn method . This includes cleanup and initialization so it is easier to use in practice
         than step
@@ -800,12 +831,13 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         Returns:
             AssessmentDict: _description_
         """
-        if not self.training: self.train()
+        if not self.training:
+            self.train()
         x, t = self.to_my_device(x, t)
         state = State()
         y = self(x, state)
         assessment = self.assess_y(y, t, reduction_override=reduction_override)
-        
+
         conn = self.step(T(t, inp_x=x), state)
         if clear_state:
             state.clear(self)
@@ -813,7 +845,9 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             return conn, assessment
         return assessment
 
-    def full_step(self, conn: 'Conn', state: State, from_: IO=None, clear_state: bool=False) -> Conn:
+    def full_step(
+        self, conn: "Conn", state: State, from_: IO = None, clear_state: bool = False
+    ) -> Conn:
         conn = self.step(conn, state, from_=from_)
         conn = self.step_x(conn, state)
 
@@ -831,14 +865,14 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         Returns:
             AssessmentDict: The assessment
         """
-        if self.training: self.eval()
+        if self.training:
+            self.eval()
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
             return self.assess_y(self(x), t).cpu().detach()
 
 
 class EmissionStack(object):
-
     def __init__(self, *emissions: IO):
         """Convenience wrapper for deque to simplify recording emissions for the step method
 
@@ -869,10 +903,10 @@ class EmissionStack(object):
 
         self._stack.append(io)
         return io
-    
+
     def __len__(self) -> int:
         return len(self._stack)
-    
+
     def stack_on(self, io: IO):
         """Restack the stack by placing it on another vlaue
 
@@ -897,7 +931,7 @@ class EmissionStack(object):
         except IndexError:
             return None
             # raise IndexError("No more elements left in the EmissionStack to pop")
-        
+
     def __iter__(self):
         """
         LIFO Iteration over the stack
@@ -905,7 +939,7 @@ class EmissionStack(object):
 
         for io in reversed(self._stack):
             yield io
-            
+
 
 """
 
@@ -929,32 +963,33 @@ zen.step_pipeline(
 
 """
 
-class NullLearner(LearningMachine):
 
-    def __init__(self, loss: Loss=None):
-        """Machine that does not actually learn. 
+class NullLearner(LearningMachine):
+    def __init__(self, loss: Loss = None):
+        """Machine that does not actually learn.
 
         usage: Use when an intermediary layer should not perform any operation on the backward
-        pass. Can use 
+        pass. Can use
 
         Args:
             loss (Loss, optional): The loss to evaluate by. Defaults to None.
         """
         super().__init__()
-        self.loss = loss or ThLoss(nn.MSELoss, reduction='none')
+        self.loss = loss or ThLoss(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(*y, *t, reduction_override)
 
-    def step(self, conn: Conn, state: State, from_: IO=None) -> Conn:
+    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         return Conn(conn.out.x, conn.out.t, from_, conn.out.t)
-    
+
     def step_x(self, conn: Conn, state: State) -> Conn:
         return conn
-    
+
     def forward(self, x: IO, state: State):
         return x
+
 
 # def forward(layer: nn.Module, x: IO, freshen: bool=True, multi_out: bool=False, detach: bool=True) -> IO:
 #     """
@@ -967,7 +1002,7 @@ class NullLearner(LearningMachine):
 #     Returns:
 #         IO: returned IO
 #     """
-    
+
 #     if freshen:
 #         x.freshen(False)
 #     y = layer(*x)
@@ -975,5 +1010,5 @@ class NullLearner(LearningMachine):
 #         y = IO(*y)
 #     else:
 #         y = IO(y)
-    
+
 #     return y.out(detach)

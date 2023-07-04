@@ -1,9 +1,10 @@
-from zenkai.kaku.assess import AssessmentDict
-from zenkai.sensei.base import Classroom, Material
 import typing
 
-from zenkai.kaku import Learner, AssessmentDict
 import torch
+
+from zenkai.kaku import AssessmentDict, Learner
+from zenkai.kaku.assess import AssessmentDict
+from zenkai.sensei.base import Classroom, Material
 
 
 class SampleMaterial(Material):

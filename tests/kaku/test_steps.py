@@ -1,11 +1,11 @@
 import torch
 
+from zenkai import utils
+from zenkai.kaku.machine import IO, T
+from zenkai.kaku.state import State
+from zenkai.kaku.steps import IterHiddenStep, IterOutStep
 
 from .test_zen import SimpleLearner
-from zenkai.kaku.steps import IterHiddenStep, IterOutStep
-from zenkai.kaku.state import State
-from zenkai.kaku.machine import IO, T
-from zenkai import utils
 
 
 class TestIterHiddenStep:
