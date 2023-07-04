@@ -4,20 +4,27 @@ import typing
 # 3rd party
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import numpy as np
 
 # local
 from ..kaku import Learner
-from .materials import Material, IODecorator
+from .base import Classroom, Desk, Teacher
+from .materials import IODecorator, Material
 from .reporting import Record, Results
-from .base import Teacher, Classroom, Desk
 
 
 class Trainer(Teacher):
-    """A teacher that can train the learner
-    """
-    
-    def __init__(self, name: str, default_learner: typing.Union[Learner, str], default_material: typing.Union[Material, str], record: Record=None, desk: Desk=None, classroom: Classroom=None, window: int=30):
+    """A teacher that can train the learner"""
+
+    def __init__(
+        self,
+        name: str,
+        default_learner: typing.Union[Learner, str],
+        default_material: typing.Union[Material, str],
+        record: Record = None,
+        desk: Desk = None,
+        classroom: Classroom = None,
+        window: int = 30,
+    ):
         """initializer
 
         Args:
@@ -39,31 +46,51 @@ class Trainer(Teacher):
         self.material = default_material
         self.window = window
 
-    def teach(self, override_learner: typing.Union[Learner, str]=None, override_material: typing.Union[Dataset, str]=None, epoch: int=None, n_epochs: int=None):
+    def teach(
+        self,
+        override_learner: typing.Union[Learner, str] = None,
+        override_material: typing.Union[Dataset, str] = None,
+        epoch: int = None,
+        n_epochs: int = None,
+    ):
         # learner = call_student(self._classroom, override_learner, self.learner)
         # material = get_material(self._desk, override_material, self.material)
 
-        learner = self._classroom.get(override_learner) or self._classroom.get(self.learner)
-        material = self._desk.get_material(override_material) or self._desk.get_material(self.material)
+        learner = self._classroom.get(override_learner) or self._classroom.get(
+            self.learner
+        )
+        material = self._desk.get_material(
+            override_material
+        ) or self._desk.get_material(self.material)
         results = Results(self.window)
         logger = self.record.create_logger(self.name, material)
         with tqdm(total=len(material)) as pbar:
-            for i, ( x, t) in enumerate(material):
+            for i, (x, t) in enumerate(material):
                 assessment_dict = logger(learner.learn(x, t))
                 self._assistants.assist(self._name, assessment_dict, (x, t))
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
                 if epoch is not None:
-                    aggregation["Epoch"] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
+                    aggregation[
+                        "Epoch"
+                    ] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
 
 
 class Validator(Teacher):
-    """A teacher that can test the learner
-    """
-    
-    def __init__(self, name: str, default_learner: typing.Union[Learner, str], default_material: typing.Union[Material, str], record: Record=None, desk: Desk=None, classroom: Classroom=None, show_progress: bool=True):
+    """A teacher that can test the learner"""
+
+    def __init__(
+        self,
+        name: str,
+        default_learner: typing.Union[Learner, str],
+        default_material: typing.Union[Material, str],
+        record: Record = None,
+        desk: Desk = None,
+        classroom: Classroom = None,
+        show_progress: bool = True,
+    ):
         """initializer
 
         Args:
@@ -85,10 +112,20 @@ class Validator(Teacher):
         self.material = default_material
         self.show_progress = show_progress
 
-    def teach(self, override_learner: typing.Union[Learner, str]=None, override_material: typing.Union[Dataset, str]=None, epoch: int=None, n_epochs: int=None):
-        
-        learner = self._classroom.get(override_learner) or self._classroom.get(self.learner)
-        material = self._desk.get_material(override_material) or self._desk.get_material(self.material)
+    def teach(
+        self,
+        override_learner: typing.Union[Learner, str] = None,
+        override_material: typing.Union[Dataset, str] = None,
+        epoch: int = None,
+        n_epochs: int = None,
+    ):
+
+        learner = self._classroom.get(override_learner) or self._classroom.get(
+            self.learner
+        )
+        material = self._desk.get_material(
+            override_material
+        ) or self._desk.get_material(self.material)
 
         # learner = call_student(self._classroom, override_learner, self.learner)
         # material = get_material(self._desk, override_material, self.material)
@@ -101,13 +138,21 @@ class Validator(Teacher):
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
                 if epoch is not None:
-                    aggregation["Epoch"] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
+                    aggregation[
+                        "Epoch"
+                    ] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
 
 
-def validation_train(learner: Learner, training_material: Material, validation_material: Material, n_epochs: int=1, use_io: bool=False) -> Record:
-    
+def validation_train(
+    learner: Learner,
+    training_material: Material,
+    validation_material: Material,
+    n_epochs: int = 1,
+    use_io: bool = False,
+) -> Record:
+
     record = Record()
     if use_io:
         training_material = IODecorator(training_material)
@@ -121,8 +166,15 @@ def validation_train(learner: Learner, training_material: Material, validation_m
     return record
 
 
-def train(learner: Learner, training_material: Material, testing_material: Material=None, n_epochs: int=1, use_io: bool=False, window: int=30) -> Record:
-    
+def train(
+    learner: Learner,
+    training_material: Material,
+    testing_material: Material = None,
+    n_epochs: int = 1,
+    use_io: bool = False,
+    window: int = 30,
+) -> Record:
+
     record = Record()
     if use_io:
         training_material = IODecorator(training_material)
@@ -131,7 +183,8 @@ def train(learner: Learner, training_material: Material, testing_material: Mater
         if use_io:
             testing_material = IODecorator(testing_material)
         tester = Validator("Validator", learner, testing_material, record=record)
-    else: tester = None
+    else:
+        tester = None
 
     for i in range(n_epochs):
         trainer.teach(epoch=i, n_epochs=n_epochs)

@@ -1,31 +1,73 @@
+# flake8: noqa
+
+from .assessors import PopulationAssessor, XPopulationAssessor
 from .core import (
-    cat_params, expand, flatten,
-    deflatten, binary_prob,
-    gaussian_sample, gather_idx_from_population, select_best_individual,
-    select_best_feature, Individual, Population,
-    reduce_assessment_dim0, reduce_assessment_dim1, expand_t, 
+    Individual,
+    Population,
+    binary_prob,
+    cat_params,
+    deflatten,
+    expand,
+    expand_t,
+    flatten,
+    gather_idx_from_population,
+    gaussian_sample,
+    reduce_assessment_dim0,
+    reduce_assessment_dim1,
+    select_best_feature,
+    select_best_individual,
+)
+from .exploration import (
+    AssessmentDist,
+    ChooseIdx,
+    EqualsAssessmentDist,
+    Explorer,
+    ExplorerNoiser,
+    ExplorerSelector,
+    GaussianNoiser,
+    Indexer,
+    ModuleNoise,
+    NoiseReplace,
+    NoiseReplace2,
+    NoiseReplace3,
+    RandSelector,
+    RepeatSpawner,
+    collapse_k,
+    expand_k,
+    remove_noise,
 )
 from .modifiers import (
-    PopulationModifier, SelectionModifier, SlopeModifier,
-    BinaryAdjGaussianModifier, BinaryGaussianModifier, BinaryProbModifier, KeepModifier
+    BinaryAdjGaussianModifier,
+    BinaryGaussianModifier,
+    BinaryProbModifier,
+    KeepModifier,
+    PopulationModifier,
+    SelectionModifier,
+    SlopeModifier,
 )
 from .populators import (
-    Populator, StandardPopulator, PopulatorDecorator, RepeatPopulator,
-    populate_t, SimpleGaussianPopulator, GaussianPopulator, BinaryPopulator,
-    ConservativePopulator, PerceptronProbPopulator, BinaryProbPopulator, 
-    PopulationLimiter
+    BinaryPopulator,
+    BinaryProbPopulator,
+    ConservativePopulator,
+    GaussianPopulator,
+    PerceptronProbPopulator,
+    PopulationLimiter,
+    Populator,
+    PopulatorDecorator,
+    RepeatPopulator,
+    SimpleGaussianPopulator,
+    StandardPopulator,
+    populate_t,
 )
 from .selectors import (
-    keep_original, Selector, StandardSelector, SelectorDecorator, BestSelectorIndividual, BestSelectorFeature,
-    MomentumSelector, SlopeSelector, BinaryProbSelector, BinaryGaussianSelector
-)
-from .assessors import (
-    PopulationAssessor, XPopulationAssessor
-)
-
-from .exploration import (
-    NoiseReplace, NoiseReplace2, NoiseReplace3, ModuleNoise,
-    ChooseIdx, ExplorerNoiser, GaussianNoiser, ExplorerSelector, Explorer,
-    expand_k, collapse_k, Indexer, RepeatSpawner, AssessmentDist,
-    EqualsAssessmentDist, remove_noise, RandSelector
+    BestSelectorFeature,
+    BestSelectorIndividual,
+    BinaryGaussianSelector,
+    BinaryProbSelector,
+    MomentumSelector,
+    Selector,
+    SelectorDecorator,
+    SlopeSelector,
+    StandardSelector,
+    keep_original,
 )

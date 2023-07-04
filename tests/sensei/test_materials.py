@@ -1,8 +1,8 @@
+import pytest
 import torch
 from torch.utils.data import TensorDataset
 
 from zenkai.sensei import materials
-import pytest
 
 
 class TestDLMaterial:

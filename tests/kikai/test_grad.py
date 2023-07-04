@@ -4,11 +4,10 @@
 import torch
 from torch import nn
 
+from zenkai import OptimFactory, ThLoss, utils
 # local
-from zenkai.kaku import IO, State,T
+from zenkai.kaku import IO, State, T
 from zenkai.kikai import grad
-from zenkai import ThLoss, OptimFactory
-from zenkai import utils
 
 
 class THGradLearnerT1(grad.GradLearner):

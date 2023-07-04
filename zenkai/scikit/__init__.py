@@ -1,7 +1,11 @@
+# flake8: noqa
+
+from .ensemble import VoterEnsemble, VoterEnsembleMachine
 from .estimators import (
-    ScikitBinary, ScikitMachine, ScikitEstimator, 
-    ScikitRegressor, ScikitMulticlass, ScikitLimitGen
-)
-from .ensemble import (
-    VoterEnsemble, VoterEnsembleMachine
+    ScikitBinary,
+    ScikitEstimator,
+    ScikitLimitGen,
+    ScikitMachine,
+    ScikitMulticlass,
+    ScikitRegressor,
 )

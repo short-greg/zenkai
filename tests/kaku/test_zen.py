@@ -4,13 +4,13 @@ import typing
 # 3rd party
 import pytest
 import torch
-from torch import nn
 import torch.optim
+from torch import nn
 
-# local
-from zenkai.kaku import machine as core
-from zenkai.kaku import IO, Conn, IDable, LayerIO, IO
 from zenkai import utils
+# local
+from zenkai.kaku import IO, Conn, IDable, LayerIO
+from zenkai.kaku import machine as core
 
 
 class Base:

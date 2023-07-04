@@ -4,11 +4,9 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import IO, Conn, State, LearningMachine
-from zenkai.kikai.hill import HillClimbStepX
+from zenkai.kaku import IO, Conn, LearningMachine, State, ThLoss, itadaki
 from zenkai.kikai.grad import GradLearner
-from zenkai.kaku import ThLoss
-from zenkai.kaku import itadaki
+from zenkai.kikai.hill import HillClimbStepX
 
 
 @pytest.fixture

@@ -1,21 +1,14 @@
 # 1st party
 import typing
-from abc import abstractmethod, ABC
-
-# 3rd party
-import torch
-import torch.nn as nn
+from abc import ABC, abstractmethod
 
 # local
-from ..kaku import LearningMachine, IO
-from .core import Population, reduce_assessment_dim1
-from ..kaku import IO
-from .core import Population, expand_t
+from ..kaku import IO, LearningMachine
+from .core import Population, expand_t, reduce_assessment_dim1
 
 
 class PopulationAssessor(ABC):
-    """Modules to asseess the population
-    """
+    """Modules to asseess the population"""
 
     @abstractmethod
     def assess(self, population: Population, t: IO) -> Population:
@@ -26,11 +19,17 @@ class PopulationAssessor(ABC):
 
 
 class XPopulationAssessor(PopulationAssessor):
-    """Assess the inputs to the population
-    """
+    """Assess the inputs to the population"""
 
-    def __init__(self, learner: LearningMachine, names: typing.List[str], loss_name: str, reduction: str, k: int):
-        
+    def __init__(
+        self,
+        learner: LearningMachine,
+        names: typing.List[str],
+        loss_name: str,
+        reduction: str,
+        k: int,
+    ):
+
         self.learner = learner
         self.names = names
         self.reduction = reduction
@@ -40,14 +39,11 @@ class XPopulationAssessor(PopulationAssessor):
     def assess(self, population: Population, t: IO) -> Population:
 
         t = expand_t(t, len(population))
-        
+
         assessment = self.learner.assess(
-            IO(*population.flattened(self.names)), t, 
-            reduction_override="none"
+            IO(*population.flattened(self.names)), t, reduction_override="none"
         )[self.loss_name]
-        assessment = reduce_assessment_dim1(
-            assessment, self.k, True
-        )
+        assessment = reduce_assessment_dim1(assessment, self.k, True)
         population.report(assessment)
 
         return population

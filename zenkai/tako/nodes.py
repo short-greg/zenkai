@@ -1,7 +1,6 @@
 # 1st party
-from abc import ABC, abstractmethod, abstractproperty
 import typing
-from typing import Any
+from abc import ABC, abstractmethod, abstractproperty
 
 # 3rd party
 import torch.nn as nn
@@ -11,21 +10,19 @@ from .core import UNDEFINED, Info
 
 
 def is_defined(x):
-    """Whether an input is defined
-    """
+    """Whether an input is defined"""
     return not isinstance(x, Process) and x != UNDEFINED
 
 
 def get_x(node):
-    """Get the value of x
-    """
-    if isinstance(node.x, Process): return UNDEFINED
+    """Get the value of x"""
+    if isinstance(node.x, Process):
+        return UNDEFINED
     return node.x
 
 
 def to_incoming(node):
-    """Return y if node is undefined otherwise return the node
-    """
+    """Return y if node is undefined otherwise return the node"""
 
     if node.y is UNDEFINED:
         return node
@@ -33,12 +30,9 @@ def to_incoming(node):
 
 
 class Process(ABC):
-    """Base class for all network nodes
-    """
+    """Base class for all network nodes"""
 
-    def __init__(
-        self, x=UNDEFINED, name: str=None, info: Info=None
-    ):
+    def __init__(self, x=UNDEFINED, name: str = None, info: Info = None):
         """initializer
 
         Args:
@@ -51,7 +45,7 @@ class Process(ABC):
         self._outgoing = []
         self._x = UNDEFINED
         self.x = x
-    
+
     @property
     def name(self) -> str:
         """
@@ -59,7 +53,7 @@ class Process(ABC):
         Returns:
             str: Name of the ndoe
         """
-        
+
         return self._name
 
     @name.setter
@@ -114,22 +108,22 @@ class Process(ABC):
             _type_: _description_
         """
         return by.get(self._name, UNDEFINED)
-    
+
     def set_by(self, by, y):
-        """ Set the value of y
+        """Set the value of y
 
         Args:
-            by (dict): 
+            by (dict):
             y (): The output to the network
         """
         by[self.name] = y
-    
-    def _add_outgoing(self, process: 'Process'):
+
+    def _add_outgoing(self, process: "Process"):
         process._outgoing.append(self)
 
-    def _remove_outgoing(self, process: 'Process'):
+    def _remove_outgoing(self, process: "Process"):
         process._outgoing.remove(self)
-    
+
     # def nest(self, tako: 'Tako', name=None, info=None, dive: bool=True) -> typing.Iterator['Process']:
 
     #     # TODO: Brainsorm more about this
@@ -141,9 +135,11 @@ class Process(ABC):
     #             yield layer
 
     def to(
-        self, nn_module: typing.Union[typing.List[nn.Module], nn.Module], 
-        name: str=None, info: Info=None
-    ) -> 'Layer':
+        self,
+        nn_module: typing.Union[typing.List[nn.Module], nn.Module],
+        name: str = None,
+        info: Info = None,
+    ) -> "Layer":
         """Connect the layer to another layer
 
         Args:
@@ -152,13 +148,11 @@ class Process(ABC):
             info (Info, optional): Info for the layer. Defaults to None.
 
         Returns:
-            Layer: 
+            Layer:
         """
-        return Layer(
-            nn_module, x=to_incoming(self), name=name, info=info
-        )
+        return Layer(nn_module, x=to_incoming(self), name=name, info=info)
 
-    def join(self, *others, info: Info=None) -> 'Joint':
+    def join(self, *others, info: Info = None) -> "Joint":
         """Join two layers
 
         Args:
@@ -168,32 +162,28 @@ class Process(ABC):
         Returns:
             Joint
         """
-        
+
         ys = []
         for node in [self, *others]:
             ys.append(to_incoming(node))
 
-        return Joint(
-            x=ys, info=info
-        )
+        return Joint(x=ys, info=info)
 
-    def get(self, idx: typing.Union[slice, int], info: Info=None):
+    def get(self, idx: typing.Union[slice, int], info: Info = None):
         """Get an index from the output
 
         Args:
-            idx (typing.Union[slice, int]): 
+            idx (typing.Union[slice, int]):
             info (Info, optional): _description_. Defaults to None.
 
         Returns:
             Index
         """
-        return Index(
-            idx, x=to_incoming(self), info=info
-        )
-    
+        return Index(idx, x=to_incoming(self), info=info)
+
     def __getitem__(self, idx: int):
         return self.get(idx)
-    
+
     @abstractmethod
     def _probe_out(self, by: dict):
         raise NotImplementedError
@@ -205,13 +195,13 @@ class Process(ABC):
             by (dict)
 
         Returns:
-            result: value 
+            result: value
         """
         value = self._info.lookup(by)
         if value is not None:
             return value
 
-        result = self._probe_out(by)        
+        result = self._probe_out(by)
 
         if len(self._outgoing) > 1:
             self.set_by(by, result)
@@ -219,10 +209,7 @@ class Process(ABC):
 
 
 class Joint(Process):
-
-    def __init__(
-        self, x=UNDEFINED, name: str=None, info: Info=None
-    ):
+    def __init__(self, x=UNDEFINED, name: str = None, info: Info = None):
         """initializer
 
         Args:
@@ -240,7 +227,7 @@ class Joint(Process):
         for x_i in self._x:
             if isinstance(x_i, Process):
                 undefined = True
-        
+
         if undefined:
             self._y = UNDEFINED
         else:
@@ -251,14 +238,14 @@ class Joint(Process):
     @y.setter
     def y(self, y):
         self._y = y
-    
+
     @property
     def x(self):
         """
         Returns:
             The input to the node
         """
-        
+
         if self._x is UNDEFINED:
             return UNDEFINED
         x = []
@@ -293,7 +280,7 @@ class Joint(Process):
             else:
                 y.append(x_i.probe(by))
         return y
-                
+
 
 class Index(Process):
     """
@@ -301,8 +288,14 @@ class Index(Process):
     Args:
         Process (_type_): _description_
     """
-    
-    def __init__(self, idx: typing.Union[int, slice], x=UNDEFINED, name: str=None, info: Info=None):
+
+    def __init__(
+        self,
+        idx: typing.Union[int, slice],
+        x=UNDEFINED,
+        name: str = None,
+        info: Info = None,
+    ):
         super().__init__(x, name, info)
         self._idx = idx
 
@@ -317,22 +310,19 @@ class Index(Process):
             return UNDEFINED
         else:
             return self._x[self._idx]
-    
+
     def _probe_out(self, by):
 
         if is_defined(self._x):
             x = self._x
         else:
             x = self._x.probe(by)
-    
+
         return x[self._idx]
 
 
 class End(Process):
-
-    def __init__(
-        self, x=UNDEFINED, name: str=None, info: Info=None
-    ):
+    def __init__(self, x=UNDEFINED, name: str = None, info: Info = None):
         """initializer
 
         Args:
@@ -344,7 +334,7 @@ class End(Process):
         super().__init__(x, name=name, info=info)
         self._y = UNDEFINED
 
-    def y_(self, store: bool=True):
+    def y_(self, store: bool = True):
         pass
 
     @property
@@ -352,7 +342,7 @@ class End(Process):
         if is_defined(self._y):
             return self._y
         return self.x
-    
+
     @y.setter
     def y(self, y):
         """
@@ -360,7 +350,7 @@ class End(Process):
             y (): The output of the node
         """
         self._y = y
-    
+
     def _probe_out(self, by):
         if is_defined(self._x):
             x = self._x
@@ -370,10 +360,12 @@ class End(Process):
 
 
 class Layer(Process):
-
     def __init__(
-        self, nn_module: typing.Union[typing.List[nn.Module], nn.Module], 
-        x=UNDEFINED, name: str=None, info: Info=None
+        self,
+        nn_module: typing.Union[typing.List[nn.Module], nn.Module],
+        x=UNDEFINED,
+        name: str = None,
+        info: Info = None,
     ):
         """initializer
 
@@ -389,7 +381,7 @@ class Layer(Process):
         self.op = nn_module
         self._y = UNDEFINED
 
-    def y_(self, store: bool=True):
+    def y_(self, store: bool = True):
         pass
 
     @property
@@ -404,7 +396,7 @@ class Layer(Process):
             self._y = self.op(self._x)
 
         return self._y
-    
+
     @y.setter
     def y(self, y):
         """
@@ -412,7 +404,7 @@ class Layer(Process):
             y (): The output of the node
         """
         self._y = y
-    
+
     def _probe_out(self, by):
         if is_defined(self._x):
             x = self._x
@@ -422,7 +414,6 @@ class Layer(Process):
 
 
 class In(Process):
-    
     @property
     def x(self):
         return self._x
@@ -444,12 +435,11 @@ class In(Process):
 
 
 class ProcessSet(object):
-    """Set of nodes. Can use to probe
-    """
+    """Set of nodes. Can use to probe"""
 
     def __init__(self, nodes: typing.List[Process]):
         self._nodes = {node.name: node for node in nodes}
-    
+
     def apply(self, process: Process):
         """Apply a process on each node in the set
 
@@ -461,7 +451,7 @@ class ProcessSet(object):
                 process.apply(node)
             else:
                 process(node)
-        
+
     def __getitem__(self, key: str) -> Process:
         """
         Args:
@@ -486,37 +476,34 @@ class ProcessSet(object):
         for node in self._nodes:
             result.append(node.probe(by))
         return result
-    
+
     def __iter__(self) -> typing.Iterator[Process]:
 
         for process in self._nodes.values():
             yield process
-        
+
     def __len__(self) -> int:
-        return 
+        return
 
 
 class ProcessVisitor(ABC):
-    """Base class for a module that visits a process
-    """
+    """Base class for a module that visits a process"""
 
     @abstractmethod
-    def visit(self, process: 'Process'):
+    def visit(self, process: "Process"):
         pass
 
 
 class Apply(ABC):
-    """Apply a function to a process
-    """
+    """Apply a function to a process"""
 
     @abstractmethod
-    def apply(self, node: 'Process'):
+    def apply(self, node: "Process"):
         pass
 
 
 class LambdaApply(Apply):
-    """Pass in a Lambda function
-    """
+    """Pass in a Lambda function"""
 
     def __init__(self, f, *args, **kwargs):
         """initializer

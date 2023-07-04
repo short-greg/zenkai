@@ -3,12 +3,11 @@ import typing
 from abc import ABC, abstractmethod
 
 # 3rd party
-from ..kaku import Learner, AssessmentDict
+from ..kaku import AssessmentDict, Learner
 
 
 class Material(ABC):
-    """Class used for retrieving training data or testing data
-    """
+    """Class used for retrieving training data or testing data"""
 
     @abstractmethod
     def __iter__(self) -> typing.Iterator:
@@ -20,12 +19,10 @@ class Material(ABC):
 
 
 class Classroom:
-    """Stores the students in a class.
-    """
+    """Stores the students in a class."""
 
     def __init__(self, **students: Learner):
-        """initializer
-        """
+        """initializer"""
         super().__init__()
         self._students = students
 
@@ -39,7 +36,7 @@ class Classroom:
             Learner: The studennt
         """
         return self._students[key]
-    
+
     def __setitem__(self, key: str, student: Learner):
         """Add a student to the classroom
 
@@ -67,13 +64,17 @@ class Classroom:
 
 
 class Desk(object):
-
-    def __init__(self, materials: typing.Dict[str, Material]=None, info: typing.Dict[str, typing.Any]=None):
+    def __init__(
+        self,
+        materials: typing.Dict[str, Material] = None,
+        info: typing.Dict[str, typing.Any] = None,
+    ):
         """Stores information for sharing between teachers and the materials
 
         Args:
             materials (typing.Dict[str, Material], optional): The materials used in the class. Defaults to None.
-            info (typing.Dict[str, typing.Any], optional): Generic data to share info between teachers related to teaching. Defaults to None.
+            info (typing.Dict[str, typing.Any], optional): Generic data to 
+              share info between teachers related to teaching. Defaults to None.
         """
         super().__init__()
         self._materials = materials or {}
@@ -93,7 +94,7 @@ class Desk(object):
         if material is not None:
             return self._materials[material]
         return None
-    
+
     def add_material(self, name: str, material: Material):
         """add a material to the desk
 
@@ -112,12 +113,12 @@ class Desk(object):
         """
 
         del self._materials[name]
-    
+
     def get_info(self, key: str) -> typing.Any:
         """Retrieve info from the desk
 
         Args:
-            key (str): The 
+            key (str): The
 
         Returns:
             typing.Any: _description_
@@ -128,7 +129,7 @@ class Desk(object):
         """
         Args:
             key (str): the key for the info
-            info (typing.Any): the info 
+            info (typing.Any): the info
         """
         self._info[key] = info
 
@@ -141,32 +142,40 @@ class Desk(object):
 
 
 class Assistant(ABC):
-    
     def __init__(self, name: str):
 
         self._name = name
-    
+
     @property
     def name(self) -> str:
         return self._name
 
     @abstractmethod
-    def assist(self, teacher_name: str, assessment_dict: AssessmentDict=None, data: typing.Any=None):
+    def assist(
+        self,
+        teacher_name: str,
+        assessment_dict: AssessmentDict = None,
+        data: typing.Any = None,
+    ):
         pass
 
-    def __call__(self, teacher_name: str, assessment_dict: AssessmentDict=None, data: typing.Any=None):
+    def __call__(
+        self,
+        teacher_name: str,
+        assessment_dict: AssessmentDict = None,
+        data: typing.Any = None,
+    ):
         return self.assist(teacher_name, assessment_dict, data)
 
 
 class AssistantTeam(object):
-
     def __init__(self, *assistants: Assistant):
 
         self._assistants: typing.Dict[str, Assistant] = {
             assistant.name: Assistant for assistant in assistants
         }
 
-    def add(self, assistant: Assistant, overwrite: bool=True):
+    def add(self, assistant: Assistant, overwrite: bool = True):
         """
         Args:
             assistant (Assistant): Add an assistant
@@ -175,14 +184,19 @@ class AssistantTeam(object):
         Raises:
             ValueError: _description_
         """
-        
+
         if assistant.name in self._assistants:
             if not overwrite:
                 raise ValueError()
             del self._assistants[assistant.name]
         self._assistants[assistant.name] = assistant
-    
-    def assist(self, teacher_name: str, assessment_dict: AssessmentDict=None, data: typing.Any=None):
+
+    def assist(
+        self,
+        teacher_name: str,
+        assessment_dict: AssessmentDict = None,
+        data: typing.Any = None,
+    ):
         """Call all of the assistants in the team
 
         Args:
@@ -195,7 +209,6 @@ class AssistantTeam(object):
 
 
 class Teacher(ABC):
-
     def __init__(self, name: str):
         self._assistants = AssistantTeam()
         self._name = name
@@ -209,7 +222,7 @@ class Teacher(ABC):
         pass
 
     def register(self, assistant: Assistant):
-        if not hasattr(self, '_assistants'):
+        if not hasattr(self, "_assistants"):
             self._assistants = {}
         self._assistants[assistant.name] = assistant
 
@@ -221,7 +234,7 @@ class Teacher(ABC):
 
 
 # class Assistant(ABC):
-    
+
 #     def __init__(self, name: str):
 #         """An assistant teacher
 
@@ -229,7 +242,7 @@ class Teacher(ABC):
 #             name (str): The name of the teacher
 #         """
 #         self._name = name
-    
+
 #     @property
 #     def name(self) -> str:
 #         return self._name
@@ -240,4 +253,3 @@ class Teacher(ABC):
 
 #     def __call__(self, teacher_name: str):
 #         return self.assist(teacher_name)
-

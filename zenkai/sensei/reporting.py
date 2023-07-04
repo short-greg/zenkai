@@ -2,9 +2,10 @@
 import typing
 from uuid import uuid4
 
+import numpy as np
+
 # 3rd party
 import pandas as pd
-import numpy as np
 
 # local
 from ..kaku import AssessmentDict
@@ -12,8 +13,14 @@ from .base import Material
 
 
 class Entry(object):
-
-    def __init__(self, n_items: int, entry_index: int, info: typing.Dict=None, index_name: str="epoch iteration", entry_index_name: str="epoch"):
+    def __init__(
+        self,
+        n_items: int,
+        entry_index: int,
+        info: typing.Dict = None,
+        index_name: str = "epoch iteration",
+        entry_index_name: str = "epoch",
+    ):
         """An entry in a log. Typically use to store epoch results
 
         Args:
@@ -52,26 +59,26 @@ class Entry(object):
         """
         for datum in self._data:
             yield datum
-    
+
     def __len__(self) -> int:
         """
         Returns:
             int: the number of items in the entry
         """
         return len(self._data)
-    
+
     def add(self, datum: typing.Dict):
-        """Add an entry 
+        """Add an entry
 
         Args:
             datum (typing.Dict): _description_
         """
         self._data.append(datum)
-    
+
     @property
     def id(self) -> str:
         return self._id
-    
+
     @property
     def data(self) -> typing.List:
         """
@@ -79,7 +86,7 @@ class Entry(object):
             typing.List: The data stored in the entry
         """
         return list(self._data)
-    
+
     @property
     def df(self) -> pd.DataFrame:
         """
@@ -95,10 +102,14 @@ class Entry(object):
 
 
 class Log(object):
-    """Container for entries for a given teacher
-    """
+    """Container for entries for a given teacher"""
 
-    def __init__(self, teacher: str, info: typing.Dict=None, iteration_index_name: str="iteration"):
+    def __init__(
+        self,
+        teacher: str,
+        info: typing.Dict = None,
+        iteration_index_name: str = "iteration",
+    ):
         """initializer
 
         Args:
@@ -111,7 +122,7 @@ class Log(object):
         self.info = info or {}
         self.iteration_index_name = iteration_index_name
 
-    def add_entry(self, n_items: int, info: typing.Dict=None) -> int:
+    def add_entry(self, n_items: int, info: typing.Dict = None) -> int:
         """Add an entry to the Log
 
         Args:
@@ -124,7 +135,7 @@ class Log(object):
 
         self._entries.append(Entry(n_items, len(self._entries), info))
         return len(self._entries) - 1
-    
+
     def update_entry(self, id: int, data: typing.Dict):
         """Add data to an entry
 
@@ -133,7 +144,7 @@ class Log(object):
             data (typing.Dict): The data to add to the entry
         """
         self._entries[id].add(data)
-    
+
     @property
     def teacher(self) -> str:
         """
@@ -149,7 +160,7 @@ class Log(object):
             typing.List[Entry]: The entries in the log
         """
         return list(self._entries)
-    
+
     @property
     def current(self) -> Entry:
         """
@@ -157,7 +168,7 @@ class Log(object):
             Entry: The current (last) entry
         """
         return self._entries[-1]
-    
+
     @property
     def df(self) -> pd.DataFrame:
         """
@@ -180,15 +191,13 @@ class Log(object):
 
 
 class Record(object):
-    """Container for logs
-    """
+    """Container for logs"""
 
     def __init__(self):
-        """initializer
-        """
+        """initializer"""
         self._logs: typing.Dict[str, Log] = {}
-    
-    def create_logger(self, teacher_name: str, material: Material) -> 'Logger':
+
+    def create_logger(self, teacher_name: str, material: Material) -> "Logger":
         """Create a logger for a teacher (Review and see if this is necessary)
 
         Args:
@@ -199,8 +208,10 @@ class Record(object):
             Logger
         """
         return Logger(self, teacher_name, material)
-    
-    def add_entry(self, teacher: str, n_items: int, info: typing.Dict[str, typing.Any]=None) -> int:
+
+    def add_entry(
+        self, teacher: str, n_items: int, info: typing.Dict[str, typing.Any] = None
+    ) -> int:
         """add an entry to the record
 
         Args:
@@ -211,14 +222,19 @@ class Record(object):
         Returns:
             int: the index (id) for the entry
         """
-        
+
         if teacher not in self._logs:
             self._logs[teacher] = Log(teacher)
         log = self._logs[teacher]
         id = log.add_entry(n_items, info)
         return id
-        
-    def update_entry(self, teacher_name: str, entry_id: str, data: typing.Union[typing.Dict[str, typing.Any], AssessmentDict]):
+
+    def update_entry(
+        self,
+        teacher_name: str,
+        entry_id: str,
+        data: typing.Union[typing.Dict[str, typing.Any], AssessmentDict],
+    ):
         """add data to an entry
 
         Args:
@@ -226,7 +242,7 @@ class Record(object):
             entry_id (str): The index id for the entry
             data (typing.Union[typing.Dict[str, typing.Any], AssessmentDict]): The data to add to the entry
         """
-        # do not want to store as a torch tensor. Not as good for DataFrames and may have 
+        # do not want to store as a torch tensor. Not as good for DataFrames and may have
         # a graph which eats up a lot of memory
         if isinstance(data, AssessmentDict):
             data = data.numpy()
@@ -241,13 +257,13 @@ class Record(object):
         Returns:
             Entry: The current entry for the teacher
         """
-        
+
         return self._logs[teacher_name].current
 
-    def df(self, teacher_names: typing.Iterable[str]=None) -> pd.DataFrame:
+    def df(self, teacher_names: typing.Iterable[str] = None) -> pd.DataFrame:
         """Convert the record to a DataFrame
         Args:
-            teacher_names (typing.Iterable[str], optional): The names of the teacher's to retrieve for. 
+            teacher_names (typing.Iterable[str], optional): The names of the teacher's to retrieve for.
                 If None will retrieve for all teachers. Defaults to None.
 
         Returns:
@@ -256,12 +272,15 @@ class Record(object):
 
         if teacher_names is not None:
             teacher_names = set(teacher_names)
-        
-        return pd.concat([
-            log.df for log in self._logs.values()
-            if teacher_names is None 
-            or (log.teacher in teacher_names)
-        ], ignore_index=True)
+
+        return pd.concat(
+            [
+                log.df
+                for log in self._logs.values()
+                if teacher_names is None or (log.teacher in teacher_names)
+            ],
+            ignore_index=True,
+        )
 
     def __getitem__(self, teacher_name: str) -> Log:
         """
@@ -275,7 +294,6 @@ class Record(object):
 
 
 class Logger(object):
-
     def __init__(self, record: Record, teacher: str, material: Material):
         """Convenience class to make updating a log easier
 
@@ -289,23 +307,26 @@ class Logger(object):
         self._material = material
         self._entry_id = record.add_entry(teacher, len(material))
 
-    def __call__(self, data: typing.Union[typing.Dict[str, typing.Any], AssessmentDict]) -> typing.Union[typing.Dict, AssessmentDict]:
+    def __call__(
+        self, data: typing.Union[typing.Dict[str, typing.Any], AssessmentDict]
+    ) -> typing.Union[typing.Dict, AssessmentDict]:
         """Update the current entry for the teacher
 
         Args:
-            data (typing.Union[typing.Dict[str, typing.Any], AssessmentDict]): The data 
+            data (typing.Union[typing.Dict[str, typing.Any], AssessmentDict]): The data
 
         Returns:
             typing.Union[typing.Dict, AssessmentDict]: The data passed into the argument data
         """
 
         self._record.update_entry(
-            self._teacher, self._entry_id, 
-            data.numpy() if isinstance(data, AssessmentDict) else data
+            self._teacher,
+            self._entry_id,
+            data.numpy() if isinstance(data, AssessmentDict) else data,
         )
         return data
 
-    def advance(self, new_material: Material=None):
+    def advance(self, new_material: Material = None):
         """Advance the current Log by adding a new entry
         Args:
             new_material (Material, optional): The material for the new entry. Defaults to None if not updated.
@@ -321,7 +342,7 @@ class Logger(object):
             Record: The record for the Logger
         """
         return self._record
-    
+
     @property
     def log(self) -> Log:
         """
@@ -329,7 +350,7 @@ class Logger(object):
             Log: The log for the teacher
         """
         return self._record[self._teacher]
-    
+
     @property
     def df(self) -> pd.DataFrame:
         """
@@ -340,10 +361,9 @@ class Logger(object):
 
 
 class Results(object):
-    """Container for training or testing results. Mainly used for showing progress
-    """
+    """Container for training or testing results. Mainly used for showing progress"""
 
-    def __init__(self, window: int=None):
+    def __init__(self, window: int = None):
         """initializer
 
         Args:
@@ -374,12 +394,17 @@ class Results(object):
             typing.List: the result specified by key (e.g. "loss")
         """
         return list(self._results[key])
-    
-    def aggregate(self, result_choice: typing.Union[str, typing.List[str]]=None, window_override: int=None) -> typing.Dict[str, float]:
+
+    def aggregate(
+        self,
+        result_choice: typing.Union[str, typing.List[str]] = None,
+        window_override: int = None,
+    ) -> typing.Dict[str, float]:
         """Aggregate the results
 
         Args:
-            result_choice (typing.Union[str, typing.List[str]], optional): Keys to retrieve results for. Defaults to None.
+            result_choice (typing.Union[str, typing.List[str]], optional): Keys 
+              to retrieve results for. Defaults to None.
 
         Returns:
             typing.Dict[str, float]: a dictionary of the results
@@ -396,4 +421,3 @@ class Results(object):
                 result = result[-window:]
             aggregated[k] = np.mean(result)
         return aggregated
-

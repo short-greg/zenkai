@@ -1,20 +1,21 @@
 # 1st party
-from abc import ABC, abstractmethod
 import typing
-import math
 
 # 3rd party
 import torch
-from torch.nn.parameter import Parameter
 import torch.nn as nn
+from torch.nn.parameter import Parameter
+
+from .. import IO, Assessment
+from ..kaku import Reduction
 
 # local
 from ..utils import get_model_parameters, update_model_parameters
-from .. import Assessment, IO
-from ..kaku import Reduction
 
 
-def cat_params(params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bool=False):
+def cat_params(
+    params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bool = False
+):
     """Reorder the parameters for the perturber
 
     Args:
@@ -26,12 +27,10 @@ def cat_params(params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bo
     """
     if params.shape != perturbed_params.shape[1:]:
         raise RuntimeError(
-            f"The parameters shape {params.shape} does not match " 
+            f"The parameters shape {params.shape} does not match "
             f"the perturbed_params shape {perturbed_params.shape}"
         )
-    ordered = torch.cat(
-        [params[None], perturbed_params]
-    )
+    ordered = torch.cat([params[None], perturbed_params])
     if reorder:
         reordered = torch.randperm(len(perturbed_params) + 1, device=params.device)
         return ordered[reordered]
@@ -39,34 +38,33 @@ def cat_params(params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bo
 
 
 def expand(x: torch.Tensor, k: int):
-    """Expand an input to repeat k times
-    """
+    """Expand an input to repeat k times"""
     return x[None].repeat(k, *([1] * len(x.shape)))
-    
+
 
 def flatten(x: torch.Tensor):
-    """Flatten the population and batch dimensions of a population
-    """
+    """Flatten the population and batch dimensions of a population"""
     return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
 
 
 def deflatten(x: torch.Tensor, k: int) -> torch.Tensor:
-    """Deflatten the population and batch dimensions of a population
-    """
-    if x.dim() == 0: raise ValueError(f"Input dimension == 0")
+    """Deflatten the population and batch dimensions of a population"""
+    if x.dim() == 0:
+        raise ValueError("Input dimension == 0")
 
     return x.view(k, -1, *x.shape[1:])
 
 
-def binary_prob(x: torch.Tensor, loss: torch.Tensor, retrieve_counts: bool=False) -> typing.Union[
-    torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-]:
+def binary_prob(
+    x: torch.Tensor, loss: torch.Tensor, retrieve_counts: bool = False
+) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """
 
     Args:
         x (torch.Tensor): The population input
-        loss (torch.Tensor): The loss 
-        retrieve_counts (bool, optional): Whether to return the positive and negative counts in the result. Defaults to False.
+        loss (torch.Tensor): The loss
+        retrieve_counts (bool, optional): Whether to return the positive 
+          and negative counts in the result. Defaults to False.
 
     Returns:
         typing.Union[ torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor] ]: _description_
@@ -75,16 +73,19 @@ def binary_prob(x: torch.Tensor, loss: torch.Tensor, retrieve_counts: bool=False
     is_neg = ~is_pos
     pos_count = is_pos.sum(dim=0)
     neg_count = is_neg.sum(dim=0)
-    positive_loss = (loss[:,:,None] * is_pos.float()).sum(dim=0) / pos_count
-    negative_loss = (loss[:,:,None] * is_neg.float()).sum(dim=0) / neg_count
+    positive_loss = (loss[:, :, None] * is_pos.float()).sum(dim=0) / pos_count
+    negative_loss = (loss[:, :, None] * is_neg.float()).sum(dim=0) / neg_count
     updated = (positive_loss < negative_loss).type_as(x).mean(dim=-1)
 
-    if not retrieve_counts: return updated
+    if not retrieve_counts:
+        return updated
 
     return updated, pos_count.squeeze(-1), neg_count.squeeze(-1)
 
 
-def gaussian_sample(mean: torch.Tensor, std: torch.Tensor, k: int=None) -> torch.Tensor:
+def gaussian_sample(
+    mean: torch.Tensor, std: torch.Tensor, k: int = None
+) -> torch.Tensor:
     """generate a sample from a gaussian
 
     Args:
@@ -99,13 +100,16 @@ def gaussian_sample(mean: torch.Tensor, std: torch.Tensor, k: int=None) -> torch
     if k is not None:
         if k <= 0:
             raise ValueError(f"Argument {k} must be greater than 0")
-        return torch.randn([k, *mean.shape], device=mean.device, dtype=mean.dtype) * std[None] + mean[None]
+        return (
+            torch.randn([k, *mean.shape], device=mean.device, dtype=mean.dtype)
+            * std[None]
+            + mean[None]
+        )
     return torch.randn_like(mean) * std + mean
 
 
 def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
-    '''Retrieve the indices from population. idx is a 2 dimensional tensor
-    '''
+    """Retrieve the indices from population. idx is a 2 dimensional tensor"""
     repeat_by = [1] * len(idx.shape)
     for i, sz in enumerate(pop.shape[2:]):
         idx = idx.unsqueeze(i + 2)
@@ -114,7 +118,9 @@ def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
     return pop.gather(0, idx)
 
 
-def select_best_individual(pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+def select_best_individual(
+    pop_val: torch.Tensor, assessment: Assessment
+) -> torch.Tensor:
     """
     Args:
         pop_val (torch.Tensor): The tensor for the population
@@ -145,20 +151,22 @@ def select_best_feature(pop_val: torch.Tensor, assessment: Assessment) -> torch.
         idx = value.argmin(0, True)
 
     pop_val = pop_val.view(value.shape[0], value.shape[1], -1)
-    idx = idx[:,:,None].repeat(1, 1, pop_val.shape[2])
+    idx = idx[:, :, None].repeat(1, 1, pop_val.shape[2])
     return pop_val.gather(0, idx).squeeze(0)
 
 
 class Individual(object):
-    """An individual in a population
-    """
+    """An individual in a population"""
 
-    def __init__(self, assessment: Assessment=None, **values: typing.Union[nn.Module, torch.Tensor, Parameter]):
-        """initializer
-        """
+    def __init__(
+        self,
+        assessment: Assessment = None,
+        **values: typing.Union[nn.Module, torch.Tensor, Parameter],
+    ):
+        """initializer"""
 
         self._assessment = assessment
-        self._population = None 
+        self._population = None
         self._id = None
         self._parameters = {}
 
@@ -168,7 +176,7 @@ class Individual(object):
             self._parameters[k] = v
         # TODO: validate the sizes
 
-    def set_model(self, model: nn.Module, key: str) -> 'Individual':
+    def set_model(self, model: nn.Module, key: str) -> "Individual":
         """Update the parameters in a module
 
         Args:
@@ -181,7 +189,7 @@ class Individual(object):
         update_model_parameters(model, self._parameters[key])
         return self
 
-    def set_p(self, parameter: Parameter, key: str) -> 'Individual':
+    def set_p(self, parameter: Parameter, key: str) -> "Individual":
         """Set a nn.parameter.Parameter variable with values in the individual
 
         Args:
@@ -194,7 +202,7 @@ class Individual(object):
         parameter.data = self._parameters[key]
         return self
 
-    def join(self, population: 'Population', individual_idx: int) -> 'Individual':
+    def join(self, population: "Population", individual_idx: int) -> "Individual":
         """Set the population for the individual
 
         Args:
@@ -210,7 +218,7 @@ class Individual(object):
         self._id = individual_idx
         return self
 
-    def report(self, assessment: Assessment) -> 'Individual':
+    def report(self, assessment: Assessment) -> "Individual":
         """Report the assessment for an individual. If the individual in a population
         it will set the assessment in the population as well
 
@@ -238,13 +246,13 @@ class Individual(object):
     def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
         """Retrieve the value specified by key
         Args:
-            key (str): 
+            key (str):
 
         Returns:
             typing.Union[torch.Tensor, Parameter]: The value in the key
         """
         return self._parameters[key]
-    
+
     def __contains__(self, key: str) -> bool:
         """
         Args:
@@ -253,15 +261,14 @@ class Individual(object):
             bool: True if the individual contains the key
         """
         return key in self._parameters
-    
+
     @property
     def assessment(self) -> Assessment:
         return self._assessment
 
 
 class Population(object):
-    """Collection of individuals
-    """
+    """Collection of individuals"""
 
     def __init__(self, **kwargs: typing.Union[torch.Tensor, Parameter]):
         """initializer
@@ -275,8 +282,10 @@ class Population(object):
         self._parameters = {}
         k = None
         for key, v in kwargs.items():
-            if v.dim() == 0: raise ValueError("Population must consist of tensors of dimension > 0")
-            if k is not None and v.shape[0] != k: raise ValueError(
+            if v.dim() == 0:
+                raise ValueError("Population must consist of tensors of dimension > 0")
+            if k is not None and v.shape[0] != k:
+                raise ValueError(
                     "All members of the population must have the same size"
                 )
             k = k or v.shape[0]
@@ -294,7 +303,7 @@ class Population(object):
             int: Number of members in the population
         """
         return self._k
-    
+
     def authenticate(self, individual: Individual, index: int) -> bool:
         """
         Args:
@@ -315,7 +324,8 @@ class Population(object):
         Returns:
             Assessment: Assessment for an individual
         """
-        if self._assessments is None: return None
+        if self._assessments is None:
+            return None
         return self._assessments[i]
 
     def get_i(self, i: int) -> Individual:
@@ -325,21 +335,19 @@ class Population(object):
             i (int): index of the individual
 
         Returns:
-            Individual: 
+            Individual:
         """
         if i in self._individuals:
             return self._individuals[i]
-        
+
         individual = Individual(
-            **{
-                f: self._parameters[f][i]
-                for f in self._parameters.keys()
-            }, assessment=self.get_assessment(i),
+            **{f: self._parameters[f][i] for f in self._parameters.keys()},
+            assessment=self.get_assessment(i),
         )
         individual.join(self, i)
         return individual
-    
-    def report(self, assessment: 'Assessment') -> 'Population':
+
+    def report(self, assessment: "Assessment") -> "Population":
         """Report the result of an assessment
 
         Args:
@@ -351,18 +359,25 @@ class Population(object):
         Returns:
             Population: self
         """
-        if len(assessment) != self._k: raise ValueError(
-            f'Length of assessment must be same '
-            f'as population {self._k} not {len(assessment)}'
-        )
+        if len(assessment) != self._k:
+            raise ValueError(
+                "Length of assessment must be same "
+                f"as population {self._k} not {len(assessment)}"
+            )
         self._assessments = list(assessment)
         self._assessment_size = assessment.value.shape[1:]
         return self
 
-    def report_for(self, id: int, assessment: 'Assessment'):
-        if id < 0 or id >= self._k: raise ValueError(f"Value i must be in range [0, {self._k})")
-        if self._assessment_size is not None and assessment.value.size() != self._assessment_size:
-            raise ValueError(f"Assessment size must be the same as others {self._assessment_size}")
+    def report_for(self, id: int, assessment: "Assessment"):
+        if id < 0 or id >= self._k:
+            raise ValueError(f"Value i must be in range [0, {self._k})")
+        if (
+            self._assessment_size is not None
+            and assessment.value.size() != self._assessment_size
+        ):
+            raise ValueError(
+                f"Assessment size must be the same as others {self._assessment_size}"
+            )
         self._assessment_size = self._assessment_size or assessment.value.size()
         self._assessments[id] = assessment
 
@@ -370,7 +385,9 @@ class Population(object):
         update_model_parameters(model, self._parameters[key][id])
         return self
 
-    def set_p(self, parameter: Parameter, key: str, individual_index: int) -> 'Individual':
+    def set_p(
+        self, parameter: Parameter, key: str, individual_index: int
+    ) -> "Individual":
         """_summary_
 
         Args:
@@ -383,8 +400,8 @@ class Population(object):
         """
         parameter.data = self._parameters[key][individual_index]
         return self
-    
-    def individuals(self)  -> typing.Iterator[Individual]:
+
+    def individuals(self) -> typing.Iterator[Individual]:
         """
         Yields:
             Iterator[typing.Iterator[Individual]]: The individuals in the population
@@ -398,13 +415,13 @@ class Population(object):
             int: The number of individuals in the population
         """
         return self._k
-    
+
     @property
     def assessments(self) -> typing.List[Assessment]:
         """The assessments for the population
 
         Returns:
-            typing.List[Assessment]: 
+            typing.List[Assessment]:
         """
         return self._assessments
 
@@ -427,7 +444,7 @@ class Population(object):
 
         for i, assessment in enumerate(self._assessments):
             if assessment is None:
-                raise ValueError(f'Assessment {i} has not been set.')
+                raise ValueError(f"Assessment {i} has not been set.")
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
 
@@ -440,7 +457,7 @@ class Population(object):
             bool: If the key is in the parameters
         """
         return key in self._parameters
-    
+
     def _flattened_helper(self, key: str) -> torch.Tensor:
         """
 
@@ -448,19 +465,21 @@ class Population(object):
             key (str): The key for the value
 
         Returns:
-            torch.Tensor: 
+            torch.Tensor:
         """
         t = self._parameters[key]
         return t.reshape(t.size(0) * t.size(1), *t.shape[2:])
-    
-    def flattened(self, key: typing.Union[str, typing.List[str]]) -> typing.Union[torch.Tensor, typing.List[torch.Tensor]]:
+
+    def flattened(
+        self, key: typing.Union[str, typing.List[str]]
+    ) -> typing.Union[torch.Tensor, typing.List[torch.Tensor]]:
         """Returned a flattend value
 
         Args:
             key (typing.Union[str, typing.List[str]]): The key for the value
 
         Returns:
-            typing.Union[torch.Tensor, typing.List[torch.Tensor]]: Check if the 
+            typing.Union[torch.Tensor, typing.List[torch.Tensor]]: Check if the
         """
         if isinstance(key, str):
             return self._flattened_helper(key)
@@ -469,7 +488,9 @@ class Population(object):
             ts.append(self._flattened_helper(key_i))
         return ts
 
-    def __getitem__(self, key: typing.Union[str, typing.Tuple[str, int]]) -> torch.Tensor:
+    def __getitem__(
+        self, key: typing.Union[str, typing.Tuple[str, int]]
+    ) -> torch.Tensor:
         """
         Args:
             key (Union[str, typing.Tuple[str, int]]): _description_
@@ -490,9 +511,11 @@ class Population(object):
         """
         for k, v in self._parameters.items():
             yield k, v
-    
 
-def reduce_assessment_dim0(assessment: Assessment, k: int, reduction: str="mean") -> Assessment:
+
+def reduce_assessment_dim0(
+    assessment: Assessment, k: int, reduction: str = "mean"
+) -> Assessment:
     """
     Args:
         assessment (Assessment): The assessment for the population
@@ -502,12 +525,14 @@ def reduce_assessment_dim0(assessment: Assessment, k: int, reduction: str="mean"
     Returns:
         Assessment: The reduced assessment
     """
-    return Assessment(Reduction.sample_reduce_by(
-        assessment.value.view(k, -1).value, reduction
-    ))
+    return Assessment(
+        Reduction.sample_reduce_by(assessment.value.view(k, -1).value, reduction)
+    )
 
 
-def reduce_assessment_dim1(assessment: Assessment, k: int, flattened: bool=True, reduction: str="mean") -> Assessment:
+def reduce_assessment_dim1(
+    assessment: Assessment, k: int, flattened: bool = True, reduction: str = "mean"
+) -> Assessment:
     """
     Args:
         assessment (Assessment): The assessment for the population
@@ -521,11 +546,10 @@ def reduce_assessment_dim1(assessment: Assessment, k: int, flattened: bool=True,
 
     if not flattened:
         value = assessment.value.view(k * assessment.value.size(1))
-    else: value = assessment.value
+    else:
+        value = assessment.value
 
-    return Assessment(Reduction.sample_reduce_by(
-        value, reduction
-    ).view(k, -1))
+    return Assessment(Reduction.sample_reduce_by(value, reduction).view(k, -1))
 
 
 def expand_t(t: IO, k: int) -> IO:
@@ -554,10 +578,8 @@ def expand_t(t: IO, k: int) -> IO:
 #         pass
 
 
-
 # def expand_dim0(x: torch.Tensor, k: int, reshape: bool=True):
 #     y = x[None].repeat(k, *([1] * len(x.size()))) #.transpose(0, 1)
 #     if reshape:
 #         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
 #     return y
-

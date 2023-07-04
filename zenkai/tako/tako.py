@@ -1,23 +1,20 @@
 # 1st party
-from abc import ABC, abstractmethod
 import typing
-from typing import Any
+from abc import ABC, abstractmethod
 
 # 3rd party
 import torch.nn as nn
-import typing
 
 # local
-from .core import UNDEFINED, ID
-from .nodes import Process, In, Layer, End, Info, is_defined, ProcessSet, to_incoming
+from .core import ID, UNDEFINED
+from .nodes import End, In, Info, Layer, Process, ProcessSet, is_defined, to_incoming
 
 
 class Tako(nn.Module):
-    """Base class for Takos which wrap processses to make more flexible networks
-    """
+    """Base class for Takos which wrap processses to make more flexible networks"""
 
     @abstractmethod
-    def forward_iter(self, in_: Process=None) -> typing.Iterator:
+    def forward_iter(self, in_: Process = None) -> typing.Iterator:
         """Method that loops over each process one by one
 
         Args:
@@ -27,15 +24,19 @@ class Tako(nn.Module):
             typing.Iterator: An iterator over the processes
         Yields:
             Process: Each process in the Tako
-            
+
         """
         pass
 
-    def sub(self, y: typing.Union[str, typing.List[str]], x: typing.Union[str, typing.List[str]]):
+    def sub(
+        self,
+        y: typing.Union[str, typing.List[str]],
+        x: typing.Union[str, typing.List[str]],
+    ):
         """
         Extract a sub network form the Tako
 
-        TODO: Simplify the code 
+        TODO: Simplify the code
         """
 
         x_is_list = isinstance(x, list)
@@ -45,14 +46,14 @@ class Tako(nn.Module):
             out = {y_i: UNDEFINED for y_i in y}
         else:
             out = UNDEFINED
-        
+
         if x_is_list:
             found = [False] * len(x)
         else:
             found = False
 
         in_ = In()
-        
+
         for layer in self.forward_iter(in_):
             if x_is_list and layer.name in x:
                 idx = x.index(layer.name)
@@ -61,20 +62,27 @@ class Tako(nn.Module):
             elif not x_is_list and layer.name == x:
                 in_.rewire(layer)
                 found = True
-            
+
             if y_is_list and layer.name in y:
                 out[layer.name] = layer
-        
+
         if (x_is_list and False in found) or (not x_is_list and found is False):
             raise RuntimeError()
 
-        if (y_is_list and UNDEFINED in out.values()) or (not y_is_list and out is UNDEFINED):
+        if (y_is_list and UNDEFINED in out.values()) or (
+            not y_is_list and out is UNDEFINED
+        ):
             raise RuntimeError()
         elif y_is_list:
             return list(out.values())
-        return out      
+        return out
 
-    def probe(self, y: typing.Union[str, typing.List[str]], in_: Process=None, by: typing.Dict[str, typing.Any]=None):
+    def probe(
+        self,
+        y: typing.Union[str, typing.List[str]],
+        in_: Process = None,
+        by: typing.Dict[str, typing.Any] = None,
+    ):
         """Probe the output of a module based on the input
 
         Args:
@@ -97,7 +105,7 @@ class Tako(nn.Module):
             for id, x in by.items():
                 if layer.name == id:
                     layer.y = x
-            
+
             if is_list and layer.name in out:
                 out[layer.name] = layer.y
             elif not is_list:
@@ -109,10 +117,10 @@ class Tako(nn.Module):
         return out
 
     def forward(self, x) -> typing.Any:
-        """Method to 
+        """Method to
 
         Args:
-            x (Input to the first process): 
+            x (Input to the first process):
 
         Returns:
             Any: The output of the Tako
@@ -121,8 +129,10 @@ class Tako(nn.Module):
         for layer in self.forward_iter(In(x)):
             y = layer.y
         return y
-    
-    def from_(self, process: 'Process', name=None, info=None, dive: bool=True) -> typing.Iterator['Process']:
+
+    def from_(
+        self, process: "Process", name=None, info=None, dive: bool = True
+    ) -> typing.Iterator["Process"]:
         """_summary_
 
         Yields:
@@ -139,8 +149,7 @@ class Tako(nn.Module):
 
 
 class Sequence(Tako):
-    """Tako consisting of a sequence of nodes
-    """
+    """Tako consisting of a sequence of nodes"""
 
     def __init__(self, modules: typing.Iterable[nn.Module]):
         super().__init__()
@@ -155,32 +164,28 @@ class Sequence(Tako):
 
 
 class Filter(ABC):
-    """Base class for filtering the layers in a Tako
-    """
+    """Base class for filtering the layers in a Tako"""
 
     @abstractmethod
     def check(self, layer: Layer) -> bool:
         pass
 
     def extract(self, tako: Tako) -> ProcessSet:
-        return ProcessSet(
-            [layer for layer in self.filter(tako) if self.check(layer)]
-        )
-    
+        return ProcessSet([layer for layer in self.filter(tako) if self.check(layer)])
+
     def apply(self, tako: Tako, process: Process):
         for layer in self.filter(tako):
             if self.check(layer):
                 process.apply(layer)
 
-    def filter(self, tako: 'Tako') -> typing.Iterator:
+    def filter(self, tako: "Tako") -> typing.Iterator:
         for layer in tako.forward_iter():
             if self.check(layer):
                 yield layer
 
 
 class TagFilter(Filter):
-    """Filter the Tako by a tag
-    """
+    """Filter the Tako by a tag"""
 
     def __init__(self, filter_tags: typing.List[str]):
 
@@ -191,13 +196,13 @@ class TagFilter(Filter):
 
 
 def layer_dive(layer: Layer) -> typing.Iterator[Process]:
-    """Loop over all sub layers in a layer including 
+    """Loop over all sub layers in a layer including
 
     Args:
         layer (Layer): _description_
 
     Returns:
-        typing.Iterator[Process]: Iterator 
+        typing.Iterator[Process]: Iterator
 
     Yields:
         the layers: _description_
@@ -207,7 +212,8 @@ def layer_dive(layer: Layer) -> typing.Iterator[Process]:
             for layer_j in layer_dive(layer_i):
                 yield layer_j
 
-    else: yield layer_i
+    else:
+        yield layer_i
 
 
 def dive(tako: Tako, in_: Process) -> typing.Iterator[Process]:
@@ -218,7 +224,7 @@ def dive(tako: Tako, in_: Process) -> typing.Iterator[Process]:
         in_ (Node): the incoming process
 
     Returns:
-        typing.Iterator[Process]: The iterator 
+        typing.Iterator[Process]: The iterator
 
     Yields:
         Process: Process in the layer
@@ -235,7 +241,7 @@ def processes(tako: Tako, in_) -> typing.List[Process]:
         in_ (_type_): The incoming nodes
 
     Returns:
-        typing.List[Process]: 
+        typing.List[Process]:
     """
     outs = []
     curs = []
@@ -252,25 +258,21 @@ def processes(tako: Tako, in_) -> typing.List[Process]:
 
 
 class Nested(Process):
-    """Tako nested inside another Tako
-    """
+    """Tako nested inside another Tako"""
 
-    # TODO: Consider the design of this 
+    # TODO: Consider the design of this
     # to allow for nesting processes.. I want to
     # be able to use forward_iter
 
     # 1) if the input is UNDEFINED it will output undefined and
     # will not execute the underlying processes
-    # 2) if the input is not UNDEFINED it will iterate over 
-    # all the underlying processes.. So for a nested process I 
+    # 2) if the input is not UNDEFINED it will iterate over
+    # all the underlying processes.. So for a nested process I
     #
 
     #
 
-    def __init__(
-        self, tako: 'Tako', 
-        x=UNDEFINED, name: str=None, info: Info=None
-    ):
+    def __init__(self, tako: "Tako", x=UNDEFINED, name: str = None, info: Info = None):
         """initializer
 
         Args:
@@ -297,12 +299,12 @@ class Nested(Process):
 
         elif self._y == UNDEFINED and self._x != UNDEFINED:
             self._in = In(self._x)
-            
+
             self._outs = processes(self.tako, self._in)
 
         self._y = self._outs[-1][-1].y
         return self._y
-    
+
     @y.setter
     def y(self, y):
         """
@@ -310,7 +312,7 @@ class Nested(Process):
             y (): The output of the node
         """
         self._y = y
-    
+
     def _probe_out(self, by):
         if is_defined(self._x):
             x = self._x
@@ -322,7 +324,7 @@ class Nested(Process):
         """Iterate over the Tako
 
         Returns:
-            typing.Iterator[Process]: 
+            typing.Iterator[Process]:
 
         Yields:
             typing.Any
@@ -337,12 +339,13 @@ class Nested(Process):
 
 
 class Network(nn.Module):
-    """A wrapping an 'in-node' and an 'out-node'
-    """
+    """A wrapping an 'in-node' and an 'out-node'"""
 
     def __init__(
-        self, out: typing.Union[Process, ProcessSet], 
-        in_: typing.Union[ID, typing.List[str]], by
+        self,
+        out: typing.Union[Process, ProcessSet],
+        in_: typing.Union[ID, typing.List[str]],
+        by,
     ):
         """_summary_
 
@@ -356,14 +359,11 @@ class Network(nn.Module):
         self._by = by
 
     def forward(self, x):
-        
+
         # need to mark which ones
         # i want to store in by
         # by = by.update(**self._in, x)
         # by.outgoing_count(t)
 
-        by = {
-            **self._by,
-            **zip(self._in, x)
-        }
+        by = {**self._by, **zip(self._in, x)}
         return self._out.probe(by)

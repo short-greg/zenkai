@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import Conn, State, IO
+from zenkai.kaku import IO, Conn, State
 from zenkai.kikai import least_squares
 
 

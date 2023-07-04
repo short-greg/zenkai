@@ -1,43 +1,54 @@
 # 1st party
-from abc import abstractmethod
 import typing
+
+import torch
 
 # 3rd Party
 import torch.nn as nn
-import torch
+
+from .. import AssessmentDict, OptimFactory, ThLoss
 
 # Local
 from ..kaku import (
-    Conn,Idx, State, LearningMachine, StepX, StepTheta, 
-    BatchIdxStepX, BatchIdxStepTheta, IO, idx_io, update_io
+    IO,
+    BatchIdxStepTheta,
+    BatchIdxStepX,
+    Conn,
+    Idx,
+    LearningMachine,
+    State,
+    StepTheta,
+    StepX,
+    idx_io,
 )
-from .. import AssessmentDict, ThLoss, OptimFactory
 
 
 class GradStepTheta(StepTheta):
     """Update theta with the loss between y and t on the forward pass"""
 
-    Y_NAME = 'y'
+    Y_NAME = "y"
 
     def __init__(
-        self, learner: LearningMachine, 
-        optim_factory: OptimFactory, reduction: str='mean'
+        self,
+        learner: LearningMachine,
+        optim_factory: OptimFactory,
+        reduction: str = "mean",
     ):
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
         self.reduction = reduction
 
-    def step(self, conn: Conn, state: State, from_: IO=None) -> Conn:
+    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         x, t, y = conn.step
         y = state.get(self, self.Y_NAME)
         stepped = state.get(self, "stepped", False)
         if stepped or y is None:
             y = self.learner(x, state, detach=False)
-    
+
         self.optim.zero_grad()
         assessment = self.learner.assess_y(y, t)
-        assessment.backward('loss')
+        assessment.backward("loss")
         state.store(self, "stepped", True)
         self.optim.step()
         return conn.connect_in(from_)
@@ -46,7 +57,7 @@ class GradStepTheta(StepTheta):
 class NullStepTheta(StepTheta):
     """Do not update theta"""
 
-    def step(self, conn: Conn, state: State, from_: IO=None) -> Conn:
+    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         return conn.connect_in(from_in_x=from_)
 
 
@@ -54,9 +65,11 @@ class GradLoopStepTheta(BatchIdxStepTheta):
     """Update theta with the loss between y and t after passing forward again"""
 
     def __init__(
-        self, learner: LearningMachine, 
-        optim_factory: OptimFactory, reduction: str='mean',
-        loss_name: str='loss'
+        self,
+        learner: LearningMachine,
+        optim_factory: OptimFactory,
+        reduction: str = "mean",
+        loss_name: str = "loss",
     ):
         super().__init__()
         self.learner = learner
@@ -64,7 +77,9 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         self.reduction = reduction
         self.loss_name = loss_name
 
-    def step(self, conn: Conn, state: State, from_: IO=None, batch_idx: Idx=None) -> Conn:
+    def step(
+        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
+    ) -> Conn:
         x = idx_io(conn.step.x, batch_idx, False)
         t = idx_io(conn.step.t, batch_idx, False)
 
@@ -74,7 +89,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         assessment = self.learner.assess_y(y, t, self.reduction)
         assessment[self.loss_name].backward()
         self.optim.step()
-        
+
         return conn.connect_in(from_)
 
 
@@ -101,14 +116,16 @@ class GradLoopStepX(BatchIdxStepX):
     """Update x with the loss between y and t after passing x forward again and getting the grad of x"""
 
     def __init__(
-        self, learner: LearningMachine, 
-        optim_factory: OptimFactory, reduction: str='mean',
-        loss_name: str='loss'
+        self,
+        learner: LearningMachine,
+        optim_factory: OptimFactory,
+        reduction: str = "mean",
+        loss_name: str = "loss",
     ):
         """initializer
 
         Args:
-            learner (LearningMachine): 
+            learner (LearningMachine):
             optim_factory (OptimFactory): OptimFactory for "optimizing" x
             reduction (str, optional): The loss reduction to use. Defaults to 'mean'.
             loss_name (str, optional): Name of the loss. Defaults to 'loss'.
@@ -119,9 +136,9 @@ class GradLoopStepX(BatchIdxStepX):
         self.reduction = reduction
         self.loss_name = loss_name
 
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx=None) -> Conn:
+    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
         my_state = conn.state.mine(self)
-        if 'optim' not in my_state:
+        if "optim" not in my_state:
             my_state.optim = self.optim_factory([*conn.step_x.x])
         x = idx_io(conn.step_x.x, batch_idx)
         t = idx_io(conn.step_x.t, batch_idx)
@@ -140,9 +157,15 @@ class GradLearner(LearningMachine):
 
     VALIDATION_NAME = "validation"
     LOSS_NAME = "loss"
-    Y_NAME = 'y'
+    Y_NAME = "y"
 
-    def __init__(self, sequence: typing.List[nn.Module], loss: ThLoss, optim_factory: OptimFactory, theta_reduction: str='mean'):
+    def __init__(
+        self,
+        sequence: typing.List[nn.Module],
+        loss: ThLoss,
+        optim_factory: OptimFactory,
+        theta_reduction: str = "mean",
+    ):
         super().__init__()
         self._sequence = nn.Sequential(*sequence)
         self._loss = loss
@@ -153,14 +176,14 @@ class GradLearner(LearningMachine):
         assessment = self._loss.assess_dict(y[0], t[0], reduction_override)
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
-    
+
     def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         return self._theta_step.step(conn, state, from_)
-    
+
     def step_x(self, conn: Conn, state: State) -> Conn:
         return self._x_step.step_x(conn, state)
-    
-    def forward(self, x: IO, state: State, detach: bool=True) -> IO:
+
+    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._sequence(*x.vals), detach=False)
         return y.out(detach)
@@ -171,11 +194,16 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
 
     LOSS_NAME = "loss"
     VALIDATION_NAME = "validation"
-    Y_NAME = 'y'
+    Y_NAME = "y"
 
     def __init__(
-        self, sequence: typing.List[nn.Module], loss: ThLoss, theta_optim_factory: OptimFactory, 
-        x_optim_factory: OptimFactory, theta_reduction: str='mean', x_reduction: str='mean'
+        self,
+        sequence: typing.List[nn.Module],
+        loss: ThLoss,
+        theta_optim_factory: OptimFactory,
+        x_optim_factory: OptimFactory,
+        theta_reduction: str = "mean",
+        x_reduction: str = "mean",
     ):
         super().__init__()
         self._sequence = nn.Sequential(*sequence)
@@ -187,20 +215,24 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         assessment = self._loss.assess_dict(y[0], t[0], reduction_override)
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
-    
-    def step(self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx=None) -> Conn:
+
+    def step(
+        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
+    ) -> Conn:
         return self._theta_step.step(conn, state, from_, batch_idx)
-    
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx=None) -> Conn:
+
+    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
         return self._x_step.step_x(conn, state, batch_idx)
-    
-    def forward(self, x: IO, state: State, detach: bool=True) -> IO:
+
+    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._sequence(*x.vals), detach=False)
         return y.out(detach)
 
 
-def update_x(x: IO, lr: float=1.0, detach: bool=False, zero_grad: bool=False) -> IO:
+def update_x(
+    x: IO, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
+) -> IO:
     """Updates x by subtracting the gradient from x times the learning rate
 
     Args:

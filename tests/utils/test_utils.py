@@ -3,9 +3,9 @@
 
 # 3rd party
 import torch
-from zenkai.utils import utils
 import torch.nn as nn
 
+from zenkai.utils import utils
 
 # from .. import ThLoss
 # class TestThLoss:

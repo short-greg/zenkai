@@ -1,7 +1,10 @@
-from zenkai.tansaku.exploration import NoiseReplace, GaussianNoiser, RandSelector, RepeatSpawner, collapse_k, expand_k
 import pytest
 import torch
-from zenkai.tansaku.core import Assessment, IO
+
+from zenkai.tansaku.core import IO, Assessment
+from zenkai.tansaku.exploration import (GaussianNoiser, NoiseReplace,
+                                        RandSelector, RepeatSpawner,
+                                        collapse_k, expand_k)
 
 
 def g(seed: int):

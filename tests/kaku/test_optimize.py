@@ -8,8 +8,7 @@ from torch import optim as torch_optim
 from torch.nn import utils
 
 # Local
-from zenkai.kaku.optimize import MetaOptim
-from zenkai.kaku.optimize import OptimFactory
+from zenkai.kaku.optimize import MetaOptim, OptimFactory
 from zenkai.utils import get_model_parameters
 
 

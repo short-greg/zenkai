@@ -1,29 +1,33 @@
 # 1st party
+import typing
 from collections import deque
 from copy import deepcopy
-import typing
+
+import torch.nn as nn
 
 # 3rd party
 import torch.nn.functional
-import torch.nn as nn
-import numpy as np
 from torch.nn.functional import one_hot
 
 # local
-from .. import utils
 from ..kaku import (
-    IO, Conn, StepX, Idx, FeatureIdxStepX, 
-    FeatureIdxStepTheta, AssessmentDict, Loss, State,
-    LearningMachine
+    IO,
+    AssessmentDict,
+    Conn,
+    FeatureIdxStepTheta,
+    FeatureIdxStepX,
+    Idx,
+    LearningMachine,
+    Loss,
+    State,
 )
 from . import estimators
 
 
 class Voter(nn.Module):
-    """Module that chooses the best 
-    """
+    """Module that chooses the best"""
 
-    def __init__(self, use_sign: bool=False, n_classes: int=None):
+    def __init__(self, use_sign: bool = False, n_classes: int = None):
         """initializer
 
         Args:
@@ -36,37 +40,40 @@ class Voter(nn.Module):
 
         # TODO: Add support for LongTensors by using one_hot encoding
         # I will split the voter up at that point though
-        # 
+        #
         super().__init__()
         self._use_sign = use_sign
-        self._n_classes= n_classes
+        self._n_classes = n_classes
         if n_classes and use_sign:
-            raise ValueError('Arguments use_counts and use_sign are mutually exclusive so cannot both be true')
+            raise ValueError(
+                "Arguments use_counts and use_sign are mutually exclusive so cannot both be true"
+            )
         if self._n_classes is not None:
             raise NotImplementedError
 
-    def forward(self, votes: torch.Tensor, weights: typing.List[float]=None) -> torch.Tensor:
-        
+    def forward(
+        self, votes: torch.Tensor, weights: typing.List[float] = None
+    ) -> torch.Tensor:
+
         if self._n_classes is not None:
             votes = one_hot(votes, self._n_classes).sum(dim=-2)
             # TODO: FINISH
             return votes
-            
+
         if weights is not None:
             votes_ = votes.view(votes.size(0), -1)
             weights_th = torch.tensor(weights, device=votes.device)[None]
-            chosen = ((votes_ * weights_th).sum(dim=0) / weights_th.sum(dim=0))
+            chosen = (votes_ * weights_th).sum(dim=0) / weights_th.sum(dim=0)
             chosen = chosen.view(votes.shape[1:])
         else:
             chosen = votes.mean(dim=0)
         if self._use_sign:
             return chosen.sign()
-        
+
         return chosen
 
 
 class VoterEnsemble(nn.Module):
-
     def __init__(self, base_estimator: estimators.ScikitEstimator, n_keep: int):
         """
 
@@ -85,7 +92,7 @@ class VoterEnsemble(nn.Module):
 
         self._voter = Voter(isinstance(base_estimator, estimators.ScikitBinary))
         if isinstance(self._voter, estimators.ScikitMulticlass):
-            raise ValueError(f'Multiclass classification is not supported.')
+            raise ValueError("Multiclass classification is not supported.")
         self._estimators = deque()
         self._base_estimator = base_estimator
         self._n_keep = n_keep
@@ -95,7 +102,7 @@ class VoterEnsemble(nn.Module):
     @property
     def n_keep(self) -> int:
         return self._n_keep
-    
+
     @n_keep.setter
     def n_keep(self, n_keep: int):
         """
@@ -114,7 +121,9 @@ class VoterEnsemble(nn.Module):
             difference = len(self._estimators) - n_keep
             self._estimators = deque(list(self._estimators)[difference:])
 
-    def fit_update(self, x: torch.Tensor, t: torch.Tensor, limit: torch.LongTensor=None):
+    def fit_update(
+        self, x: torch.Tensor, t: torch.Tensor, limit: torch.LongTensor = None
+    ):
 
         self._base_estimator.fit(x, t, limit)
         if len(self._estimators) == self._n_keep:
@@ -124,12 +133,12 @@ class VoterEnsemble(nn.Module):
             self._estimators.append(deepcopy(self._base_estimator))
 
         self._fitted = True
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         if self._fitted is False:
             return self._base_estimator(x)
-        # TODO: This can be optimized so that it does not convert to a 
+        # TODO: This can be optimized so that it does not convert to a
         # tensor.
         votes = torch.stack([estimator(x) for estimator in self._estimators])
         return self._voter(votes)
@@ -144,17 +153,20 @@ class VoterEnsemble(nn.Module):
 
 
 class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
-    """Machine that runs an ensemble of sub machines
-    """
+    """Machine that runs an ensemble of sub machines"""
 
     def __init__(
-        self, base_estimator: estimators.ScikitEstimator, n_keep: int, step_x: FeatureIdxStepX, loss: Loss,
-        preprocessor: nn.Module=None
+        self,
+        base_estimator: estimators.ScikitEstimator,
+        n_keep: int,
+        step_x: FeatureIdxStepX,
+        loss: Loss,
+        preprocessor: nn.Module = None,
     ):
         """
 
         Args:
-            base_estimator (scikit.ScikitEstimator): Base estimator 
+            base_estimator (scikit.ScikitEstimator): Base estimator
             n_keep (int): Number of estimators to keep each round
             step_x (StepX): StepX to update machine with
             loss (Loss): The loss to evaluate the machine with
@@ -169,7 +181,9 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self._loss.assess_dict(y[0], t[0], reduction_override)
 
-    def step(self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx=None) -> Conn:
+    def step(
+        self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx = None
+    ) -> Conn:
         """Update the machine
 
         Args:
@@ -179,7 +193,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
 
         Returns:
-            Conn: 
+            Conn:
         """
         x = conn.step.x[0]
         if self._preprocessor is not None:
@@ -191,8 +205,8 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         )
 
         return conn.connect_in(from_)
-    
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx=None) -> Conn:
+
+    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
         """Update the input
 
         Args:
@@ -201,7 +215,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
 
         Returns:
-            Conn: connection 
+            Conn: connection
         """
         return self._step_x.step_x(conn, state, feature_idx)
 
@@ -216,7 +230,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         Returns:
             IO: _description_
         """
-        
+
         x = x[0]
         if self._preprocessor is not None:
             x = self._preprocessor(x)

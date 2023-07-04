@@ -1,22 +1,14 @@
 # 1st party
 from abc import ABC, abstractmethod
-import typing
 
 # 3rd party
 import torch
 import torch.nn as nn
 import torch.nn.functional as nn_func
 
-# local
-# from ..kaku import (
-#     LearningMachine, State, IO, 
-#     AssessmentDict, Conn, ThLoss
-# )
-
 
 class Reversible(nn.Module):
-    """Base class for reversible modules
-    """
+    """Base class for reversible modules"""
 
     @abstractmethod
     def reverse(self, y: torch.Tensor) -> torch.Tensor:
@@ -28,42 +20,41 @@ class Reversible(nn.Module):
 
 
 class Null(Reversible):
-    '''
+    """
     Module that does not act on the inputs
-    '''
+    """
 
-    def __init__(self, multi: bool=False):
+    def __init__(self, multi: bool = False):
         """initializer
 
         Args:
             multi (bool, optional): Whether the module can be reversed. Defaults to False.
         """
         super().__init__()
-        if multi: 
+        if multi:
             self.forward = self.multi_forward
             self.reverse = self.multi_reverse
-        else: 
+        else:
             self.forward = self.single_forward
             self.reverse = self.single_reverse
-        
+
         self.multi = multi
-    
+
     def multi_forward(self, *x: torch.Tensor):
         return x
 
     def single_forward(self, x: torch.Tensor):
         return x
-    
+
     def multi_reverse(self, *y) -> torch.Tensor:
         return y
-    
+
     def single_reverse(self, y) -> torch.Tensor:
         return y
 
 
 class TargetReverser(ABC):
-    """reverse the target
-    """
+    """reverse the target"""
 
     @abstractmethod
     def reverse(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -71,8 +62,7 @@ class TargetReverser(ABC):
 
 
 class SequenceReversible(Reversible):
-    """Reverse a sequence
-    """
+    """Reverse a sequence"""
 
     def __init__(self, *reversibles: Reversible):
         """initialzier
@@ -109,11 +99,8 @@ class SequenceReversible(Reversible):
 
 
 class SigmoidInvertable(Reversible):
-
     def reverse(self, y: torch.Tensor):
-        return torch.log(
-            y / (1 - y)
-        )
+        return torch.log(y / (1 - y))
 
     def forward(self, x: torch.Tensor):
         return torch.sigmoid(x)
@@ -143,9 +130,7 @@ class SoftMaxReversible(Reversible):
         Returns:
             Tensor: the inverted output
         """
-        return torch.log(
-            y / (1 - y)
-        )
+        return torch.log(y / (1 - y))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Use SoftMax on the the layer
@@ -160,10 +145,9 @@ class SoftMaxReversible(Reversible):
 
 
 class BatchNorm1DReversible(Reversible):
-    """Invert the batch norm operation. Presently it doe not support the learnable parameters
-    """
+    """Invert the batch norm operation. Presently it doe not support the learnable parameters"""
 
-    def __init__(self, n_features: int, momentum: float=0.1):
+    def __init__(self, n_features: int, momentum: float = 0.1):
         """initializer
 
         Args:
@@ -183,7 +167,9 @@ class BatchNorm1DReversible(Reversible):
         Returns:
             torch.Tensor: the inverted patch norm
         """
-        return y * torch.sqrt(self._batch_norm.running_var) + self._batch_norm.running_mean
+        return (
+            y * torch.sqrt(self._batch_norm.running_var) + self._batch_norm.running_mean
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """batch normalize the input
@@ -198,10 +184,9 @@ class BatchNorm1DReversible(Reversible):
 
 
 class LeakyReLUInvertable(Reversible):
-    """LeakyReLU that can be inverted
-    """
+    """LeakyReLU that can be inverted"""
 
-    def __init__(self, negative_slope: float=0.01):
+    def __init__(self, negative_slope: float = 0.01):
         super().__init__()
         assert negative_slope > 0.0
         self._negative_slope = negative_slope
@@ -239,7 +224,7 @@ class ZeroToNeg1(Reversible):
             y (torch.Tensor): The tensor with negative one for negatives
 
         Returns:
-            torch.Tensor: The tensor with zeros for negatives 
+            torch.Tensor: The tensor with zeros for negatives
         """
         return (y + 1) / 2
 
@@ -250,7 +235,7 @@ class ZeroToNeg1(Reversible):
             x (torch.Tensor): The tensor with zeros for negatives
 
         Returns:
-            torch.Tensor: the tensor with Negative one for 
+            torch.Tensor: the tensor with Negative one for
         """
         return (x * 2) - 1
 
@@ -269,7 +254,7 @@ class Neg1ToZero(Reversible):
             y (torch.Tensor): The tensor with zeros for negatives
 
         Returns:
-            torch.Tensor: the tensor with Negative one for 
+            torch.Tensor: the tensor with Negative one for
         """
         return self._neg(y)
 
@@ -280,7 +265,6 @@ class Neg1ToZero(Reversible):
             x (torch.Tensor): The tensor with negative one for negatives
 
         Returns:
-            torch.Tensor: The tensor with zeros for negatives 
+            torch.Tensor: The tensor with zeros for negatives
         """
         return self._neg.reverse(x)
-

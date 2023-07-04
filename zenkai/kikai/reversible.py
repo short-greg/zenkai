@@ -1,14 +1,19 @@
 # 1st party
 import typing
 
+from ..kaku import IO, AssessmentDict, Conn, LearningMachine, State, ThLoss
+
 # local
 from ..utils import Reversible, SequenceReversible
-from ..kaku import Conn, State, IO, LearningMachine, ThLoss, AssessmentDict
 
 
 class ReversibleMachine(LearningMachine):
-
-    def __init__(self, reversible: typing.Union[Reversible, typing.List[Reversible]], loss: ThLoss, maximize: bool=False):
+    def __init__(
+        self,
+        reversible: typing.Union[Reversible, typing.List[Reversible]],
+        loss: ThLoss,
+        maximize: bool = False,
+    ):
         """initializer
 
         Args:
@@ -23,8 +28,10 @@ class ReversibleMachine(LearningMachine):
         self.loss = loss
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override).transfer("loss", self.validation_name)
-    
+        return self.loss.assess_dict(y, t, reduction_override).transfer(
+            "loss", self.validation_name
+        )
+
     def step_x(self, conn: Conn, state: State) -> Conn:
         """Update x
 
@@ -38,7 +45,7 @@ class ReversibleMachine(LearningMachine):
         conn.step_x.x_(self.reversible.reverse(conn.step_x.t[0]))
         conn.tie_inp(True)
         return conn
-    
+
     def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         """These layers do not have parameters so the internal mechanics are not updated
 
@@ -51,7 +58,6 @@ class ReversibleMachine(LearningMachine):
             Conn: the connection for the preceding layer
         """
         return conn.connect_in(from_)
-    
+
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         return IO(self.reversible(x[0]), detach=detach)
-

@@ -1,10 +1,10 @@
 # 
 import torch
+from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
 from zenkai.scikit.ensemble import VoterEnsemble
 from zenkai.scikit.estimators import ScikitBinary, ScikitRegressor
-from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 
 class TestVoterEnsemble:

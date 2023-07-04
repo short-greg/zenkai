@@ -1,6 +1,19 @@
-from torch import nn
+# import typing
 
+# # 1st Party
+# from abc import abstractmethod, abstractproperty
+# from dataclasses import dataclass
 
+# import numpy as np
+
+# # 3rd Party
+# import torch
+# import torch.nn as nn
+# import torch.nn.functional as nn_func
+# from torch import nn
+
+# # Local
+# from ... import utils
 
 # # TODO: Move as this is the wrong place
 # class KLDivLoss(nn.Module):
@@ -34,24 +47,8 @@ from torch import nn
 
 #         return self._kl_div(x, t)
 
-# 1st Party
-from abc import abstractmethod, abstractproperty
-import typing
-from dataclasses import dataclass
-import typing
 
-# 3rd Party
-import torch
-import torch.nn.functional as nn_func
-import torch.nn as nn
-import numpy as np
-
-# Local
-from ... import utils
 # from .assess import AssessmentDict, Reduction, Assessment
-
-
-
 
 
 # class L2Reg(nn.Module):
@@ -61,7 +58,7 @@ from ... import utils
 #         self._lam = lam
 #         self._reduction = reduction
 #         if reduction not in ('none', 'batchmean', 'mean'):
-#             raise RuntimeError(f'Reduction must be "none", "batchmean" or "mean" {reduction} ') 
+#             raise RuntimeError(f'Reduction must be "none", "batchmean" or "mean" {reduction} ')
 
 #     def forward(self, x: torch.Tensor):
 
@@ -70,7 +67,7 @@ from ... import utils
 
 #         elif self._reduction == 'batchmean':
 #             return ((x ** 2).sum() * self._lam) / len(x)
-        
+
 #         elif self._reduction == 'mean':
 #             return (x ** 2).mean() * self._lam
 
@@ -82,7 +79,7 @@ from ... import utils
 #         self._lam = lam
 #         self._reduction = reduction
 #         if reduction not in ('none', 'batchmean', 'mean'):
-#             raise RuntimeError(f'Reduction must be "none", "batchmean" or "mean" {reduction} ') 
+#             raise RuntimeError(f'Reduction must be "none", "batchmean" or "mean" {reduction} ')
 
 #     def forward(self, x: torch.Tensor):
 
@@ -92,10 +89,9 @@ from ... import utils
 
 #         elif self._reduction == 'batchmean':
 #             return (torch.abs(x) * self._lam) / len(x)
-        
+
 #         elif self._reduction == 'mean':
 #             return torch.abs(x).mean() * self._lam
-        
 
 
 # class DXModLoss(Loss):
@@ -112,13 +108,16 @@ from ... import utils
 #         raise NotImplementedError
 
 #     def assess(self, x: torch.Tensor, y: torch.Tensor, dx: torch.Tensor, reduction_override: str=None):
-#         return Assessment(self.forward(x, y, dx, reduction_override), self._maximize)
+#         return (
+#           Assessment(self.forward(x, y, dx, reduction_override), 
+#           self._maximize)
 
-#     def assess_dict(self, x: torch.Tensor, y: torch.Tensor, dx: torch.Tensor, reduction_override: str=None, name: str='loss'):
+#     def assess_dict(
+#         self, x: torch.Tensor, y: torch.Tensor, dx: torch.Tensor, 
+#         reduction_override: str=None, name: str='loss'):
 #         return AssessmentDict(
 #             **{name: Assessment(self.forward(x, y, dx, reduction_override), self._maximize)}
 #         )
-
 
 
 # class WeightedLoss(nn.Module):
@@ -131,7 +130,7 @@ from ... import utils
 
 #     def forward(self, x: torch.Tensor, t: torch.Tensor):
 #         return self.weight * self.loss(x, t)
-    
+
 #     @property
 #     def reduction(self):
 #         return self.loss.reduction
@@ -142,7 +141,7 @@ from ... import utils
 
 
 # class DXLossGrad(torch.autograd.Function):
-#     """Use to implement backpropagation that is closer to the standard 
+#     """Use to implement backpropagation that is closer to the standard
 #     form that sends information in a direct path backward through the layers
 #     """
 
@@ -169,7 +168,7 @@ from ... import utils
 
 
 # class TLossGrad(torch.autograd.Function):
-#     """Use to implement backpropagation that is closer to the standard 
+#     """Use to implement backpropagation that is closer to the standard
 #     form that sends information in a direct path backward through the layers
 #     """
 

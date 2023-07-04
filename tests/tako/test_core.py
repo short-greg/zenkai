@@ -1,10 +1,10 @@
 # 1st party
 from uuid import UUID, uuid1
 
-# 3rd party
-import torch.nn as nn
 import torch as th
 import torch.functional as F
+# 3rd party
+import torch.nn as nn
 import torch.nn.functional as FNN
 
 # local

@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import Assessment, IO, Conn, LearningMachine, State, AssessmentDict, ThLoss
-from zenkai.kaku import DiffLayerAssessor
+from zenkai.kaku import (IO, Assessment, AssessmentDict, Conn,
+                         DiffLayerAssessor, LearningMachine, State, ThLoss)
 
 
 class SimpleLearner(LearningMachine):

@@ -1,32 +1,60 @@
+# flake8: noqa
 
+from .assess import (
+    LOSS_MAP,
+    Assessment,
+    AssessmentDict,
+    Loss,
+    ModLoss,
+    Reduction,
+    ThLoss,
+    ThModLoss,
+)
 from .component import (
-    NNComponent, Learner, SelfLearner,
-    Regressor, Classifier, Encoder, Decoder, Autoencoder,
-    Assessor
+    Assessor,
+    Autoencoder,
+    Classifier,
+    Decoder,
+    Encoder,
+    Learner,
+    NNComponent,
+    Regressor,
+    SelfLearner,
 )
-from .state import (
-    IDable, State, StateKeyError, MyState
-)
+from .layer_assess import AssessContext, DiffLayerAssessor, LayerAssessor
+from .limit import FeatureLimitGen, RandomFeatureIdxGen
 from .machine import (
-    IO, Idx, LayerIO, Conn, T,
-    StepHook, StepXHook, StepX, StepTheta,
-    LearningMachine, NullLearner, BatchIdxStepX, BatchIdxStepTheta,
-    idx_conn, idx_io, idx_layer_io, idx_th, FeatureIdxStepTheta, FeatureIdxStepX, update_io, 
-    update_step_x, update_tensor, EmissionStack
-)
-from .steps import (
-    TwoLayerStep, IterOutStep, StepLoop, IterHiddenStep , Step
-)
-from .limit import (
-    RandomFeatureIdxGen, FeatureLimitGen
+    IO,
+    BatchIdxStepTheta,
+    BatchIdxStepX,
+    Conn,
+    EmissionStack,
+    FeatureIdxStepTheta,
+    FeatureIdxStepX,
+    Idx,
+    LayerIO,
+    LearningMachine,
+    NullLearner,
+    StepHook,
+    StepTheta,
+    StepX,
+    StepXHook,
+    T,
+    idx_conn,
+    idx_io,
+    idx_layer_io,
+    idx_th,
+    update_io,
+    update_step_x,
+    update_tensor,
 )
 from .optimize import (
-    NullOptim, OPTIM_MAP, OptimFactoryX, OptimFactory,
-    MetaOptim, itadaki
+    OPTIM_MAP,
+    MetaOptim,
+    NullOptim,
+    OptimFactory,
+    OptimFactoryX,
+    itadaki,
 )
-from .layer_assess import DiffLayerAssessor, AssessContext, LayerAssessor
-from .assess import (
-    Reduction, Assessment, AssessmentDict,
-    Loss, LOSS_MAP, ThLoss, ThModLoss, ModLoss
-
-)
+from .state import IDable, MyState, State, StateKeyError
+from .steps import IterHiddenStep, IterOutStep, Step, StepLoop, TwoLayerStep

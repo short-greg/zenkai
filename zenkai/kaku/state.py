@@ -1,24 +1,23 @@
 # 1st party
-from abc import abstractproperty
 import typing
+from abc import abstractproperty
 
 
 class IDable:
-
     @abstractproperty
     def id(self) -> str:
         pass
 
 
 class StateKeyError(KeyError):
-    """Used to make errors that state returns more explicit
-    """
+    """Used to make errors that state returns more explicit"""
+
     pass
 
 
 class State(object):
 
-    # add in x and y by default 
+    # add in x and y by default
     # so that XOptim, ThetaOptim do not have
     # to be coupled to the lm
 
@@ -41,7 +40,7 @@ class State(object):
         obj_data, _ = self._get_obj(obj)
         obj_data[key] = value
         return value
-        
+
     def get(self, obj: IDable, key: typing.Hashable, default=None):
         try:
             if isinstance(key, typing.List):
@@ -50,7 +49,7 @@ class State(object):
                 return self._data[self.id(obj)][key]
         except KeyError:
             return default
-        
+
     def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]):
         obj, key = index
         obj_id = self.id(obj)
@@ -68,15 +67,15 @@ class State(object):
 
         obj, key = index
         return self.store(obj, key, value)
-    
-    def _get_obj(self, obj, to_add: bool=True):
+
+    def _get_obj(self, obj, to_add: bool = True):
         id = self.id(obj)
         if to_add and id not in self._data:
             self._data[id] = {}
             self._subs[id] = {}
         return self._data[id], self._subs[id]
-    
-    def add_sub(self, obj: IDable, key: str, ignore_exists: bool=True) -> 'State':
+
+    def add_sub(self, obj: IDable, key: str, ignore_exists: bool = True) -> "State":
         """Add a 'sub state' specified by key
 
         Args:
@@ -87,20 +86,22 @@ class State(object):
             KeyError: If ignore exists if false and key already exists
 
         Returns:
-            State: The substate created 
+            State: The substate created
         """
         _, sub_data = self._get_obj(obj)
-        
+
         if key in sub_data:
-            raise StateKeyError(f'Subs State {key} is already in State and ignore exists is False.')
+            raise StateKeyError(
+                f"Subs State {key} is already in State and ignore exists is False."
+            )
         result = sub_data[key] = State()
         return result
-    
-    def my_sub(self, obj: IDable, key: str, to_add: bool=True) -> 'MyState':
+
+    def my_sub(self, obj: IDable, key: str, to_add: bool = True) -> "MyState":
         mine = self.mine(obj, to_add)
         return mine.my_sub(key, to_add)
 
-    def sub(self, obj: IDable, key: str, to_add: bool=True) -> 'State':
+    def sub(self, obj: IDable, key: str, to_add: bool = True) -> "State":
         """Retrieve a sub state
 
         Args:
@@ -126,7 +127,7 @@ class State(object):
         if id in self._subs:
             self._subs[id].clear()
 
-    def sub_iter(self, obj) -> typing.Iterator[typing.Tuple[str, 'State']]:
+    def sub_iter(self, obj) -> typing.Iterator[typing.Tuple[str, "State"]]:
         """Iterator over all sub states
 
         Yields:
@@ -136,10 +137,8 @@ class State(object):
         for key, value in self._subs[id].items():
             yield key, value
 
-    def mine(self, obj, to_add: bool=True) -> 'MyState':
-        return MyState(
-            obj, *self._get_obj(obj, to_add=to_add)
-        )
+    def mine(self, obj, to_add: bool = True) -> "MyState":
+        return MyState(obj, *self._get_obj(obj, to_add=to_add))
 
     def __contains__(self, key):
         obj, key = key
@@ -161,15 +160,15 @@ class MyState(object):
             data (typing.Dict): The data for the object
             subs (typing.Dict): The sub states for the object
         """
-        object.__setattr__(self, '_obj', obj)
-        object.__setattr__(self, '_data', data)
-        object.__setattr__(self, '_subs', subs)
+        object.__setattr__(self, "_obj", obj)
+        object.__setattr__(self, "_data", data)
+        object.__setattr__(self, "_subs", subs)
 
     @property
     def subs(self) -> typing.Dict[str, State]:
         return self._subs
-    
-    def add_sub(self, key: str, state: State=None) -> 'State':
+
+    def add_sub(self, key: str, state: State = None) -> "State":
         """Add a substate to the state
 
         Args:
@@ -184,8 +183,8 @@ class MyState(object):
         state = state or State()
         self._subs[key] = state
         return state
-    
-    def my_sub(self, key: str, to_add: bool=True) -> 'MyState':
+
+    def my_sub(self, key: str, to_add: bool = True) -> "MyState":
         if to_add and key not in self._subs:
             self._subs[key] = State()
         return self._subs[key].mine(self._obj)
@@ -201,10 +200,10 @@ class MyState(object):
 
     def __getattr__(self, key):
         return self._data[key]
-    
+
     def __setattr__(self, key: str, value: typing.Any) -> typing.Any:
         self._data[key] = value
         return value
-    
+
     def __contains__(self, key: str) -> bool:
         return key in self._data
