@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "zenkai"
-version = "0.0.1"
+version = "0.0.0"
 description = "Your package description"
 homepage = "https://github.com/yourusername/your-repository"
 repository = "https://github.com/short-greg/zenkai"
@@ -12,7 +12,6 @@ documentation = "https://yourdocumentation.url"
 authors = ["Greg Short"]
 license = "LICENSE"
 readme = "README.md"
-requires-python = ">=3.8"
 packages = [
     {include="zenkai"},
     {include="zenkai/scikit"},
@@ -25,50 +24,17 @@ packages = [
 
 
 [tool.poetry.dependencies]
-python = ">= 3.8.1,<4.0"
+python = ">=3.8,<4.0"
 numpy = ">=1"
 pandas = ">=1,<2"
 scikit-learn = ">=1.0.0"
 # torch = {version = ">=2,<3"}
-tqdm = {version = ">=4.0"}
-scipy = {version = ">=1.5,<2.0"}
+tqdm = ">=4.0"
+scipy = ">=1.5,<2.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2"
-flake8 = "^3.9"
-isort = "^5.8"
-black = "^21.6"
-blacken-docs = "^1.10"
-
-
-# requires = ["setuptools", "wheel"]
-# build-backend = "setuptools.build_meta"
-
-# [build-system]
-# requires = ["poetry-core>=1.0.0"]
-# build-backend = "poetry.core.masonry.api"
-
-
-# from setuptools import setup, find_packages
-
-# with open("README.md", "r", encoding="utf-8") as fh:
-#     long_description = fh.read()
-
-# setup(
-#     name='zenkai',
-#     version='0.0.1',
-#     author="Greg Short",
-#     long_description=long_description,
-#     long_description_content_type="text/markdown",
-#     url="https://github.com/short-greg/zenkai",
-#     packages=[
-#         'zenkai', 'zenkai.zen', 'zenkai.kaku', 'zenkai.tako', 
-#         'zenkai.tansaku', 'zenkai.sensei', 'zenkai.scikit',
-#         'zenkai.utils'
-#     ],
-#     install_requires=[
-#         'torch>=2.0', 'scipy>=1.5', 'pandas',
-#         'scikit-learn', 'numpy'
-#     ],
-#     python_requires='>=3.8'
-# )
+pytest = "^6"
+flake8 = "^3"
+isort = "^5"
+black = "^21"
+blacken-docs = "^1"
