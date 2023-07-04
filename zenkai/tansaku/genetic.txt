@@ -1,0 +1,127 @@
+1. Elitism 
+
+# class KBest(Elitism):
+    
+#     def __init__(self, k: int=1):
+#         if k <= 1:
+#             raise RuntimeError(f"Argument k must be a value of 1 or greater.")
+#         self.k: int = k
+        
+#     def __call__(
+#         self, parents: torch.Tensor, children: torch.Tensor, parent_fitness: Assessment
+#     ):
+#         regularized_fitness = parent_fitness.value
+#         if not parent_fitness.maximize:
+#             regularized_fitness = -regularized_fitness
+#         k = min(self.k, len(regularized_fitness))
+#         _, elite_indices = torch.topk(regularized_fitness, k, dim=0)
+#         return torch.cat([children, parents[elite_indices]], dim=0)
+
+
+2. Bind (bind outputs)
+# class Bind(GeneProcessor):
+
+#     def __init__(
+#         self, lower_bound: typing.Union[float, torch.Tensor], 
+#         upper_bound: typing.Union[float, torch.Tensor]
+#     ):
+#         self._lower_bound = lower_bound
+#         self._upper_bound = upper_bound
+
+#     def __call__(self, chromosomes: torch.Tensor, fitness: torch.Tensor):
+#         return chromosomes.clamp(
+#             min=self._lower_bound, max=self._upper_bound
+#         )
+
+3. Gaussian Mutator
+4. couple selector
+
+# class EqualSelector(CoupleSelector):
+
+#     def __call__(self, chromosomes: torch.Tensor, fitness: Assessment):
+
+#         regularized_fitness = fitness.value
+#         if not fitness.maximize:
+#             p = torch.nn.functional.softmin(regularized_fitness, dim=0).detach()
+#         else:
+#             p = torch.nn.functional.softmax(regularized_fitness, dim=0).detach()
+        
+#         selection = torch.multinomial(
+#             p, 2 * len(regularized_fitness), True
+#         )
+#         # selection = selection.view(2, p.size(0))
+#         selected = chromosomes[selection]
+#         return selected.view(2, selection.size(0) // 2, *chromosomes.shape[1:])
+
+
+5. breeder
+
+# class BinaryBreeder(Breeder):
+
+#     def __call__(self, couples):
+#         # TODO: may want to make in place
+#         if couples.dim() <= 2:
+#             raise RuntimeError(f"Dim of tensor must be greater than two [couple, parent, features...] ")
+
+#         first_parent = (torch.rand(couples[0].size(), dtype=couples.dtype) > 0.5).float()
+#         second_parent = 1 - first_parent
+#         return couples[0] * first_parent + couples[1] * second_parent
+
+
+# class SmoothBreeder(Breeder):
+
+#     def __call__(self, couples):
+#         # TODO: may want to make in place
+#         if couples.dim() <= 2:
+#             raise RuntimeError(f"Dim of tensor must be greater than two [couple, parent, features...] ")
+#         first_parent = torch.rand(couples[0].size(), dtype=couples.dtype)
+#         second_parent = 1 - first_parent
+#         return couples[0] * first_parent + couples[1] * second_parent
+
+
+6. initializer 
+
+# class RealInitializer(Initializer):
+
+#     def __init__(self, n_parents: int):
+#         if n_parents == 0:
+#             raise RuntimeError(f'{n_parents} must be greater than 0')
+#         self.n_parents = n_parents
+
+#     def __call__(self, theta: torch.Tensor):
+#         return torch.randn(self.n_parents, *theta.size()) / math.sqrt(theta.nelement())
+
+
+# class DiscreteInitializer(Initializer):
+
+#     def __init__(self, n_parents: int):
+#         if n_parents == 0:
+#             raise RuntimeError(f'{n_parents} must be greater than 0')
+#         self.n_parents = n_parents
+
+#     def __call__(self, theta: torch.Tensor):
+#         return torch.round(torch.randn(self.n_parents, *theta.size()))
+
+7. Mutator
+# class BinaryMutator(GeneProcessor):
+
+#     def __init__(self, p: float):
+#         self.p: float = p
+
+#     @property
+#     def p(self):
+#         return self._p
+
+#     @p.setter
+#     def p(self, p: float):
+#         if not (0 <= p <= 1):
+#             raise RuntimeError(f'Value p must be in range [0,1] not {p}')
+#         self._p = p
+
+#     def __call__(self, chromosomes: torch.Tensor, fitness: torch.Tensor):
+
+#         flip = (
+#             torch.rand(chromosomes.size(), device=chromosomes.device
+#         ) <= self.p)
+#         flipped = ~chromosomes.bool()
+#         return (flip * flipped + ~flip * chromosomes).type_as(chromosomes)

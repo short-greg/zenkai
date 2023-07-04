@@ -1,0 +1,8 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite as below."
+authors:
+- family-names: "Short"
+  given-names: "Greg"
+title: Zenkai
+date-released: 2023-07-??
+url: "https://github.com/short-greg/zenkai"
