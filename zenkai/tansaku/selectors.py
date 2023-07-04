@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import torch
 
 # local
-from .. import Assessment
+from ..kaku import Assessment
 from ..utils import to_signed_neg
 from .core import (
     Individual,

@@ -6,7 +6,7 @@ import torch
 # 3rd Party
 import torch.nn as nn
 
-from .. import AssessmentDict, OptimFactory, ThLoss
+from ..kaku import AssessmentDict, OptimFactory, ThLoss
 
 # Local
 from ..kaku import (

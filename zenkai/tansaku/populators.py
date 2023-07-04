@@ -8,7 +8,7 @@ import torch
 from torch.nn.parameter import Parameter
 
 # local
-from .. import Assessor
+from ..kaku import Assessor
 from .core import (
     Individual,
     Population,
