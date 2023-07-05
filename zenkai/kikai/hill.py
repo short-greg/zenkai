@@ -16,6 +16,8 @@ from ..tansaku.selectors import BestSelectorFeature
 
 
 class HillClimbStepX(FeatureIdxStepX):
+    """StepX that uses hill climbing for updating
+    """
     def __init__(
         self,
         learner: LearningMachine,
@@ -25,10 +27,15 @@ class HillClimbStepX(FeatureIdxStepX):
         momentum: float = 0.5,
         maximize: bool = False,
     ):
-        """use a hill climbing algorithm to update the input values
+        """_summary_
 
         Args:
-            learner (LearningMachine):
+            learner (LearningMachine): The learner being trained
+            k (int): The population size
+            std (float, optional): The standard deviation for the populator. Defaults to 0.1.
+            lr (float, optional): The learning rate for updating x. Defaults to 1e-2.
+            momentum (float, optional): The momentum for updating x. Defaults to 0.5.
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
         """
 
         super().__init__()
@@ -39,6 +46,16 @@ class HillClimbStepX(FeatureIdxStepX):
         self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
 
     def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+        """Update x using hill climbing
+
+        Args:
+            conn (Conn): The connection to update based on
+            state (State): The current state of learning
+            feature_idx (Idx, optional): Use to specify if only a subset of features are being updated. Defaults to None.
+
+        Returns:
+            Conn: The connection used to update
+        """
 
         individual = Individual(x=conn.step_x.x[0])
 
@@ -49,7 +66,6 @@ class HillClimbStepX(FeatureIdxStepX):
         )
         population = self.assessor(population, conn.step_x.t)
         selected = self.modifier(individual, population)
-        # conn.step_x.x_(IO(selected['x'], detach=True))
         update_io(IO(selected["x"], detach=True), conn.step_x.x)
         conn.tie_inp()
         return conn
@@ -67,18 +83,21 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         self.populator = BinaryPopulator(k, keep_p)
         self.selector = BestSelectorFeature()  # to_sample=False)
         self.limiter = PopulationLimiter()
-        # self.modifier = tansaku.BinaryGaussianModifier(k_best, "x")
         self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
 
     @property
     def update_populator(self, k: int, keep_p: float):
+        """Change the populator used for StepX
+
+        Args:
+            k (int): The population size
+            keep_p (float): The probability of keeping the current x value
+        """
         self.populator = BinaryPopulator(k, keep_p)
 
     def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
 
         individual = Individual(x=conn.step_x.x[0])
-        # pass conn.limit into the populator
-        # perhaps call this a kind of modifier?
         population = self.limiter(
             individual,
             self.populator(individual),
@@ -86,8 +105,6 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         )
         population = self.assessor(population, conn.step_x.t)
         selected = self.selector(population)
-        # selected = self.modifier(individual, population)
-        # conn.step_x.x_(IO(selected['x'], detach=True))
         update_io(IO(selected["x"], detach=True), conn.step_x.x)
         conn.tie_inp()
         return conn
