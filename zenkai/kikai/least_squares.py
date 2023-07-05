@@ -2,13 +2,13 @@
 import typing
 from abc import ABC, abstractmethod
 
-import numpy as np
-import scipy.linalg
-
 # 3rd party
 import torch
 import torch.nn as nn
+import numpy as np
+import scipy.linalg
 
+# local
 from ..kaku.machine import (
     IO,
     AssessmentDict,
@@ -20,8 +20,6 @@ from ..kaku.machine import (
     ThLoss,
     update_io,
 )
-
-# local
 from ..utils import to_np, to_th_as
 
 
@@ -126,23 +124,28 @@ class LeastSquaresStepTheta(StepTheta):
         linear: nn.Linear,
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
         optimize_dw: bool = False,
-        lr: typing.Optional[float] = None,
     ):
         """initializer
 
         Args:
-            linear (nn.Linear): _description_
+            linear (nn.Linear): The linear model to optmize theta for
             solver (LeastSquaresSolver, optional): _description_. Defaults to LeastSquaresStandardSolver.
-            optimize_dw (bool, optional): _description_. Defaults to False.
-            lr (typing.Optional[float], optional): _description_. Defaults to None.
-            is_fresh (bool, optional): _description_. Defaults to True.
+            optimize_dw (bool, optional): Whether to optimize the delta or the raw value. 
+              In general recommended to optimize delta to minimize the change bewteen updates. Defaults to False.
         """
         self.linear = linear
         self.solver = solver
         self._optimize = self._optimize_dw if optimize_dw else self._optimize_w
-        self._lr = lr
 
     def split(self, p: torch.Tensor) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        """split the parameter into a weight and bias
+
+        Args:
+            p (torch.Tensor): The parameter to split
+
+        Returns:
+            typing.Tuple[torch.Tensor, torch.Tensor]: the parameter split. If no bias, "None" will be returned
+        """
         if self.linear.bias is None:
             return p, None
 
@@ -167,26 +170,24 @@ class LeastSquaresStepTheta(StepTheta):
 
 
 class LeastSquaresStepX(StepX):
+    """Update x based on the least squares estimator"""
+
     def __init__(
         self,
         linear: nn.Linear,
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
-        optimize_dx: bool = False,
-        lr: typing.Optional[float] = None,
+        optimize_dx: bool = False
     ):
         """initializer
 
         Args:
-            linear (nn.Linear): _description_
-            solver (LeastSquaresSolver, optional): _description_. Defaults to LeastSquaresStandardSolver.
-            optimize_dx (bool, optional): _description_. Defaults to False.
-            lr (typing.Optional[float], optional): _description_. Defaults to None.
-            is_fresh (bool, optional): _description_. Defaults to True.
+            linear (nn.Linear): The linear model to use
+            solver (LeastSquaresSolver, optional): The solver to use for updating. Defaults to LeastSquaresStandardSolver.
+            optimize_dx (bool, optional): Whether to minimize the delta of x or x. In general recommended to use delta. Defaults to False.
         """
         self.linear = linear
         self.solver = solver
         self._optimize = self._optimize_dx if optimize_dx else self._optimize_x
-        self._lr = lr
 
     def _optimize_dx(self, x: torch.Tensor, t: torch.Tensor):
         y = self.linear(x)
@@ -210,26 +211,32 @@ class LeastSquaresStepX(StepX):
             state (State): The current learning state
 
         Returns:
-            Conn: The connection
+            Conn: The connection with x updated
         """
         x = self._optimize(conn.step_x.x[0], conn.step_x.t[0])
         update_io(IO(x), conn.step_x.x)
-        conn.tie_inp()
-        return conn
+        return conn.tie_inp()
 
 
 class LeastSquaresLearner(LearningMachine):
-    """Learner that uses least squares"""
+    """Learner that uses least squares to optimize theta and x. It wraps a standard linear model. 
+    Uses a ridge regresion solver"""
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
         bias: bool = True,
-        optimize_dx: bool = True,
-        x_lr: float = 1e-2,
-        x_reduction: str = "mean",
+        optimize_dx: bool = True
     ):
+        """initializer
+
+        Args:
+            in_features (int): The number of features into the linear model
+            out_features (int): The number of features out of the model
+            bias (bool, optional): Whether to use the bias. Defaults to True.
+            optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
+        """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
         self._loss = ThLoss("mse", "mean")

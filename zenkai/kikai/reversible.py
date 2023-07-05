@@ -1,9 +1,8 @@
 # 1st party
 import typing
 
-from ..kaku import IO, AssessmentDict, Conn, LearningMachine, State, ThLoss
-
 # local
+from ..kaku import IO, AssessmentDict, Conn, LearningMachine, State, ThLoss
 from ..utils import Reversible, SequenceReversible
 
 

@@ -34,6 +34,13 @@ class GradStepTheta(StepTheta):
         optim_factory: OptimFactory,
         reduction: str = "mean",
     ):
+        """initializers
+
+        Args:
+            learner (LearningMachine): Whether 
+            optim_factory (OptimFactory): 
+            reduction (str, optional): _description_. Defaults to "mean".
+        """
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
@@ -125,7 +132,7 @@ class GradLoopStepX(BatchIdxStepX):
         """initializer
 
         Args:
-            learner (LearningMachine):
+            learner (LearningMachine): The learner to update x for
             optim_factory (OptimFactory): OptimFactory for "optimizing" x
             reduction (str, optional): The loss reduction to use. Defaults to 'mean'.
             loss_name (str, optional): Name of the loss. Defaults to 'loss'.
