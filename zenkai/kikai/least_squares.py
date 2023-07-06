@@ -23,7 +23,6 @@ from ..kaku.machine import (
 from ..utils import to_np, to_th_as
 
 
-# TODO: Move to itadaki
 class LeastSquaresSolver(ABC):
     @abstractmethod
     def solve(self, a: torch.Tensor, b: torch.Tensor):

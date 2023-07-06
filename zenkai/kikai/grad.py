@@ -26,13 +26,12 @@ from ..kaku import (
 class GradStepTheta(StepTheta):
     """Update theta with the loss between y and t on the forward pass"""
 
-    Y_NAME = "y"
-
     def __init__(
         self,
         learner: LearningMachine,
         optim_factory: OptimFactory,
         reduction: str = "mean",
+        y_name: str='y'
     ):
         """initializers
 
@@ -45,10 +44,11 @@ class GradStepTheta(StepTheta):
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
         self.reduction = reduction
+        self.y_name = y_name
 
     def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         x, t, y = conn.step
-        y = state.get(self, self.Y_NAME)
+        y = state.get(self, self.y_name)
         stepped = state.get(self, "stepped", False)
         if stepped or y is None:
             y = self.learner(x, state, detach=False)
@@ -62,7 +62,7 @@ class GradStepTheta(StepTheta):
 
 
 class NullStepTheta(StepTheta):
-    """Do not update theta"""
+    """Step that does not update theta"""
 
     def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
         return conn.connect_in(from_in_x=from_)
