@@ -142,7 +142,7 @@ class TestIO:
         x = torch.rand(2, 2)
         x2 = torch.rand(2, 2)
         io = IO(x, x2)
-        _x1, _x2 = io.vals
+        _x1, _x2 = io.totuple()
         assert x is _x1
         assert x2 is _x2
 

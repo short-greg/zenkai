@@ -568,18 +568,3 @@ def expand_t(t: IO, k: int) -> IO:
         ts.append(flatten(expand(t_i, k)))
 
     return IO(*ts)
-
-
-# TO DECIDE
-# class Updater(ABC):
-
-#     @abstractmethod
-#     def __call__(self, population: Population) -> Population:
-#         pass
-
-
-# def expand_dim0(x: torch.Tensor, k: int, reshape: bool=True):
-#     y = x[None].repeat(k, *([1] * len(x.size()))) #.transpose(0, 1)
-#     if reshape:
-#         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
-#     return y

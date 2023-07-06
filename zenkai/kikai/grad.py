@@ -1,12 +1,9 @@
 # 1st party
 import typing
 
-import torch
-
 # 3rd Party
 import torch.nn as nn
-
-from ..kaku import AssessmentDict, OptimFactory, ThLoss
+import torch
 
 # Local
 from ..kaku import (
@@ -20,6 +17,9 @@ from ..kaku import (
     StepTheta,
     StepX,
     idx_io,
+    AssessmentDict,
+    OptimFactory,
+    ThLoss
 )
 
 
@@ -192,7 +192,7 @@ class GradLearner(LearningMachine):
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._sequence(*x.vals), detach=False)
+        y = state[self, self.Y_NAME] = IO(self._sequence(*x), detach=False)
         return y.out(detach)
 
 
@@ -233,7 +233,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._sequence(*x.vals), detach=False)
+        y = state[self, self.Y_NAME] = IO(self._sequence(*x), detach=False)
         return y.out(detach)
 
 

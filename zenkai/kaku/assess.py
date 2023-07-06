@@ -511,6 +511,9 @@ class AssessmentDict(object):
 
 
 class Loss(nn.Module):
+    """Base class for calculating losses
+    """
+
     def __init__(self, reduction: str = "mean", maximize: bool = False):
         """
         Args:
@@ -543,7 +546,7 @@ class Loss(nn.Module):
         return Reduction.reduce_by(loss, reduction_override or self.reduction)
 
     def assess(
-        self, x: torch.Tensor, t: torch.Tensor, reduction_override: str = None
+        self, x, t, reduction_override: str = None
     ) -> Assessment:
         """Calculate the assessment of
 
@@ -559,8 +562,8 @@ class Loss(nn.Module):
 
     def assess_dict(
         self,
-        x: torch.Tensor,
-        t: torch.Tensor,
+        x,
+        t,
         reduction_override: str = None,
         name: str = "loss",
     ):
@@ -573,7 +576,7 @@ class Loss(nn.Module):
         )
 
     @abstractmethod
-    def forward(self, x: torch.Tensor, t: torch.Tensor, reduction_override: str = None):
+    def forward(self, x, t, reduction_override: str = None):
         pass
 
 

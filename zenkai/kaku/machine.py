@@ -18,19 +18,17 @@ Other
 Loop - Loop over data
 """
 
-import typing
-
 # 1st party
 from abc import ABC, abstractmethod
 from collections import deque
+import typing
 
 # 3rd party
 import torch
 import torch.nn as nn
 
-from .. import utils as base_utils
-
 # local
+from .. import utils as base_utils
 from .assess import AssessmentDict, Loss, ThLoss
 from .component import Learner
 from .state import IDable, State
@@ -79,14 +77,21 @@ class IO(object):
     def items(self) -> typing.Dict:
         return dict(enumerate(self._x))
 
-    @property
-    def vals(self) -> typing.List:
-        """the values making up the IO
+    def tolist(self) -> typing.List:
+        """Convert to a list
 
         Returns:
             list: The values in the IO
         """
-        return [*self._x]
+        return list(self._x)
+    
+    def totuple(self) -> typing.Tuple:
+        """Convert to a list
+
+        Returns:
+            typing.Tuple: the values making up the io as a tuple
+        """
+        return tuple(self._x)
 
     def __getitem__(self, idx: int):
         """Retrieve item from the IO
@@ -218,7 +223,7 @@ class Idx(object):
 
     def __call__(self, x: IO, detach: bool = False) -> IO:
 
-        selected = self.idx_th(*x.vals)
+        selected = self.idx_th(*x)
 
         result = IO(*selected, detach=detach, names=x.names)
         if x._freshened and not detach:
@@ -797,7 +802,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, x: IO, state: State = None, detach: bool = True) -> IO:
+    def __call__(self, x: IO, state: State = None, detach: bool = True, *args, **kwargs) -> IO:
         """
         Args:
             x (IO): The input to the machine
@@ -807,7 +812,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         Returns:
             IO: The output fo the machine
         """
-        return super().__call__(x, state or State(), detach)
+        return super().__call__(x, state or State(), detach, *args, **kwargs)
 
     def learn(
         self,
