@@ -3,10 +3,10 @@ import typing
 from collections import deque
 from copy import deepcopy
 
-import torch.nn as nn
 
 # 3rd party
 import torch.nn.functional
+import torch.nn as nn
 from torch.nn.functional import one_hot
 
 # local
@@ -54,6 +54,15 @@ class Voter(nn.Module):
     def forward(
         self, votes: torch.Tensor, weights: typing.List[float] = None
     ) -> torch.Tensor:
+        """Aggregate the votes from the estimators
+
+        Args:
+            votes (torch.Tensor): The votes output by the ensemble
+            weights (typing.List[float], optional): Weights to use on the votes. Defaults to None.
+
+        Returns:
+            torch.Tensor: The aggregated result
+        """
 
         if self._n_classes is not None:
             votes = one_hot(votes, self._n_classes).sum(dim=-2)
@@ -74,6 +83,8 @@ class Voter(nn.Module):
 
 
 class VoterEnsemble(nn.Module):
+    """Module containing multiple modules that vote on output
+    """
     def __init__(self, base_estimator: estimators.ScikitEstimator, n_keep: int):
         """
 
@@ -101,6 +112,10 @@ class VoterEnsemble(nn.Module):
 
     @property
     def n_keep(self) -> int:
+        """
+        Returns:
+            int: The number of modules to make up the ensemble
+        """
         return self._n_keep
 
     @n_keep.setter
@@ -124,7 +139,14 @@ class VoterEnsemble(nn.Module):
     def fit_update(
         self, x: torch.Tensor, t: torch.Tensor, limit: torch.LongTensor = None
     ):
+        """Fit a new estimator based on the target
 
+        Args:
+            x (torch.Tensor): The input to the machine
+            t (torch.Tensor): The target to fit to
+            limit (torch.LongTensor, optional): Limit on the machines that get updated. 
+              Defaults to None.
+        """
         self._base_estimator.fit(x, t, limit)
         if len(self._estimators) == self._n_keep:
             self._estimators.rotate(-1)
@@ -138,13 +160,16 @@ class VoterEnsemble(nn.Module):
 
         if self._fitted is False:
             return self._base_estimator(x)
-        # TODO: This can be optimized so that it does not convert to a
-        # tensor.
+        # TODO: consider to minimize conversions to tensors
         votes = torch.stack([estimator(x) for estimator in self._estimators])
         return self._voter(votes)
 
     @property
     def n_estimators(self) -> estimators.ScikitEstimator:
+        """
+        Returns:
+            estimators.ScikitEstimator: The current number of estimators making up the ensemble
+        """
         return len(self._estimators)
 
     @property

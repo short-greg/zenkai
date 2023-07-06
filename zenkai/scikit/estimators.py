@@ -27,7 +27,7 @@ from ..utils import Argmax, Sign
 
 
 class ScikitEstimator(nn.Module):
-    """Wraps an Scikit Estimator in an nn.Module"""
+    """Adapts an Scikit Estimator in an nn.Module"""
 
     def __init__(
         self,
@@ -198,6 +198,8 @@ class ScikitEstimator(nn.Module):
 
 
 class ScikitRegressor(ScikitEstimator):
+    """Adapter for Scikit-Learn regressors"""
+
     def __init__(
         self,
         sklearn_estimator,
@@ -207,7 +209,7 @@ class ScikitRegressor(ScikitEstimator):
         partial_fit: bool = True,
         use_predict: bool = True,
     ):
-        """_summary_
+        """initializer
 
         Args:
             sklearn_machine (_type_):
@@ -326,7 +328,7 @@ class ScikitBinary(ScikitEstimator):
 
 
 class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
-    """Machine used to train an estimator"""
+    """Machine used to train a Scikit Learn estimator"""
 
     def __init__(
         self,
@@ -411,6 +413,10 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
 
     @property
     def fitted(self) -> bool:
+        """
+        Returns:
+            bool: Whether or not the estimator has been fitted
+        """
         return self._module.fitted
 
 
