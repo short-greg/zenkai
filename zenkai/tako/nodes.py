@@ -124,16 +124,6 @@ class Process(ABC):
     def _remove_outgoing(self, process: "Process"):
         process._outgoing.remove(self)
 
-    # def nest(self, tako: 'Tako', name=None, info=None, dive: bool=True) -> typing.Iterator['Process']:
-
-    #     # TODO: Brainsorm more about this
-    #     if dive is None:
-    #         yield Nested(tako, x=to_incoming(self), name=name, info=info)
-    #     else:
-    #         nested = Nested(tako, x=to_incoming(self), name=name, info=info)
-    #         for layer in nested.y_iter():
-    #             yield layer
-
     def to(
         self,
         nn_module: typing.Union[typing.List[nn.Module], nn.Module],
@@ -207,8 +197,22 @@ class Process(ABC):
             self.set_by(by, result)
         return result
 
+    # def nest(self, tako: 'Tako', name=None, info=None, dive: bool=True) -> typing.Iterator['Process']:
+
+    #     # TODO: Brainsorm more about this
+    #     if dive is None:
+    #         yield Nested(tako, x=to_incoming(self), name=name, info=info)
+    #     else:
+    #         nested = Nested(tako, x=to_incoming(self), name=name, info=info)
+    #         for layer in nested.y_iter():
+    #             yield layer
+
+
 
 class Joint(Process):
+    """Process that merges inputs together
+    """
+
     def __init__(self, x=UNDEFINED, name: str = None, info: Info = None):
         """initializer
 
@@ -221,7 +225,11 @@ class Joint(Process):
         self._y = UNDEFINED
 
     @property
-    def y(self):
+    def y(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The output of the process
+        """
 
         undefined = False
         for x_i in self._x:
@@ -237,10 +245,14 @@ class Joint(Process):
 
     @y.setter
     def y(self, y):
+        """_
+        Args:
+            y: The output for the process
+        """
         self._y = y
 
     @property
-    def x(self):
+    def x(self) -> typing.List:
         """
         Returns:
             The input to the node
@@ -258,7 +270,11 @@ class Joint(Process):
         return x
 
     @x.setter
-    def x(self, x):
+    def x(self, x: typing.Iterable):
+        """
+        Args:
+            x (typing.Iterable): The input into the net
+        """
 
         if self._x is not UNDEFINED:
             for x_i in self._x:
@@ -272,7 +288,15 @@ class Joint(Process):
             xs.append(x_i)
         self._x = xs
 
-    def _probe_out(self, by):
+    def _probe_out(self, by) -> typing.List:
+        """Query the output of the process
+
+        Args:
+            by (typing.Dict) : The inputs if specified  
+
+        Returns:
+            _type_: _description_
+        """
         y = []
         for x_i in self._x:
             if is_defined(x_i):
@@ -283,10 +307,9 @@ class Joint(Process):
 
 
 class Index(Process):
-    """
+    """Index a process
 
-    Args:
-        Process (_type_): _description_
+    TODO: Add usage
     """
 
     def __init__(
@@ -296,13 +319,20 @@ class Index(Process):
         name: str = None,
         info: Info = None,
     ):
+        """_summary_
+
+        Args:
+            idx (typing.Union[int, slice]): The index to index the input by
+            x (_type_, optional): The input into the process. Defaults to UNDEFINED.
+            name (str, optional): The name of the process. Defaults to None.
+            info (Info, optional): The info for the process. Defaults to None.
+        """
         super().__init__(x, name, info)
         self._idx = idx
 
     @property
-    def y(self):
+    def y(self) -> typing.Any:
         """
-
         Returns:
             The output of the node
         """
@@ -311,8 +341,9 @@ class Index(Process):
         else:
             return self._x[self._idx]
 
-    def _probe_out(self, by):
-
+    def _probe_out(self, by: typing.Dict) -> typing.Any:
+        """
+        """
         if is_defined(self._x):
             x = self._x
         else:
@@ -334,9 +365,6 @@ class End(Process):
         super().__init__(x, name=name, info=info)
         self._y = UNDEFINED
 
-    def y_(self, store: bool = True):
-        pass
-
     @property
     def y(self):
         if is_defined(self._y):
@@ -352,14 +380,29 @@ class End(Process):
         self._y = y
 
     def _probe_out(self, by):
+        """Retrieve the output of the process
+
+        Args:
+            by (Dict): Outputs for nodes {'node': {output}}
+
+        Returns:
+            typing.Any: The 
+        """
         if is_defined(self._x):
             x = self._x
         else:
             x = self._x.probe(by)
         return x
 
+    # def y_(self, store: bool = True):
+    #     pass
+
 
 class Layer(Process):
+    """
+    The standard process which contains one or more nn.Modules
+    """
+
     def __init__(
         self,
         nn_module: typing.Union[typing.List[nn.Module], nn.Module],
@@ -381,14 +424,12 @@ class Layer(Process):
         self.op = nn_module
         self._y = UNDEFINED
 
-    def y_(self, store: bool = True):
-        pass
-
     @property
-    def y(self):
-
-        # return self._y
-
+    def y(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The output of the process
+        """
         if self._y == UNDEFINED and isinstance(self._x, Process):
             return UNDEFINED
 
@@ -406,31 +447,75 @@ class Layer(Process):
         self._y = y
 
     def _probe_out(self, by):
+        """Retrieve the output of the process
+
+        Args:
+            by (Dict): Outputs for nodes {'node': {output}}
+
+        Returns:
+            _type_: _description_
+        """
         if is_defined(self._x):
             x = self._x
         else:
             x = self._x.probe(by)
         return self.op(x)
 
+    # def y_(self, store: bool = True):
+    #     """_summary_
+
+    #     Args:
+    #         store (bool, optional): _description_. Defaults to True.
+    #     """
+    #     pass
+
 
 class In(Process):
+    """
+    Incoming node. Since it does not wrap any processes the input and the 
+    output are the same
+    """
+
     @property
-    def x(self):
+    def x(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The input/output of the process
+        """
         return self._x
 
     @x.setter
     def x(self, x):
+        """
+        Args:
+            x (typing.Any): The input
+        """
         self._x = x
 
     @property
-    def y(self):
+    def y(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The input/output of the process
+        """
         return self._x
 
     @y.setter
     def y(self, y):
+        """
+        Args:
+            y (typing.Any): 
+        """
         self._x = y
 
-    def _probe_out(self, by):
+    def _probe_out(self, by: typing.Dict) -> typing.Any:
+        """
+        Args:
+            by (Dict): Outputs for nodes {'node': {output}}
+
+        Returns:
+            typing.Any: The input of the procses
+        """
         return self._x
 
 
@@ -438,6 +523,11 @@ class ProcessSet(object):
     """Set of nodes. Can use to probe"""
 
     def __init__(self, nodes: typing.List[Process]):
+        """initializer
+
+        Args:
+            nodes (typing.List[Process]): The nodes in the process set
+        """
         self._nodes = {node.name: node for node in nodes}
 
     def apply(self, process: Process):
@@ -467,7 +557,7 @@ class ProcessSet(object):
     def probe(self, by):
         """
         Args:
-            by (dict): Outputs for nodes {'node': {output}}
+            by (Dict): Outputs for nodes {'node': {output}}
 
         Returns:
             typing.Union[typing.List[torch.Tensor], torch.Tensor]
@@ -478,12 +568,19 @@ class ProcessSet(object):
         return result
 
     def __iter__(self) -> typing.Iterator[Process]:
+        """Iterate over the processes in the set
 
+        Returns:
+            typing.Iterator[Process]: The iterator for the process
+
+        Yields:
+            Process: The processes in the ProcessSet
+        """
         for process in self._nodes.values():
             yield process
 
     def __len__(self) -> int:
-        return
+        return len(self._nodes)
 
 
 class ProcessVisitor(ABC):
@@ -516,4 +613,9 @@ class LambdaApply(Apply):
         self._kwargs = kwargs
 
     def apply(self, node: Process):
+        """Apply the function to the process
+
+        Args:
+            node (Process): The node to apply to
+        """
         self._f(node, *self._args, **self._kwargs)
