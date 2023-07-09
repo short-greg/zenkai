@@ -6,10 +6,10 @@ from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
 from zenkai.kaku import IO, RandomFeatureIdxGen, State, StepX, ThLoss
-from zenkai.scikit.estimators import (ScikitBinary, ScikitLimitGen,
+from zenkai.kikai.scikit import (ScikitBinary, ScikitLimitGen,
                                       ScikitMachine, ScikitRegressor)
-from zenkai.scikit.ensemble import VoterEnsemble
-from zenkai.scikit.estimators import ScikitBinary, ScikitRegressor
+from zenkai.kikai.scikit import VoterEnsemble
+from zenkai.kikai.scikit import ScikitBinary, ScikitRegressor
 
 
 class NullStepX(StepX):
@@ -103,10 +103,10 @@ class TestSklearnMachine(object):
         machine = ScikitMachine(
             regressor, NullStepX(), ThLoss("mse")
         )
-        x1 = IO(torch.randn(8, 2))
-        t1 = IO(torch.randn(8, 3))
-        x2 = IO(torch.randn(8, 2))
-        t2 = IO(torch.randn(8, 3))
+        x1 = IO(torch.randn(8, 3))
+        t1 = IO(torch.randn(8, 2))
+        x2 = IO(torch.randn(8, 3))
+        t2 = IO(torch.randn(8, 2))
 
         machine.step(x1, t1, State())
         # TODO: add Limit

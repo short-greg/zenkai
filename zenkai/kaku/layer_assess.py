@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod, abstractproperty
 
 # local
 from .assess import Assessment, AssessmentDict
-from .machine import Conn, LearningMachine
+from .machine import IO, LearningMachine
 
 
 class LayerAssessor(ABC):
@@ -36,15 +36,15 @@ class LayerAssessor(ABC):
         self._retrieve_choice[name] = retrieve_choice
 
     @abstractmethod
-    def update_before(self, name: str, conn: Conn):
+    def update_before(self, name: str, x_in: IO, x_out: IO, t: IO):
         pass
 
     @abstractmethod
-    def update_after(self, name: str, conn: Conn):
+    def update_after(self, name: str, x_in: IO, x_out: IO, t: IO):
         pass
 
-    def layer_assess(self, name: str, conn: Conn):
-        return AssessContext(self, name, conn)
+    def layer_assess(self, name: str, x_in: IO, x_out: IO, t: IO):
+        return AssessContext(self, name, x_in, x_out, t)
 
     @abstractproperty
     def assessment_dict(self) -> AssessmentDict:
@@ -71,7 +71,7 @@ class DiffLayerAssessor(LayerAssessor):
         self.prefix = prefix
 
     def _calc_assessments(
-        self, name: str, conn: Conn
+        self, name: str, x_in: IO, x_out: IO, t: IO
     ) -> typing.Dict[str, AssessmentDict]:
 
         machine, outgoing = self._registry[name]
@@ -80,25 +80,25 @@ class DiffLayerAssessor(LayerAssessor):
         if outgoing is not None:
             outgoing_status = outgoing.training
             outgoing.train(False)
-        y = machine(conn.step.x)
+        y = machine(x_in)
         retrieve_choice = self._retrieve_choice[name]
         retrieved = {}
 
         if "incoming" in retrieve_choice:
             retrieved["incoming"] = (
-                machine.assess_y(y, conn.step.t, "mean")[self.loss_name].detach().cpu()
+                machine.assess_y(y, x_out, "mean")[self.loss_name].detach().cpu()
             )
         if "full" in retrieve_choice:
             if outgoing is None:
                 raise ValueError("Cannot calculate assessment as outgoing is none")
             retrieved["full"] = (
-                outgoing.assess(y, conn.step_x.t, "mean")[self.loss_name].detach().cpu()
+                outgoing.assess(y, t, "mean")[self.loss_name].detach().cpu()
             )
         if "outgoing" in retrieve_choice:
             if outgoing is None:
                 raise ValueError("Cannot calculate assessment as outgoing is none")
             retrieved["outgoing"] = (
-                outgoing.assess(conn.step_x.x, conn.step_x.t, "mean")[self.loss_name]
+                outgoing.assess(x_out, t, "mean")[self.loss_name]
                 .detach()
                 .cpu()
             )
@@ -108,16 +108,16 @@ class DiffLayerAssessor(LayerAssessor):
         machine.train(status)
         return retrieved
 
-    def update_before(self, name: str, conn: Conn):
-        self._before[name] = self._calc_assessments(name, conn)
+    def update_before(self, name: str, x_in: IO, x_out: IO, t: IO):
+        self._before[name] = self._calc_assessments(name, x_in, x_out, t)
         self._after[name] = {}
 
-    def update_after(self, name: str, conn: Conn):
+    def update_after(self, name: str, x_in: IO, x_out: IO, t: IO):
         if len(self._after[name]) != 0:
             raise ValueError(
                 "Must call 'update_before' before calling 'update after'"
             )
-        self._after[name] = self._calc_assessments(name, conn)
+        self._after[name] = self._calc_assessments(name, x_in, x_out, t)
 
         diff = {}
         for k, b_i in self._before[name].items():
@@ -125,8 +125,8 @@ class DiffLayerAssessor(LayerAssessor):
             diff[k] = Assessment((a_i.value - b_i.value))
         self._diff[name] = diff
 
-    def layer_assess(self, name: str, conn: Conn):
-        return AssessContext(self, name, conn)
+    def layer_assess(self, name: str, x_in: IO, x_out: IO, t: IO):
+        return AssessContext(self, name, x_in, x_out, t)
 
     def _to_dict(self):
 
@@ -159,18 +159,20 @@ class DiffLayerAssessor(LayerAssessor):
 
 
 class AssessContext(object):
-    def __init__(self, layer_assessor: LayerAssessor, name: str, conn: Conn):
+    def __init__(self, layer_assessor: LayerAssessor, name: str, x_in: IO, x_out: IO, t: IO):
 
         self.layer_assessor = layer_assessor
         self.name = name
-        self.conn = conn
+        self.x_in = x_in
+        self.x_out = x_out
+        self.t = t
 
     def __enter__(self):
-        self.layer_assessor.update_before(self.name, self.conn)
+        self.layer_assessor.update_before(self.name, self.x_in, self.x_out, self.t)
         return self
 
     def __exit__(self, type, value, traceback):
         if type is not None:
             return False
-        self.layer_assessor.update_after(self.name, self.conn)
+        self.layer_assessor.update_after(self.name, self.x_in, self.x_out, self.t)
         return True

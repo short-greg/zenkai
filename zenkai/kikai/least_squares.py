@@ -162,7 +162,7 @@ class LeastSquaresStepTheta(StepTheta):
         if bias is not None:
             self.linear.bias.data = bias
 
-    def step(self, x: IO, t: IO, state: State, from_: IO = None):
+    def step(self, x: IO, t: IO, state: State):
         self._optimize(x[0], t[0])
 
 
@@ -210,8 +210,9 @@ class LeastSquaresStepX(StepX):
         Returns:
             Conn: The connection with x updated
         """
-        x = self._optimize(x[0], t[0])
-        update_io(IO(x), x)
+        x_step = self._optimize(x[0], t[0])
+        update_io(IO(x_step), x)
+        return x
 
 
 class LeastSquaresLearner(LearningMachine):
@@ -247,8 +248,7 @@ class LeastSquaresLearner(LearningMachine):
         return self._loss.assess_dict(y[0], t[0], reduction_override=reduction_override)
 
     def step(self, x: IO, t: IO, state: State):
-        conn = self._step_theta.step(conn, state)
-        return conn
+        self._step_theta.step(x, t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._step_x.step_x(x, t, state)

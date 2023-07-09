@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import (IO, Assessment, AssessmentDict, Conn,
+from zenkai.kaku import (IO, Assessment, AssessmentDict,
                          DiffLayerAssessor, LearningMachine, State, ThLoss)
 
 
@@ -18,20 +18,16 @@ class SimpleLearner(LearningMachine):
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(*y, *t, reduction_override, 'loss')
     
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         x = state[self, 'x'][0]
-        conn.out.x = IO(x - x.grad)
-        # at this point it is okay
-        conn.tie_inp(True)
-        return conn
+        return IO(x - x.grad)
 
-    def step(self, conn: Conn, state: State, from_: IO=None) -> Conn:
+    def step(self, x: IO, t: IO, state: State):
         y = state[self, 'y']
         self.optim.zero_grad()
-        assessment = self.assess_y(y, conn.step.t.detach())
+        assessment = self.assess_y(y, t.detach())
         assessment.backward('loss')
         self.optim.step()
-        return conn.connect_in(from_)
 
     def forward(self, x: IO, state: State, detach: bool=True) -> torch.Tensor:
         x.freshen(False)
@@ -43,40 +39,31 @@ class SimpleLearner(LearningMachine):
 
 class TestLayerAssessor:
 
+    def test_get_diff_returns_the_correct_type(self):
+        torch.manual_seed(1)
+        m1 = SimpleLearner(2, 3)
+        m2 = SimpleLearner(3, 2)
+        x1 = IO(torch.rand(2, 2))
+        x2 = IO(torch.rand(2, 3))
+        t2 = IO(torch.rand(2, 2))
+
+        pp = DiffLayerAssessor('PP')
+        pp.register('model', m1, m2)
+        pp.update_before('model', x1, x2, t2)
+        pp.update_after('model', x1, x2, t2)
+        assert isinstance(pp.assessment_dict['PP_model_incoming_after'], Assessment)
+
     def test_get_diff_returns_the_difference(self):
         torch.manual_seed(1)
         m1 = SimpleLearner(2, 3)
         m2 = SimpleLearner(3, 2)
         x1 = IO(torch.rand(2, 2))
         x2 = IO(torch.rand(2, 3))
-        t1 = IO(torch.rand(2, 3))
-        t1_b = IO(torch.rand(2, 3))
         t2 = IO(torch.rand(2, 2))
-
-        conn1 = Conn(x2, t2, x1, t1)
-        conn2 = Conn(x2, t2, x1, t1_b)
 
         pp = DiffLayerAssessor('PP')
         pp.register('model', m1, m2)
-        pp.update_before('model', conn1)
-        pp.update_after('model', conn2)
-        assert isinstance(pp.assessment_dict['PP_incoming'], Assessment)
-
-    def test_get_diff_returns_the_difference(self):
-        torch.manual_seed(1)
-        m1 = SimpleLearner(2, 3)
-        m2 = SimpleLearner(3, 2)
-        x1 = IO(torch.rand(2, 2))
-        x2 = IO(torch.rand(2, 3))
-        t1 = IO(torch.rand(2, 3))
-        t1_b = IO(torch.rand(2, 3))
-        t2 = IO(torch.rand(2, 2))
-
-        conn1 = Conn(x2, t2, x1, t1)
-
-        pp = DiffLayerAssessor('PP')
-        pp.register('model', m1, m2)
-        pp.update_before('model', conn1)
+        pp.update_before('model', x1, x2, t2)
         # should be the length of "before"
         assert len(pp.assessment_dict) == 3
     
@@ -86,16 +73,11 @@ class TestLayerAssessor:
         m2 = SimpleLearner(3, 2)
         x1 = IO(torch.rand(2, 2))
         x2 = IO(torch.rand(2, 3))
-        t1 = IO(torch.rand(2, 3))
-        t1_b = IO(torch.rand(2, 3))
-        t2 = IO(torch.rand(2, 2))
         t2 = IO(torch.rand(2, 2))
         pp = DiffLayerAssessor('PP')
         pp.register('model', m1, m2)
-        conn1 = Conn(x2, t2, x1, t1)
 
-        with pp.layer_assess('model', conn1):
+        with pp.layer_assess('model', x1, x2, t2):
             pass
 
         assert isinstance(pp.assessment_dict['PP_model_incoming'], Assessment)
-

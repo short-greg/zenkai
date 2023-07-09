@@ -1,7 +1,7 @@
 import torch
 
 from zenkai import utils
-from zenkai.kaku.machine import IO, T
+from zenkai.kaku.machine import IO
 from zenkai.kaku.state import State
 from zenkai.kaku.steps import IterHiddenStep, IterOutStep
 
@@ -20,11 +20,11 @@ class TestIterHiddenStep:
         iter_step = IterHiddenStep(learner1, learner2, 1, 1, 1)
         state = State()
         y1 = learner1(x, state)
-        y2 = learner2(y1, state)
-        conn = learner2.step(T(t, y1), state, from_=x)
+        learner2(y1, state)
+        learner2.step(y1, t, state)
 
         before = utils.get_model_parameters(learner1)
-        iter_step.step(conn, state)
+        iter_step.step(x, y1, t, state)
         after = utils.get_model_parameters(learner1)
         assert (before != after).any()
 
@@ -41,7 +41,6 @@ class TestIterOutStep:
         before = utils.get_model_parameters(learner1)
         state = State()
         y1 = learner1(x, state)
-        iter_step.step(T(t, x), state)
+        iter_step.step(x, t, state)
         after = utils.get_model_parameters(learner1)
         assert (before != after).any()
-

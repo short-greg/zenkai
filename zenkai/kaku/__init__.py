@@ -27,25 +27,19 @@ from .machine import (
     IO,
     BatchIdxStepTheta,
     BatchIdxStepX,
-    # Conn,
     EmissionStack,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     Idx,
-    # LayerIO,
     LearningMachine,
     NullLearner,
     StepHook,
     StepTheta,
     StepX,
     StepXHook,
-    T,
-    idx_conn,
     idx_io,
-    idx_layer_io,
     idx_th,
     update_io,
-    update_step_x,
     update_tensor,
 )
 from .optimize import (
@@ -57,4 +51,10 @@ from .optimize import (
     itadaki,
 )
 from .state import IDable, MyState, State, StateKeyError
-from .steps import IterHiddenStep, IterOutStep, Step, StepLoop, TwoLayerStep
+from .steps import (
+    IterHiddenStep, 
+    IterOutStep, 
+    Step, 
+    StepLoop, 
+    # TwoLayerStep
+)

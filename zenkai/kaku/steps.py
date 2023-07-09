@@ -162,7 +162,7 @@ class IterHiddenStep(Step):
                         self.outgoing.step_x(x_out, t, state, batch_idx=idx)
                     else:
                         x_idx = self.outgoing.step_x(idx(x_out), idx(t), state)
-                        update_io(x_idx, x_in, idx, True)
+                        update_io(x_idx, x_out, idx)
 
             for _ in range(self.theta_iterations):
 
@@ -170,8 +170,6 @@ class IterHiddenStep(Step):
                     if isinstance(self.incoming, BatchIdxStepTheta):
                         self.incoming.step(x_in, x_out, state, batch_idx=idx)
                     else:
-                        # TODO: Add state into idx_conn (?)
-                        # conn_idx = idx_conn(conn, idx)
                         self.incoming.step(idx(x_in), idx(x_out), state)
 
             # TODO: Decide whether this is the default
