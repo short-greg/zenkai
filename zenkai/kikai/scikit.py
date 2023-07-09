@@ -16,7 +16,6 @@ from .. import utils
 from ..kaku import (
     IO,
     AssessmentDict,
-    Conn,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     FeatureLimitGen,
@@ -357,42 +356,38 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         return self._loss.assess_dict(y[0], t[0], reduction_override)
 
     def step(
-        self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx = None
-    ) -> Conn:
+        self, x: IO, t: IO, state: State, feature_idx: Idx = None
+    ):
         """Update the estimator
 
         Args:
-            conn (Conn): Connection for the step
+            x (IO): Input
+            t (IO): Target
             state (State): The current state
-            from_ (IO, optional): the input to the previous layer. Defaults to None.
             feature_idx (Idx, optional): . Defaults to None.
 
-        Returns:
-            Conn: the connection incremeented
         """
-        x = conn.step.x[0]
+        x = x[0]
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 
-        t = conn.step.t[0]
         self._module.fit(
-            x, t, feature_idx.tolist() if feature_idx is not None else None
+            x, t[0], feature_idx.tolist() if feature_idx is not None else None
         )
 
-        return conn.connect_in(from_)
-
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update the estimator
 
         Args:
-            conn (Conn):
-            state (State): The state of the
+            x (IO): Input
+            t (IO): Traget
+            state (State): The state of training
             feature_idx (Idx, optional): _description_. Defaults to None.
 
         Returns:
-            Conn: the connection with an updated step target
+            IO: the updated x
         """
-        return self._step_x.step_x(conn, state, feature_idx)
+        return self._step_x.step_x(x, t, state, feature_idx)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         """
@@ -636,42 +631,37 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         return self._loss.assess_dict(y[0], t[0], reduction_override)
 
     def step(
-        self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx = None
-    ) -> Conn:
+        self, x: IO, t: IO, state: State, feature_idx: Idx = None
+    ):
         """Update the machine
 
         Args:
-            conn (Conn): the connection to train on
+            x (IO): Input
+            t (IO): Target
             state (State): State for training
-            from_ (IO, optional): the input to the previous machine. Defaults to None.
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
-
-        Returns:
-            Conn:
         """
-        x = conn.step.x[0]
+        x = x[0]
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 
-        t = conn.step.t[0]
         self._module.fit_update(
-            x, t, feature_idx.tolist() if feature_idx is not None else None
+            x, t[0], feature_idx.tolist() if feature_idx is not None else None
         )
 
-        return conn.connect_in(from_)
-
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update the input
 
         Args:
-            conn (Conn):  the connection to do step_x on
+            x (IO):  IO
+            t (IO)
             state (State): State for training
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
 
         Returns:
-            Conn: connection
+            IO: The updated input
         """
-        return self._step_x.step_x(conn, state, feature_idx)
+        return self._step_x.step_x(x, t, state, feature_idx)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         """

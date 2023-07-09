@@ -47,3 +47,10 @@ from .least_squares import (
     LeastSquaresStepX,
 )
 from .reversible import ReversibleMachine
+from .scikit import (
+    VoterEnsemble, Voter, ScikitLimitGen,
+    ScikitEstimator, ScikitRegressor,
+    ScikitMulticlass, ScikitBinary,
+    ScikitMachine, VoterEnsembleMachine
+
+)
