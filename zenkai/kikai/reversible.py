@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ..kaku import IO, AssessmentDict, Conn, LearningMachine, State, ThLoss
+from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, ThLoss
 from ..utils import Reversible, SequenceReversible
 
 
@@ -37,24 +37,21 @@ class ReversibleMachine(LearningMachine):
         """Update x
 
         Args:
-            conn (Conn): The connection to update based on
+            x (IO): The input
             state (State): The learning state
 
         Returns:
-            Conn: The connection with an updated target for step
+            IO: The updated input
         """
         return self.reversible.reverse(t[0])
 
-    def step(self, x: IO, t: IO, state: State) -> Conn:
+    def step(self, x: IO, t: IO, state: State):
         """These layers do not have parameters so the internal mechanics are not updated
 
         Args:
-            conn (Conn): The connection for the layer
+            x (IO): The input
+            t (IO): The output 
             state (State): The learning state
-            from_ (IO, optional): The input to the previous layer. Defaults to None.
-
-        Returns:
-            Conn: the connection for the preceding layer
         """
         pass
 

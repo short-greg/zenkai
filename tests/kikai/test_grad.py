@@ -6,7 +6,7 @@ from torch import nn
 
 from zenkai import OptimFactory, ThLoss, utils
 # local
-from zenkai.kaku import IO, State, T
+from zenkai.kaku import IO, State
 from zenkai.kikai import grad
 
 
@@ -60,10 +60,9 @@ class TestTHGradMachine1:
         x_ = x.clone(True)
         state = State()
         learner.forward(x, state)
-        conn = T(t, inp_x=x)
-        conn = learner.step(conn, state)
-        conn = learner.step_x(conn, state)
-        assert (conn.out.x[0] != x_[0]).any()
+        learner.step(x, t, state)
+        x = learner.step_x(x, t, state)
+        assert (x[0] != x_[0]).any()
 
     def test_step_updates_parameters(self):
 
@@ -72,9 +71,8 @@ class TestTHGradMachine1:
         t = IO(torch.rand(2, 3))
         state = State()
         before = utils.get_model_parameters(learner)
-        y = learner.forward(x, state)
-        conn = T(t, inp_x=x)
-        _ = learner.step(conn, state)
+        learner.forward(x, state)
+        learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -99,10 +97,9 @@ class TestTHGradMachine2:
         t = IO(torch.rand(2, 3))
         state = State()
         learner(x, state)
-        conn = T(t, inp_x=x)
-        conn = learner.step(conn, state)
-        conn = learner.step_x(conn, state)
-        assert (conn.out.x[0] != og_x[0]).any()
+        learner.step(x, t, state)
+        x = learner.step_x(x, t, state)
+        assert (x[0] != og_x[0]).any()
 
     def test_step_x_updates_x_repeated(self):
 
@@ -112,11 +109,10 @@ class TestTHGradMachine2:
         t = IO(torch.rand(2, 3))
         state = State()
         learner.forward(x, state)
-        conn = T(t, inp_x=x)
-        x_step = learner.step(conn, state)
-        x_step = learner.step_x(x_step, state)
-        x_step = learner.step_x(x_step, state)
-        assert (x_step.out.x[0] != og_x[0]).any()
+        learner.step(x, t, state)
+        x = learner.step_x(x, t, state)
+        x = learner.step_x(x, t, state)
+        assert (x[0] != og_x[0]).any()
 
     def test_step_updates_parameters(self):
 
@@ -125,9 +121,8 @@ class TestTHGradMachine2:
         t = IO(torch.rand(2, 3))
         state = State()
         before = utils.get_model_parameters(learner)
-        y = learner.forward(x, state)
-        conn = T(t, inp_x=x)
-        _ = learner.step(conn, state)
+        learner.forward(x, state)
+        learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -139,8 +134,7 @@ class TestTHGradMachine2:
         state = State()
         before = utils.get_model_parameters(learner)
         y = learner.forward(x, state)
-        conn = T(t, inp_x=x)
-        _ = learner.step(conn, state)
-        _ = learner.step(conn, state)
+        learner.step(x, t, state)
+        learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()

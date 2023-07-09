@@ -45,7 +45,7 @@ class GradStepTheta(StepTheta):
         self.reduction = reduction
         self.y_name = y_name
 
-    def step(self, x: IO, t: IO, state: State, from_: IO = None):
+    def step(self, x: IO, t: IO, state: State):
         y = state.get(self, self.y_name)
         stepped = state.get(self, "stepped", False)
         if stepped or y is None:
@@ -149,7 +149,7 @@ class GradLoopStepX(BatchIdxStepX):
         Returns:
             IO: The updated input. The tensor x is updated in this case
         """
-        x_state = state.sub(x, "x")
+        x_state = state.mine(x)
         if "optim" not in x_state:
             x_state.optim = self.optim_factory([*x])
         x = idx_io(x, batch_idx)
@@ -227,9 +227,9 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         return assessment
 
     def step(
-        self, x: IO, t: IO, state: State, from_: IO = None, batch_idx: Idx = None
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
-        return self._theta_step.step(x, t, state, from_, batch_idx)
+        return self._theta_step.step(x, t, state, batch_idx)
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return self._x_step.step_x(x, t, state, batch_idx)
