@@ -138,22 +138,28 @@ class GradLoopStepX(BatchIdxStepX):
         self.loss_name = loss_name
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
-        # 
-        pass
+        """Update x by reevaluating. Primarily use in loops
 
-        # my_state = conn.state.mine(self)
-        # if "optim" not in my_state:
-        #     my_state.optim = self.optim_factory([*conn.step_x.x])
-        # x = idx_io(conn.step_x.x, batch_idx)
-        # t = idx_io(conn.step_x.t, batch_idx)
-        # my_state.optim.zero_grad()
-        # y = self.learner(x, detach=False)
-        # assessment = self.learner.assess_y(y, t, self.reduction)
-        # assessment.backward(self.loss_name)
-        # my_state.optim.step()
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The current learning state
+            batch_idx (Idx, optional): The index for x. Defaults to None.
 
-        # # TODO: Detach
-        # return conn.tie_inp()
+        Returns:
+            IO: The updated input. The tensor x is updated in this case
+        """
+        x_state = state.sub(x, "x")
+        if "optim" not in x_state:
+            x_state.optim = self.optim_factory([*x])
+        x = idx_io(x, batch_idx)
+        t = idx_io(t, batch_idx)
+        x_state.optim.zero_grad()
+        y = self.learner(x, detach=False)
+        assessment = self.learner.assess_y(y, t, self.reduction)
+        assessment.backward(self.loss_name)
+        x_state.optim.step()
+        return x
 
 
 class GradLearner(LearningMachine):
