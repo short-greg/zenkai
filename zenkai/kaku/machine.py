@@ -10,10 +10,6 @@ The following classes can be used to add flexibility to optimziation
 StepX - Optimizer for updating the inputs of a learning machine
 StepTheta - Optimizer for updating the parameters of a learning machine
 
-Connections:
-Conn - Base class for all connections
-Node - Class used for learning machine connections
-
 Other
 Loop - Loop over data
 """
@@ -265,248 +261,12 @@ class Idx(object):
         return len(self.idx)
 
 
-class LayerIO(object):
-    """IO wrapper for the inputs, outputs and targets for a layer"""
-
-    @staticmethod
-    def to_io(io: IO = None):
-        if io is None:
-            return IO()
-        elif not isinstance(io, IO):
-            return IO(io)
-        return io
-
-    # TODO: better handle the case when None
-    def __init__(self, x: IO = None, t: IO = None, y: IO = None):  # , idx: Idx=None):
-        """initializer
-
-        Args:
-            x (IO, optional): IO for the input. Defaults to None.
-            t (IO, optional): IO for the target. Defaults to None.
-            y (IO, optional): IO for the output. Defaults to None.
-            idx (Idx, optional): Index to index the IO by. Defaults to None.
-        """
-        self._x = self.to_io(x)
-        self._t = self.to_io(t)
-        self._y = self.to_io(y)
-
-    @property
-    def x(self) -> "IO":
-        """
-        Returns:
-            IO: the IO for x. If an index is specified it will
-            be indexed
-        """
-        return self._x
-        # return self._x.get(self._idx)
-
-    @x.setter
-    def x(self, x: IO) -> "IO":
-        """Sets the value for x. Cannot use if is_indexed is True
-
-        Args:
-            x (IO): The IO to set x to
-
-        Raises:
-            ValueError: If is_index is true
-
-        Returns:
-            IO: The updated IO
-        """
-        # TODO: Not sure if i want to leave this
-        # if self.idx is not None:
-        #    raise ValueError("Cannot set x if idx is set")
-        self._x = x
-
-    @property
-    def t(self) -> "IO":
-        return self._t
-
-    @t.setter
-    def t(self, t: IO) -> "IO":
-        # TODO: Not sure if i want to leave this
-        # if self.idx is not None:
-        #    raise ValueError("Cannot set t if idx is set")
-        self._t = t
-
-    @property
-    def y(self) -> "IO":
-
-        return self._y  # .get(self._idx)
-
-    @y.setter
-    def y(self, y: IO) -> "IO":
-        self._y = y
-
-    def __iter__(self) -> typing.Iterator[IO]:
-        yield self.x
-        yield self.t
-        yield self.y
-
-    # TODO: Review if needed
-    def out(self, detach: bool = True) -> "LayerIO":
-        x = self._x.detach() if self.x is not None and detach else self._x
-        t = self._t.detach() if self.t is not None and detach else self._t
-        y = self._y.detach() if self.y is not None and detach else self._y
-        return LayerIO(
-            x,
-            t,
-            y,  # idx=self._idx if use_idx else None
-        )
-
-
-class Conn(object):
-    """Class to connect two learning machines"""
-
-    def __init__(
-        self,
-        out_x: IO,
-        out_t: IO,
-        inp_x: IO = None,
-        inp_t: IO = None,
-        out_y: IO = None,
-        inp_y: IO = None,
-        state=None,
-    ):
-        super().__init__()
-        inp_t = inp_t or out_x
-        self._inp = LayerIO(inp_x, inp_t, inp_y)
-        self._out = LayerIO(out_x, out_t, out_y)
-
-        self.state = state or State()
-        self.tie_step = self.tie_inp
-        self.tie_step_x = self.tie_out
-
-    def tie_inp(self, detach: bool = False) -> "Conn":
-        """Set the target of the incoming layer to the same as the input of the outgoing layer
-
-        Args:
-            detach (bool, optional): Whether to detach after setting. Defaults to False.
-
-        Returns:
-            Conn: _description_
-        """
-        self._inp.t = self._out.x
-        if detach:
-            self._inp.t.detach()
-        return self
-
-    def tie_out(self, detach: bool = False) -> "Conn":
-        """Set the input of the outgoing layer to the same as the output of the outgoing layer
-
-        Args:
-            detach (bool, optional): Whether to detach after setting. Defaults to False.
-
-        Returns:
-            Conn: self
-        """
-        self._out.x = self._inp.y
-        if detach:
-            self._out.x.detach()
-        return self
-
-    @property
-    def inp(self) -> LayerIO:
-        """
-        Returns:
-            LayerIO: The indexed LayerIO for the incoming layer if index is set else the base
-        """
-        return self._inp
-
-    @property
-    def out(self) -> LayerIO:
-        """
-        Returns:
-            LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
-        """
-        return self._out
-
-    @property
-    def step_x(self) -> LayerIO:
-        """
-        Returns:
-            LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
-        """
-        return self.out
-
-    @property
-    def step(self) -> LayerIO:
-        """
-        Returns:
-            LayerIO: The indexed LayerIO for the incoming layer if index is set else the base
-        """
-        return self.inp
-
-    def connect_in(self, from_in_x: IO = None) -> "Conn":
-        """Connect to a new incoming layer. The current incoming layer becomes the outgoing layer
-
-        Args:
-            from_in_x (IO, optional): The x value for the incoming layer. Defaults to None.
-            use_idx (bool, optional): Whether the idx should be passed on to the new connection. Defaults to True.
-
-        Returns:
-            Conn: The connection with the incoming layer
-        """
-        return Conn(self._inp.x, self._inp.t, inp_x=from_in_x)
-
-    def retie(self, inp_x: IO) -> "IO":
-        """
-
-        Args:
-            inp_x (IO, optional): The new x for the incoming layer
-
-        Returns:
-            IO: the previous x value for the incoming layer
-        """
-        old_x = self.inp.x
-        self._inp.x = inp_x
-        return old_x
-
-    @classmethod
-    def from_layer_io(self, incoming: LayerIO, outgoing: LayerIO) -> "Conn":
-
-        return Conn(
-            outgoing.x, outgoing.t, incoming.x, incoming.t, outgoing.y, incoming.y
-        )
-
-
 def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:
 
     if idx is not None:
         io = idx(io)
 
     return io.out(detach)
-
-
-def idx_layer_io(layer_io: LayerIO, idx: Idx = None, detach: bool = False) -> LayerIO:
-
-    return LayerIO(
-        idx_io(layer_io.x, idx, detach),
-        idx_io(layer_io.t, idx, detach),
-        idx_io(layer_io.y, idx, detach),
-    )
-
-
-def idx_conn(conn: Conn, idx: Idx = None, detach: bool = False) -> Conn:
-
-    return Conn.from_layer_io(
-        idx_layer_io(conn.step, idx, detach),
-        idx_layer_io(conn.step_x, idx, detach),
-    )
-
-
-def update_step_x(
-    source: Conn,
-    destination: Conn,
-    idx: Idx = None,
-    tie_step: bool = True,
-    detach: bool = True,
-) -> Conn:
-
-    update_io(source.step_x.x, destination.step_x.x, idx)
-    if tie_step:
-        destination.tie_step(detach)
-    return destination
 
 
 def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tensor:
@@ -538,26 +298,18 @@ def update_tensor(
     return destination
 
 
-class T(Conn):
-    def __init__(self, t: IO, inp_x: IO = None):
-        """Create a 'Target' connection for the global target
-
-        Args:
-            t (IO): the target to set
-            inp_x (IO, optional): the x for the incoming layer. Defaults to None.
-        """
-        super().__init__(t, t, inp_x=inp_x)
-
-
 class StepXHook(ABC):
+    """Use to add additional processing before or after step x"""
+
     @abstractmethod
-    def __call__(self, conn: Conn, state: State, **kwargs) -> Conn:
+    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
         pass
 
 
 class StepHook(ABC):
+
     @abstractmethod
-    def __call__(self, conn: Conn, state: State, **kwargs) -> Conn:
+    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
         pass
 
 
@@ -575,32 +327,33 @@ class StepX(ABC):
         self.step_x = self._step_x_hook_runner
 
     @abstractmethod
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         pass
 
-    def __call__(self, conn: Conn, state: State, *args, **kwargs) -> Conn:
-        return self.step_x(conn, state, *args, **kwargs)
+    def __call__(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+        return self.step_x(x, t, state, *args, **kwargs)
 
-    def _step_x_hook_runner(self, conn: Conn, state: State, *args, **kwargs) -> Conn:
+    def _step_x_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
         Args:
-            conn (Conn): The connection to run on
+            x (IO): The incoming IO
+            t (IO): The target
             state (State): The current state
 
         Returns:
-            Conn: The connection
+            IO: the updated x
         """
 
         for prehook in self._step_x_prehooks:
-            conn = prehook(conn, state)
+            x, t = prehook(x, t, state)
 
-        conn = self._base_step_x(conn, state, *args, **kwargs)
+        x_prime = self._base_step_x(x, t, state, *args, **kwargs)
 
         for posthook in self._step_x_posthooks:
-            conn = posthook(conn, state)
+            x_prime, t = posthook(x_prime, t, state)
 
-        return conn
+        return x_prime
 
     def step_x_prehook(self, hook: StepXHook):
         """Add hook to call before StepX
@@ -638,35 +391,31 @@ class StepTheta(ABC):
         self.step = self._step_hook_runner
 
     @abstractmethod
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
+    def step(self, x: IO, t: IO, state: State):
         pass
 
     def __call__(
-        self, conn: Conn, state: State, from_: IO = None, *args, **kwargs
-    ) -> Conn:
-        return self.step(conn, state, from_, *args, **kwargs)
+        self, x: IO, t: IO, state: State, *args, **kwargs
+    ):
+        self.step(x, t, state, *args, **kwargs)
 
     def _step_hook_runner(
-        self, conn: Conn, state: State, from_: IO = None, *args, **kwargs
-    ) -> Conn:
+        self, x: IO, t: IO, state: State, *args, **kwargs
+    ):
         """Call step wrapped with the hooks
 
         Args:
-            conn (Conn): The connection to run on
+            x (IO): the incoming IO
+            t (IO): The target IO
             state (State): The current state
-
-        Returns:
-            Conn: The connection
         """
         for prehook in self._step_prehooks:
-            conn = prehook(conn, state)
+            x, t = prehook(x, t, state)
 
-        conn = self._base_step(conn, state, from_, *args, **kwargs)
+        self._base_step(x, t, state, *args, **kwargs)
 
         for posthook in self._step_posthooks:
-            conn = posthook(conn, state)
-
-        return conn
+            x, t = posthook(x, t, state)
 
     def step_prehook(self, hook: StepHook):
         """Add hook to call before StepTheta
@@ -690,34 +439,47 @@ class StepTheta(ABC):
 
 
 class BatchIdxStepTheta(StepTheta):
+    """Mixin for when only to update based on a limited set of indexes in the minibatch
+    """
+
     @abstractmethod
     def step(
-        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
-    ) -> Conn:
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
+    ):
         pass
 
 
 class FeatureIdxStepTheta(StepTheta):
+    """Mixin for when only to train on a limited set of neurons
+    """
+
     @abstractmethod
     def step(
-        self, conn: Conn, state: State, from_: IO = None, feature_idx: Idx = None
-    ) -> Conn:
+        self, x: IO, t: IO, state: State, feature_idx: Idx = None
+    ):
         pass
 
 
 class BatchIdxStepX(StepX):
+    """Mixin for when only to update based on a limited set of indexes in the minibatch
+    """
+
     @abstractmethod
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         pass
 
 
 class FeatureIdxStepX(StepX):
+    """Mixin for when only to train on a limited set of neurons
+    """
+
     @abstractmethod
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         pass
 
 
 class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
+    
     def device(self) -> torch.device:
         """Convenience method to get the device for the machine
         Chooses the first parameter. Assumes all sub machines have the same device
@@ -819,7 +581,6 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         x: IO,
         t: IO,
         state: State = None,
-        return_x_step: bool = False,
         clear_state: bool = False,
         reduction_override: str = None,
     ) -> AssessmentDict:
@@ -843,22 +604,20 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         y = self(x, state)
         assessment = self.assess_y(y, t, reduction_override=reduction_override)
 
-        conn = self.step(T(t, inp_x=x), state)
+        self.step(x, t, state)
         if clear_state:
             state.clear(self)
-        if return_x_step:
-            return conn, assessment
         return assessment
 
     def full_step(
-        self, conn: "Conn", state: State, from_: IO = None, clear_state: bool = False
-    ) -> Conn:
-        conn = self.step(conn, state, from_=from_)
-        conn = self.step_x(conn, state)
+        self, x: IO, t: IO, state: State, clear_state: bool = False
+    ) -> IO:
+        self.step(x, t, state)
+        x_prime = self.step_x(x, t, state)
 
         if clear_state:
             state.clear(self)
-        return conn
+        return x_prime
 
     def test(self, x: IO, t: IO) -> AssessmentDict:
         """Assess the machine in "testing" mode
@@ -986,11 +745,11 @@ class NullLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(*y, *t, reduction_override)
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        return Conn(conn.out.x, conn.out.t, from_, conn.out.t)
+    def step(self, x: IO, t: IO, state: State) -> IO:
+        pass
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
-        return conn
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return x
 
     def forward(self, x: IO, state: State):
         return x
@@ -1017,3 +776,251 @@ class NullLearner(LearningMachine):
 #         y = IO(y)
 
 #     return y.out(detach)
+
+
+# class LayerIO(object):
+#     """IO wrapper for the inputs, outputs and targets for a layer"""
+
+#     @staticmethod
+#     def to_io(io: IO = None):
+#         if io is None:
+#             return IO()
+#         elif not isinstance(io, IO):
+#             return IO(io)
+#         return io
+
+#     # TODO: better handle the case when None
+#     def __init__(self, x: IO = None, t: IO = None, y: IO = None):  # , idx: Idx=None):
+#         """initializer
+
+#         Args:
+#             x (IO, optional): IO for the input. Defaults to None.
+#             t (IO, optional): IO for the target. Defaults to None.
+#             y (IO, optional): IO for the output. Defaults to None.
+#             idx (Idx, optional): Index to index the IO by. Defaults to None.
+#         """
+#         self._x = self.to_io(x)
+#         self._t = self.to_io(t)
+#         self._y = self.to_io(y)
+
+#     @property
+#     def x(self) -> "IO":
+#         """
+#         Returns:
+#             IO: the IO for x. If an index is specified it will
+#             be indexed
+#         """
+#         return self._x
+#         # return self._x.get(self._idx)
+
+#     @x.setter
+#     def x(self, x: IO) -> "IO":
+#         """Sets the value for x. Cannot use if is_indexed is True
+
+#         Args:
+#             x (IO): The IO to set x to
+
+#         Raises:
+#             ValueError: If is_index is true
+
+#         Returns:
+#             IO: The updated IO
+#         """
+#         # TODO: Not sure if i want to leave this
+#         # if self.idx is not None:
+#         #    raise ValueError("Cannot set x if idx is set")
+#         self._x = x
+
+#     @property
+#     def t(self) -> "IO":
+#         return self._t
+
+#     @t.setter
+#     def t(self, t: IO) -> "IO":
+#         # TODO: Not sure if i want to leave this
+#         # if self.idx is not None:
+#         #    raise ValueError("Cannot set t if idx is set")
+#         self._t = t
+
+#     @property
+#     def y(self) -> "IO":
+
+#         return self._y  # .get(self._idx)
+
+#     @y.setter
+#     def y(self, y: IO) -> "IO":
+#         self._y = y
+
+#     def __iter__(self) -> typing.Iterator[IO]:
+#         yield self.x
+#         yield self.t
+#         yield self.y
+
+#     # TODO: Review if needed
+#     def out(self, detach: bool = True) -> "LayerIO":
+#         x = self._x.detach() if self.x is not None and detach else self._x
+#         t = self._t.detach() if self.t is not None and detach else self._t
+#         y = self._y.detach() if self.y is not None and detach else self._y
+#         return LayerIO(
+#             x,
+#             t,
+#             y,  # idx=self._idx if use_idx else None
+#         )
+
+
+# class Conn(object):
+#     """Class to connect two learning machines"""
+
+#     def __init__(
+#         self,
+#         out_x: IO,
+#         out_t: IO,
+#         inp_x: IO = None,
+#         inp_t: IO = None,
+#         out_y: IO = None,
+#         inp_y: IO = None,
+#         state=None,
+#     ):
+#         super().__init__()
+#         inp_t = inp_t or out_x
+#         self._inp = LayerIO(inp_x, inp_t, inp_y)
+#         self._out = LayerIO(out_x, out_t, out_y)
+
+#         self.state = state or State()
+#         self.tie_step = self.tie_inp
+#         self.tie_step_x = self.tie_out
+
+#     def tie_inp(self, detach: bool = False) -> "Conn":
+#         """Set the target of the incoming layer to the same as the input of the outgoing layer
+
+#         Args:
+#             detach (bool, optional): Whether to detach after setting. Defaults to False.
+
+#         Returns:
+#             Conn: _description_
+#         """
+#         self._inp.t = self._out.x
+#         if detach:
+#             self._inp.t.detach()
+#         return self
+
+#     def tie_out(self, detach: bool = False) -> "Conn":
+#         """Set the input of the outgoing layer to the same as the output of the outgoing layer
+
+#         Args:
+#             detach (bool, optional): Whether to detach after setting. Defaults to False.
+
+#         Returns:
+#             Conn: self
+#         """
+#         self._out.x = self._inp.y
+#         if detach:
+#             self._out.x.detach()
+#         return self
+
+#     @property
+#     def inp(self) -> LayerIO:
+#         """
+#         Returns:
+#             LayerIO: The indexed LayerIO for the incoming layer if index is set else the base
+#         """
+#         return self._inp
+
+#     @property
+#     def out(self) -> LayerIO:
+#         """
+#         Returns:
+#             LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
+#         """
+#         return self._out
+
+#     @property
+#     def step_x(self) -> LayerIO:
+#         """
+#         Returns:
+#             LayerIO: The indexed LayerIO for the outgoing layer if index is set else the base
+#         """
+#         return self.out
+
+#     @property
+#     def step(self) -> LayerIO:
+#         """
+#         Returns:
+#             LayerIO: The indexed LayerIO for the incoming layer if index is set else the base
+#         """
+#         return self.inp
+
+#     def connect_in(self, from_in_x: IO = None) -> "Conn":
+#         """Connect to a new incoming layer. The current incoming layer becomes the outgoing layer
+
+#         Args:
+#             from_in_x (IO, optional): The x value for the incoming layer. Defaults to None.
+#             use_idx (bool, optional): Whether the idx should be passed on to the new connection. Defaults to True.
+
+#         Returns:
+#             Conn: The connection with the incoming layer
+#         """
+#         return Conn(self._inp.x, self._inp.t, inp_x=from_in_x)
+
+#     def retie(self, inp_x: IO) -> "IO":
+#         """
+
+#         Args:
+#             inp_x (IO, optional): The new x for the incoming layer
+
+#         Returns:
+#             IO: the previous x value for the incoming layer
+#         """
+#         old_x = self.inp.x
+#         self._inp.x = inp_x
+#         return old_x
+
+#     @classmethod
+#     def from_layer_io(self, incoming: LayerIO, outgoing: LayerIO) -> "Conn":
+
+#         return Conn(
+#             outgoing.x, outgoing.t, incoming.x, incoming.t, outgoing.y, incoming.y
+#         )
+
+
+# class T(Conn):
+#     def __init__(self, t: IO, inp_x: IO = None):
+#         """Create a 'Target' connection for the global target
+
+#         Args:
+#             t (IO): the target to set
+#             inp_x (IO, optional): the x for the incoming layer. Defaults to None.
+#         """
+#         super().__init__(t, t, inp_x=inp_x)
+
+
+
+# def idx_layer_io(layer_io: LayerIO, idx: Idx = None, detach: bool = False) -> LayerIO:
+
+#     return LayerIO(
+#         idx_io(layer_io.x, idx, detach),
+#         idx_io(layer_io.t, idx, detach),
+#         idx_io(layer_io.y, idx, detach),
+#     )
+
+
+# def idx_conn(conn: Conn, idx: Idx = None, detach: bool = False) -> Conn:
+
+#     return Conn.from_layer_io(
+#         idx_layer_io(conn.step, idx, detach),
+#         idx_layer_io(conn.step_x, idx, detach),
+#     )
+
+
+# def update_step_x(
+#     source: IO,
+#     destination: IO,
+#     idx: Idx = None,
+#     tie_step: bool = True,
+#     detach: bool = True,
+# ) -> Conn:
+
+#     update_io(source.step_x.x, destination.step_x.x, idx)
+#     if tie_step:
+#         destination.tie_step(detach)
+#     return destination

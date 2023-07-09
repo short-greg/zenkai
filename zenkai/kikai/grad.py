@@ -10,7 +10,6 @@ from ..kaku import (
     IO,
     BatchIdxStepTheta,
     BatchIdxStepX,
-    Conn,
     Idx,
     LearningMachine,
     State,
@@ -46,8 +45,7 @@ class GradStepTheta(StepTheta):
         self.reduction = reduction
         self.y_name = y_name
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        x, t, y = conn.step
+    def step(self, x: IO, t: IO, state: State, from_: IO = None):
         y = state.get(self, self.y_name)
         stepped = state.get(self, "stepped", False)
         if stepped or y is None:
@@ -58,14 +56,13 @@ class GradStepTheta(StepTheta):
         assessment.backward("loss")
         state.store(self, "stepped", True)
         self.optim.step()
-        return conn.connect_in(from_)
 
 
 class NullStepTheta(StepTheta):
     """Step that does not update theta"""
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        return conn.connect_in(from_in_x=from_)
+    def step(self, x: IO, t: IO, state: State):
+        pass
 
 
 class GradLoopStepTheta(BatchIdxStepTheta):
@@ -85,10 +82,10 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         self.loss_name = loss_name
 
     def step(
-        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
-    ) -> Conn:
-        x = idx_io(conn.step.x, batch_idx, False)
-        t = idx_io(conn.step.t, batch_idx, False)
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
+    ):
+        x = idx_io(x, batch_idx, False)
+        t = idx_io(t, batch_idx, False)
 
         y = self.learner(x, state, False)
 
@@ -97,26 +94,23 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         assessment[self.loss_name].backward()
         self.optim.step()
 
-        return conn.connect_in(from_)
-
 
 class GradStepX(StepX):
     """Update x with the loss between y and t based on the grad value of step_x.x"""
 
     Y_NAME = "y"
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x = conn.step_x.x[0]
+        x = x[0]
         x = x - x.grad
         x.grad = None
 
         # TODO: Debug. This is causing problems in backpropagation
         # due to the inplace operation
         # update_io(IO(x), conn.step_x.x)
-        conn.step_x.x = IO(x, detach=True)
-        conn = conn.tie_step(True)
-        return conn
+        x_prime = IO(x, detach=True)
+        return x_prime
 
 
 class GradLoopStepX(BatchIdxStepX):
@@ -143,20 +137,23 @@ class GradLoopStepX(BatchIdxStepX):
         self.reduction = reduction
         self.loss_name = loss_name
 
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
-        my_state = conn.state.mine(self)
-        if "optim" not in my_state:
-            my_state.optim = self.optim_factory([*conn.step_x.x])
-        x = idx_io(conn.step_x.x, batch_idx)
-        t = idx_io(conn.step_x.t, batch_idx)
-        my_state.optim.zero_grad()
-        y = self.learner(x, detach=False)
-        assessment = self.learner.assess_y(y, t, self.reduction)
-        assessment.backward(self.loss_name)
-        my_state.optim.step()
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+        # 
+        pass
 
-        # TODO: Detach
-        return conn.tie_inp()
+        # my_state = conn.state.mine(self)
+        # if "optim" not in my_state:
+        #     my_state.optim = self.optim_factory([*conn.step_x.x])
+        # x = idx_io(conn.step_x.x, batch_idx)
+        # t = idx_io(conn.step_x.t, batch_idx)
+        # my_state.optim.zero_grad()
+        # y = self.learner(x, detach=False)
+        # assessment = self.learner.assess_y(y, t, self.reduction)
+        # assessment.backward(self.loss_name)
+        # my_state.optim.step()
+
+        # # TODO: Detach
+        # return conn.tie_inp()
 
 
 class GradLearner(LearningMachine):
@@ -184,11 +181,11 @@ class GradLearner(LearningMachine):
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        return self._theta_step.step(conn, state, from_)
+    def step(self, x: IO, t: IO, state: State):
+        return self._theta_step.step(x, t, state)
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
-        return self._x_step.step_x(conn, state)
+    def step_x(self, x: IO, t: IO, state: State):
+        return self._x_step.step_x(x, t, state)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
@@ -224,12 +221,12 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         return assessment
 
     def step(
-        self, conn: Conn, state: State, from_: IO = None, batch_idx: Idx = None
-    ) -> Conn:
-        return self._theta_step.step(conn, state, from_, batch_idx)
+        self, x: IO, t: IO, state: State, from_: IO = None, batch_idx: Idx = None
+    ):
+        return self._theta_step.step(x, t, state, from_, batch_idx)
 
-    def step_x(self, conn: Conn, state: State, batch_idx: Idx = None) -> Conn:
-        return self._x_step.step_x(conn, state, batch_idx)
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+        return self._x_step.step_x(x, t, state, batch_idx)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
