@@ -190,69 +190,6 @@ class TestIO:
         y = IO(val)
         assert not x[0] is y[0]
 
-# IDX
-#     def test_get_retrieves_indexed_tensor(self):
-#         idx = [1, 3]
-#         x = torch.rand(4, 2)
-#         io = IO(x)
-#         indexed = io.get(idx)
-#         assert (indexed[0] == x[idx]).all()
-
-#     def test_set_updates_the_indexed_tensor(self):
-#         idx = [1, 3]
-#         x_idx = IO(torch.randn(2, 2))
-#         x = torch.rand(4, 2)
-#         io = IO(x)
-#         io.set(x_idx, idx)
-#         result, = io
-#         assert (result[idx] == x_idx[0]).all()
-
-
-# IDX
-#     def test_x_does_not_set_x_when_empty_and_idx_specified(self, x2, idx):
-#         layer_io = LayerIO(idx=idx)
-#         with pytest.raises(ValueError):
-#             layer_io.x_(x2)
-
-#     def test_x_sets_x_when_idx_is_set_and_not_empty(self, x, idx):
-#         x2 = torch.rand(2, x.size(1))
-#         layer_io = LayerIO(x, idx=idx)
-        
-#         layer_io.x_(x2)
-#         assert (x[idx] == x2).all()
-
-#     def test_y_sets_y_when_idx_is_set_and_not_empty(self, y, idx):
-#         y2 = torch.rand(2, y.size(1))
-#         layer_io = LayerIO(y=y, idx=idx)
-        
-#         layer_io.y_(y2)
-#         assert (y[idx] == y2).all()
-
-#     def test_t_sets_t_when_idx_is_set_and_not_empty(self, t, idx):
-#         t2 = torch.rand(2, t.size(1))
-#         layer_io = LayerIO(t=t, idx=idx)
-        
-#         layer_io.t_(t2)
-#         assert (t[idx] == t2).all()
-
-#     def test_out_detaches_all_and_removes_idx(self, x, t, idx):
-#         layer_io = LayerIO(x, t, idx=idx)
-#         layer_io.x.freshen()
-#         layer_io.t.freshen()
-#         layer_io = layer_io.out(detach=True)
-#         assert layer_io.x[0].requires_grad == False
-#         assert layer_io.t[0].requires_grad == False
-#         assert layer_io.idx is None
-
-#     def test_out_detaches_all_and_does_not_remove_idx(self, x, t, idx):
-#         layer_io = LayerIO(x, t, idx=idx)
-#         layer_io.x.freshen()
-#         layer_io.t.freshen()
-#         layer_io = layer_io.out(detach=True, use_idx=True)
-#         assert layer_io.x[0].requires_grad == False
-#         assert layer_io.t[0].requires_grad == False
-#         assert (layer_io.idx.idx == torch.LongTensor(idx)).all()
-
 
 class SimpleLearner(core.LearningMachine):
 
