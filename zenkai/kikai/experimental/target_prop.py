@@ -10,7 +10,6 @@ import torch.nn as nn
 from ...kaku import AssessmentDict, OptimFactory, ThLoss
 from ...kaku import (
     IO,
-    Conn,
     LearningMachine,
     State,
     Loss,
@@ -116,40 +115,42 @@ class TargetPropLearner(LearningMachine):
             loss (TargetPropLoss): The loss function to assess the prediction of the inputs with
             optim_factory (OptimFactory): The optimizer factory to generate the optim
         """
-
         self.net = net
         self.optim_factory = optim_factory
         self.optim = self.optim_factory(net.parameters())
         self.loss = loss
 
-    def prepare_conn(self, conn_base: Conn, to_: IO) -> Conn:
-        """Convert the forward connection into a connection for target prop
+    def prepare_io(self, x: IO, t: IO, y: IO):
+        return IO(x[0], t[0], y[0])
 
-        Args:
-            conn_base (Conn): _description_
-            to_ (IO): The IO for the preceding network. From TargetPropLearner's POV it is the
-              next network
+    # def prepare_conn(self, conn_base: Conn, to_: IO) -> Conn:
+    #     """Convert the forward connection into a connection for target prop
 
-        Returns:
-            Conn: The connection converted to work with TargetProp
-        """
-        inp_x = IO(
-            conn_base.step.x[0],
-            conn_base.step.t[0],
-            conn_base.step.y[0]
-        )
+    #     Args:
+    #         conn_base (Conn): _description_
+    #         to_ (IO): The IO for the preceding network. From TargetPropLearner's POV it is the
+    #           next network
+
+    #     Returns:
+    #         Conn: The connection converted to work with TargetProp
+    #     """
+    #     inp_x = IO(
+    #         conn_base.step.x[0],
+    #         conn_base.step.t[0],
+    #         conn_base.step.y[0]
+    #     )
         
-        return Conn(
-            out_x=conn_base.step.x, inp_t=conn_base.step.x,
-            out_t=to_, inp_x=inp_x
-        )
+    #     return Conn(
+    #         out_x=conn_base.step.x, inp_t=conn_base.step.x,
+    #         out_t=to_, inp_x=inp_x
+    #     )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(
             tuple(y), t[0], reduction_override
         )
     
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
+    def step(self, x: IO, t: IO, state: State):
         """Update the TargetPropNet
 
         Args:
@@ -163,12 +164,11 @@ class TargetPropLearner(LearningMachine):
         
         y = state[self, 'y']
         self.optim.zero_grad()
-        assessment = self.assess_y(y, conn.step.t)
+        assessment = self.assess_y(y, t)
         assessment['loss'].backward()
         self.optim.step()
-        return conn.connect_in(from_)
     
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Use gradient descent to update step
 
         Args:
@@ -178,13 +178,11 @@ class TargetPropLearner(LearningMachine):
         Returns:
             Conn: _description_
         """
-        x = conn.step_x.x[0]
+        x = x[0]
         x = x - x.grad
         x.grad = None
 
-        conn.step_x.x = IO(x, detach=True)
-        conn = conn.tie_step(True)
-        return conn
+        return IO(x, detach=True)
     
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen()

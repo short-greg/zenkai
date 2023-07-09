@@ -7,6 +7,8 @@ from ..utils import Reversible, SequenceReversible
 
 
 class ReversibleMachine(LearningMachine):
+    """..."""
+
     def __init__(
         self,
         reversible: typing.Union[Reversible, typing.List[Reversible]],
@@ -31,7 +33,7 @@ class ReversibleMachine(LearningMachine):
             "loss", self.validation_name
         )
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x
 
         Args:
@@ -41,11 +43,9 @@ class ReversibleMachine(LearningMachine):
         Returns:
             Conn: The connection with an updated target for step
         """
-        conn.step_x.x_(self.reversible.reverse(conn.step_x.t[0]))
-        conn.tie_inp(True)
-        return conn
+        return self.reversible.reverse(t[0])
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
+    def step(self, x: IO, t: IO, state: State) -> Conn:
         """These layers do not have parameters so the internal mechanics are not updated
 
         Args:
@@ -56,7 +56,7 @@ class ReversibleMachine(LearningMachine):
         Returns:
             Conn: the connection for the preceding layer
         """
-        return conn.connect_in(from_)
+        pass
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         return IO(self.reversible(x[0]), detach=detach)

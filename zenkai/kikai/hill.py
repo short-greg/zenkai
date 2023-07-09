@@ -1,7 +1,6 @@
 # local
 from ..kaku.machine import (
     IO,
-    Conn,
     FeatureIdxStepX,
     Idx,
     LearningMachine,
@@ -45,7 +44,7 @@ class HillClimbStepX(FeatureIdxStepX):
         self.modifier = SlopeModifier(momentum, lr, maximize=maximize)
         self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
 
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update x using hill climbing
 
         Args:
@@ -57,18 +56,17 @@ class HillClimbStepX(FeatureIdxStepX):
             Conn: The connection used to update
         """
 
-        individual = Individual(x=conn.step_x.x[0])
+        individual = Individual(x=x[0])
 
         population = self.limiter(
             individual,
             self.populator(individual),
             feature_idx.tolist() if feature_idx is not None else None,
         )
-        population = self.assessor(population, conn.step_x.t)
+        population = self.assessor(population, t)
         selected = self.modifier(individual, population)
-        update_io(IO(selected["x"], detach=True), conn.step_x.x)
-        conn.tie_inp()
-        return conn
+        update_io(IO(selected["x"], detach=True), x)
+        return x
 
 
 class HillClimbBinaryStepX(FeatureIdxStepX):
@@ -95,16 +93,15 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         """
         self.populator = BinaryPopulator(k, keep_p)
 
-    def step_x(self, conn: Conn, state: State, feature_idx: Idx = None) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
 
-        individual = Individual(x=conn.step_x.x[0])
+        individual = Individual(x=x[0])
         population = self.limiter(
             individual,
             self.populator(individual),
             feature_idx.tolist() if feature_idx is not None else None,
         )
-        population = self.assessor(population, conn.step_x.t)
+        population = self.assessor(population, t)
         selected = self.selector(population)
-        update_io(IO(selected["x"], detach=True), conn.step_x.x)
-        conn.tie_inp()
-        return conn
+        update_io(IO(selected["x"], detach=True), x)
+        return x

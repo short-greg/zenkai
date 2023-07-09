@@ -8,11 +8,9 @@ from .machine import (
     IO,
     BatchIdxStepTheta,
     BatchIdxStepX,
-    Conn,
     Idx,
     LearningMachine,
-    idx_conn,
-    update_step_x,
+    update_io
 )
 from .state import State
 
@@ -23,11 +21,14 @@ class Step(ABC):
     """
 
     @abstractmethod
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
+    def step(self, x_in: IO, x_out: IO, t: IO, state: State) -> IO:
         pass
 
 
 class StepLoop(object):
+    """
+    """
+
     def __init__(self, batch_size: int, shuffle: bool = True):
         """Loop over a connection by indexing
 
@@ -38,24 +39,24 @@ class StepLoop(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
 
-    def create_dataloader(self, conn: Conn) -> torch_data.DataLoader:
+    def create_dataloader(self, io: IO) -> torch_data.DataLoader:
         """
         Args:
-            conn (Conn): the connection to create the dataloader for
+            io (IO): the IO to create the dataloader for
 
         Returns:
             DataLoader: The data loader to loop over
         """
 
         batch_size = (
-            self.batch_size if self.batch_size is not None else len(conn.inp.x[0])
+            self.batch_size if self.batch_size is not None else len(io[0])
         )
 
         # TODO: Change so 0 is not indexed
-        indices = torch_data.TensorDataset(torch.arange(0, len(conn.out.x[0])))
+        indices = torch_data.TensorDataset(torch.arange(0, len(io[0])))
         return torch_data.DataLoader(indices, batch_size, self.shuffle)
 
-    def loop(self, conn: Conn) -> typing.Iterator[Conn]:
+    def loop(self, io: IO) -> typing.Iterator[Idx]:
         """Loop over the connection
 
         Args:
@@ -67,11 +68,13 @@ class StepLoop(object):
         Yields:
             Iterator[typing.Iterator[Conn]]: _description_
         """
-        for (idx,) in self.create_dataloader(conn):
+        for (idx,) in self.create_dataloader(io):
             yield Idx(idx, dim=0)
 
 
 class IterOutStep(Step):
+    """Do multiple iterations on the outer layer"""
+
     def __init__(
         self, learner: LearningMachine, n_epochs: int = 1, batch_size: int = None
     ):
@@ -86,32 +89,28 @@ class IterOutStep(Step):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
+    def step(self, x: IO, t: IO, state: State):
         """
         Args:
-            conn (Conn):
+            x (IO):
+            t (IO)
             state (State):
-            from_ (IO, optional): . Defaults to None.
-
-        Returns:
-            Conn: _description_
         """
         loop = StepLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
-            for idx in loop.loop(conn):
+            for idx in loop.loop(x):
 
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
                 if isinstance(self.learner, BatchIdxStepTheta):
-                    self.learner.step(conn, state, batch_idx=idx)
+                    self.learner.step(x, t, state, batch_idx=idx)
                 else:
-                    conn = idx_conn(conn)
-                    self.learner.step(conn, state)
-
-        return conn.connect_in(from_)
+                    self.learner.step(idx(x), idx(t), state)
 
 
 class IterHiddenStep(Step):
+    """Step that runs multiple iterations fver the outgoing network and incoming network"""
+
     def __init__(
         self,
         incoming: LearningMachine,
@@ -146,9 +145,10 @@ class IterHiddenStep(Step):
 
     def step(
         self,
-        conn: Conn,
+        x_in: IO,
+        x_out: IO,
+        t: IO,
         state: State,
-        from_: IO = None,
         clear_outgoing_state: bool = True,
     ):
         theta_loop = StepLoop(self.batch_size, True)
@@ -157,66 +157,64 @@ class IterHiddenStep(Step):
         for i in range(self.n_epochs):
 
             for _ in range(self.x_iterations):
-                for idx in x_loop.loop(conn):
+                for idx in x_loop.loop(x_out):
                     if isinstance(self.outgoing, BatchIdxStepX):
-                        self.outgoing.step_x(conn, state, batch_idx=idx)
+                        self.outgoing.step_x(x_out, t, state, batch_idx=idx)
                     else:
-                        conn_idx = idx_conn(conn, idx)
-                        self.outgoing.step_x(conn_idx, state)
-                        update_step_x(conn_idx, conn, idx, True)
+                        x_idx = self.outgoing.step_x(idx(x_out), idx(t), state)
+                        update_io(x_idx, x_in, idx, True)
 
             for _ in range(self.theta_iterations):
 
-                for i, idx in enumerate(theta_loop.loop(conn)):
+                for i, idx in enumerate(theta_loop.loop(x_in)):
                     if isinstance(self.incoming, BatchIdxStepTheta):
-                        self.incoming.step(conn, state, batch_idx=idx)
+                        self.incoming.step(x_in, x_out, state, batch_idx=idx)
                     else:
                         # TODO: Add state into idx_conn (?)
-                        conn_idx = idx_conn(conn, idx)
-                        self.incoming.step(conn_idx, state)
+                        # conn_idx = idx_conn(conn, idx)
+                        self.incoming.step(idx(x_in), idx(x_out), state)
 
             # TODO: Decide whether this is the default
-            if self.tie_in_t and i < (self.n_epochs - 1):
-                conn.inp.y_(self.incoming(conn.inp.x))
-                conn.tie_out(True)
+            # if self.tie_in_t and i < (self.n_epochs - 1):
+            #     conn.inp.y_(self.incoming(conn.inp.x))
+            #     conn.tie_out(True)
 
         # if in_step is None:
         #     raise ValueError(f'Could not loop over output with {self.incoming}')
 
         if clear_outgoing_state:
             state.clear(self.outgoing)
-        return conn.connect_in(from_)
 
 
-class TwoLayerStep(Step):
-    def __init__(
-        self,
-        layer1: LearningMachine,
-        layer2: LearningMachine,
-        layer1_batch_size: int,
-        layer2_batch_size: int,
-        n_iterations: int = 1,
-    ):
-        super().__init__()
-        self.layer1 = layer1
-        self.layer2 = layer2
-        self.layer1_batch_size = layer1_batch_size
-        self.layer2_batch_size = layer2_batch_size
-        self.n_iterations = n_iterations
-        self.loop1 = StepLoop(self.layer1_batch_size, True)
-        self.loop2 = StepLoop(self.layer2_batch_size, True)
+# class TwoLayerStep(Step):
+#     def __init__(
+#         self,
+#         layer1: LearningMachine,
+#         layer2: LearningMachine,
+#         layer1_batch_size: int,
+#         layer2_batch_size: int,
+#         n_iterations: int = 1,
+#     ):
+#         super().__init__()
+#         self.layer1 = layer1
+#         self.layer2 = layer2
+#         self.layer1_batch_size = layer1_batch_size
+#         self.layer2_batch_size = layer2_batch_size
+#         self.n_iterations = n_iterations
+#         self.loop1 = StepLoop(self.layer1_batch_size, True)
+#         self.loop2 = StepLoop(self.layer2_batch_size, True)
 
-    def step(self, x_in: IO, conn: Conn, state: State, from_: IO = None):
+#     def step(self, x_in: IO, x_out: IO, t: IO, state: State, from_: IO = None):
 
-        for i in range(self.n_iterations):
-            for conn_i in self.loop2.loop(conn):
-                self.layer2.step(conn_i, state, from_=x_in)
-            conn2 = conn.connect_in(x_in)
-            conn2 = self.layer2.step_x(conn2, state)
-            for conn2_i in self.loop1.loop(conn2):
-                self.layer1.step(conn2_i, state, from_=from_)
-            conn.step.x = self.layer1(conn2.step.x).detach()
-        return conn2
+#         for i in range(self.n_iterations):
+#             for idx in self.loop2.loop(x_out):
+#                 self.layer2.step(conn_i, state, from_=x_in)
+#             conn2 = conn.connect_in(x_in)
+#             conn2 = self.layer2.step_x(conn2, state)
+#             for conn2_i in self.loop1.loop(conn2):
+#                 self.layer1.step(conn2_i, state, from_=from_)
+#             conn.step.x = self.layer1(conn2.step.x).detach()
+#         return conn2
 
 
 # class Loop(ABC):

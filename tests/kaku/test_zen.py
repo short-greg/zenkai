@@ -9,7 +9,7 @@ from torch import nn
 
 from zenkai import utils
 # local
-from zenkai.kaku import IO, Conn, IDable, LayerIO
+from zenkai.kaku import IO, IDable
 from zenkai.kaku import machine as core
 
 
@@ -70,7 +70,6 @@ class X(Base, IDable):
     @property
     def id(self):
         return str(id(self))
-
 
 
 @pytest.fixture
@@ -169,23 +168,6 @@ class TestIO:
         _x, _x2 = io.clone()
         assert (x == _x).all()
         assert (x2 == _x2).all()
-
-# IDX
-#     def test_get_retrieves_indexed_tensor(self):
-#         idx = [1, 3]
-#         x = torch.rand(4, 2)
-#         io = IO(x)
-#         indexed = io.get(idx)
-#         assert (indexed[0] == x[idx]).all()
-
-#     def test_set_updates_the_indexed_tensor(self):
-#         idx = [1, 3]
-#         x_idx = IO(torch.randn(2, 2))
-#         x = torch.rand(4, 2)
-#         io = IO(x)
-#         io.set(x_idx, idx)
-#         result, = io
-#         assert (result[idx] == x_idx[0]).all()
         
     def test_is_empty_is_true_when_no_elements(self):
         io = IO()
@@ -208,60 +190,23 @@ class TestIO:
         y = IO(val)
         assert not x[0] is y[0]
 
-
-class TestLayerIO:
-    
 # IDX
-    # def test_idx_retrieves_an_indexed_layer_io(self, x, t, idx):
-    #     layer_io = LayerIO(x, t)
-    #     layer_io_idx = layer_io.idx_(idx)
-    #     assert (layer_io_idx.x[0] == layer_io.x[0][idx]).all()
+#     def test_get_retrieves_indexed_tensor(self):
+#         idx = [1, 3]
+#         x = torch.rand(4, 2)
+#         io = IO(x)
+#         indexed = io.get(idx)
+#         assert (indexed[0] == x[idx]).all()
 
-    # def test_idx_retrieves_a_sub_index_of_indexed_layer_io(self, x, t, idx, idx2):
-    #     layer_io = LayerIO(x, t, idx=idx2)
-    #     layer_io_idx = layer_io.idx_(idx)
-    #     assert (layer_io_idx.x[0] == x[idx2][idx]).all()
+#     def test_set_updates_the_indexed_tensor(self):
+#         idx = [1, 3]
+#         x_idx = IO(torch.randn(2, 2))
+#         x = torch.rand(4, 2)
+#         io = IO(x)
+#         io.set(x_idx, idx)
+#         result, = io
+#         assert (result[idx] == x_idx[0]).all()
 
-    def test_x_retrieves_x(self, x):
-        layer_io = LayerIO(x)
-        assert layer_io.x[0] is x
-
-    def test_y_retrieves_y(self, y):
-        layer_io = LayerIO(y=y)
-        assert layer_io.y[0] is y
-
-    def test_t_retrieves_t(self, t):
-        layer_io = LayerIO(t=t)
-        assert layer_io.t[0] is t
-
-    def test_iter_retrieves_x_t_and_y(self, x, t, y):
-        layer_io = LayerIO(x, t, y)
-        x_, t_, y_ = layer_io
-        assert x_[0] is x
-        assert t_[0] is t
-        assert y_[0] is y
-
-    def test_io_is_empty_if_not_set(self, x, t, y):
-        layer_io = LayerIO()
-        x_, t_, y_ = layer_io
-        assert x_.is_empty()
-        assert t_.is_empty()
-        assert y_.is_empty()
-
-    def test_x_sets_x(self, x, x2):
-        layer_io = LayerIO(x)
-        layer_io.x = IO(x2)
-        assert (layer_io.x[0] == x2).all()
-
-    def test_y_sets_y(self, y, y2):
-        layer_io = LayerIO(y=y)
-        layer_io.y = IO(y2)
-        assert (layer_io.y[0] == y2).all()
-
-    def test_t_sets_t(self, t, t2):
-        layer_io = LayerIO(t=t)
-        layer_io.t = IO(t2)
-        assert (layer_io.t[0] == t2).all()
 
 # IDX
 #     def test_x_does_not_set_x_when_empty_and_idx_specified(self, x2, idx):
@@ -309,67 +254,6 @@ class TestLayerIO:
 #         assert (layer_io.idx.idx == torch.LongTensor(idx)).all()
 
 
-class TestConn:
-
-    def test_store_stores_data(self, x, t):
-        
-        value = X()
-        x = IO(x)
-        conn = Conn(x, out_t=t)
-        conn.state.store(value, 'value', 1)
-        assert conn.state.get(value, 'value') == 1
-
-    def test_select_returns_same_y(self, x, t):
-        conn = Conn(x, t)
-        t2 = conn.out.t
-        assert t2[0] is t
-
-#     def test_select_returns_indexed_t(self, x, t, idx):
-
-#         conn = Conn(x, t, idx=idx)
-#         assert (conn.out.t[0] == t[idx]).all()
-
-#     def test_select_returns_indexed_y(self, x, y, t, idx):
-
-#         conn = Conn(x, t, out_y=y, idx=idx)
-#         assert (conn.out.y[0] == y[idx]).all()
-
-#     def test_idx_gets_sub_x(self, x, t, idx, idx2):
-
-#         conn = Conn(x, t, idx=idx2)
-#         assert (conn.idx_(idx).out.t[0] == t[idx2][idx]).all()
-
-#     def test_free_idx_removes_the_index(self, x, t, idx):
-
-#         conn = Conn(x, t, idx=idx)
-#         conn = conn.free_batch_idx()
-#         assert (conn.out.x[0] is x)
-#         assert (conn.out.t[0] is t)
-
-#     def test_base_out_gets_the_non_indexed_out(self, x, t, idx):
-
-#         conn = Conn(x, t, idx=idx)
-#         assert (conn.out_base.x[0] is x)
-#         assert (conn.out_base.t[0] is t)
-
-#     def test_base_inp_gets_the_non_indexed_out(self, x, t, x2, idx):
-
-#         conn = Conn(x, t, inp_x=x2, idx=idx)
-#         assert (conn.inp_base.x[0] is x2)
-
-    def test_connect_in_moves_inp_to_out(self, x, t, x2):
-        conn = Conn(x, t, inp_x=x2)
-        conn = conn.connect_in()
-        assert (conn.out.t[0] == x).all()
-        assert (conn.out.x[0] == x2).all()
-
-    def test_connect_in_moves_inp_to_out_and_indexes(self, x, t, x2):
-        conn = Conn(x, t, inp_x=x2)
-        conn = conn.connect_in()
-        assert conn.out.t[0] is x
-        assert conn.out.x[0] is x2
-
-
 class SimpleLearner(core.LearningMachine):
 
     def __init__(self, in_features: int, out_features: int):
@@ -381,20 +265,16 @@ class SimpleLearner(core.LearningMachine):
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.AssessmentDict:
         return self.loss.assess_dict(*y, *t, reduction_override, 'loss')
     
-    def step_x(self, conn: core.Conn, state: core.State) -> core.Conn:
+    def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         x = state[self, 'x'][0]
-        conn.out.x = IO(x - x.grad)
-        # at this point it is okay
-        conn.tie_inp(True)
-        return conn
+        return IO(x - x.grad)
 
-    def step(self, conn: core.Conn, state: core.State, from_: IO=None) -> core.Conn:
+    def step(self, x: IO, t: IO, state: core.State):
         y = state[self, 'y']
         self.optim.zero_grad()
-        assessment = self.assess_y(y, conn.step.t.detach())
+        assessment = self.assess_y(y, t.detach())
         assessment.backward('loss')
         self.optim.step()
-        return conn.connect_in(from_)
 
     def forward(self, x: IO, state: core.State, detach: bool=True) -> torch.Tensor:
         x.freshen(False)
@@ -441,11 +321,10 @@ class TestLearningMachineWithSimpleLearner:
         t = IO(torch.rand(2, 3))
         state = core.State()
         learner(x, state)
-        conn = core.T(t, inp_x=x)
-        conn = learner.step(conn, state)
-        conn = learner.step_x(conn, state)
+        learner.step(x, t, state)
+        x_prime = learner.step_x(x, t, state)
 
-        assert (conn.out.x[0] != base_x).any()
+        assert (x_prime[0] != base_x).any()
 
     def test_step_updates_parameters(self):
 
@@ -455,8 +334,7 @@ class TestLearningMachineWithSimpleLearner:
         state = core.State()
         before = utils.get_model_parameters(learner)
         y = learner(x, state)
-        conn = core.T(t, inp_x=x)
-        _ = learner.step(conn, state)
+        learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -472,18 +350,15 @@ class LayeredLearner(core.LearningMachine):
         return self.m2.assess_y(
             y, t, reduction_override=reduction_override)
     
-    def step_x(self, conn: core.Conn, state: core.State) -> Conn:
-
-        return self.m1.step_x(conn, state)
+    def step_x(self, x: IO, t: IO, state: core.State) -> IO:
+        t = state[self, 'x_step_t']
+        return self.m1.step_x(x, t, state)
         
-    def step(self, conn: Conn, state: core.State, from_: IO=None) -> Conn:
-        x = conn.inp.x.clone()
-        # conn.inp_base.x_(state[self, 'y1'], True)
-        conn.inp.x = state[self, 'y1']
-        conn = self.m2.step(conn, state, from_=x)
-        conn = self.m2.step_x(conn, state)
-        conn = self.m1.step(conn, state, from_=from_)
-        return conn
+    def step(self, x: IO, t: IO, state: core.State):
+        self.m2.step(state[self, "y1"], t, state)
+        t1 = self.m2.step_x(state[self, "y1"], t, state)
+        self.m1.step(x, t1, state)
+        state[self, "x_step_t"] = t1
 
     def forward(self, x: IO, state: core.State, detach: bool=True) -> torch.Tensor:
         y1 = state[self, 'y1'] = self.m1(x, state)
@@ -519,10 +394,9 @@ class TestLearningMachineWithComplexLearner:
         t = IO(torch.rand(2, 3))
         state = core.State()
         learner(x, state)
-        t_conn = core.T(t, x)
-        conn = learner.step(t_conn, state)
-        conn = learner.step_x(conn, state)
-        assert (conn.out.x[0] != x_[0]).any()
+        learner.step(x, t, state)
+        x_prime = learner.step_x(x, t, state)
+        assert (x_prime[0] != x_[0]).any()
 
     def test_step_updates_parameters(self):
         torch.manual_seed(1)
@@ -533,7 +407,7 @@ class TestLearningMachineWithComplexLearner:
         state = core.State()
         before = utils.get_model_parameters(learner)
         y = learner.forward(x, state)
-        _ = learner.step(core.T(t, x), state)
+        learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -563,3 +437,118 @@ class TestMyState:
         state.add_sub(x, "sub")
         mine = state.mine(x)
         assert mine.subs['sub'] is state.sub(x, 'sub')
+
+
+# class TestConn:
+
+#     def test_store_stores_data(self, x, t):
+        
+#         value = X()
+#         x = IO(x)
+#         conn = Conn(x, out_t=t)
+#         conn.state.store(value, 'value', 1)
+#         assert conn.state.get(value, 'value') == 1
+
+#     def test_select_returns_same_y(self, x, t):
+#         conn = Conn(x, t)
+#         t2 = conn.out.t
+#         assert t2[0] is t
+
+# #     def test_select_returns_indexed_t(self, x, t, idx):
+
+# #         conn = Conn(x, t, idx=idx)
+# #         assert (conn.out.t[0] == t[idx]).all()
+
+# #     def test_select_returns_indexed_y(self, x, y, t, idx):
+
+# #         conn = Conn(x, t, out_y=y, idx=idx)
+# #         assert (conn.out.y[0] == y[idx]).all()
+
+# #     def test_idx_gets_sub_x(self, x, t, idx, idx2):
+
+# #         conn = Conn(x, t, idx=idx2)
+# #         assert (conn.idx_(idx).out.t[0] == t[idx2][idx]).all()
+
+# #     def test_free_idx_removes_the_index(self, x, t, idx):
+
+# #         conn = Conn(x, t, idx=idx)
+# #         conn = conn.free_batch_idx()
+# #         assert (conn.out.x[0] is x)
+# #         assert (conn.out.t[0] is t)
+
+# #     def test_base_out_gets_the_non_indexed_out(self, x, t, idx):
+
+# #         conn = Conn(x, t, idx=idx)
+# #         assert (conn.out_base.x[0] is x)
+# #         assert (conn.out_base.t[0] is t)
+
+# #     def test_base_inp_gets_the_non_indexed_out(self, x, t, x2, idx):
+
+# #         conn = Conn(x, t, inp_x=x2, idx=idx)
+# #         assert (conn.inp_base.x[0] is x2)
+
+#     def test_connect_in_moves_inp_to_out(self, x, t, x2):
+#         conn = Conn(x, t, inp_x=x2)
+#         conn = conn.connect_in()
+#         assert (conn.out.t[0] == x).all()
+#         assert (conn.out.x[0] == x2).all()
+
+#     def test_connect_in_moves_inp_to_out_and_indexes(self, x, t, x2):
+#         conn = Conn(x, t, inp_x=x2)
+#         conn = conn.connect_in()
+#         assert conn.out.t[0] is x
+#         assert conn.out.x[0] is x2
+
+# class TestLayerIO:
+    
+# # IDX
+#     # def test_idx_retrieves_an_indexed_layer_io(self, x, t, idx):
+#     #     layer_io = LayerIO(x, t)
+#     #     layer_io_idx = layer_io.idx_(idx)
+#     #     assert (layer_io_idx.x[0] == layer_io.x[0][idx]).all()
+
+#     # def test_idx_retrieves_a_sub_index_of_indexed_layer_io(self, x, t, idx, idx2):
+#     #     layer_io = LayerIO(x, t, idx=idx2)
+#     #     layer_io_idx = layer_io.idx_(idx)
+#     #     assert (layer_io_idx.x[0] == x[idx2][idx]).all()
+
+#     def test_x_retrieves_x(self, x):
+#         layer_io = LayerIO(x)
+#         assert layer_io.x[0] is x
+
+#     def test_y_retrieves_y(self, y):
+#         layer_io = LayerIO(y=y)
+#         assert layer_io.y[0] is y
+
+#     def test_t_retrieves_t(self, t):
+#         layer_io = LayerIO(t=t)
+#         assert layer_io.t[0] is t
+
+#     def test_iter_retrieves_x_t_and_y(self, x, t, y):
+#         layer_io = LayerIO(x, t, y)
+#         x_, t_, y_ = layer_io
+#         assert x_[0] is x
+#         assert t_[0] is t
+#         assert y_[0] is y
+
+#     def test_io_is_empty_if_not_set(self, x, t, y):
+#         layer_io = LayerIO()
+#         x_, t_, y_ = layer_io
+#         assert x_.is_empty()
+#         assert t_.is_empty()
+#         assert y_.is_empty()
+
+#     def test_x_sets_x(self, x, x2):
+#         layer_io = LayerIO(x)
+#         layer_io.x = IO(x2)
+#         assert (layer_io.x[0] == x2).all()
+
+#     def test_y_sets_y(self, y, y2):
+#         layer_io = LayerIO(y=y)
+#         layer_io.y = IO(y2)
+#         assert (layer_io.y[0] == y2).all()
+
+#     def test_t_sets_t(self, t, t2):
+#         layer_io = LayerIO(t=t)
+#         layer_io.t = IO(t2)
+#         assert (layer_io.t[0] == t2).all()

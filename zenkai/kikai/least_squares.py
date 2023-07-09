@@ -12,7 +12,6 @@ import scipy.linalg
 from ..kaku.machine import (
     IO,
     AssessmentDict,
-    Conn,
     LearningMachine,
     State,
     StepTheta,
@@ -163,9 +162,8 @@ class LeastSquaresStepTheta(StepTheta):
         if bias is not None:
             self.linear.bias.data = bias
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        self._optimize(conn.step.x[0], conn.step.t[0])
-        return conn.connect_in(from_)
+    def step(self, x: IO, t: IO, state: State, from_: IO = None):
+        self._optimize(x[0], t[0])
 
 
 class LeastSquaresStepX(StepX):
@@ -202,7 +200,7 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x
 
         Args:
@@ -212,9 +210,8 @@ class LeastSquaresStepX(StepX):
         Returns:
             Conn: The connection with x updated
         """
-        x = self._optimize(conn.step_x.x[0], conn.step_x.t[0])
-        update_io(IO(x), conn.step_x.x)
-        return conn.tie_inp()
+        x = self._optimize(x[0], t[0])
+        update_io(IO(x), x)
 
 
 class LeastSquaresLearner(LearningMachine):
@@ -249,13 +246,12 @@ class LeastSquaresLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self._loss.assess_dict(y[0], t[0], reduction_override=reduction_override)
 
-    def step(self, conn: Conn, state: State, from_: IO = None) -> Conn:
-        conn = self._step_theta.step(conn, state, from_)
+    def step(self, x: IO, t: IO, state: State):
+        conn = self._step_theta.step(conn, state)
         return conn
 
-    def step_x(self, conn: Conn, state: State) -> Conn:
-        conn = self._step_x.step_x(conn, state)
-        return conn
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return self._step_x.step_x(x, t, state)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
