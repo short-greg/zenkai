@@ -41,6 +41,7 @@ from .machine import (
     idx_th,
     update_io,
     update_tensor,
+    Conn
 )
 from .optimize import (
     OPTIM_MAP,
