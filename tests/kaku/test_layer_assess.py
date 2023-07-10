@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # local
 from zenkai.kaku import (IO, Assessment, AssessmentDict,
-                         DiffLayerAssessor, LearningMachine, State, ThLoss)
+                         DiffLayerAssessor, LearningMachine, State, ThLoss, Conn)
 
 
 class SimpleLearner(LearningMachine):
@@ -49,8 +49,8 @@ class TestLayerAssessor:
 
         pp = DiffLayerAssessor('PP')
         pp.register('model', m1, m2)
-        pp.update_before('model', x1, x2, t2)
-        pp.update_after('model', x1, x2, t2)
+        pp.update_before('model', Conn(x1, x2, out_t=t2))
+        pp.update_after('model', Conn(x1, x2, out_t=t2))
         assert isinstance(pp.assessment_dict['PP_model_incoming_after'], Assessment)
 
     def test_get_diff_returns_the_difference(self):
@@ -63,7 +63,7 @@ class TestLayerAssessor:
 
         pp = DiffLayerAssessor('PP')
         pp.register('model', m1, m2)
-        pp.update_before('model', x1, x2, t2)
+        pp.update_before('model', Conn(x1, x2, out_t=t2))
         # should be the length of "before"
         assert len(pp.assessment_dict) == 3
     
@@ -77,7 +77,7 @@ class TestLayerAssessor:
         pp = DiffLayerAssessor('PP')
         pp.register('model', m1, m2)
 
-        with pp.layer_assess('model', x1, x2, t2):
+        with pp.layer_assess('model', Conn(x1, x2, out_t=t2)):
             pass
 
         assert isinstance(pp.assessment_dict['PP_model_incoming'], Assessment)
