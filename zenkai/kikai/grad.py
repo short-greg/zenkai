@@ -84,13 +84,24 @@ class GradLoopStepTheta(BatchIdxStepTheta):
     def step(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
+        """
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
+        """
+        x.freshen(False)
+        if batch_idx is not None:
+            batch_idx = batch_idx.detach()
+
         x = idx_io(x, batch_idx, False)
         t = idx_io(t, batch_idx, False)
-
-        y = self.learner(x, state, False)
+        y = self.learner(x, state.sub(self, "step"), False)
 
         self.optim.zero_grad()
-        assessment = self.learner.assess_y(y, t, self.reduction)
+        assessment = self.learner.assess_y(y, t.detach(), self.reduction)
         assessment[self.loss_name].backward()
         self.optim.step()
 
