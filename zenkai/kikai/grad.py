@@ -182,13 +182,26 @@ class GradLearner(LearningMachine):
 
     def __init__(
         self,
-        sequence: typing.List[nn.Module],
+        module: typing.Union[nn.Module, typing.List[nn.Module]],
         loss: ThLoss,
         optim_factory: OptimFactory,
         theta_reduction: str = "mean",
     ):
+        """iniitializer
+
+        Args:
+            module (typing.Union[nn.Module, typing.List[nn.Module]]): 
+                Either a single module or list of modules to execut
+            loss (ThLoss): The loss to evaluate with
+            optim_factory (OptimFactory): The optimizer to use
+            theta_reduction (str, optional): The reduction to use for the loss to optimize theta. 
+              Defaults to "mean".
+        """
         super().__init__()
-        self._sequence = nn.Sequential(*sequence)
+        if isinstance(module, nn.Module):
+            self._net = module
+        else:
+            self._net = nn.Sequential(*module)
         self._loss = loss
         self._theta_step = GradStepTheta(self, optim_factory, theta_reduction)
         self._x_step = GradStepX()
@@ -206,7 +219,7 @@ class GradLearner(LearningMachine):
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._sequence(*x), detach=False)
+        y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(detach)
 
 
@@ -219,15 +232,31 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
 
     def __init__(
         self,
-        sequence: typing.List[nn.Module],
+        module: typing.Union[nn.Module, typing.List[nn.Module]],
         loss: ThLoss,
         theta_optim_factory: OptimFactory,
         x_optim_factory: OptimFactory,
         theta_reduction: str = "mean",
         x_reduction: str = "mean",
     ):
+        """iniitializer
+
+        Args:
+            module (typing.Union[nn.Module, typing.List[nn.Module]]): 
+                Either a single module or list of modules to execut
+            loss (ThLoss): The loss to evaluate with
+            theta_optim_factory (OptimFactory): The optimizer to use for optimizing theta
+            x_optim_factory (OptimFactory): The optimizer to use for optimizing x
+            theta_reduction (str, optional): The reduction to use for the loss to optimize theta. 
+              Defaults to "mean".
+            x_reduction (str, optional): The reduction to use for the loss to update x.
+              Defaults to "mean"
+        """
         super().__init__()
-        self._sequence = nn.Sequential(*sequence)
+        if isinstance(module, nn.Module):
+            self._net = module
+        else:
+            self._net = nn.Sequential(*module)
         self._loss = loss
         self._theta_step = GradLoopStepTheta(self, theta_optim_factory, theta_reduction)
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
@@ -247,7 +276,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._sequence(*x), detach=False)
+        y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(detach)
 
 
