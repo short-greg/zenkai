@@ -765,3 +765,11 @@ class Conn(object):
     out_t: IO=None
     in_y: IO=None
     out_y: IO=None
+
+    def tie_in_t(self) -> 'Conn':
+        self.in_t = self.out_x
+        return self
+
+    def tie_out_x(self) -> 'Conn':
+        self.out_x = self.in_y
+        return self
