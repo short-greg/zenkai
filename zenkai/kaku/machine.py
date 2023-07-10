@@ -176,6 +176,9 @@ class IO(object):
 
 
 class Idx(object):
+    """Class used to index a tensor
+    """
+
     def __init__(self, idx=None, dim: int = 0):
         """initializer
 
@@ -197,7 +200,7 @@ class Idx(object):
     ) -> typing.Union[typing.Tuple[torch.Tensor], torch.Tensor]:
 
         if self.idx is not None:
-            x = [x_i.index_select(self.dim, self.idx) for x_i in x]
+            x = [x_i.index_select(self.dim, self.idx.detach()) for x_i in x]
 
         return x
 
@@ -212,11 +215,15 @@ class Idx(object):
         Returns:
             typing.List[int]: _description_
         """
-
         result = []
         for i in self.idx:
             result.append(self.idx[i.item()])
         return result
+    
+    def detach(self) -> 'Idx':
+        if self.idx is None:
+            return Idx(dim=self.dim)
+        return Idx(self.idx.detach(), dim=self.dim)
 
     def __call__(self, x: IO, detach: bool = False) -> IO:
 
@@ -783,3 +790,20 @@ class Conn(object):
     def tie_out_x(self) -> 'Conn':
         self.out_x = self.in_y
         return self
+    
+    def connect_in(self, in_x: IO) -> 'Conn':
+
+        return Conn(
+            in_x=in_x, in_t=self.in_x, out_x=self.in_x, out_t=self.in_t,
+            out_y=self.in_y
+        )
+    
+    def step_x(self, out_x: IO, tie_in_x: bool=True) -> 'Conn':
+
+        conn = Conn(
+            in_x=self.in_x, in_t=self.in_t, out_x=out_x, out_t=self.out_t,
+            out_y=self.out_y, in_y=self.in_y
+        )
+        if tie_in_x:
+            conn.in_t = conn.out_x
+        return conn
