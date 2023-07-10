@@ -758,6 +758,9 @@ class NullLearner(LearningMachine):
 
 @dataclass
 class Conn(object):
+    """Connection is a container for the IO for an incoming and outgoing layers
+    Incoming is for updating "step" and Outgoing is for updating "step_x"
+    """
 
     in_x: IO=None
     in_t: IO=None
@@ -765,6 +768,13 @@ class Conn(object):
     out_t: IO=None
     in_y: IO=None
     out_y: IO=None
+
+    def __post_init__(self):
+
+        if self.in_t is None and self.out_x is not None:
+            self.in_t = self.out_x
+        if self.out_x is None and self.in_t is not None:
+            self.out_x = self.in_t
 
     def tie_in_t(self) -> 'Conn':
         self.in_t = self.out_x

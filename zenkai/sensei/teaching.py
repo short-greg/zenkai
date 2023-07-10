@@ -178,7 +178,7 @@ def train(
     record = Record()
     if use_io:
         training_material = IODecorator(training_material)
-    trainer = Trainer("Trainer", learner, training_material, record=record, window=50)
+    trainer = Trainer("Trainer", learner, training_material, record=record, window=window)
     if testing_material:
         if use_io:
             testing_material = IODecorator(testing_material)
