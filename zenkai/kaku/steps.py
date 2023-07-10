@@ -10,7 +10,8 @@ from .machine import (
     BatchIdxStepX,
     Idx,
     LearningMachine,
-    update_io
+    update_io,
+    Conn
 )
 from .state import State
 
@@ -89,7 +90,7 @@ class IterOutStep(Step):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, conn: Conn, state: State) -> IO:
         """
         Args:
             x (IO):
@@ -98,14 +99,15 @@ class IterOutStep(Step):
         """
         loop = StepLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
-            for idx in loop.loop(x):
+            for idx in loop.loop(conn.in_x):
 
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
                 if isinstance(self.learner, BatchIdxStepTheta):
-                    self.learner.step(x, t, state, batch_idx=idx)
+                    self.learner.step(conn.in_x, conn.in_t, state, batch_idx=idx)
                 else:
-                    self.learner.step(idx(x), idx(t), state)
+                    self.learner.step(idx(conn.in_x), idx(conn.in_t), state)
+        return conn.in_t
 
 
 class IterHiddenStep(Step):
@@ -145,9 +147,7 @@ class IterHiddenStep(Step):
 
     def step(
         self,
-        x_in: IO,
-        x_out: IO,
-        t: IO,
+        conn: Conn,
         state: State,
         clear_outgoing_state: bool = True,
     ):
@@ -157,31 +157,27 @@ class IterHiddenStep(Step):
         for i in range(self.n_epochs):
 
             for _ in range(self.x_iterations):
-                for idx in x_loop.loop(x_out):
+                for idx in x_loop.loop(conn.out_x):
                     if isinstance(self.outgoing, BatchIdxStepX):
-                        self.outgoing.step_x(x_out, t, state, batch_idx=idx)
+                        self.outgoing.step_x(conn.out_x, conn.out_t, state, batch_idx=idx)
                     else:
-                        x_idx = self.outgoing.step_x(idx(x_out), idx(t), state)
-                        update_io(x_idx, x_out, idx)
+                        x_idx = self.outgoing.step_x(idx(conn.out_x), idx(conn.out_t), state)
+                        update_io(x_idx, conn.out_x, idx)
 
             for _ in range(self.theta_iterations):
 
-                for i, idx in enumerate(theta_loop.loop(x_in)):
+                for i, idx in enumerate(theta_loop.loop(conn.in_x)):
                     if isinstance(self.incoming, BatchIdxStepTheta):
-                        self.incoming.step(x_in, x_out, state, batch_idx=idx)
+                        self.incoming.step(conn.in_x, conn.out_x, state, batch_idx=idx)
                     else:
-                        self.incoming.step(idx(x_in), idx(x_out), state)
+                        self.incoming.step(idx(conn.in_x), idx(conn.out_x), state)
 
-            # TODO: Decide whether this is the default
-            # if self.tie_in_t and i < (self.n_epochs - 1):
-            #     conn.inp.y_(self.incoming(conn.inp.x))
-            #     conn.tie_out(True)
-
-        # if in_step is None:
-        #     raise ValueError(f'Could not loop over output with {self.incoming}')
+            if self.tie_in_t and i < (self.n_epochs - 1):
+                conn.out_x = self.incoming(conn.in_x)
 
         if clear_outgoing_state:
             state.clear(self.outgoing)
+        return conn.out_x
 
 
 # class TwoLayerStep(Step):
@@ -202,10 +198,10 @@ class IterHiddenStep(Step):
 #         self.loop1 = StepLoop(self.layer1_batch_size, True)
 #         self.loop2 = StepLoop(self.layer2_batch_size, True)
 
-#     def step(self, x_in: IO, x_out: IO, t: IO, state: State, from_: IO = None):
+#     def step(self, conn: Conn, state: State) -> IO:
 
 #         for i in range(self.n_iterations):
-#             for idx in self.loop2.loop(x_out):
+#             for idx in self.loop2.loop(conn.out_x):
 #                 self.layer2.step(conn_i, state, from_=x_in)
 #             conn2 = conn.connect_in(x_in)
 #             conn2 = self.layer2.step_x(conn2, state)
@@ -227,25 +223,3 @@ class IterHiddenStep(Step):
 #     def loop(self, x, t) -> typing.Iterator:
 #         yield x, t
 
-
-# class DLLoop(Loop):
-
-#     def __init__(self, batch_size: int, shuffle: bool=True, get_indices: bool=False):
-#         self.batch_size = batch_size
-#         self.shuffle = shuffle
-#         self.get_indices = get_indices
-
-#     def create_dataloader(self, x: torch.Tensor, t: torch.Tensor):
-
-#         if self.get_indices:
-#             indices = torch.range(0, len(x))
-#             dataset = torch_data.TensorDataset(x, t, indices)
-#         else:
-#             dataset = torch_data.TensorDataset(x, t)
-#         return torch_data.DataLoader(
-#             dataset, self.batch_size, self.shuffle
-#         )
-
-#     def loop(self, x, t) -> typing.Iterator:
-#         for result in self.create_dataloader(x, t):
-#             yield result

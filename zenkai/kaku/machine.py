@@ -18,6 +18,7 @@ Loop - Loop over data
 from abc import ABC, abstractmethod
 from collections import deque
 import typing
+from dataclasses import dataclass
 
 # 3rd party
 import torch
@@ -753,3 +754,14 @@ class NullLearner(LearningMachine):
 
     def forward(self, x: IO, state: State):
         return x
+
+
+@dataclass
+class Conn(object):
+
+    in_x: IO=None
+    in_t: IO=None
+    out_x: IO=None
+    out_t: IO=None
+    in_y: IO=None
+    out_y: IO=None
