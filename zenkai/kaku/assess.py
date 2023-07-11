@@ -139,7 +139,7 @@ class Assessment(object):
         return Assessment(self.value.cpu(), self.maximize)
 
     def numpy(self) -> np.ndarray:
-        return self.value.numpy()
+        return self.value.detach().cpu().numpy()
 
     def item(self) -> typing.Any:
         if self.value.dim() != 0:

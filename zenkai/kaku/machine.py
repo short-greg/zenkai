@@ -191,7 +191,10 @@ class Idx(object):
             idx (optional): The values to index by. Defaults to None.
         """
         if not isinstance(idx, torch.LongTensor) and idx is not None:
-            idx = torch.LongTensor(idx)
+            if isinstance(idx, torch.Tensor):
+                idx = idx.long()
+            else:
+                idx = torch.LongTensor(idx)
         self.dim = dim
         self.idx = idx
 
@@ -267,6 +270,10 @@ class Idx(object):
 
     def __len__(self) -> int:
         return len(self.idx)
+    
+    def to(self, device) -> 'Idx':
+        self.idx = self.idx.to(device)
+        return self
 
 
 def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:

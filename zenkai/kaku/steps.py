@@ -54,7 +54,7 @@ class StepLoop(object):
         )
 
         # TODO: Change so 0 is not indexed
-        indices = torch_data.TensorDataset(torch.arange(0, len(io[0])))
+        indices = torch_data.TensorDataset(torch.arange(0, len(io[0])).long())
         return torch_data.DataLoader(indices, batch_size, self.shuffle)
 
     def loop(self, io: IO) -> typing.Iterator[Idx]:
@@ -70,7 +70,7 @@ class StepLoop(object):
             Iterator[typing.Iterator[Conn]]: _description_
         """
         for (idx,) in self.create_dataloader(io):
-            yield Idx(idx, dim=0)
+            yield Idx(idx.to(io[0].device), dim=0)
 
 
 class IterOutStep(Step):
