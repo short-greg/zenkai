@@ -52,7 +52,7 @@ class GradStepTheta(StepTheta):
             y = self.learner(x, state, detach=False)
 
         self.optim.zero_grad()
-        assessment = self.learner.assess_y(y, t)
+        assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward("loss")
         state.store(self, "stepped", True)
         self.optim.step()
@@ -214,7 +214,7 @@ class GradLearner(LearningMachine):
     def step(self, x: IO, t: IO, state: State):
         return self._theta_step.step(x, t, state)
 
-    def step_x(self, x: IO, t: IO, state: State):
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._x_step.step_x(x, t, state)
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
