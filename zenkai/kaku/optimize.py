@@ -84,11 +84,15 @@ class OptimFactory(object):
         return OptimFactory(torch.optim.RMSprop, *args, **kwargs)
 
 
-class MetaOptim(optim.Optimizer):
+class FilterOptim(optim.Optimizer):
+    """Use to smooth the results of an optimization. Especially one that makes large
+    changes in the parameters such as a least squares optimizer
+    """
+
     def __init__(
         self,
         p: typing.Iterable,
-        meta_optim: OptimFactory,
+        filter_optim: OptimFactory,
         active_optim: OptimFactory = None,
         copy_first: bool = False,
     ):
@@ -100,12 +104,12 @@ class MetaOptim(optim.Optimizer):
             cloned.append(cloned_i)
             base.append(p_i)
 
-        self.meta_params = cloned
+        self.filter_params = cloned
         self.active_params = base
-        self.meta_optim = meta_optim(self.meta_params)
+        self.filter_optim = filter_optim(self.filter_params)
         active_optim = active_optim or NullOptim
         self.active_optim_factory = active_optim
-        self.meta_optim_factory = meta_optim
+        self.filter_optim_factory = filter_optim
         self.active_optim = active_optim(self.active_params)
         self.copy_first = copy_first
         self._is_first = True
@@ -121,13 +125,13 @@ class MetaOptim(optim.Optimizer):
         return self.active_optim.state
 
     def state_dict(self):
-        return {"active_params": self.active_params, "meta_params": self.meta_params}
+        return {"active_params": self.active_params, "filter_params": self.filter_params}
 
     def load_state_dict(self, state_dict):
 
-        self.meta_params = state_dict["meta_params"]
+        self.filter_params = state_dict["filter_params"]
         self.active_params = state_dict["active_params"]
-        self.meta_optim = self.meta_optim_factory(self.meta_params)
+        self.filter_optim = self.filter_optim_factory(self.filter_params)
         self.active_optim = self.active_optim_factory(self.active_params)
 
     @property
@@ -136,35 +140,35 @@ class MetaOptim(optim.Optimizer):
 
     def add_param_group(self, param_group: dict):
         self.active_optim.add_param_group(param_group)
-        self.meta_optim.add_param_group(param_group)
+        self.filter_optim.add_param_group(param_group)
 
-    def copy_meta_to(self, p: typing.Iterable):
-        for p_i, mp_i in zip(p, self.meta_params):
+    def copy_filter_optim_to(self, p: typing.Iterable):
+        for p_i, mp_i in zip(p, self.filter_params):
             if isinstance(p_i, nn.parameter.Parameter):
                 p_i.data = mp_i.data
             else:
                 p_i[:] = mp_i.data
 
-    def step_meta(self):
-        self.meta_optim.zero_grad()
+    def step_filter(self):
+        self.filter_optim.zero_grad()
 
         if self._is_first and self.copy_first:
-            for p_i, mp_i in zip(self.active_params, self.meta_params):
+            for p_i, mp_i in zip(self.active_params, self.filter_params):
                 if isinstance(p_i, nn.parameter.Parameter):
                     mp_i.data = p_i.data
                 else:
                     mp_i.data[:] = p_i
         else:
-            for active, meta in zip(self.active_params, self.meta_params):
+            for active, meta in zip(self.active_params, self.filter_params):
                 loss = (0.5 * (meta - active.detach()) ** 2).sum()
                 loss.backward()
-            self.meta_optim.step()
+            self.filter_optim.step()
 
-        self.meta_optim.zero_grad()
+        self.filter_optim.zero_grad()
         self._is_first = False
 
     def transfer(self, clear_active_state: bool = True):
-        for active, meta in zip(self.active_params, self.meta_params):
+        for active, meta in zip(self.active_params, self.filter_params):
             active.data = meta.data
 
         if clear_active_state:
@@ -172,7 +176,7 @@ class MetaOptim(optim.Optimizer):
         # self.active_optim = self.active_optim_factory(self.active_params)
 
     def adv(self, clear_active_state: bool = True):
-        self.step_meta()
+        self.step_filter()
         self.transfer(clear_active_state)
 
 

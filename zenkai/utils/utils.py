@@ -318,6 +318,16 @@ def detach(x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]):
 def binary_encoding(
     x: torch.LongTensor, n_size: int, bit_size: bool = False
 ) -> torch.Tensor:
+    """Convert an integer tensor to a binary encoding
+
+    Args:
+        x (torch.LongTensor): The integer tensor
+        n_size (int): The size of the encoding (e.g. number of bits if using bits or the max number)
+        bit_size (bool, optional): Whether the size is described in terms of number of bits . Defaults to False.
+
+    Returns:
+        torch.Tensor: The binary encoding
+    """
 
     if not bit_size:
         n_size = int(math.ceil(math.log2(n_size)))

@@ -8,17 +8,17 @@ from torch import optim as torch_optim
 from torch.nn import utils
 
 # Local
-from zenkai.kaku.optimize import MetaOptim, OptimFactory
+from zenkai.kaku.optimize import FilterOptim, OptimFactory
 from zenkai.utils import get_model_parameters
 
 
-class TestMetaOptim:
+class TestFilterOptim:
 
-    def test_meta_optim_updates_parameters_with_meta_step(self):
+    def test_filter_optim_updates_parameters_with_meta_step(self):
 
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
-        optim = MetaOptim(
+        optim = FilterOptim(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
@@ -35,7 +35,7 @@ class TestMetaOptim:
 
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
-        optim = MetaOptim(
+        optim = FilterOptim(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
@@ -53,15 +53,15 @@ class TestMetaOptim:
         linear = nn.Linear(2, 2)
         linear_test = nn.Linear(2, 2)
         before = get_model_parameters(linear_test)
-        optim = MetaOptim(
+        optim = FilterOptim(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
-        optim.step_meta()
-        optim.copy_meta_to(linear_test.parameters())
+        optim.step_filter()
+        optim.copy_filter_optim_to(linear_test.parameters())
         after = get_model_parameters(linear_test)
         assert (before != after).any()
 
@@ -71,13 +71,13 @@ class TestMetaOptim:
         
         x_test = torch.rand(2, 3)
         before = torch.clone(x_test)
-        optim = MetaOptim(
+        optim = FilterOptim(
             [x], OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
         optim.zero_grad()
         x.sum().backward()
         optim.step()
-        optim.step_meta()
-        optim.copy_meta_to([x_test])
+        optim.step_filter()
+        optim.copy_filter_optim_to([x_test])
         assert (before != x_test).any()
