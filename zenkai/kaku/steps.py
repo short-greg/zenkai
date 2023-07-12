@@ -180,6 +180,10 @@ class IterHiddenStep(Step):
         return conn.out_x
 
 
+# i can extend LearninMachine like this
+# step(x: IO, t: IO, state: State, step_x_t: IO=None)
+
+
 # class TwoLayerStep(Step):
 #     def __init__(
 #         self,

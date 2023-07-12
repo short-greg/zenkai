@@ -30,6 +30,8 @@ from .assess import AssessmentDict, Loss, ThLoss
 from .component import Learner
 from .state import IDable, State
 
+from torch.utils import data as torch_data
+
 
 class IO(object):
     """Handles IO into and out of learning machines
@@ -814,3 +816,66 @@ class Conn(object):
         if tie_in_x:
             conn.in_t = conn.out_x
         return conn
+
+
+class StepLoop(object):
+    """
+    """
+
+    def __init__(self, batch_size: int, shuffle: bool = True):
+        """Loop over a connection by indexing
+
+        Args:
+            batch_size (int): The size of the batch for the loop
+            shuffle (bool, optional): whether to shuffle the indices. Defaults to True.
+        """
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+
+    def create_dataloader(self, io: IO) -> torch_data.DataLoader:
+        """
+        Args:
+            io (IO): the IO to create the dataloader for
+
+        Returns:
+            DataLoader: The data loader to loop over
+        """
+
+        batch_size = (
+            self.batch_size if self.batch_size is not None else len(io[0])
+        )
+
+        # TODO: Change so 0 is not indexed
+        indices = torch_data.TensorDataset(torch.arange(0, len(io[0])).long())
+        return torch_data.DataLoader(indices, batch_size, self.shuffle)
+
+    def loop(self, io: IO) -> typing.Iterator[Idx]:
+        """Loop over the connection
+
+        Args:
+            conn (Conn): the connection to loop over
+
+        Returns:
+            typing.Iterator[Conn]: _description_
+
+        Yields:
+            Iterator[typing.Iterator[Conn]]: _description_
+        """
+        for (idx,) in self.create_dataloader(io):
+            yield Idx(idx.to(io[0].device), dim=0)
+
+
+class OutDepStepTheta(StepTheta):
+
+    @abstractmethod
+    def step(self, x: IO, t: IO, state: State, outgoing_t: IO=None, outgoing_x: IO=None) -> IO:
+        pass
+
+
+class InDepStepX(StepX):
+
+    @abstractmethod
+    def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
+        pass
+
+

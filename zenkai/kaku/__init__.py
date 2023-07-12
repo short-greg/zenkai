@@ -41,6 +41,9 @@ from .machine import (
     idx_th,
     update_io,
     update_tensor,
+    InDepStepX,
+    OutDepStepTheta,
+    StepLoop,
     Conn
 )
 from .optimize import (

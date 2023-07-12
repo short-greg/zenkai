@@ -96,6 +96,17 @@ class FilterOptim(optim.Optimizer):
         active_optim: OptimFactory = None,
         copy_first: bool = False,
     ):
+        """initializer
+
+        Args:
+            p (typing.Union[typing.Iterable, nn.Module]): The parameters to optimize
+            filter_optim (OptimFactory): The outer "optim" to use between steps
+            active_optim (OptimFactory, optional): The optim to use within a step. Defaults to None.
+            copy_first (bool, optional): Whether to simply copy the parameters on the first update. Defaults to False.
+        """
+        if isinstance(p, nn.Module):
+            p = p.parameters()
+
         cloned = []
         base = []
         for p_i in p:
