@@ -71,7 +71,7 @@ class SequenceReversible(Reversible):
             reversible (Reversible): The erversible layers in the sequence
         """
         super().__init__()
-        self._reversibles = nn.ModuleList(*reversibles)
+        self._reversibles = nn.ModuleList(reversibles)
 
     def reverse(self, y: torch.Tensor) -> torch.Tensor:
         """

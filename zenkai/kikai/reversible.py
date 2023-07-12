@@ -12,8 +12,7 @@ class ReversibleMachine(LearningMachine):
     def __init__(
         self,
         reversible: typing.Union[Reversible, typing.List[Reversible]],
-        loss: ThLoss,
-        maximize: bool = False,
+        loss: ThLoss
     ):
         """initializer
 
@@ -22,16 +21,14 @@ class ReversibleMachine(LearningMachine):
             loss (ThLoss): The loss
             maximize (bool, optional): _description_. Defaults to False.
         """
-        super().__init__(maximize)
+        super().__init__()
         if isinstance(reversible, typing.List):
             reversible = SequenceReversible(*reversible)
         self.reversible = reversible
         self.loss = loss
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override).transfer(
-            "loss", self.validation_name
-        )
+        return self.loss.assess_dict(y[0], t[0], reduction_override)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x
