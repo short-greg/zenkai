@@ -184,7 +184,6 @@ class FilterOptim(optim.Optimizer):
 
         if clear_active_state:
             self.active_optim.state.clear()
-        # self.active_optim = self.active_optim_factory(self.active_params)
 
     def adv(self, clear_active_state: bool = True):
         self.step_filter()

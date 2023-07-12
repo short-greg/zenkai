@@ -109,12 +109,16 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 class GradStepX(StepX):
     """Update x with the loss between y and t based on the grad value of step_x.x"""
 
-    Y_NAME = "y"
+    def __init__(self, x_lr: float=None):
+
+        super().__init__()
+        self.x_lr = x_lr
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         x = x[0]
-        x = x - x.grad
+        grad = x.grad if self.x_lr is None else self.x_lr * x.grad
+        x = x - grad
         x.grad = None
 
         # TODO: Debug. This is causing problems in backpropagation
@@ -176,8 +180,6 @@ class GradLoopStepX(BatchIdxStepX):
 class GradLearner(LearningMachine):
     """Standard gradient learner"""
 
-    VALIDATION_NAME = "validation"
-    LOSS_NAME = "loss"
     Y_NAME = "y"
 
     def __init__(
@@ -186,6 +188,7 @@ class GradLearner(LearningMachine):
         loss: ThLoss,
         optim_factory: OptimFactory,
         theta_reduction: str = "mean",
+        x_lr: float=None
     ):
         """iniitializer
 
@@ -204,11 +207,10 @@ class GradLearner(LearningMachine):
             self._net = nn.Sequential(*module)
         self._loss = loss
         self._theta_step = GradStepTheta(self, optim_factory, theta_reduction)
-        self._x_step = GradStepX()
+        self._x_step = GradStepX(x_lr)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         assessment = self._loss.assess_dict(y[0], t[0], reduction_override)
-        assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 
     def step(self, x: IO, t: IO, state: State):

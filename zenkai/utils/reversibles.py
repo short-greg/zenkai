@@ -156,16 +156,16 @@ class BatchNorm1DReversible(Reversible):
         """
         super().__init__()
         self._momentum = momentum
-        self._batch_norm = nn.BatchNorm1d(n_features, momentum=momentum)
+        self._batch_norm = nn.BatchNorm1d(n_features, momentum=momentum, affine=False)
 
     def reverse(self, y: torch.Tensor) -> torch.Tensor:
         """invert the BatchNorm operation
 
         Args:
-            y (torch.Tensor): the input to the layer
+            y (torch.Tensor): the output of the layer
 
         Returns:
-            torch.Tensor: the inverted patch norm
+            torch.Tensor: the inverted batch norm
         """
         return (
             y * torch.sqrt(self._batch_norm.running_var) + self._batch_norm.running_mean
@@ -175,7 +175,7 @@ class BatchNorm1DReversible(Reversible):
         """batch normalize the input
 
         Args:
-            x (torch.Tensor): _description_
+            x (torch.Tensor): The input to the layer
 
         Returns:
             Tensor: The output of the batch norm operation
