@@ -4,13 +4,17 @@ from abc import ABC, abstractmethod
 import torch
 from torch.utils import data as torch_data
 
+from .io import (
+    Idx,
+    IO,
+    update_io
+)
+
 from .machine import (
     IO,
     BatchIdxStepTheta,
     BatchIdxStepX,
-    Idx,
     LearningMachine,
-    update_io,
     Conn
 )
 from .state import State

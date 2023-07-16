@@ -5,7 +5,7 @@ from zenkai.kaku.machine import IO, Conn
 from zenkai.kaku.state import State
 from zenkai.kaku.steps import IterHiddenStep, IterOutStep
 
-from .test_zen import SimpleLearner
+from .test_machine import SimpleLearner
 
 
 class TestIterHiddenStep:

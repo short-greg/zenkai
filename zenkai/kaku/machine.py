@@ -25,295 +25,14 @@ import torch
 import torch.nn as nn
 
 # local
-from .. import utils as base_utils
 from .assess import AssessmentDict, Loss, ThLoss
 from .component import Learner
 from .state import IDable, State
-
 from torch.utils import data as torch_data
-
-
-class IO(object):
-    """Handles IO into and out of learning machines
-    to give a consistent system to handle it
-    """
-
-    def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
-        """initializer
-
-        Args:
-            detach (bool, optional): The values making up the IO. Defaults to False.
-            names (typing.List[str], optional): The name of each value. Defaults to None.
-        """
-        super().__init__()
-
-        self._x = []
-        self._freshened = False
-        self._singular = len(x) == 1
-        for x_i in x:
-            if isinstance(x_i, torch.Tensor) and detach:
-                x_i = x_i.detach()
-
-            self._x.append(x_i)
-        self._names = enumerate(dict(names or []))
-
-    def freshen(self, inplace: bool = False) -> bool:
-        """Set the values of the IO
-
-        Args:
-            inplace (bool, optional): _description_. Defaults to False.
-
-        Returns:
-            bool: _description_
-        """
-        if self._freshened:
-            return False
-
-        self._x = [base_utils.freshen(x_i, inplace=inplace) for x_i in self._x]
-        self._freshened = True
-        return self
-
-    def items(self) -> typing.Dict:
-        return dict(enumerate(self._x))
-
-    def tolist(self) -> typing.List:
-        """Convert to a list
-
-        Returns:
-            list: The values in the IO
-        """
-        return list(self._x)
-    
-    def totuple(self) -> typing.Tuple:
-        """Convert to a list
-
-        Returns:
-            typing.Tuple: the values making up the io as a tuple
-        """
-        return tuple(self._x)
-
-    def __getitem__(self, idx: int):
-        """Retrieve item from the IO
-
-        Args:
-            idx (int): The index to retrieve for
-
-        Returns:
-            the value at the index
-        """
-        return self._x[idx]
-
-    def to(self, device) -> "IO":
-        """Change the device of all tensors in the IO
-
-        Args:
-            device: The device to change the convert to
-
-        Returns:
-            IO: self
-        """
-
-        if device is None:
-            return self
-
-        self._x = [
-            x_i.to(device) if isinstance(x_i, torch.Tensor) else x_i for x_i in self._x
-        ]
-        if self._freshened:
-            self._freshened = False
-            self.freshen(self._x)
-        return self
-
-    @property
-    def names(self) -> typing.List[str]:
-        """
-        Returns:
-            typing.List[str]: The names of all of the fields
-        """
-        return [*self._names]
-
-    def __len__(self) -> int:
-        """
-        Returns:
-            int: The number of fields in the IO
-        """
-        return len(self._x)
-
-    def __iter__(self) -> typing.Iterator:
-        """
-        Returns:
-            typing.Iterator: Iterator of all of the elements
-        """
-        return iter(self._x)
-
-    def clone(self, detach: bool = True) -> "IO":
-        """create a copy of the of all of the tensors
-
-        Args:
-            detach (bool, optional): Whether to clone the gradients. Defaults to True.
-
-        Returns:
-            IO: The cloned IO
-        """
-        x = [torch.clone(x_i) for x_i in self._x]
-        result = IO(*x, detach=detach, names=self._names)
-        if not detach:
-            result._freshened = self._freshened
-        return result
-
-    def detach(self) -> "IO":
-
-        return IO(*self._x, detach=True, names=self._names)
-
-    def out(self, detach: bool = True, clone: bool = False) -> "IO":
-        y = self
-        if detach:
-            y = y.detach()
-        if clone:
-            y = y.clone()
-        return y
-
-    def is_empty(self) -> bool:
-        return len(self) == 0
-
-
-class Idx(object):
-    """Class used to index a tensor
-    """
-
-    def __init__(self, idx=None, dim: int = 0):
-        """initializer
-
-        Set an index on the IO to
-
-        usage: Use when the connection should retrieve a subset of the values
-        in the IO
-
-        Args:
-            idx (optional): The values to index by. Defaults to None.
-        """
-        if not isinstance(idx, torch.LongTensor) and idx is not None:
-            if isinstance(idx, torch.Tensor):
-                idx = idx.long()
-            else:
-                idx = torch.LongTensor(idx)
-        self.dim = dim
-        self.idx = idx
-
-    def idx_th(
-        self, *x: torch.Tensor
-    ) -> typing.Union[typing.Tuple[torch.Tensor], torch.Tensor]:
-
-        if self.idx is not None:
-            x = [x_i.index_select(self.dim, self.idx.detach()) for x_i in x]
-
-        return x
-
-    def tolist(self) -> typing.Union[None, typing.List[int]]:
-        if self.idx is None:
-            return None
-        return self.idx.tolist()
-
-    def idx_list(self) -> typing.List[int]:
-        """
-
-        Returns:
-            typing.List[int]: _description_
-        """
-        result = []
-        for i in self.idx:
-            result.append(self.idx[i.item()])
-        return result
-    
-    def detach(self) -> 'Idx':
-        if self.idx is None:
-            return Idx(dim=self.dim)
-        return Idx(self.idx.detach(), dim=self.dim)
-
-    def __call__(self, x: IO, detach: bool = False) -> IO:
-
-        selected = self.idx_th(*x)
-
-        result = IO(*selected, detach=detach, names=x.names)
-        if x._freshened and not detach:
-            result._freshened = True
-        return result
-
-    def update(self, source: IO, destination: IO):
-        for source_i, destination_i in zip(source, destination):
-            if destination_i.requires_grad:
-                requires_grad = True
-                destination_i.detach_().requires_grad_(False)
-            else:
-                requires_grad = False
-            if self.idx is not None:
-                destination_i[self.idx] = source_i
-            else:
-                destination_i[:] = source_i
-            if requires_grad:
-                destination_i.requires_grad_(True).retain_grad()
-
-    def update_th(self, source: torch.Tensor, destination: torch.Tensor):
-        if self.idx is not None:
-            destination[self.idx] = source
-        else:
-            destination[:] = source
-
-    def sub(self, idx: "Idx") -> "Idx":
-        if not isinstance(idx, Idx):
-            idx = Idx(idx)
-
-        if idx.idx is None:
-            return self
-        elif self.idx is None:
-            return idx
-
-        return Idx(self.idx[idx.idx])
-
-    def __len__(self) -> int:
-        return len(self.idx)
-    
-    def to(self, device) -> 'Idx':
-        self.idx = self.idx.to(device)
-        return self
-
-
-def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:
-
-    if idx is not None:
-        io = idx(io)
-
-    return io.out(detach)
-
-
-def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tensor:
-
-    if idx is not None:
-        x = idx.idx_th(x)
-
-    if detach:
-        x = x.detach()
-    return x
-
-
-# TODO: DEBUG. This is not working for some reason
-def update_io(source: IO, destination: IO, idx: Idx = None) -> IO:
-
-    if idx is None:
-        idx = Idx()
-    idx.update(source, destination)
-    return destination
-
-
-def update_tensor(
-    source: torch.Tensor, destination: torch.Tensor, idx: Idx = None
-) -> torch.Tensor:
-
-    if idx is None:
-        idx = Idx()
-    idx.update_th(source, destination)
-    return destination
-
+from .io import (
+    IO,
+    Idx 
+)
 
 class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
@@ -866,6 +585,7 @@ class StepLoop(object):
 
 
 class OutDepStepTheta(StepTheta):
+    """StepTheta that optionally depends on the outgoing module if outgoing_t is specified"""
 
     @abstractmethod
     def step(self, x: IO, t: IO, state: State, outgoing_t: IO=None, outgoing_x: IO=None) -> IO:
@@ -873,9 +593,37 @@ class OutDepStepTheta(StepTheta):
 
 
 class InDepStepX(StepX):
+    """StepX that optionally depends on the incoming module if incoming_x is specified"""
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
         pass
 
 
+class StdLearningMachine(LearningMachine):
+    """Convenience class to easily create a learning machine that takes a StepX and StepTheta"""
+
+    def __init__(self, loss: typing.Union[Loss, typing.Iterable[Loss]], step_theta: StepTheta, step_x: StepX):
+        super().__init__()
+        self.loss = loss
+        self._step_x = step_x
+        self._step_theta = step_theta
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+        
+        if isinstance(self.loss, Loss):
+            return self.loss.assess_dict(y[0], t[0], reduction_override)
+        assessment_dict = AssessmentDict()
+        for loss in self.loss:
+            assessment_dict = assessment_dict.union(loss.assess_dict(y[0], t[0], reduction_override))
+        return assessment_dict
+
+    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+        return self._step_x(x, t, state, *args, **kwargs)
+    
+    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
+        return self._step_theta(x, t, state, *args, **kwargs)
+    
+    @abstractmethod
+    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+        pass

@@ -8,6 +8,7 @@ import torch.optim
 from torch import nn
 
 from zenkai import utils
+
 # local
 from zenkai.kaku import IO, IDable
 from zenkai.kaku import machine as core

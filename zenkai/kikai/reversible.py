@@ -46,7 +46,7 @@ class ReversibleMachine(LearningMachine):
         Returns:
             IO: The updated input
         """
-        return self.reversible.reverse(t[0])
+        return IO(self.reversible.reverse(t[0]), detach=True)
 
     def step(self, x: IO, t: IO, state: State):
         """These layers do not have parameters so the internal mechanics are not updated

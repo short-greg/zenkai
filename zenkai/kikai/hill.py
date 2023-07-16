@@ -1,5 +1,5 @@
 # local
-from ..kaku.machine import (
+from ..kaku import (
     IO,
     FeatureIdxStepX,
     Idx,
