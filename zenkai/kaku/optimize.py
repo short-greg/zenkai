@@ -13,7 +13,15 @@ import torch.optim as optim
 
 
 class NullOptim(torch.optim.Optimizer):
+    """'Optim' that does not update the parameters 
+    """
+
     def __init__(self, parameters):
+        """initializer
+
+        Args:
+            parameters: the parameters to not 'optimize'
+        """
         self.state = {}
 
     def step(self):
@@ -43,17 +51,27 @@ OptimFactoryX = typing.Callable[[typing.Iterable], optim.Optimizer]
 
 
 class OptimFactory(object):
+    """Use to create an optimizer 
+    """
+
     def __init__(
         self,
         optim: typing.Union[str, typing.Type[torch.optim.Optimizer]],
         *args,
         **kwargs,
     ):
+        """initializer
+        Args:
+            optim (typing.Union[str, typing.Type[torch.optim.Optimizer]]): The base optim to create
+
+        Raises:
+            KeyError: If the string passed in for optim does not map to an optim in OPTIM_MAP
+        """
 
         try:
             optim = OPTIM_MAP[optim] if isinstance(optim, str) else optim
         except KeyError:
-            raise KeyError(f"No optim named {optim} in the optim map")
+            raise KeyError(f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}")
         self._optim = optim
         self._args = args
         self._kwargs = kwargs

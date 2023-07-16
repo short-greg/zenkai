@@ -9,7 +9,7 @@ import numpy as np
 import scipy.linalg
 
 # local
-from ..kaku.machine import (
+from ..kaku import (
     IO,
     AssessmentDict,
     LearningMachine,

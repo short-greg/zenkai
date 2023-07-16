@@ -23,24 +23,26 @@ from .component import (
 )
 from .layer_assess import AssessContext, DiffLayerAssessor, LayerAssessor
 from .limit import FeatureLimitGen, RandomFeatureIdxGen
-from .machine import (
+from .io import (
     IO,
+    Idx,
+    update_io,
+    update_tensor,
+    idx_io,
+    idx_th,
+)
+from .machine import (
     BatchIdxStepTheta,
     BatchIdxStepX,
     EmissionStack,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
-    Idx,
     LearningMachine,
     NullLearner,
     StepHook,
     StepTheta,
     StepX,
     StepXHook,
-    idx_io,
-    idx_th,
-    update_io,
-    update_tensor,
     InDepStepX,
     OutDepStepTheta,
     StepLoop,

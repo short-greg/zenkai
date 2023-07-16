@@ -2,9 +2,8 @@
 
 """
 
-import typing
-
 # 1st Party
+import typing
 from abc import abstractmethod, abstractproperty
 from dataclasses import dataclass
 from enum import Enum
@@ -16,6 +15,7 @@ import torch
 import torch.nn as nn
 
 # Local
+from .io import IO
 
 
 class Reduction(Enum):
@@ -325,6 +325,10 @@ class AssessmentDict(object):
         return self._assessments[key]
 
     def __len__(self) -> int:
+        """
+        Returns:
+            int: The number of assessments
+        """
         return len(self._assessments)
 
     def __contains__(self, key: str) -> bool:
@@ -339,7 +343,15 @@ class AssessmentDict(object):
         for k in keys:
             yield k, self._assessments.get(k), other._assessments.get(k)
 
-    def __add__(self, other: "AssessmentDict"):
+    def __add__(self, other: "AssessmentDict") -> 'AssessmentDict':
+        """Add another assessment to the dict
+
+        Args:
+            other (AssessmentDict): _description_
+
+        Returns:
+            AssessmentDict: the two assessment dicts added
+        """
         result = AssessmentDict()
         for key, s1, o1 in self._loop_pair(other):
             if s1 is not None and o1 is not None:
@@ -369,12 +381,29 @@ class AssessmentDict(object):
 
         return result
 
-    def __mul__(self, val: float):
+    def __mul__(self, val: float) -> 'AssessmentDict':
+        """Multiply the AssessmentDict by a value
+
+        Args:
+            val (float): The value to multiply
+
+        Returns:
+            AssessmentDict: the assessment dict multiplied by the value
+        """
         return AssessmentDict(**{k: v * val for k, v in self._assessments.items()})
 
     def union(
         self, assessment_dict: "AssessmentDict", override: bool = False
     ) -> "AssessmentDict":
+        """Combine two assessment dicts together
+
+        Args:
+            assessment_dict (AssessmentDict): The assessment dict to union
+            override (bool, optional): Wher to override repeating values. Defaults to False.
+
+        Returns:
+            AssessmentDict: The unioned AssessmentDict
+        """
 
         if not override:
             return AssessmentDict(**self._assessments, **assessment_dict._assessments)
@@ -384,6 +413,14 @@ class AssessmentDict(object):
             return AssessmentDict(**assessments)
 
     def sum(self, *fields: str, dim: int = None) -> "AssessmentDict":
+        """Sum the mean over specified fields
+
+        Args:
+            dim (int, optional): The dim to sum. Defaults to None.
+
+        Returns:
+            AssessmentDict
+        """
         result = {}
         fields = set(fields)
 
@@ -397,6 +434,14 @@ class AssessmentDict(object):
         return AssessmentDict(**result)
 
     def mean(self, *fields: str, dim: int = None) -> "AssessmentDict":
+        """Take the mean over specified fields
+
+        Args:
+            dim (int, optional): The dimension to take the mean on. Defaults to None.
+
+        Returns:
+            AssessmentDict
+        """
         result = {}
         fields = set(fields)
 
@@ -576,7 +621,7 @@ class Loss(nn.Module):
         )
 
     @abstractmethod
-    def forward(self, x, t, reduction_override: str = None):
+    def forward(self, x: IO, t: IO, reduction_override: str = None):
         pass
 
 
