@@ -36,10 +36,11 @@ class IterStepTheta(StepTheta):
 
     def step(self, x: IO, t: IO, state: State):
         """
+
         Args:
-            x (IO):
-            t (IO): 
-            state (State):
+            x (IO): The input value for the layer
+            t (IO): the output value for the layer
+            state (State): The learning state
         """
         loop = StepLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
@@ -90,6 +91,20 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self.tie_in_t = tie_in_t
 
     def step(self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None) -> IO:
+        """
+
+        Args:
+            x (IO): The 
+            t (IO): The 
+            state (State): The state 
+            outgoing_t (IO, optional): The target of the outgoing layer. 
+            If none, will not do step_x for the outgoing layer. Defaults to None.
+            outgoing_x (IO, optional): The x value for the outgoing layer. 
+            If none, will use the t of the incoming layer Defaults to None.
+
+        Returns:
+            IO: The updated t value for incoming
+        """
 
         theta_loop = StepLoop(self.batch_size, True)
         x_loop = StepLoop(self.x_batch_size, True)

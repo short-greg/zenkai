@@ -42,7 +42,20 @@ class Reduction(Enum):
         dim=None,
         keepdim: bool = False,
     ) -> torch.Tensor:
+        """_summary_
 
+        Args:
+            loss (torch.Tensor): _description_
+            reduction (typing.Union[&quot;Reduction&quot;, str]): _description_
+            dim (_type_, optional): _description_. Defaults to None.
+            keepdim (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            torch.Tensor: _description_
+        """
         view = torch.Size([loss.size(0), -1])
         if reduction == cls.MEAN.value:
             return loss.view(view).mean(1)
@@ -58,6 +71,20 @@ class Reduction(Enum):
         dim=None,
         keepdim: bool = False,
     ) -> torch.Tensor:
+        """_summary_
+
+        Args:
+            loss (torch.Tensor): _description_
+            reduction (typing.Union[&quot;Reduction&quot;, str]): _description_
+            dim (_type_, optional): _description_. Defaults to None.
+            keepdim (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            torch.Tensor: _description_
+        """
         if isinstance(reduction, Reduction):
             reduction = reduction.value
         if reduction is None:
@@ -90,58 +117,150 @@ class Reduction(Enum):
 
 @dataclass
 class Assessment(object):
+    """
+    Class used to wrap a tensor that stores an assessment of a machine
+    """
 
     value: torch.Tensor
     maximize: bool = False
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> 'Assessment':
+        """
+
+        Args:
+            key (): The index to retrieve an assessment for
+
+        Returns:
+            Assessment: Assessment at the index specified
+        """
         return Assessment(self.value[key], self.maximize)
 
     def __len__(self) -> int:
+        """
+        Returns:
+            int: The batch size of the assessment. If it is a scalar, it will
+            be 0
+        """
         return len(self.value) if self.value.dim() != 0 else 0
 
-    def update_direction(self, maximize: bool):
+    def update_direction(self, maximize: bool) -> 'Assessment':
+        """Change the direction of the assessment to be maximize of minimize
+
+        Args:
+            maximize (bool): Whether to maximize or minimize the assessment
+
+        Returns:
+            Assessment: _description_
+        """
+        # Do not change the assessment
         if self.maximize == maximize:
             return Assessment(self.value, maximize)
+        
+        # convert maximization to minimization or vice versa
         return Assessment(-self.value, True)
 
-    def __add__(self, other: "Assessment"):
+    def __add__(self, other: "Assessment") -> 'Assessment':
+        """Add two assessments together
+
+        Args:
+            other (Assessment)
+
+        Returns:
+            Assessment: The 
+        """
         other = other.update_direction(self.maximize)
         return Assessment(self.value + other.value, self.maximize)
 
-    def __sub__(self, other: "Assessment"):
+    def __sub__(self, other: "Assessment") -> 'Assessment':
         other = other.update_direction(self.maximize)
         return Assessment(self.value - other.value, self.maximize)
 
-    def __mul__(self, val: float):
+    def __mul__(self, val: float) -> 'Assessment':
+        """Multiply the assessment by a value
+
+        Args:
+            val (float): The value to multiply by
+
+        Returns:
+            Assessment: The multiplicand
+        """
         return Assessment(self.value * val, self.maximize)
 
-    def mean(self, dim=None) -> "Assessment":
+    def mean(self, dim: int=None) -> "Assessment":
+        """Calculate the mean of the assessment
+
+        Args:
+            dim (int, optional): The dimension to calculate the mean for. Defaults to None.
+
+        Returns:
+            Assessment: The resulting assessment
+        """
         if dim is None:
             return Assessment(self.value.mean(), self.maximize)
         return Assessment(self.value.mean(dim=dim), self.maximize)
 
     def sum(self, dim=None) -> "Assessment":
+        """Calculate the sum of the assessment
+
+        Args:
+            dim (int, optional): The dimension to calculate the sum for. Defaults to None.
+
+        Returns:
+            Assessment: The resulting assessment
+        """
         if dim is None:
             return Assessment(self.value.sum(), self.maximize)
         return Assessment(self.value.sum(dim=dim), self.maximize)
 
     def batch_mean(self) -> "Assessment":
+        """Calculate the mean of the assessment for each sample
+
+        Returns:
+            Assessment: The resulting assessment
+        """
         return Assessment(self.value.view(self.shape[0], -1).mean(dim=-1))
 
     def batch_sum(self) -> "Assessment":
+        """Calculate the sum of the assessment for each sample
+
+        Returns:
+            Assessment: The resulting assessment
+        """
         return Assessment(self.value.view(self.shape[0], -1).sum(dim=-1))
 
     def detach(self) -> "Assessment":
+        """Detach the tensor
+
+        Returns:
+            Assessment: Assessment with detached tensor
+        """
         return Assessment(self.value.detach(), self.maximize)
 
     def cpu(self) -> "Assessment":
+        """Convert the tensor to CPU
+
+        Returns:
+            Assessment: Assessment with tensor converted
+        """
         return Assessment(self.value.cpu(), self.maximize)
 
     def numpy(self) -> np.ndarray:
+        """Convert the assessment to numpy
+
+        Returns:
+            np.ndarray: The assessment as a numpy array
+        """
         return self.value.detach().cpu().numpy()
 
     def item(self) -> typing.Any:
+        """Get the item of the tensor
+
+        Raises:
+            ValueError: If the tensor is not a scalar
+
+        Returns:
+            typing.Any: The item for the tensor
+        """
         if self.value.dim() != 0:
             raise ValueError(
                 "Only one element tensors can be converted to Python scalars."
@@ -149,7 +268,15 @@ class Assessment(object):
 
         return self.value.item()
 
-    def expand_population(self, population_size) -> "Assessment":
+    def expand_population(self, population_size: int) -> "Assessment":
+        """Convert the assessment so that the first dimension is the population dimension
+
+        Args:
+            population_size (int): The number of elements in the population
+
+        Returns:
+            Assessment: The assessment with the first dimension expanded
+        """
         return Assessment(
             self.value.view(
                 population_size, self.shape[0] // population_size, *self.shape[1:]
@@ -157,8 +284,17 @@ class Assessment(object):
             self.maximize,
         )
 
-    def _extract_dim_greater_than_2(self, x: torch.Tensor, best_idx: torch.LongTensor):
+    def _extract_dim_greater_than_2(self, x: torch.Tensor, best_idx: torch.LongTensor) -> typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]:
+        """
 
+        Args:
+            x (torch.Tensor): The tensor to extract from
+            best_idx (torch.LongTensor): _description_
+
+        Returns:
+            typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]: 
+        """
+    
         x_reshaped = x.view(x.size(0), x.size(1), -1)
         x_reshaped_index = best_idx[:, :, None].repeat(1, 1, x_reshaped.size(2))
 
@@ -197,18 +333,34 @@ class Assessment(object):
     def best(
         self, dim: int = 0, keepdim: bool = False
     ) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+        """Get the best value in the assessment for a dimension
 
+        Args:
+            dim (int, optional): The dimension to get the best for. Defaults to 0.
+            keepdim (bool, optional): Whether to keepdim. Defaults to False.
+
+        Returns:
+            typing.Tuple[torch.Tensor, torch.LongTensor]: 
+        """
         if self.maximize:
             return self.value.max(dim=dim, keepdim=keepdim)
         return self.value.min(dim=dim, keepdim=keepdim)
 
     @property
     def shape(self) -> torch.Size:
+        """
+        Returns:
+            torch.Size: The shape of the assessment
+        """
         return self.value.shape
 
     def backward(self):
+        """
+        Raises:
+            ValueError: If the assessment is not a scalar
+        """
         if self.value.dim() != 0:
-            raise ValueError("Backward can only be computed for  one element tensors .")
+            raise ValueError("Backward can only be computed for one element tensors .")
 
         return self.value.backward()
 
@@ -228,7 +380,18 @@ class Assessment(object):
         )
 
     @classmethod
-    def stack(self, assessments: typing.Iterable["Assessment"]):
+    def stack(self, assessments: typing.Iterable["Assessment"]) -> 'Assessment':
+        """Stack multiple assessments
+
+        Args:
+            assessments (typing.Iterable[Assessment]): Assessments to stack
+
+        Raises:
+            ValueError: if the assessments being stacked are not all optimized in the same direction
+
+        Returns:
+            Assessment: The stacked assessment
+        """
         maximize = None
         values = []
         for assessment in assessments:
@@ -243,9 +406,22 @@ class Assessment(object):
         return Assessment(torch.stack(values), maximize)
 
     def to_dict(self, name: str) -> "AssessmentDict":
+        """Convert the Assessment to an AssessmentDict
+
+        Args:
+            name (str): The name to give the assessment
+
+        Returns:
+            AssessmentDict: The resulting assessment dict
+        """
         return AssessmentDict(**{name: self})
 
     def __iter__(self) -> typing.Iterator["Assessment"]:
+        """Iterate over the values in the assessment for the first dimension
+
+        Yields:
+            Assessment: Assessment for the current element
+        """
 
         if self.value.dim() == 0:
             yield Assessment(self.value, self.maximize)
@@ -253,10 +429,18 @@ class Assessment(object):
             for element in self.value:
                 yield Assessment(element, self.maximize)
 
-    def view(self, *size: int):
+    def view(self, *size: int) -> 'Assessment':
+        """
+        Returns:
+            Assessment: The assessment with its view changed
+        """
         return Assessment(self.value.view(size), self.maximize)
 
     def reshape(self, *size: int):
+        """
+        Returns:
+            Assessment: The assessment reshaped 
+        """
         return Assessment(self.value.reshape(size), self.maximize)
 
 
@@ -265,8 +449,18 @@ def reduce_assessment(
     maximize: bool = False,
     reduction: str = "mean",
     dim: int = -1,
-):
+) -> Assessment:
+    """
 
+    Args:
+        evaluation (torch.Tensor): _description_
+        maximize (bool, optional): _description_. Defaults to False.
+        reduction (str, optional): _description_. Defaults to "mean".
+        dim (int, optional): _description_. Defaults to -1.
+
+    Returns:
+        Assessment: An assessment reduced
+    """
     return Assessment(evaluation, maximize).reduce(reduction, dim)
 
 
