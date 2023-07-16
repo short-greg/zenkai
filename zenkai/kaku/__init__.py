@@ -54,13 +54,13 @@ from .optimize import (
     NullOptim,
     OptimFactory,
     OptimFactoryX,
-    itadaki,
+    itadaki
 )
 from .state import IDable, MyState, State, StateKeyError
-from .steps import (
-    IterHiddenStep, 
-    IterOutStep, 
-    Step, 
-    StepLoop, 
-    # TwoLayerStep
-)
+# from .steps import (
+#     IterHiddenStep, 
+#     IterOutStep, 
+#     Step, 
+#     StepLoop, 
+#     # TwoLayerStep
+# )
