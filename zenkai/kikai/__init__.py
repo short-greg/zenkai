@@ -54,3 +54,8 @@ from .scikit import (
     ScikitMachine, VoterEnsembleMachine
 
 )
+from .iterable import (
+    IterStepTheta, 
+    IterHiddenStepTheta,
+    # TwoLayerStep
+)

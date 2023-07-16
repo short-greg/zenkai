@@ -16,7 +16,6 @@ from ..kaku import (
 )
 
 
-
 class IterStepTheta(StepTheta):
     """Do multiple iterations on the outer layer"""
 
@@ -95,7 +94,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
         theta_loop = StepLoop(self.batch_size, True)
         x_loop = StepLoop(self.x_batch_size, True)
 
-        outgoing_x = outgoing_x or x
+        outgoing_x = outgoing_x or t
 
         for i in range(self.n_epochs):
 
@@ -103,10 +102,10 @@ class IterHiddenStepTheta(OutDepStepTheta):
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):
-                            self.outgoing.step_x(outgoing_x, outgoing_t, state, batch_idx=idx)
+                            x_idx = self.outgoing.step_x(outgoing_x, outgoing_t, state, batch_idx=idx)
                         else:
                             x_idx = self.outgoing.step_x(idx(outgoing_x), idx(outgoing_t), state)
-                            update_io(x_idx, outgoing_x, idx)
+                        update_io(x_idx, outgoing_x, idx)
 
                 t = outgoing_x
 
