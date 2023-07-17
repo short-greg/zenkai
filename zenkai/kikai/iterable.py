@@ -9,9 +9,7 @@ from ..kaku import (
     IO,
     BatchIdxStepTheta,
     BatchIdxStepX,
-    LearningMachine,
     update_io,
-    NullStepX,
     StepTheta,
     State,
     OutDepStepTheta,
@@ -73,7 +71,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
         batch_size: int = None,
         tie_in_t: bool = True,
     ):
-        """
+        """initializer
 
         Args:
             step_theta (StepTheta): update function being wrapped

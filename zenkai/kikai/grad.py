@@ -110,13 +110,19 @@ class GradStepX(StepX):
     """Update x with the loss between y and t based on the grad value of step_x.x"""
 
     def __init__(self, x_lr: float=None):
+        """StepX that uses the result from a backpropagation
 
+        Args:
+            x_lr (float, optional): The learning rate for the backpropagation. Defaults to None.
+        """
         super().__init__()
         self.x_lr = x_lr
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         x = x[0]
+        if x.grad is None:
+            raise RuntimeError(f"Grad has not been set. Must backpropagate first")
         grad = x.grad if self.x_lr is None else self.x_lr * x.grad
         x = x - grad
         x.grad = None
