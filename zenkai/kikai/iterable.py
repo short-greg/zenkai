@@ -133,7 +133,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
             for _ in range(self.theta_iterations):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
-                    if isinstance(self.step_theta, BatchIdxStepTheta):
+                    if isinstance(self.update, BatchIdxStepTheta):
                         self.update.step(x, t, state, batch_idx=idx)
                     else:
                         self.update.step(idx(x), idx(t), state)
