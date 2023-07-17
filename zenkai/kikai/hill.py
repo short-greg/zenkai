@@ -26,7 +26,7 @@ class HillClimbStepX(FeatureIdxStepX):
         momentum: float = 0.5,
         maximize: bool = False,
     ):
-        """_summary_
+        """initializer
 
         Args:
             learner (LearningMachine): The learner being trained
@@ -45,17 +45,17 @@ class HillClimbStepX(FeatureIdxStepX):
         self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
-        """Update x using hill climbing
+        """Update x
 
         Args:
-            conn (Conn): The connection to update based on
-            state (State): The current state of learning
-            feature_idx (Idx, optional): Use to specify if only a subset of features are being updated. Defaults to None.
+            x (IO): Input
+            t (IO): Target
+            state (State): Learning State
+            feature_idx (Idx, optional): A limitation on the connections that get updated. Defaults to None.
 
         Returns:
-            Conn: The connection used to update
+            IO: The updated X
         """
-
         individual = Individual(x=x[0])
 
         population = self.limiter(
@@ -94,7 +94,17 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         self.populator = BinaryPopulator(k, keep_p)
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
+        """Update x
 
+        Args:
+            x (IO): Input
+            t (IO): Target
+            state (State): Learning State
+            feature_idx (Idx, optional): A limitation on the connections that get updated. Defaults to None.
+
+        Returns:
+            IO: The updated X
+        """
         individual = Individual(x=x[0])
         population = self.limiter(
             individual,

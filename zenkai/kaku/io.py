@@ -1,17 +1,5 @@
 """
-Core Modules for Zen
-
-Modules:
-LearningMachine - nn.Module which has the ability to learn on its own
-
-
-Optimization:
-The following classes can be used to add flexibility to optimziation
-StepX - Optimizer for updating the inputs of a learning machine
-StepTheta - Optimizer for updating the parameters of a learning machine
-
-Other
-Loop - Loop over data
+Modules to wrap inputs ond outputs for the network
 """
 
 # 1st party
@@ -46,6 +34,8 @@ class IO(object):
                 x_i = x_i.detach()
 
             self._x.append(x_i)
+        
+        # TODO: Use this
         self._names = enumerate(dict(names or []))
 
     def freshen(self, inplace: bool = False) -> 'IO':

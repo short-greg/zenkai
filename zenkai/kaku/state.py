@@ -20,17 +20,25 @@ class StateKeyError(KeyError):
 
 
 class State(object):
-
-    # add in x and y by default
-    # so that XOptim, ThetaOptim do not have
-    # to be coupled to the lm
+    """Class to store the learning state for one learning iteration
+    """
 
     def __init__(self):
+        """initializer
+        """
         super().__init__()
         self._data = {}
         self._subs = {}
 
-    def id(self, obj):
+    def id(self, obj) -> str:
+        """Get the key for an object
+
+        Args:
+            obj: The object to get the key for
+
+        Returns:
+            str: The key
+        """
         if isinstance(obj, str):
             return obj
 
@@ -40,12 +48,32 @@ class State(object):
             return id(obj)
 
     def store(self, obj: IDable, key: typing.Hashable, value):
+        """Store data in the state
+
+        Args:
+            obj (IDable): the object to store for
+            key (typing.Hashable): The key for the value
+            value: the value to store
+
+        Returns:
+            The value that was stored
+        """
 
         obj_data, _ = self._get_obj(obj)
         obj_data[key] = value
         return value
 
-    def get(self, obj: IDable, key: typing.Hashable, default=None):
+    def get(self, obj: IDable, key: typing.Hashable, default=None) -> typing.Any:
+        """Retrieve the value for a key
+
+        Args:
+            obj (IDable): The object to retrieve
+            key (typing.Hashable): The key for the object
+            default (optional): The default value if the value does not exist. Defaults to None.
+
+        Returns:
+            typing.Any: The value stored in the object
+        """
         try:
             if isinstance(key, typing.List):
                 return [self._data[self.id(obj)][key_i] for key_i in key]
@@ -54,7 +82,18 @@ class State(object):
         except KeyError:
             return default
 
-    def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]):
+    def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]) -> typing.Any:
+        """Retrieve an item from the state
+
+        Args:
+            index (typing.Tuple[IDable, typing.Hashable]): The object and its key
+
+        Raises:
+            StateKeyError: If the key does not exist
+
+        Returns:
+            typing.Any: The value stored for the object / key pair
+        """
         obj, key = index
         obj_id = self.id(obj)
         try:
@@ -68,7 +107,12 @@ class State(object):
             )
 
     def __setitem__(self, index: typing.Tuple[IDable, typing.Hashable], value):
+        """Set the value at the key
 
+        Args:
+            index (typing.Tuple[IDable, typing.Hashable]): The obj/key to set the value for
+            value: The value to set
+        """
         obj, key = index
         return self.store(obj, key, value)
 
@@ -102,6 +146,16 @@ class State(object):
         return result
 
     def my_sub(self, obj: IDable, key: str, to_add: bool = True) -> "MyState":
+        """Retrieve the substate for an object
+
+        Args:
+            obj (IDable): The object to retrieve for
+            key (str): The key for the sub state
+            to_add (bool, optional): Whether to add it if it does not exist. Defaults to True.
+
+        Returns:
+            MyState: The resulting substate
+        """
         mine = self.mine(obj, to_add)
         return mine.my_sub(key, to_add)
 
@@ -125,6 +179,11 @@ class State(object):
         return sub_data[key]
 
     def clear(self, obj: IDable):
+        """Remove values in the state for an object
+
+        Args:
+            obj (IDable): the object to clear the state for
+        """
         id = self.id(obj)
         if id in self._data:
             self._data[id].clear()
@@ -142,9 +201,25 @@ class State(object):
             yield key, value
 
     def mine(self, obj, to_add: bool = True) -> "MyState":
+        """Retrieve the state for a given object
+
+        Args:
+            obj: The object to get the state for
+            to_add (bool, optional): Whether to add if not currently in the state. Defaults to True.
+
+        Returns:
+            MyState: MyState for the object
+        """
         return MyState(obj, *self._get_obj(obj, to_add=to_add))
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
+        """
+        Args:
+            key (typing.Tuple[obj, str]): The key to check if the key
+
+        Returns:
+            bool: Whether the key is contained
+        """
         obj, key = key
         id = self.id(obj)
         return id in self._data and key in self._data[id]
@@ -152,6 +227,8 @@ class State(object):
 
 class MyState(object):
     """Convenience class to make it easy to access state values for an object
+
+    Usage:
     x = object()
     my_state = State().mine(x)
     my_state.t = 1
@@ -170,7 +247,12 @@ class MyState(object):
 
     @property
     def subs(self) -> typing.Dict[str, State]:
-        return self._subs
+        """Retrieve the sub states for the state
+
+        Returns:
+            typing.Dict[str, State]: The sub states
+        """
+        return {**self._subs}
 
     def add_sub(self, key: str, state: State = None) -> "State":
         """Add a substate to the state
@@ -189,29 +271,74 @@ class MyState(object):
         return state
 
     def my_sub(self, key: str, to_add: bool = True) -> "MyState":
+        """Get the sub state for a key
+
+        Args:
+            key (str): The name for the sub state
+            to_add (bool, optional): Whether to add the sub state. Defaults to True.
+
+        Returns:
+            MyState: The substate
+        """
         if to_add and key not in self._subs:
             self._subs[key] = State()
         return self._subs[key].mine(self._obj)
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default=None) -> typing.Any:
+        """Get the value at a key
+
+        Args:
+            key (str): The key to retrieve for
+            default (optional): The default value if the key does not have a value. Defaults to None.
+
+        Returns:
+            typing.Any: The value at the key or the default
+        """
         return self._data.get(key, default)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> typing.Any:
+        """Get the value at a key
+
+        Args:
+            key (str): _description_
+
+        Returns:
+            typing.Any: The value at the key
+        """
         return self._data[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value):
+        """Set the value at the key
+
+        Args:
+            key (str): The key to set the value to
+            value: The value to set
+        """
         self._data[key] = value
 
     def __getattr__(self, key):
+        """Get the value at a key
+
+        Args:
+            key (str): _description_
+
+        Returns:
+            typing.Any: The value at the key
+        """
         return self._data[key]
 
     def __setattr__(self, key: str, value: typing.Any) -> typing.Any:
+        """Set the value at the key
+
+        Args:
+            key (str): The key to set the value to
+            value: The value to set
+        """
         self._data[key] = value
         return value
 
     def __contains__(self, key: str) -> bool:
         return key in self._data
-
 
 
 class EmissionStack(object):

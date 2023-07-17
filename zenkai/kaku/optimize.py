@@ -44,6 +44,7 @@ OPTIM_MAP = {
     "adagrad": torch.optim.Adagrad,
     "rmsprop": torch.optim.RMSprop,
     "null": NullOptim,
+    "asgd": torch.optim.ASGD
 }
 
 
@@ -80,26 +81,6 @@ class OptimFactory(object):
 
         kwargs = {**self._kwargs, **kwarg_overrides}
         return self._optim(params, *self._args, **kwargs)
-
-    @classmethod
-    def sgd(cls, *args, **kwargs):
-        return OptimFactory(torch.optim.SGD, *args, **kwargs)
-
-    @classmethod
-    def adam(cls, *args, **kwargs):
-        return OptimFactory(torch.optim.Adam, *args, **kwargs)
-
-    @classmethod
-    def adadelta(cls, *args, **kwargs):
-        return OptimFactory(torch.optim.Adadelta, *args, **kwargs)
-
-    @classmethod
-    def asgd(cls, *args, **kwargs):
-        return OptimFactory(torch.optim.ASGD, *args, **kwargs)
-
-    @classmethod
-    def rmsprop(cls, *args, **kwargs):
-        return OptimFactory(torch.optim.RMSprop, *args, **kwargs)
 
 
 class FilterOptim(optim.Optimizer):
@@ -179,6 +160,8 @@ class FilterOptim(optim.Optimizer):
                 p_i[:] = mp_i.data
 
     def step_filter(self):
+        """Updates the paramters in the base state
+        """
         self.filter_optim.zero_grad()
 
         if self._is_first and self.copy_first:
@@ -197,6 +180,11 @@ class FilterOptim(optim.Optimizer):
         self._is_first = False
 
     def transfer(self, clear_active_state: bool = True):
+        """Transfer data from the base state to the active state
+
+        Args:
+            clear_active_state (bool, optional): Whether to clear the active state when transferring. Defaults to True.
+        """
         for active, meta in zip(self.active_params, self.filter_params):
             active.data = meta.data
 
@@ -204,11 +192,19 @@ class FilterOptim(optim.Optimizer):
             self.active_optim.state.clear()
 
     def adv(self, clear_active_state: bool = True):
+        """Convenience method combining step_filter and transfer
+
+        Args:
+            clear_active_state (bool, optional): Whether to clear the active state when transferring. Defaults to True.
+        """
         self.step_filter()
         self.transfer(clear_active_state)
 
 
 class itadaki:
+    """Static class to make it easy to create Optimfactories
+    """
+
     def __init__(self) -> None:
         raise RuntimeError("Cannot create instance of class itadaki")
 
@@ -223,3 +219,21 @@ class itadaki:
     @staticmethod
     def null():
         return OptimFactory("null")
+
+    @classmethod
+    def adadelta(cls, *args, **kwargs):
+        """Create adadelta OptimFactory
+        """
+        return OptimFactory("adadelta", *args, **kwargs)
+
+    @classmethod
+    def asgd(cls, *args, **kwargs):
+        """Create asgd OptimFactory
+        """
+        return OptimFactory("asgd", *args, **kwargs)
+
+    @classmethod
+    def rmsprop(cls, *args, **kwargs):
+        """Create rmsprop OptimFactory
+        """
+        return OptimFactory("rmsprop", *args, **kwargs)
