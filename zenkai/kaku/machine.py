@@ -24,6 +24,9 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
+from zenkai.kaku.io import IO
+from zenkai.kaku.state import State
+
 # local
 from .assess import AssessmentDict, Loss, ThLoss
 from .component import Learner
@@ -172,6 +175,18 @@ class StepTheta(ABC):
         if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
         self._step_posthooks.append(hook)
+
+
+class NullStepX(StepX):
+
+    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+        return x
+    
+
+class NullStepTheta(StepTheta):
+
+    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
+        return
 
 
 class BatchIdxStepTheta(StepTheta):
@@ -603,11 +618,11 @@ class InDepStepX(StepX):
 class StdLearningMachine(LearningMachine):
     """Convenience class to easily create a learning machine that takes a StepX and StepTheta"""
 
-    def __init__(self, loss: typing.Union[Loss, typing.Iterable[Loss]], step_theta: StepTheta, step_x: StepX):
+    def __init__(self, loss: typing.Union[Loss, typing.Iterable[Loss]], step_theta: StepTheta=None, step_x: StepX=None):
         super().__init__()
         self.loss = loss
-        self._step_x = step_x
-        self._step_theta = step_theta
+        self._step_x = step_x or NullStepX()
+        self._step_theta = step_theta or NullStepTheta()
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         
