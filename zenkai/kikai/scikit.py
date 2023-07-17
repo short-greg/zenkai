@@ -509,6 +509,7 @@ class Voter(nn.Module):
 class VoterEnsemble(nn.Module):
     """Module containing multiple modules that vote on output
     """
+    
     def __init__(self, base_estimator: ScikitEstimator, n_keep: int):
         """
 
@@ -628,6 +629,16 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+        """
+
+        Args:
+            y (IO): Output
+            t (IO): Target
+            reduction_override (str, optional): Override the default reduction. Defaults to None.
+
+        Returns:
+            AssessmentDict: The assessment
+        """
         return self._loss.assess_dict(y[0], t[0], reduction_override)
 
     def step(
@@ -653,8 +664,8 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         """Update the input
 
         Args:
-            x (IO):  IO
-            t (IO)
+            x (IO): Input
+            t (IO): Target
             state (State): State for training
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
 
@@ -665,16 +676,16 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         """
+        To send the input through the voting ensemble
 
         Args:
-            x (IO): send the input through the voting ensemble
+            x (IO): Input
             state (State): the state for learning
             detach (bool, optional): whether to detach the output or not. Defaults to True.
 
         Returns:
-            IO: _description_
+            IO: Output
         """
-
         x = x[0]
         if self._preprocessor is not None:
             x = self._preprocessor(x)

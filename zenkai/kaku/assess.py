@@ -19,100 +19,92 @@ from .io import IO
 
 
 class Reduction(Enum):
-
-    MEAN = "mean"
-    SUM = "sum"
-    NONE = "none"
-    BATCHMEAN = "batchmean"
-    SAMPLEMEANS = "samplemeans"
-    SAMPLESUMS = "samplesums"
+    """Class to use for reducing a loss
+    """
+    mean = "mean"
+    sum = "sum"
+    none = "none"
+    batchmean = "batchmean"
+    samplemeans = "samplemeans"
+    samplesums = "samplesums"
 
     @classmethod
-    def is_torch(cls, reduction: str):
+    def is_torch(cls, reduction: str) -> bool:
+        """
+        Args:
+            reduction (str): The reduction name
+
+        Returns:
+            bool: Whether the reduction is a 'torch' reduction
+        """
         return reduction in ("mean", "sum", "none")
 
-    def reduce(self, loss: torch.Tensor, dim=None):
-        return Reduction.reduce_by(loss, self.value, dim)
-
-    @classmethod
-    def sample_reduce_by(
-        cls,
+    def sample_reduce(
+        self,
         loss: torch.Tensor,
-        reduction: typing.Union["Reduction", str],
-        dim=None,
-        keepdim: bool = False,
     ) -> torch.Tensor:
-        """_summary_
+        """Reduce each sample for the tensor (i.e. dimension 0)
 
         Args:
-            loss (torch.Tensor): _description_
-            reduction (typing.Union[&quot;Reduction&quot;, str]): _description_
-            dim (_type_, optional): _description_. Defaults to None.
-            keepdim (bool, optional): _description_. Defaults to False.
+            loss (torch.Tensor): The loss to reduce
+            reduction (typing.Union[Reduction, str]): The reduction to use
 
         Raises:
-            ValueError: _description_
+            ValueError: If the reduction is invalid
 
         Returns:
-            torch.Tensor: _description_
+            torch.Tensor: The reduced tensor
         """
         view = torch.Size([loss.size(0), -1])
-        if reduction == cls.MEAN.value:
+        if self == Reduction.mean:
             return loss.view(view).mean(1)
-        if reduction == cls.SUM.value:
+        if self == Reduction.sum:
             return loss.view(view).sum(1)
-        raise ValueError(f"{reduction} is an invalid reduction.")
+        raise ValueError(f"{self.name} cannot be reduced by sample.")
 
-    @classmethod
-    def reduce_by(
-        cls,
+    def reduce(
+        self,
         loss: torch.Tensor,
-        reduction: typing.Union["Reduction", str],
         dim=None,
         keepdim: bool = False,
     ) -> torch.Tensor:
-        """_summary_
+        """Reduce a loss by the Reduction
 
         Args:
-            loss (torch.Tensor): _description_
-            reduction (typing.Union[&quot;Reduction&quot;, str]): _description_
-            dim (_type_, optional): _description_. Defaults to None.
-            keepdim (bool, optional): _description_. Defaults to False.
+            loss (torch.Tensor): The loss to reduce
+            dim (_type_, optional): The dim to reduce. Defaults to None.
+            keepdim (bool, optional): Whether to keep the dim. Defaults to False.
 
         Raises:
-            ValueError: _description_
+            ValueError: The Reduction cannot be reduced by a normal reduce()
 
         Returns:
-            torch.Tensor: _description_
+            torch.Tensor: The reduced loss
         """
-        if isinstance(reduction, Reduction):
-            reduction = reduction.value
-        if reduction is None:
-            reduction = "none"
 
-        if reduction == cls.MEAN.value and dim is None:
+        if self == self.mean and dim is None:
             return loss.mean()
-        elif reduction == cls.SUM.value and dim is None:
+        elif self == self.sum and dim is None:
             return loss.sum()
-        elif reduction == cls.MEAN.value:
+        elif self == self.mean:
             return loss.mean(dim=dim, keepdim=keepdim)
-        elif reduction == cls.SUM.value:
+        elif self == self.sum:
             return loss.sum(dim=dim, keepdim=keepdim)
-        elif reduction == cls.BATCHMEAN.value and dim is None:
+        elif self == self.batchmean and dim is None:
             return loss.sum() / loss.size(0)
-        elif reduction == cls.BATCHMEAN.value:
+        elif self == self.batchmean:
             return loss.sum(dim=dim, keepdim=keepdim) / loss.size(0)
-        elif reduction == cls.SAMPLEMEANS.value:
+        elif self == self.samplemeans:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).mean(dim=1, keepdim=keepdim)
-        elif reduction == cls.SAMPLESUMS.value:
+        elif self == self.samplesums:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).sum(dim=1, keepdim=keepdim)
-        elif reduction == cls.NONE.value:
+        elif self == self.none:
             return loss
-        raise ValueError(f"{reduction} is an invalid reduction.")
+        raise ValueError(f"{self.value} cannot be reduced.")
 
 
 @dataclass
@@ -126,7 +118,6 @@ class Assessment(object):
 
     def __getitem__(self, key) -> 'Assessment':
         """
-
         Args:
             key (): The index to retrieve an assessment for
 
@@ -837,7 +828,7 @@ class ThLoss(Loss):
         weight: float = None,
         loss_kwargs: typing.Dict = None,
     ):
-        """_summary_
+        """initializer
 
         Args:
             base_loss (typing.Union[typing.Callable[[str], nn.Module], str]): _description_
@@ -848,14 +839,6 @@ class ThLoss(Loss):
         Raises:
             KeyError: _description_
         """
-        """
-        """
-
-        # """Create a Loss that wraps a
-        # Args:
-        #     base_loss (typing.Type[nn.Module]): factory to create a torch loss
-        #     base_reduction (str, optional): The default reduction to use. Defaults to 'mean'.
-        # """
         super().__init__(reduction)
         if isinstance(base_loss, str):
             try:

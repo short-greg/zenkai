@@ -388,7 +388,7 @@ class Population(object):
     def set_p(
         self, parameter: Parameter, key: str, individual_index: int
     ) -> "Individual":
-        """_summary_
+        """Set the parameter
 
         Args:
             parameter (Parameter): The parameter value to update
@@ -418,14 +418,18 @@ class Population(object):
 
     @property
     def assessments(self) -> typing.List[Assessment]:
-        """The assessments for the population
+        """"
 
         Returns:
-            typing.List[Assessment]:
+            typing.List[Assessment]:"The assessments for the population
         """
         return self._assessments
 
     def assessments_reported(self) -> bool:
+        """
+        Returns:
+            bool: Whether the assessments have been reported 
+        """
         for assessment in self._assessments:
             if assessment is None:
                 return False
@@ -526,7 +530,7 @@ def reduce_assessment_dim0(
         Assessment: The reduced assessment
     """
     return Assessment(
-        Reduction.sample_reduce_by(assessment.value.view(k, -1).value, reduction)
+        Reduction[reduction].sample_reduce(assessment.value.view(k, -1).value)
     )
 
 
@@ -537,7 +541,7 @@ def reduce_assessment_dim1(
     Args:
         assessment (Assessment): The assessment for the population
         k (int): The size of the population
-        flattened (bool, optional): Whether the . Defaults to True.
+        flattened (bool, optional): Whether the population and batch dimensions are flattened. Defaults to True.
         reduction (str, optional): The name of the reduction.. Defaults to "mean".
 
     Returns:
@@ -549,7 +553,7 @@ def reduce_assessment_dim1(
     else:
         value = assessment.value
 
-    return Assessment(Reduction.sample_reduce_by(value, reduction).view(k, -1))
+    return Assessment(Reduction[reduction].sample_reduce(value).view(k, -1))
 
 
 def expand_t(t: IO, k: int) -> IO:
