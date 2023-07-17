@@ -94,8 +94,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
         """
 
         Args:
-            x (IO): The 
-            t (IO): The 
+            x (IO): Input 
+            t (IO): Target
             state (State): The state 
             outgoing_t (IO, optional): The target of the outgoing layer. 
             If none, will not do step_x for the outgoing layer. Defaults to None.

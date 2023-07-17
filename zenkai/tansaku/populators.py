@@ -293,12 +293,26 @@ class BinaryPopulator(StandardPopulator):
 
 
 class ConservativePopulator(PopulatorDecorator):
+    """Decorator for a populator that replaces the initial results of the populator
+    algorithm with the original values
+    """
+
     def __init__(
         self,
         base_populator: Populator,
         percent_change: float = 0.1,
         same_change: bool = True,
     ):
+        """initializer
+
+        Args:
+            base_populator (Populator): The populator decorated
+            percent_change (float, optional): The percentage to change the population. Defaults to 0.1.
+            same_change (bool, optional): Whether the same elements should be 'conserved' for the entire population. Defaults to True.
+
+        Raises:
+            ValueError: If the percent change is less than 0 or greater than 1s
+        """
         super().__init__(base_populator)
         if not (0.0 <= percent_change <= 1.0):
             raise ValueError("Percent change must be between 0 and 1")
@@ -311,6 +325,16 @@ class ConservativePopulator(PopulatorDecorator):
         base_val: torch.Tensor,
         val: typing.Union[torch.Tensor, Parameter],
     ) -> typing.Union[torch.Tensor, Parameter]:
+        """Decorate the population
+
+        Args:
+            key (str): The name of the item
+            base_val (torch.Tensor): The original value
+            val (typing.Union[torch.Tensor, Parameter]): The updated value after 'populating'
+
+        Returns:
+            typing.Union[torch.Tensor, Parameter]: The decorated value
+        """
 
         base_val = base_val[None]
         size = list(val.size())
@@ -323,15 +347,29 @@ class ConservativePopulator(PopulatorDecorator):
         return to_change * val + (1 - to_change) * base_val
 
     def spawn(self) -> "ConservativePopulator":
+        """
+        Returns:
+            ConservativePopulator: A new conservative spawner with the same parameters
+        """
         return ConservativePopulator(
             self.base_populator.spawn(), self.percent_change, self.same_change
         )
 
 
+
+# TODO: Consider Removing the ones below
 class PerceptronProbPopulator(Populator):
     def __init__(
         self, learner: Assessor, k: int, x: str = "x", unactivated: str = "unactivated"
     ):
+        """initialzier
+
+        Args:
+            learner (Assessor): _description_
+            k (int): _description_
+            x (str, optional): _description_. Defaults to "x".
+            unactivated (str, optional): _description_. Defaults to "unactivated".
+        """
         self.k = k
         self.learner = learner
         self.unactivated = unactivated

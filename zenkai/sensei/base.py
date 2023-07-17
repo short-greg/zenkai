@@ -63,7 +63,11 @@ class Classroom:
         return None
 
 
+# TODO: Consider to remove an consolidate with Classroom
 class Desk(object):
+    """Class used to store information or materials for a teacher
+    """
+
     def __init__(
         self,
         materials: typing.Dict[str, Material] = None,
@@ -118,7 +122,7 @@ class Desk(object):
         """Retrieve info from the desk
 
         Args:
-            key (str): The
+            key (str): The key to the info
 
         Returns:
             typing.Any: _description_
@@ -142,8 +146,16 @@ class Desk(object):
 
 
 class Assistant(ABC):
-    def __init__(self, name: str):
+    """Class used to assist a teacher. Implements a callback that the teacher
+    will execute
+    """
 
+    def __init__(self, name: str):
+        """initializer
+
+        Args:
+            name (str): _description_
+        """
         self._name = name
 
     @property
@@ -157,6 +169,13 @@ class Assistant(ABC):
         assessment_dict: AssessmentDict = None,
         data: typing.Any = None,
     ):
+        """Assist the teacher
+
+        Args:
+            teacher_name (str): _description_
+            assessment_dict (AssessmentDict, optional): _description_. Defaults to None.
+            data (typing.Any, optional): _description_. Defaults to None.
+        """
         pass
 
     def __call__(
@@ -165,11 +184,27 @@ class Assistant(ABC):
         assessment_dict: AssessmentDict = None,
         data: typing.Any = None,
     ):
-        return self.assist(teacher_name, assessment_dict, data)
+        """Assist the teacher
+
+        Args:
+            teacher_name (str): The teacher to assist
+            assessment_dict (AssessmentDict, optional): The evalu. Defaults to None.
+            data (typing.Any, optional): _description_. Defaults to None.
+
+        """
+        self.assist(teacher_name, assessment_dict, data)
 
 
 class AssistantTeam(object):
+    """Container for assistants to easily execute multiple assistants
+    """
+
     def __init__(self, *assistants: Assistant):
+        """initializer
+
+        Args:
+            assistants: The assistants to the teacher
+        """
 
         self._assistants: typing.Dict[str, Assistant] = {
             assistant.name: Assistant for assistant in assistants
@@ -182,12 +217,12 @@ class AssistantTeam(object):
             overwrite (bool, optional): _description_. Defaults to True.
 
         Raises:
-            ValueError: _description_
+            ValueError: If the assistant already exists and overwrite is False
         """
 
         if assistant.name in self._assistants:
             if not overwrite:
-                raise ValueError()
+                raise ValueError(f"Assistant {assistant.name} already exists.")
             del self._assistants[assistant.name]
         self._assistants[assistant.name] = assistant
 
@@ -209,47 +244,51 @@ class AssistantTeam(object):
 
 
 class Teacher(ABC):
+    """Use to process the learners or materiasl
+    """
+
     def __init__(self, name: str):
+        """initializer
+
+        Args:
+            name (str): The name of the teacher
+        """
         self._assistants = AssistantTeam()
         self._name = name
 
     @property
     def name(self) -> str:
+        """
+        Returns:
+            str: The name of the teacher
+        """
         return self._name
 
     @abstractmethod
     def teach(self):
+        """Execute the teaching process
+        """
         pass
 
     def register(self, assistant: Assistant):
+        """Add an assistant to the registry
+
+        Args:
+            assistant (Assistant): The assistant to add
+        """
         if not hasattr(self, "_assistants"):
             self._assistants = {}
         self._assistants[assistant.name] = assistant
 
     def deregister(self, assistant: str):
+        """Remove an assistant from the registry
+
+        Args:
+            assistant (str): Assistant to remove
+        """
         del self._assistants[assistant]
 
     def __call__(self, *args, **kwargs):
+        """Execute the teaching process
+        """
         self.teach(*args, **kwargs)
-
-
-# class Assistant(ABC):
-
-#     def __init__(self, name: str):
-#         """An assistant teacher
-
-#         Args:
-#             name (str): The name of the teacher
-#         """
-#         self._name = name
-
-#     @property
-#     def name(self) -> str:
-#         return self._name
-
-#     @abstractmethod
-#     def assist(self, teacher_name: str):
-#         pass
-
-#     def __call__(self, teacher_name: str):
-#         return self.assist(teacher_name)

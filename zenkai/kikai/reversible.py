@@ -40,7 +40,7 @@ class ReversibleMachine(LearningMachine):
         """Update x
 
         Args:
-            x (IO): The input
+            x (IO): Input
             state (State): The learning state
 
         Returns:
@@ -62,7 +62,9 @@ class ReversibleMachine(LearningMachine):
         return IO(self.reversible(x[0]), detach=detach)
 
 
+# TODO: Consider to remove
 class BatchNormLearner(LearningMachine):
+    """"""
 
     def __init__(self, n_features: int, lr: float=0.1, eps: float=1e-7):
 
@@ -78,6 +80,16 @@ class BatchNormLearner(LearningMachine):
         self.loss = ThLoss("mse")
 
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+        """_summary_
+
+        Args:
+            x (IO): _description_
+            state (State): _description_
+            detach (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            IO: _description_
+        """
         
         x = x[0]
         base_shape = x.shape

@@ -40,6 +40,11 @@ def keep_original(
 
 
 class Selector(ABC):
+    """Base class for Selector. A selector chooses an individual from a population
+    or does an aggregation or other operation on the population to convert 
+    the population to an individual
+    """
+
     @abstractmethod
     def __call__(self, population: Population) -> Individual:
         pass
