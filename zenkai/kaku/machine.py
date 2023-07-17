@@ -387,98 +387,6 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             return self.assess_y(self(x), t).cpu().detach()
 
 
-class EmissionStack(object):
-    def __init__(self, *emissions: IO):
-        """Convenience wrapper for deque to simplify recording emissions for the step method
-
-        usage:
-        def forward(self, x) -> IO:
-            ...
-            emissions = EmissionStack()
-            x = emissions(layer(x))
-            state[self, 'emissions'] = emissions
-            ...
-
-        def step(self, ...):
-            ...
-            layer.step(conn, state, from_=state[self, 'emissions'].pop())
-
-        """
-        self._stack = deque(emissions)
-
-    def __call__(self, io: IO) -> IO:
-        """Add an element to the stack
-
-        Args:
-            io (IO): Element to add
-
-        Returns:
-            IO: the element that was added
-        """
-
-        self._stack.append(io)
-        return io
-
-    def __len__(self) -> int:
-        return len(self._stack)
-
-    def stack_on(self, io: IO):
-        """Restack the stack by placing it on another vlaue
-
-        Args:
-            io (IO): the io to stack the current stack onto
-        """
-
-        self._stack.insert(0, io)
-
-    def pop(self) -> typing.Union[IO, None]:
-        """Pop off the last element in the stack. Returns None if empty
-
-        Raises:
-            IndexError: If there are no elements left in the stack
-
-        Returns:
-            IO: the last element
-        """
-
-        try:
-            return self._stack.pop()
-        except IndexError:
-            return None
-            # raise IndexError("No more elements left in the EmissionStack to pop")
-
-    def __iter__(self):
-        """
-        LIFO Iteration over the stack
-        """
-
-        for io in reversed(self._stack):
-            yield io
-
-
-"""
-
-m1.step( clear=True)
-
-
-zen.repeat(machine1, machine2, 3)
-   .step(machine2, machine3)
-   .sequence()
-   .stepper()
-   .backward()
-
-
-stepper.backward()
-
-zen.step_pipeline(
-  zen.RepeatStep(machine1, out=machine2),
-  zen.Step(machine2, out=machine3),
-  zen.SequenceStep(machine3, machine4, machine5)
-)
-
-"""
-
-
 class NullLearner(LearningMachine):
     def __init__(self, loss: Loss = None):
         """Machine that does not actually learn.
@@ -642,3 +550,26 @@ class StdLearningMachine(LearningMachine):
     @abstractmethod
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         pass
+
+
+"""
+
+m1.step( clear=True)
+
+
+zen.repeat(machine1, machine2, 3)
+   .step(machine2, machine3)
+   .sequence()
+   .stepper()
+   .backward()
+
+
+stepper.backward()
+
+zen.step_pipeline(
+  zen.RepeatStep(machine1, out=machine2),
+  zen.Step(machine2, out=machine3),
+  zen.SequenceStep(machine3, machine4, machine5)
+)
+
+"""

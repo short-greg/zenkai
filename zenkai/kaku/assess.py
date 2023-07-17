@@ -366,7 +366,7 @@ class Assessment(object):
             Assessment: The reduced assessment
         """
         return Assessment(
-            Reduction.reduce_by(self.value, reduction, dim, keepdim=keepdim),
+            Reduction[reduction].reduce(self.value, dim, keepdim=keepdim),
             self.maximize,
         )
 
@@ -773,7 +773,7 @@ class Loss(nn.Module):
         Returns:
             torch.Tensor: the reduced loss
         """
-        return Reduction.reduce_by(loss, reduction_override or self.reduction)
+        return Reduction[reduction_override or self.reduction].reduce(loss)
 
     def assess(
         self, x, t, reduction_override: str = None
