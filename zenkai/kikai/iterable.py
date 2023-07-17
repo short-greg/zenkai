@@ -62,7 +62,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
     def __init__(
         self,
-        step_theta: StepTheta,
+        update: StepTheta,
         outgoing: StepX,
         net: nn.Module,
         n_epochs: int = 1,
@@ -86,7 +86,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
             tie_in_t (bool, optional): . Defaults to True.
         """
         super().__init__()
-        self.step_theta = step_theta
+        self.update = update
         self.outgoing = outgoing
         self.net = net
         self.n_epochs = n_epochs
@@ -134,9 +134,9 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
                     if isinstance(self.step_theta, BatchIdxStepTheta):
-                        self.step_theta.step(x, t, state, batch_idx=idx)
+                        self.update.step(x, t, state, batch_idx=idx)
                     else:
-                        self.step_theta.step(idx(x), idx(t), state)
+                        self.update.step(idx(x), idx(t), state)
 
             if self.tie_in_t and i < (self.n_epochs - 1):
                 outgoing_x = self.net(x)
