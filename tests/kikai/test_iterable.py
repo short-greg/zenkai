@@ -15,7 +15,7 @@ class TestIterStepTheta:
         learner2 = SimpleLearner(3, 3)    
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        iter_step = IterHiddenStepTheta(learner1, learner2, 1, 1, 1)
+        iter_step = IterHiddenStepTheta(learner1, learner2, learner1, 1, 1, 1)
         state = State()
         y1 = learner1(x, state)
         learner2(y1, state)
