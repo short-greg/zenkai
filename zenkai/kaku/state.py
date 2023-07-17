@@ -1,6 +1,10 @@
 # 1st party
 import typing
 from abc import abstractproperty
+from collections import deque
+
+# local
+from .io import IO
 
 
 class IDable:
@@ -207,3 +211,77 @@ class MyState(object):
 
     def __contains__(self, key: str) -> bool:
         return key in self._data
+
+
+
+class EmissionStack(object):
+    def __init__(self, *emissions: IO):
+        """Convenience wrapper for deque to simplify recording emissions for the step method
+
+        usage:
+        def forward(self, x) -> IO:
+            ...
+            emissions = EmissionStack()
+            x = emissions(layer(x))
+            state[self, 'emissions'] = emissions
+            ...
+
+        def step(self, ...):
+            ...
+            layer.step(conn, state, from_=state[self, 'emissions'].pop())
+
+        """
+        self._stack = deque(emissions)
+
+    def __call__(self, io: IO) -> IO:
+        """Add an element to the stack
+
+        Args:
+            io (IO): Element to add
+
+        Returns:
+            IO: the element that was added
+        """
+
+        self._stack.append(io)
+        return io
+
+    def __len__(self) -> int:
+        return len(self._stack)
+
+    def stack_on(self, io: IO):
+        """Restack the stack by placing it on another vlaue
+
+        Args:
+            io (IO): the io to stack the current stack onto
+        """
+
+        self._stack.insert(0, io)
+
+    def pop(self) -> typing.Union[IO, None]:
+        """Pop off the last element in the stack. Returns None if empty
+
+        Raises:
+            IndexError: If there are no elements left in the stack
+
+        Returns:
+            IO: the last element
+        """
+
+        try:
+            return self._stack.pop()
+        except IndexError:
+            return None
+            # raise IndexError("No more elements left in the EmissionStack to pop")
+
+    def __iter__(self):
+        """
+        LIFO Iteration over the stack
+        """
+
+        for io in reversed(self._stack):
+            yield io
+    
+    def __getitem__(self, key) -> IO:
+        return self._stack[key]
+

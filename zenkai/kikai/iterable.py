@@ -11,6 +11,7 @@ from ..kaku import (
     BatchIdxStepX,
     LearningMachine,
     update_io,
+    NullStepX,
     StepTheta,
     State,
     OutDepStepTheta,
@@ -63,8 +64,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
     def __init__(
         self,
         update: StepTheta,
-        outgoing: StepX,
         net: nn.Module,
+        outgoing: StepX=None,
         n_epochs: int = 1,
         x_iterations: int = 1,
         theta_iterations: int = 1,
@@ -119,7 +120,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
         for i in range(self.n_epochs):
 
-            if outgoing_t is not None:
+            if outgoing_t is not None and not self.outgoing is None:
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):

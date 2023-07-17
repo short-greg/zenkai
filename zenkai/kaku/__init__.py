@@ -34,7 +34,6 @@ from .io import (
 from .machine import (
     BatchIdxStepTheta,
     BatchIdxStepX,
-    EmissionStack,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     LearningMachine,
@@ -47,7 +46,9 @@ from .machine import (
     OutDepStepTheta,
     StepLoop,
     Conn,
-    StdLearningMachine
+    StdLearningMachine,
+    NullStepTheta,
+    NullStepX
 )
 from .optimize import (
     OPTIM_MAP,
@@ -57,4 +58,4 @@ from .optimize import (
     OptimFactoryX,
     itadaki
 )
-from .state import IDable, MyState, State, StateKeyError
+from .state import IDable, MyState, State, StateKeyError, EmissionStack
