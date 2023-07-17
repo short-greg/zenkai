@@ -46,7 +46,8 @@ from .machine import (
     InDepStepX,
     OutDepStepTheta,
     StepLoop,
-    Conn
+    Conn,
+    StdLearningMachine
 )
 from .optimize import (
     OPTIM_MAP,
@@ -57,10 +58,3 @@ from .optimize import (
     itadaki
 )
 from .state import IDable, MyState, State, StateKeyError
-# from .steps import (
-#     IterHiddenStep, 
-#     IterOutStep, 
-#     Step, 
-#     StepLoop, 
-#     # TwoLayerStep
-# )

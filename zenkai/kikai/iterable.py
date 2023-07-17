@@ -1,6 +1,8 @@
 # 1st party
 from abc import ABC, abstractmethod
 
+from torch import nn
+
 # local
 
 from ..kaku import (
@@ -12,6 +14,7 @@ from ..kaku import (
     StepTheta,
     State,
     OutDepStepTheta,
+    StepX,
     StepLoop
 )
 
@@ -20,7 +23,7 @@ class IterStepTheta(StepTheta):
     """Do multiple iterations on the outer layer"""
 
     def __init__(
-        self, learner: LearningMachine, n_epochs: int = 1, batch_size: int = None
+        self, base_step: StepTheta, n_epochs: int = 1, batch_size: int = None
     ):
         """
         Args:
@@ -30,7 +33,7 @@ class IterStepTheta(StepTheta):
         """
         super().__init__()
 
-        self.learner = learner
+        self.base_step = base_step
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
@@ -48,10 +51,10 @@ class IterStepTheta(StepTheta):
 
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
-                if isinstance(self.learner, BatchIdxStepTheta):
-                    self.learner.step(x, t, state, batch_idx=idx)
+                if isinstance(self.base_step, BatchIdxStepTheta):
+                    self.base_step.step(x, t, state, batch_idx=idx)
                 else:
-                    self.learner.step(idx(x), idx(t), state)
+                    self.base_step.step(idx(x), idx(t), state)
 
 
 class IterHiddenStepTheta(OutDepStepTheta):
@@ -59,8 +62,9 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
     def __init__(
         self,
-        learner: LearningMachine,
-        outgoing: LearningMachine,
+        step_theta: StepTheta,
+        outgoing: StepX,
+        net: nn.Module,
         n_epochs: int = 1,
         x_iterations: int = 1,
         theta_iterations: int = 1,
@@ -71,8 +75,9 @@ class IterHiddenStepTheta(OutDepStepTheta):
         """
 
         Args:
-            incoming (LearningMachine): incoming layer
-            outgoing (LearningMachine): outgoing layer
+            step_theta (StepTheta): update function being wrapped
+            outgoing (StepX): update function for step_x
+            net (nn.Module): The network for the module
             n_epochs (int, optional): number of epochs. Defaults to 1.
             x_iterations (int, optional): . Defaults to 1.
             theta_iterations (int, optional): . Defaults to 1.
@@ -81,8 +86,9 @@ class IterHiddenStepTheta(OutDepStepTheta):
             tie_in_t (bool, optional): . Defaults to True.
         """
         super().__init__()
-        self.learner = learner
+        self.step_theta = step_theta
         self.outgoing = outgoing
+        self.net = net
         self.n_epochs = n_epochs
         self.x_iterations = x_iterations
         self.theta_iterations = theta_iterations
@@ -127,11 +133,11 @@ class IterHiddenStepTheta(OutDepStepTheta):
             for _ in range(self.theta_iterations):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
-                    if isinstance(self.learner, BatchIdxStepTheta):
-                        self.learner.step(x, t, state, batch_idx=idx)
+                    if isinstance(self.step_theta, BatchIdxStepTheta):
+                        self.step_theta.step(x, t, state, batch_idx=idx)
                     else:
-                        self.learner.step(idx(x), idx(t), state)
+                        self.step_theta.step(idx(x), idx(t), state)
 
             if self.tie_in_t and i < (self.n_epochs - 1):
-                outgoing_x = self.learner(x)
+                outgoing_x = self.net(x)
         return t
