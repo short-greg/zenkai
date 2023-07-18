@@ -138,8 +138,11 @@ class GaussianNoiser(ExplorerNoiser):
 
 
 class ExplorerSelector(nn.Module):
+    """Use to select the noise or the output
+    """
+
     @abstractmethod
-    def forward(self, x: torch.Tensor, noisy: torch.Tensor):
+    def forward(self, x: torch.Tensor, noisy: torch.Tensor) -> torch.Tensor:
         pass
 
 
@@ -147,10 +150,24 @@ class RandSelector(ExplorerSelector):
     """Randomly choose whether to select the noisy value or the original x"""
 
     def __init__(self, select_noise_prob: float):
+        """initializer
+
+        Args:
+            select_noise_prob (float): The probability that 
+        """
         super().__init__()
         self.select_noise_prob = select_noise_prob
 
-    def forward(self, x: torch.Tensor, noisy: torch.Tensor):
+    def forward(self, x: torch.Tensor, noisy: torch.Tensor) -> torch.Tensor:
+        """Randomly select the noise or the input tensor
+
+        Args:
+            x (torch.Tensor): the input tensor to add noise to
+            noisy (torch.Tensor): the noisy tensor
+
+        Returns:
+            torch.Tensor: the noisy tensor
+        """
         assert noisy.size() == x.size()
         selected_noise = (
             torch.rand(noisy.size(), device=x.device) <= self.select_noise_prob
@@ -161,12 +178,29 @@ class RandSelector(ExplorerSelector):
 
 
 class Explorer(nn.Module):
+    """
+    Use to explore different inputs
+    """
+
     def __init__(self, noiser: ExplorerNoiser, selector: ExplorerSelector):
+        """initializer
+
+        Args:
+            noiser (ExplorerNoiser): The noiser to use
+            selector (ExplorerSelector): The selector to use
+        """
         super().__init__()
         self._noiser = noiser
         self._selector = selector
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): the input tensor
+
+        Returns:
+            torch.Tensor: The input tensor with noise added
+        """
 
         with torch.no_grad():
             noisy = self._selector(x, self._noiser(x))
@@ -246,7 +280,6 @@ class Indexer(object):
         self.idx = idx
         self.k = k
         self.maximize = maximize
-        # self.spawner = spawner
 
     def index(self, io: IO, detach: bool = False):
         ios = []
@@ -257,9 +290,15 @@ class Indexer(object):
 
 
 class RepeatSpawner(object):
-    """"""
+    """Repeat the samples in the batch k times
+    """
 
     def __init__(self, k: int):
+        """initializer
+
+        Args:
+            k (int): the population size
+        """
         self.k = k
 
     def __call__(self, x: torch.Tensor):
@@ -272,12 +311,11 @@ class RepeatSpawner(object):
 
     def spawn_io(self, io: IO):
         """
-
         Args:
-            io (IO): _description_
+            io (IO): the io to spawn
 
         Returns:
-            _type_: _description_
+            IO: The spawned IO
         """
         xs = []
         for x in io:
@@ -287,13 +325,13 @@ class RepeatSpawner(object):
         return IO(*xs)
 
     def select(self, assessment: Assessment) -> typing.Tuple[Assessment, Indexer]:
-        """
+        """Select the best assessment from the tensor
 
         Args:
-            assessment (Assessment):
+            assessment (Assessment): the assessment
 
         Returns:
-            typing.Tuple[Assessment, Indexer]:
+            typing.Tuple[Assessment, Indexer]: The best assessment and the tensor
         """
         assert assessment.value.dim() == 1
         expanded = expand_k(assessment.value, self.k, False)
@@ -353,7 +391,15 @@ class ModuleNoise(nn.Module):
 
         self._updated = True
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Calculate the noisy output from the input
+
+        Args:
+            x (torch.Tensor): The input
+
+        Returns:
+            torch.Tensor: The output
+        """
         x = x.view(self._n_instances, -1, *x.shape)
         ps = (
             torch.randn(1, *self._direction_mean.shape, dtype=x.dtype, device=x.device)
@@ -368,11 +414,14 @@ class ModuleNoise(nn.Module):
 
 
 class AssessmentDist(ABC):
+    """Calculate a distribution from the assessment
+    """
+
     @abstractmethod
     def __call__(
         self, assessment: Assessment, x: torch.Tensor
     ) -> typing.Union[torch.Tensor, torch.Tensor]:
-        """_summary_
+        """
 
         Args:
             assessment (Assessment): the assessment. Must be of dimension [k, batch]
@@ -396,7 +445,19 @@ class EqualsAssessmentDist(AssessmentDist):
         self.equals_value = equals_value
 
     def __call__(self, assessment: Assessment, x: torch.Tensor) -> torch.Tensor:
+        """Calculate the assessment distribution of the input
 
+        Args:
+            assessment (Assessment): The assessment of the 
+            x (torch.Tensor): the input tensor
+
+        Raises:
+            ValueError: The dimension of value is not 3
+            ValueError: The dimension of x is not 3
+
+        Returns:
+            torch.Tensor: _description_
+        """
         value = assessment.value[:, :, None]
         if value.dim() != 3:
             raise ValueError("Value must have dimension of 3 ")
@@ -414,9 +475,28 @@ class EqualsAssessmentDist(AssessmentDist):
     def sample(
         self, assessment: Assessment, x: torch.Tensor, n_samples: int = None
     ) -> torch.Tensor:
+        """Generate a sample from the distribution
+
+        Args:
+            assessment (Assessment): The assessment
+            x (torch.Tensor): The input
+            n_samples (int, optional): the number of samples. Defaults to None.
+
+        Returns:
+            torch.Tensor: The sample value for the input
+        """
         mean, std = self(assessment, x)
         return gaussian_sample(mean, std, n_samples)
 
     def mean(self, assessment: Assessment, x: torch.Tensor) -> torch.Tensor:
+        """Calculate the mean from the distribution
+
+        Args:
+            assessment (Assessment): The assessment of the population
+            x (torch.Tensor): The input tensor
+
+        Returns:
+            torch.Tensor: The mean value for the input
+        """
         mean, _ = self(assessment, x)
         return mean
