@@ -32,7 +32,7 @@ class GradStepTheta(StepTheta):
         reduction: str = "mean",
         y_name: str='y'
     ):
-        """initializers
+        """initializer
 
         Args:
             learner (LearningMachine): Whether 
@@ -75,6 +75,14 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         reduction: str = "mean",
         loss_name: str = "loss",
     ):
+        """initializer
+
+        Args:
+            learner (LearningMachine): Learner to update
+            optim_factory (OptimFactory): The optimizer to use in updating
+            reduction (str, optional): The reduction to use in optimization. Defaults to "mean".
+            loss_name (str, optional): The loss to use in optimization. Defaults to "loss".
+        """
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
