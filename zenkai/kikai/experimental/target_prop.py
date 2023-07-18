@@ -27,6 +27,12 @@ class TargetPropNet(nn.Module):
 class StandardTargetPropNet(nn.Module):
 
     def __init__(self, base_net: nn.Module):
+        """initializer
+
+        Args:
+            base_net (nn.Module): The base "reverse" network. Must take in the output as an input
+            and predict a variation of the input
+        """
         super().__init__()
         self.base_net = base_net
 
@@ -58,16 +64,15 @@ class StandardTargetPropLoss(TargetPropLoss):
         """initializer
 
         Args:
-            base_loss (ThLoss): 
+            base_loss (ThLoss): The base loss to use in evaluation
         """
-
         super().__init__(base_loss.reduction, base_loss.maximize)
         self.base_loss = base_loss
     
     def forward(self, x: typing.Tuple[torch.Tensor], t, reduction_override: str = None) -> torch.Tensor:
         
         # 1) map y to the input (learn to autoencode)
-        return self.base_loss(x[2], t, reduction_override=reduction_override)
+        return self.base_loss(x[1], t, reduction_override=reduction_override)
 
 
 class RegTargetPropLoss(TargetPropLoss):
@@ -89,8 +94,8 @@ class RegTargetPropLoss(TargetPropLoss):
         # 1) map y to the input (learn to autoencode)
         # 2) reduce the difference between the mapping from y to x and the mapping from t to x 
         return (
-            self.base_loss(x[2], t, reduction_override=reduction_override) +
-            self.reg_loss(x[1], x[2].detach(), reduction_override=reduction_override)
+            self.base_loss(x[1], t, reduction_override=reduction_override) +
+            self.reg_loss(x[0], x[1].detach(), reduction_override=reduction_override)
         )
 
 
@@ -115,35 +120,14 @@ class TargetPropLearner(LearningMachine):
             loss (TargetPropLoss): The loss function to assess the prediction of the inputs with
             optim_factory (OptimFactory): The optimizer factory to generate the optim
         """
+        super().__init__()
         self.net = net
         self.optim_factory = optim_factory
         self.optim = self.optim_factory(net.parameters())
         self.loss = loss
 
     def prepare_io(self, x: IO, t: IO, y: IO):
-        return IO(x[0], t[0], y[0])
-
-    # def prepare_conn(self, conn_base: Conn, to_: IO) -> Conn:
-    #     """Convert the forward connection into a connection for target prop
-
-    #     Args:
-    #         conn_base (Conn): _description_
-    #         to_ (IO): The IO for the preceding network. From TargetPropLearner's POV it is the
-    #           next network
-
-    #     Returns:
-    #         Conn: The connection converted to work with TargetProp
-    #     """
-    #     inp_x = IO(
-    #         conn_base.step.x[0],
-    #         conn_base.step.t[0],
-    #         conn_base.step.y[0]
-    #     )
-        
-    #     return Conn(
-    #         out_x=conn_base.step.x, inp_t=conn_base.step.x,
-    #         out_t=to_, inp_x=inp_x
-    #     )
+        return IO(x[0], t[0], y[0]), x
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(
@@ -186,5 +170,5 @@ class TargetPropLearner(LearningMachine):
     
     def forward(self, x: IO, state: State, detach: bool = True) -> IO:
         x.freshen()
-        y = state[self, 'y'] = IO(self.net(*x), False)
+        y = state[self, 'y'] = IO(*self.net(*x), detach=False)
         return y.out(detach)
