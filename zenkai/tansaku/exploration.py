@@ -310,6 +310,16 @@ class ModuleNoise(nn.Module):
     """Use to add noise to the model that is dependent on the direction that the model is moving in"""
 
     def __init__(self, module_clone: nn.Module, n_instances: int, weight: float = 0.1):
+        """initializer
+
+        Args:
+            module_clone (nn.Module): Clone of the model to add noise to
+            n_instances (int): The number of model instances
+            weight (float, optional): The weight on momentum. Defaults to 0.1.
+
+        Raises:
+            ValueError: If weight is an invalid value
+        """
         super().__init__()
         if not (0.0 < weight < 1.0):
             raise ValueError("Weight must be in range (0, 1)")
@@ -322,6 +332,12 @@ class ModuleNoise(nn.Module):
         self._n_instances = n_instances
 
     def update(self, base_module):
+        """Update the base model by weighting it with the current direction
+
+        Args:
+            base_module: The module to update
+        """
+
         parameters = get_model_parameters(base_module)
         dp = parameters - self._parameters
         self._direction_var = (

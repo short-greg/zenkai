@@ -159,7 +159,7 @@ class Process(ABC):
 
         return Joint(x=ys, info=info)
 
-    def get(self, idx: typing.Union[slice, int], info: Info = None):
+    def get(self, idx: typing.Union[slice, int], info: Info = None) -> typing.Any:
         """Get an index from the output
 
         Args:
@@ -171,7 +171,14 @@ class Process(ABC):
         """
         return Index(idx, x=to_incoming(self), info=info)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> typing.Any:
+        """
+        Args:
+            idx (int): 
+
+        Returns:
+            typing.Any: _description_
+        """
         return self.get(idx)
 
     @abstractmethod

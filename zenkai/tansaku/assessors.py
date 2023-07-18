@@ -29,6 +29,15 @@ class XPopulationAssessor(PopulationAssessor):
         reduction: str,
         k: int,
     ):
+        """initializer
+
+        Args:
+            learner (LearningMachine): The learner to use in assessing
+            names (typing.List[str]): The names of the fields to assess
+            loss_name (str): The name of the loss to use for assessment
+            reduction (str): The reduction to use for assessment
+            k (int): The population size
+        """
 
         self.learner = learner
         self.names = names
@@ -37,6 +46,15 @@ class XPopulationAssessor(PopulationAssessor):
         self.k = k
 
     def assess(self, population: Population, t: IO) -> Population:
+        """Assess a population
+
+        Args:
+            population (Population): The population to assess
+            t (IO): The target for the population
+
+        Returns:
+            Population: The assessed population
+        """
 
         t = expand_t(t, len(population))
 

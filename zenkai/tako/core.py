@@ -78,5 +78,7 @@ class Gen(nn.Module):
 
 @dataclass
 class Info:
+    """Information on the Tako
+    """
     tags: typing.List[str] = None
     annotation: str = None

@@ -13,6 +13,9 @@ from .base import Material
 
 
 class Entry(object):
+    """An entry in a log. Use to store epoch results
+    """
+
     def __init__(
         self,
         n_items: int,
@@ -21,7 +24,7 @@ class Entry(object):
         index_name: str = "epoch iteration",
         entry_index_name: str = "epoch",
     ):
-        """An entry in a log. Typically use to store epoch results
+        """initializer
 
         Args:
             n_items (int): The number of items that will be added to the entry
@@ -77,6 +80,10 @@ class Entry(object):
 
     @property
     def id(self) -> str:
+        """
+        Returns:
+            str: The id for the entry
+        """
         return self._id
 
     @property
