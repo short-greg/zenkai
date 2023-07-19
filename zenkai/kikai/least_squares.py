@@ -79,7 +79,6 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
             lam (float, optional): The penalty on the regression. Defaults to 1e-1.
             bias (bool, optional): Whether to use a bias or not. Defaults to False.
         """
-
         self._bias = bias
         self._lambda = lam
         if self._bias:

@@ -181,11 +181,14 @@ class GradLoopStepX(BatchIdxStepX):
         x_state = state.mine(x)
         if "optim" not in x_state:
             x_state.optim = self.optim_factory([*x])
+        if batch_idx is not None:
+            batch_idx = batch_idx.detach()
+
         x = idx_io(x, batch_idx)
         t = idx_io(t, batch_idx)
         x_state.optim.zero_grad()
         y = self.learner(x, detach=False)
-        assessment = self.learner.assess_y(y, t, self.reduction)
+        assessment = self.learner.assess_y(y, t.detach(), self.reduction)
         assessment.backward(self.loss_name)
         x_state.optim.step()
         return x

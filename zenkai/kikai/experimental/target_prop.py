@@ -135,15 +135,12 @@ class TargetPropLearner(LearningMachine):
         )
     
     def step(self, x: IO, t: IO, state: State):
-        """Update the TargetPropNet
+        """_summary_
 
         Args:
-            conn (Conn): The connection to update with. Must call "prepare_conn" first
-            state (State): The learning state
-            from_ (IO, optional): the previous network's IO. Defaults to None.
-
-        Returns:
-            Conn: The connection updated with conn_in
+            x (IO): _description_
+            t (IO): _description_
+            state (State): _description_
         """
         
         y = state[self, 'y']
@@ -153,14 +150,15 @@ class TargetPropLearner(LearningMachine):
         self.optim.step()
     
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """Use gradient descent to update step
+        """_summary_
 
         Args:
-            conn (Conn): _descripti
+            x (IO): _description_
+            t (IO): _description_
             state (State): _description_
 
         Returns:
-            Conn: _description_
+            IO: _description_
         """
         x = x[0]
         x = x - x.grad

@@ -69,9 +69,6 @@ class StepX(ABC):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         pass
 
-    def __call__(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
-        return self.step_x(x, t, state, *args, **kwargs)
-
     def _step_x_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
@@ -133,11 +130,6 @@ class StepTheta(ABC):
     def step(self, x: IO, t: IO, state: State):
         pass
 
-    def __call__(
-        self, x: IO, t: IO, state: State, *args, **kwargs
-    ):
-        self.step(x, t, state, *args, **kwargs)
-
     def _step_hook_runner(
         self, x: IO, t: IO, state: State, *args, **kwargs
     ):
@@ -151,10 +143,11 @@ class StepTheta(ABC):
         for prehook in self._step_prehooks:
             x, t = prehook(x, t, state)
 
-        self._base_step(x, t, state, *args, **kwargs)
+        result = self._base_step(x, t, state, *args, **kwargs)
 
         for posthook in self._step_posthooks:
             x, t = posthook(x, t, state)
+        return result
 
     def step_prehook(self, hook: StepHook):
         """Add hook to call before StepTheta
