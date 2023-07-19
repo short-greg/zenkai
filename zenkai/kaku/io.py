@@ -215,6 +215,11 @@ class Idx(object):
         return result
     
     def detach(self) -> 'Idx':
+        """Remove the grad function from the index
+
+        Returns:
+            Idx: The detached index
+        """
         if self.idx is None:
             return Idx(dim=self.dim)
         return Idx(self.idx.detach(), dim=self.dim)
@@ -233,9 +238,9 @@ class Idx(object):
             else:
                 requires_grad = False
             if self.idx is not None:
-                destination_i[self.idx] = source_i
+                destination_i.data[self.idx] = source_i
             else:
-                destination_i[:] = source_i
+                destination_i.data = source_i
             if requires_grad:
                 destination_i.requires_grad_(True).retain_grad()
 
@@ -340,7 +345,7 @@ def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tens
 
 
 # TODO: DEBUG. This is not working for some reason
-def update_io(source: IO, destination: IO, idx: Idx = None) -> IO:
+def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True) -> IO:
     """Update the IO in place
 
     Args:
@@ -355,11 +360,13 @@ def update_io(source: IO, destination: IO, idx: Idx = None) -> IO:
     if idx is None:
         idx = Idx()
     idx.update(source, destination)
+    if detach:
+        return destination.detach()
     return destination
 
 
 def update_tensor(
-    source: torch.Tensor, destination: torch.Tensor, idx: Idx = None
+    source: torch.Tensor, destination: torch.Tensor, idx: Idx = None, detach: bool=True
 ) -> torch.Tensor:
     """Update the tensor in place
 
@@ -375,4 +382,6 @@ def update_tensor(
     if idx is None:
         idx = Idx()
     idx.update_th(source, destination)
+    if detach:
+        return destination.detach()
     return destination

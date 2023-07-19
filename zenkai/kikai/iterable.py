@@ -119,13 +119,16 @@ class IterHiddenStepTheta(OutDepStepTheta):
         for i in range(self.n_epochs):
 
             if outgoing_t is not None and not self.outgoing is None:
+
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):
                             x_idx = self.outgoing.step_x(outgoing_x, outgoing_t, state, batch_idx=idx)
                         else:
+                            # BUG: FIX HERE. It is doing a step_x
+                            # without going forward
                             x_idx = self.outgoing.step_x(idx(outgoing_x), idx(outgoing_t), state)
-                        update_io(x_idx, outgoing_x, idx)
+                        update_io(x_idx, outgoing_x, idx, detach=True)
 
                 t = outgoing_x
 
