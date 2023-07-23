@@ -56,6 +56,44 @@ class IterStepTheta(StepTheta):
                     self.base_step.step(idx(x), idx(t), state)
 
 
+class IterStepX(StepX):
+    """Do multiple iterations on the outer layer"""
+
+    def __init__(
+        self, base_step: StepX, n_epochs: int = 1, batch_size: int = None
+    ):
+        """
+        Args:
+            learner (LearningMachine): The LearningMachine to optimize
+            n_epochs (int, optional): The number of epochs. Defaults to 1.
+            batch_size (int, optional): . Defaults to None.
+        """
+        super().__init__()
+        self.base_step = base_step
+        self.n_epochs = n_epochs
+        self.batch_size = batch_size
+
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """
+
+        Args:
+            x (IO): The input value for the layer
+            t (IO): the output value for the layer
+            state (State): The learning state
+        """
+        loop = StepLoop(self.batch_size, True)
+        for _ in range(self.n_epochs):
+            for idx in loop.loop(x):
+
+                if isinstance(self.base_step, BatchIdxStepX):
+                    updated_x = self.base_step.step_x(x, t, state, idx)
+                else:
+                    updated_x = self.base_step.step_x(idx(x), idx(t), state)
+                
+                update_io(updated_x, x, idx)
+        return x
+
+
 class IterHiddenStepTheta(OutDepStepTheta):
     """Step that runs multiple iterations fver the outgoing network and incoming network"""
 

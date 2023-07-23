@@ -201,21 +201,23 @@ class SimpleLearner(core.LearningMachine):
         return self.loss.assess_dict(*y, *t, reduction_override, 'loss')
     
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        x = state[self, 'x'][0]
-        return IO(x - x.grad)
+        if (self, x, 'y') not in state:
+            x.freshen(False)
+            assessment = self.assess(x,  t.detach(), state=state, detach=False)
+            assessment['loss'].backward()
+        return IO(x[0] - x[0].grad)
 
     def step(self, x: IO, t: IO, state: core.State):
-        y = state[self, 'y']
+        if (self, x, 'y') not in state:
+            y = self(x, state, detach=False)
+        else: y = state[self, x, 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward('loss')
         self.optim.step()
 
     def forward(self, x: IO, state: core.State, detach: bool=True) -> torch.Tensor:
-        x.freshen(False)
-        state.store(self, 'x', x)
-        y = IO(self.linear(x[0])) 
-        state.store(self, 'y', y)
+        y = state[self, x, 'y'] = IO(self.linear(x[0])) 
         return y.out(detach)
 
 
