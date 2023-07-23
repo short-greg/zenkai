@@ -260,15 +260,34 @@ def update_model_parameters(model: nn.Module, theta: torch.Tensor):
     nn_utils.vector_to_parameters(theta, model.parameters())
 
 
-def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor):
+def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
+    """Update the gradients of a module
+
+    Args:
+        model (nn.Module): The module to update gradients for
+        theta_grad (torch.Tensor): The gradient values to update with
+    """
+    start = 0
+    for p in model.parameters():
+        finish = p.numel()
+        cur = theta_grad[start:finish].reshape(p.shape)
+        if p.grad is None:
+            p.grad = cur.detach()
+        elif to_add:
+            p.grad.data += cur.detach()
+        else:
+            raise RuntimeError(f"To add is set to False but the gradient has already been set")
+
+
+def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
     """Calculate the mean absolute error in correlation
 
     Args:
-        x1 (torch.Tensor):
-        x2 (torch.Tensor): _description_
+        x1 (torch.Tensor)
+        x2 (torch.Tensor)
 
     Returns:
-        _type_: _description_
+        torch.Tensor: The correlation MAE
     """
 
     corr1 = torch.corrcoef(batch_flatten(x1))

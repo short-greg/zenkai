@@ -48,6 +48,7 @@ from .machine import (
     Conn,
     StdLearningMachine,
     NullStepTheta,
+    PostStepTheta,
     NullStepX
 )
 from .optimize import (

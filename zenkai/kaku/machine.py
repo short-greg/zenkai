@@ -545,6 +545,34 @@ class StdLearningMachine(LearningMachine):
         pass
 
 
+class PostStepTheta(StepTheta):
+    """StepTheta used to be able to Postpone stepping 
+    """
+    
+    @abstractmethod
+    def adv(self, state: State):
+        pass
+
+
+class PostOptim(object):
+    """_summary_
+
+    Args:
+        object (_type_): _description_
+    """
+
+    def __init__(self, step_thetas: typing.List[PostStepTheta]):
+
+        super().__init__()
+        self.step_thetas = step_thetas
+
+    def adv(self, state: State):
+
+        for step_theta in self.step_thetas:
+            step_theta.adv(state)
+
+
+
 """
 
 m1.step( clear=True)
