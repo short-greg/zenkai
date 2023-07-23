@@ -1,6 +1,3 @@
-# 1st party
-import typing
-
 # 3rd party
 import pytest
 import torch

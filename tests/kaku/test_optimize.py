@@ -1,11 +1,6 @@
-# 1st Party
-from functools import partial
-
 # 3rd Party
 import torch
 from torch import nn
-from torch import optim as torch_optim
-from torch.nn import utils
 
 # Local
 from zenkai.kaku.optimize import FilterOptim, OptimFactory
