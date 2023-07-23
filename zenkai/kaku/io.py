@@ -7,6 +7,7 @@ import typing
 
 # 3rd party
 import torch
+import numpy as np
 
 # local
 from .. import utils as base_utils
@@ -155,6 +156,28 @@ class IO(object):
 
     def is_empty(self) -> bool:
         return len(self) == 0
+
+    @classmethod
+    def cat(cls, ios: 'IO') -> 'IO':
+        """Concatenate
+
+        Args:
+            ios (IO): the ios to concatenate
+
+        Returns:
+            IO: the concatenated IO
+        """
+        de_io = [tuple(*io) for io in ios]
+        de_io = np.array(de_io).T.tolist()
+        xs = []
+        for x in de_io:
+            if isinstance(x, torch.Tensor):
+                xs.append(torch.cat(x))
+            elif isinstance(x, np.ndarray):
+                xs.append(np.concatenate(x))
+            else:
+                xs.append(x)
+        return IO(*xs)
 
 
 class Idx(object):
