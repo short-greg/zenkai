@@ -15,7 +15,6 @@ class IDable:
 
 class StateKeyError(KeyError):
     """Used to make errors that state returns more explicit"""
-
     pass
 
 
@@ -58,7 +57,12 @@ class State(object):
         Returns:
             The value that was stored
         """
-
+        if isinstance(key, tuple):
+            sub, key = key
+            sub = self.id(sub)
+            key = (sub, key)
+        else:
+            sub = None
         obj_data, _ = self._get_obj(obj)
         obj_data[key] = value
         return value
@@ -74,11 +78,25 @@ class State(object):
         Returns:
             typing.Any: The value stored in the object
         """
+        if isinstance(key, tuple):
+            sub, key = key
+            sub = self.id(sub)
+        else:
+            sub = None
+
+        obj_id = self.id(obj)
         try:
             if isinstance(key, typing.List):
-                return [self._data[self.id(obj)][key_i] for key_i in key]
+                result = []
+                for key_i in key:
+                    if sub is not None:
+                        key_i = (sub, key_i)
+                    result.append(self._data[obj_id][key_i])
+                return result
             else:
-                return self._data[self.id(obj)][key]
+                if sub is not None:
+                    key = (sub, key)
+                return self._data[obj_id][key]
         except KeyError:
             return default
 
@@ -94,12 +112,26 @@ class State(object):
         Returns:
             typing.Any: The value stored for the object / key pair
         """
-        obj, key = index
+        if len(index) == 3:
+            obj, sub, key = index
+            sub = self.id(sub)
+        else:
+            obj, key = index
+            sub = None
+
         obj_id = self.id(obj)
+        
         try:
             if isinstance(key, typing.List):
-                return [self._data[obj_id][key_i] for key_i in key]
+                result = []
+                for key_i in key:
+                    if sub is not None:
+                        key_i = (sub, key_i)
+                    result.append(self._data[obj_id][key_i])
+                return result
             else:
+                if sub is not None:
+                    key = (sub, key)
                 return self._data[obj_id][key]
         except KeyError:
             raise StateKeyError(
@@ -113,7 +145,13 @@ class State(object):
             index (typing.Tuple[IDable, typing.Hashable]): The obj/key to set the value for
             value: The value to set
         """
-        obj, key = index
+        if len(index) == 3:
+            obj, sub, key = index
+            sub = self.id(sub)
+        else:
+            obj, key = index
+            sub = None
+
         return self.store(obj, key, value)
 
     def _get_obj(self, obj, to_add: bool = True):
@@ -184,7 +222,9 @@ class State(object):
         Args:
             obj (IDable): the object to clear the state for
         """
+        # TODO: Add idable for the state
         id = self.id(obj)
+            
         if id in self._data:
             self._data[id].clear()
         if id in self._subs:
@@ -220,7 +260,13 @@ class State(object):
         Returns:
             bool: Whether the key is contained
         """
-        obj, key = key
+        if len(key) == 3:
+            obj, sub, key = key
+            sub = self.id(sub)
+            key = (sub, key)
+        else: 
+            obj, key = key
+            sub = None
         id = self.id(obj)
         return id in self._data and key in self._data[id]
 
@@ -411,4 +457,3 @@ class EmissionStack(object):
     
     def __getitem__(self, key) -> IO:
         return self._stack[key]
-

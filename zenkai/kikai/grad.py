@@ -30,7 +30,8 @@ class GradStepTheta(StepTheta):
         learner: LearningMachine,
         optim_factory: OptimFactory,
         reduction: str = "mean",
-        y_name: str='y'
+        y_name: str='y',
+        auto_adv: bool=True
     ):
         """initializer
 
@@ -42,8 +43,10 @@ class GradStepTheta(StepTheta):
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
+        self.optim.zero_grad()
         self.reduction = reduction
         self.y_name = y_name
+        self.auto_adv = auto_adv
 
     def step(self, x: IO, t: IO, state: State):
         y = state.get(self, self.y_name)
@@ -51,11 +54,23 @@ class GradStepTheta(StepTheta):
         if stepped or y is None:
             y = self.learner(x, state, detach=False)
 
-        self.optim.zero_grad()
         assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward("loss")
         state.store(self, "stepped", True)
-        self.optim.step()
+        if self.auto_adv:
+            self.adv(state)
+    
+    def adv(self, state: State) -> bool:
+        """Advance the optimizer
+
+        Returns:
+            bool: False if unable to advance (already advanced or not stepped yet)
+        """
+        if state.get(self, "stepped", False):
+            self.optim.step()
+            self.optim.zero_grad()
+            return True
+        return False
 
 
 class NullStepTheta(StepTheta):
@@ -74,6 +89,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         optim_factory: OptimFactory,
         reduction: str = "mean",
         loss_name: str = "loss",
+        auto_adv: bool=True
     ):
         """initializer
 
@@ -86,8 +102,10 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
+        self.optim.zero_grad()
         self.reduction = reduction
         self.loss_name = loss_name
+        self.auto_adv = auto_adv
 
     def step(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
@@ -106,12 +124,25 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         x = idx_io(x, batch_idx, False)
         t = idx_io(t, batch_idx, False)
-        y = self.learner(x, state.sub(self, "step"), False)
+        y = self.learner(x, state.sub(self, "step"), detach=False)
 
-        self.optim.zero_grad()
         assessment = self.learner.assess_y(y, t.detach(), self.reduction)
         assessment[self.loss_name].backward()
-        self.optim.step()
+        state[self, 'stepped'] = True
+        if self.auto_adv:
+            self.adv(state)
+
+    def adv(self, state: State) -> bool:
+        """Advance the optimizer
+
+        Returns:
+            bool: False if unable to advance (already advanced or not stepped yet)
+        """
+        if state.get(self, "stepped", False):
+            self.optim.step()
+            self.optim.zero_grad()
+            return True
+        return False
 
 
 class GradStepX(StepX):
