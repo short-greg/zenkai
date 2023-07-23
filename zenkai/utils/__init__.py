@@ -40,5 +40,6 @@ from .utils import (
     update_model_parameters,
     update_param,
     update_model_grads,
-    get_model_grads
+    get_model_grads,
+    set_model_grads
 )
