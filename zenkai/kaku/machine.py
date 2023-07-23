@@ -457,11 +457,11 @@ class StepLoop(object):
     """
     """
 
-    def __init__(self, batch_size: int, shuffle: bool = True):
+    def __init__(self, batch_size: int=None, shuffle: bool = True):
         """Loop over a connection by indexing
 
         Args:
-            batch_size (int): The size of the batch for the loop
+            batch_size (int): The size of the batch for the loop. If None. There will only be one iteration
             shuffle (bool, optional): whether to shuffle the indices. Defaults to True.
         """
         self.batch_size = batch_size
@@ -485,19 +485,22 @@ class StepLoop(object):
         return torch_data.DataLoader(indices, batch_size, self.shuffle)
 
     def loop(self, io: IO) -> typing.Iterator[Idx]:
-        """Loop over the connection
+        """Loop over the io
 
         Args:
-            conn (Conn): the connection to loop over
+            io (IO): The io to iterate over
 
         Returns:
-            typing.Iterator[Conn]: _description_
+            typing.Iterator[Idx]: Return 
 
         Yields:
             Iterator[typing.Iterator[Conn]]: _description_
         """
-        for (idx,) in self.create_dataloader(io):
-            yield Idx(idx.to(io[0].device), dim=0)
+        if self.batch_size is None:
+            yield Idx(dim=0)
+        else:
+            for (idx,) in self.create_dataloader(io):
+                yield Idx(idx.to(io[0].device), dim=0)
 
 
 class OutDepStepTheta(StepTheta):
@@ -555,10 +558,7 @@ class PostStepTheta(StepTheta):
 
 
 class PostOptim(object):
-    """_summary_
-
-    Args:
-        object (_type_): _description_
+    """Convenience optimizer to use with PostStepTheta
     """
 
     def __init__(self, step_thetas: typing.List[PostStepTheta]):
@@ -570,27 +570,3 @@ class PostOptim(object):
 
         for step_theta in self.step_thetas:
             step_theta.adv(state)
-
-
-
-"""
-
-m1.step( clear=True)
-
-
-zen.repeat(machine1, machine2, 3)
-   .step(machine2, machine3)
-   .sequence()
-   .stepper()
-   .backward()
-
-
-stepper.backward()
-
-zen.step_pipeline(
-  zen.RepeatStep(machine1, out=machine2),
-  zen.Step(machine2, out=machine3),
-  zen.SequenceStep(machine3, machine4, machine5)
-)
-
-"""
