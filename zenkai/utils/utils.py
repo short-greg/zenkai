@@ -260,6 +260,20 @@ def update_model_parameters(model: nn.Module, theta: torch.Tensor):
     nn_utils.vector_to_parameters(theta, model.parameters())
 
 
+def set_model_grads(model: nn.Module, theta_grad: torch.Tensor):
+    """Set the gradients of a module to the values specified by theta_grad
+
+    Args:
+        model (nn.Module): The module to update gradients for
+        theta_grad (torch.Tensor): The gradient values to update with
+    """
+    start = 0
+    for p in model.parameters():
+        finish = p.numel()
+        cur = theta_grad[start:finish].reshape(p.shape)
+        p.grad = cur.detach()
+
+
 def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
     """Update the gradients of a module
 

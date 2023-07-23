@@ -20,7 +20,7 @@ from ..kaku import (
     OptimFactory,
     ThLoss
 )
-from ..utils import get_model_grads
+from ..utils import get_model_grads, update_model_grads, set_model_grads
 
 
 class GradStepTheta(StepTheta):
@@ -132,9 +132,9 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         state[self, 'stepped'] = True
         grads = state.get(self, 'grad')
         if grads is None:
-            state[self, x, 'grad'] = get_model_grads(self.learner)
+            state[self, 'grad'] = get_model_grads(self.learner)
         else:
-            state[self, x, 'grad'] = get_model_grads(self.learner) + grads
+            state[self, 'grad'] = get_model_grads(self.learner) + grads
         if self.auto_adv:
             self.adv(state)
 
@@ -145,6 +145,9 @@ class GradLoopStepTheta(BatchIdxStepTheta):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         if state.get(self, "stepped", False):
+            set_model_grads(
+                self.learner, state[self, 'grad']
+            )
             self.optim.step()
             self.optim.zero_grad()
             return True
