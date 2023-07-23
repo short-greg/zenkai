@@ -247,12 +247,13 @@ class Idx(object):
             return Idx(dim=self.dim)
         return Idx(self.idx.detach(), dim=self.dim)
 
-    def update(self, source: IO, destination: IO):
+    def update(self, source: IO, destination: IO, idx_both: bool=False):
         """Update an io in place with the index
 
         Args:
             source (IO): The io to update with
             destination (IO): The io to update
+            idx_both (bool): Whether only the destination is indexed or both are indexed
         """
         for source_i, destination_i in zip(source, destination):
             if destination_i.requires_grad:
@@ -261,6 +262,8 @@ class Idx(object):
             else:
                 requires_grad = False
             if self.idx is not None:
+                if idx_both:
+                    source_i = source_i[self.idx]
                 destination_i.data[self.idx] = source_i
             else:
                 destination_i.data = source_i
@@ -368,7 +371,7 @@ def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tens
 
 
 # TODO: DEBUG. This is not working for some reason
-def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True) -> IO:
+def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True, idx_both: bool=False) -> IO:
     """Update the IO in place
 
     Args:
@@ -382,7 +385,7 @@ def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True) -
 
     if idx is None:
         idx = Idx()
-    idx.update(source, destination)
+    idx.update(source, destination, idx_both)
     if detach:
         return destination.detach()
     return destination
