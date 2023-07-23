@@ -1,7 +1,9 @@
 from zenkai.kikai import (
     TargetPropLoss, TargetPropNet, TargetPropLearner,
-    RegTargetPropLoss, StandardTargetPropLoss, StandardTargetPropNet
+    RegTargetPropLoss, StandardTargetPropLoss, StandardTargetPropNet,
+    AEDXTargetPropLearner
 )
+from .test_grad import THGradLearnerT1
 from zenkai import ThLoss, itadaki, IO, State
 from torch.nn import Linear
 import torch
@@ -79,3 +81,54 @@ class TestTargetPropLearner():
         assert (
             before != get_model_parameters(learner)
         ).any()
+
+
+class TestDXTargetPropLearner():
+
+    def test_loss_evaluates_loss_of_y_reconstruction(self):
+        torch.manual_seed(1)
+        learner = AEDXTargetPropLearner(
+            StandardTargetPropNet(Linear(4, 2)),
+            Linear(2, 4),
+            StandardTargetPropLoss(ThLoss("mse")),
+            ThLoss("mse"),
+            itadaki.sgd(lr=1e-2)
+        )
+        base_x = IO(torch.rand(4, 2))
+        base_y = IO(torch.rand(4, 4)) 
+        base_t = IO(torch.rand(4, 4))
+        x, t = learner.prepare_io(base_x, base_t, base_y)
+        state = State()
+        y = learner(x, state)
+        before = get_model_parameters(learner)
+        learner.step(
+            x, t, state
+        )
+        assert (
+            before != get_model_parameters(learner)
+        ).any()
+
+    def test_forward_does_not_update_if_not_training_forward(self):
+        torch.manual_seed(1)
+        forward_net = Linear(2, 4)
+        learner = AEDXTargetPropLearner(
+            StandardTargetPropNet(Linear(4, 2)),
+            forward_net,
+            StandardTargetPropLoss(ThLoss("mse")),
+            ThLoss("mse"),
+            itadaki.sgd(lr=1e-2),
+            train_forward=False
+        )
+        base_x = IO(torch.rand(4, 2))
+        base_y = IO(torch.rand(4, 4)) 
+        base_t = IO(torch.rand(4, 4))
+        x, t = learner.prepare_io(base_x, base_t, base_y)
+        state = State()
+        y = learner(x, state)
+        before = get_model_parameters(forward_net)
+        learner.step(
+            x, t, state
+        )
+        assert (
+            before == get_model_parameters(forward_net)
+        ).all()

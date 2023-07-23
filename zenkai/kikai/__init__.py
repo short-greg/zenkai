@@ -61,5 +61,6 @@ from .iterable import (
 )
 from .target_prop import (
     TargetPropLearner, TargetPropLoss, TargetPropNet, RegTargetPropLoss, 
-    StandardTargetPropLoss, StandardTargetPropNet
+    StandardTargetPropLoss, StandardTargetPropNet,
+    AEDXTargetPropLearner
 )
