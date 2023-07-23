@@ -278,6 +278,42 @@ def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=
         else:
             raise RuntimeError(f"To add is set to False but the gradient has already been set")
 
+def get_model_grads(model: nn.Module) -> typing.Union[torch.Tensor, None]:
+    """Get all of the gradients in a module
+
+    Args:
+        model (nn.Module): the module to get grads for
+
+    Returns:
+        torch.Tensor or None: the grads flattened. Returns None if any of the grads have not been set
+    """
+
+    grads = []
+    for p in model.parameters():
+        if p.grad is None:
+            return None
+        grads.append(p.grad.flatten())
+    return torch.cat(grads)
+
+
+def update_grads_from_model(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
+    """Update the gradients of a module
+
+    Args:
+        model (nn.Module): The module to update gradients for
+        theta_grad (torch.Tensor): The gradient values to update with
+    """
+    start = 0
+    for p in model.parameters():
+        finish = p.numel()
+        cur = theta_grad[start:finish].reshape(p.shape)
+        if p.grad is None:
+            p.grad = cur.detach()
+        elif to_add:
+            p.grad.data += cur.detach()
+        else:
+            raise RuntimeError(f"To add is set to False but the gradient has already been set")
+
 
 def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
     """Calculate the mean absolute error in correlation

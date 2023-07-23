@@ -59,7 +59,7 @@ from .iterable import (
     IterHiddenStepTheta,
     # TwoLayerStep
 )
-from .experimental.target_prop import (
+from .target_prop import (
     TargetPropLearner, TargetPropLoss, TargetPropNet, RegTargetPropLoss, 
     StandardTargetPropLoss, StandardTargetPropNet
 )
