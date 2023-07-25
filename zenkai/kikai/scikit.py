@@ -389,7 +389,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """
         return self._step_x.step_x(x, t, state, feature_idx)
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         """
 
         Args:
@@ -406,7 +406,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             x = self._preprocessor(x)
 
         y = IO(self._module(x))
-        return y.out(detach=detach)
+        return y.out(release=release)
 
     @property
     def fitted(self) -> bool:
@@ -674,7 +674,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         """
         return self._step_x.step_x(x, t, state, feature_idx)
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         """
         To send the input through the voting ensemble
 
@@ -691,7 +691,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
             x = self._preprocessor(x)
 
         y = IO(self._module(x))
-        return y.out(detach=detach)
+        return y.out(release=release)
 
     @property
     def fitted(self) -> bool:

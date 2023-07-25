@@ -58,5 +58,5 @@ class ReversibleMachine(LearningMachine):
         """
         pass
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
-        return IO(self.reversible(x[0]), detach=detach)
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        return IO(self.reversible(x[0]), detach=release)

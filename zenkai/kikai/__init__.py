@@ -57,7 +57,7 @@ from .scikit import (
 from .iterable import (
     IterStepTheta, 
     IterHiddenStepTheta,
-    # TwoLayerStep
+    IterStepX
 )
 from .target_prop import (
     TargetPropLearner, TargetPropLoss, TargetPropNet, RegTargetPropLoss, 
