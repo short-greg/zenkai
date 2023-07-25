@@ -269,9 +269,10 @@ def set_model_grads(model: nn.Module, theta_grad: torch.Tensor):
     """
     start = 0
     for p in model.parameters():
-        finish = p.numel()
+        finish = start + p.numel()
         cur = theta_grad[start:finish].reshape(p.shape)
         p.grad = cur.detach()
+        start = finish
 
 
 def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
@@ -283,7 +284,7 @@ def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=
     """
     start = 0
     for p in model.parameters():
-        finish = p.numel()
+        finish = start + p.numel()
         cur = theta_grad[start:finish].reshape(p.shape)
         if p.grad is None:
             p.grad = cur.detach()
@@ -291,6 +292,8 @@ def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=
             p.grad.data += cur.detach()
         else:
             raise RuntimeError(f"To add is set to False but the gradient has already been set")
+        start = finish
+
 
 def get_model_grads(model: nn.Module) -> typing.Union[torch.Tensor, None]:
     """Get all of the gradients in a module

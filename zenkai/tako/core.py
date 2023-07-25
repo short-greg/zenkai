@@ -7,16 +7,6 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
-# TODO:
-# Think more about this. I do not necessarily want to store
-# the outputs (y values).
-# If I store the outputs, for the nested version, I should
-# store the intermediate evaluations as well.
-#
-# When the nested version is used, it will loop over the
-# forward_iter if the inputs are defined else it will not
-#
-
 
 class ID(object):
     """ID for a Tako

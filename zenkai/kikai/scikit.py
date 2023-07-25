@@ -395,7 +395,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         Args:
             x (IO): input to the machine
             state (State): the state
-            detach (bool, optional): Whether to detach the output. Defaults to True.
+            release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
             IO: output of the machine
@@ -681,7 +681,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         Args:
             x (IO): Input
             state (State): the state for learning
-            detach (bool, optional): whether to detach the output or not. Defaults to True.
+            release (bool, optional): whether to release the output or not. Defaults to True.
 
         Returns:
             IO: Output
