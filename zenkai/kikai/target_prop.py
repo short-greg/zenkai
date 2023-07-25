@@ -197,10 +197,10 @@ class TargetPropLearner(LearningMachine):
 
         return IO(x, detach=True)
     
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
         y = state[self, 'y'] = IO(*self.net(*x), detach=False)
-        return y.out(detach)
+        return y.out(release)
 
 
 class AEDXTargetPropLearner(LearningMachine):
@@ -281,12 +281,11 @@ class AEDXTargetPropLearner(LearningMachine):
 
         return IO(x, detach=True)
     
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
         dy = state[self, 'dy'] = self.net(*x)
-        print(dy)
         y = state[self, 'y'] = IO(x[0].detach() + dy[0], x[0].detach() + dy[1])
-        return y.out(detach)
+        return y.out(release)
 
 
 # class DXTargetPropLearner(LearningMachine):

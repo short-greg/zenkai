@@ -256,6 +256,6 @@ class LeastSquaresLearner(LearningMachine):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._step_x.step_x(x, t, state)
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
-        return IO(self._linear(x[0]), detach=detach)
+        return IO(self._linear(x[0]), detach=release)

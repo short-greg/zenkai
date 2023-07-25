@@ -44,20 +44,26 @@ class GradStepTheta(StepTheta):
         super().__init__()
         self.learner = learner
         self.optim = optim_factory(learner.parameters())
-        self.optim.zero_grad()
         self.reduction = reduction
         self.y_name = y_name
         self.auto_adv = auto_adv
 
     def step(self, x: IO, t: IO, state: State):
-        y = state.get(self, self.y_name)
+        y = state.get(self.learner, self.y_name)
         stepped = state.get(self, "stepped", False)
+        
         if stepped or y is None:
-            y = self.learner(x, state, detach=False)
-
+            x.freshen(False)
+            y = self.learner(x, detach=False)
+        self.optim.zero_grad()
         assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward("loss")
-        state.store(self, "stepped", True)
+        state[self.learner, 'stepped'] = True
+        grads = state.get(self, 'grad_theta')
+        if grads is None:
+            state[self, 'grad_theta'] = get_model_grads(self.learner)
+        else:
+            state[self, 'grad_theta'] = get_model_grads(self.learner) + grads
         if self.auto_adv:
             self.adv(state)
     
@@ -67,7 +73,11 @@ class GradStepTheta(StepTheta):
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        if state.get(self, "stepped", False):
+        grads = state.get(self, 'grad_theta')
+        if grads is not None:
+            set_model_grads(
+                self.learner, grads
+            )
             self.optim.step()
             self.optim.zero_grad()
             return True
@@ -145,6 +155,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         if state.get(self, "stepped", False):
+
             set_model_grads(
                 self.learner, state[self, 'grad']
             )
@@ -183,7 +194,8 @@ class GradStepX(StepX):
 
 
 class GradLoopStepX(BatchIdxStepX):
-    """Update x with the loss between y and t after passing x forward again and getting the grad of x"""
+    """Update x with the loss between y and t after passing x forward again 
+    and getting the grad of x"""
 
     def __init__(
         self,
@@ -276,10 +288,10 @@ class GradLearner(LearningMachine):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._x_step.step_x(x, t, state)
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
-        return y.out(detach)
+        return y.out(release)
 
 
 class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
@@ -333,10 +345,10 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return self._x_step.step_x(x, t, state, batch_idx)
 
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
-        return y.out(detach)
+        return y.out(release)
 
 
 def update_x(

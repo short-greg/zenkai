@@ -216,9 +216,9 @@ class SimpleLearner(core.LearningMachine):
         assessment.backward('loss')
         self.optim.step()
 
-    def forward(self, x: IO, state: core.State, detach: bool=True) -> torch.Tensor:
+    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         y = state[self, x, 'y'] = IO(self.linear(x[0])) 
-        return y.out(detach)
+        return y.out(release)
 
 
 # # # # # # # TODO: UPdate simplelearner
@@ -297,10 +297,10 @@ class LayeredLearner(core.LearningMachine):
         self.m1.step(x, t1, state)
         state[self, "x_step_t"] = t1
 
-    def forward(self, x: IO, state: core.State, detach: bool=True) -> torch.Tensor:
+    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         y1 = state[self, 'y1'] = self.m1(x, state)
         y2 = state[self, 'y2'] = self.m2(y1, state)
-        return y2.out(detach)
+        return y2.out(release)
 
 
 class TestLearningMachineWithComplexLearner:

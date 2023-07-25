@@ -16,7 +16,6 @@ Loop - Loop over data
 
 # 1st party
 from abc import ABC, abstractmethod
-from collections import deque
 import typing
 from dataclasses import dataclass
 

@@ -146,13 +146,12 @@ class IO(object):
 
         return IO(*self._x, detach=True, names=self._names)
 
-    def out(self, detach: bool = True, clone: bool = False) -> "IO":
-        y = self
-        if detach:
-            y = y.detach()
-        if clone:
-            y = y.clone()
-        return y
+    def out(self, release: bool = True) -> "IO":
+        # TODO: Rename argument detach to keep, maintain or something
+        # the default behavior should be to clone and detach
+        if release:
+            return self.detach().clone()
+        return self
 
     def is_empty(self) -> bool:
         return len(self) == 0
@@ -330,14 +329,14 @@ class Idx(object):
         return result
 
 
-def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:
+def idx_io(io: IO, idx: Idx = None, release: bool = False) -> IO:
     """Use Idx on an IO. It is a convenience function for when you don't know if idx is 
     specified
 
     Args:
         io (IO): The IO to index
         idx (Idx, optional): The Idx to use. If not specified, will just return x . Defaults to None.
-        detach (bool, optional): Whether to detach the result. Defaults to False.
+        release (bool, optional): Whether to release the result. Defaults to False.
 
     Returns:
         IO: The resulting io
@@ -346,7 +345,7 @@ def idx_io(io: IO, idx: Idx = None, detach: bool = False) -> IO:
     if idx is not None:
         io = idx(io)
 
-    return io.out(detach)
+    return io.out(release)
 
 
 def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tensor:
