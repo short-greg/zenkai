@@ -143,14 +143,20 @@ class IO(object):
         return result
 
     def detach(self) -> "IO":
+        """Create a new IO detaching all of the tensors
+
+        Returns:
+            IO: The new IO
+        """
 
         return IO(*self._x, detach=True, names=self._names)
 
+    def release(self) -> "IO":
+        return self.clone()
+
     def out(self, release: bool = True) -> "IO":
-        # TODO: Rename argument detach to keep, maintain or something
-        # the default behavior should be to clone and detach
         if release:
-            return self.detach().clone()
+            return self.release()
         return self
 
     def is_empty(self) -> bool:

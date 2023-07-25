@@ -199,7 +199,7 @@ class TargetPropLearner(LearningMachine):
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
-        y = state[self, 'y'] = IO(*self.net(*x), detach=False)
+        y = state[self, 'y'] = IO(*self.net(*x), release=False)
         return y.out(release)
 
 

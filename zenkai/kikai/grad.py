@@ -75,9 +75,7 @@ class GradStepTheta(StepTheta):
         """
         grads = state.get(self, 'grad_theta')
         if grads is not None:
-            set_model_grads(
-                self.learner, grads
-            )
+            set_model_grads(self.learner, grads)
             self.optim.step()
             self.optim.zero_grad()
             return True
@@ -137,7 +135,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         t_idx = idx_io(t, batch_idx, False)
         y_idx = self.learner(x_idx, state.sub(self, "step"), detach=False)
 
-        assessment = self.learner.assess_y(y_idx, t_idx.detach(), self.reduction)
+        assessment = self.learner.assess_y(y_idx, t_idx, self.reduction)
         assessment[self.loss_name].backward()
         state[self, 'stepped'] = True
         grads = state.get(self, 'grad')
@@ -156,9 +154,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         """
         if state.get(self, "stepped", False):
 
-            set_model_grads(
-                self.learner, state[self, 'grad']
-            )
+            set_model_grads(self.learner, state[self, 'grad'])
             self.optim.step()
             self.optim.zero_grad()
             return True
@@ -239,8 +235,8 @@ class GradLoopStepX(BatchIdxStepX):
         x = idx_io(x, batch_idx)
         t = idx_io(t, batch_idx)
         x_state.optim.zero_grad()
-        y = self.learner(x, detach=False)
-        assessment = self.learner.assess_y(y, t.detach(), self.reduction)
+        y = self.learner(x, release=False)
+        assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward(self.loss_name)
         x_state.optim.step()
         return x

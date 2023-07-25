@@ -275,7 +275,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         t: IO,
         reduction_override: str = None,
         state: State = None,
-        detach: bool = False,
+        release: bool = False,
     ) -> AssessmentDict:
         """Assess the learning machine
 
@@ -285,39 +285,39 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             reduction_override (str, optional): Value to override the
               reduction by. If None will not override. Defaults to None.
             state (State, optional): Defaults to None.
-            detach (bool, optional): Whether to detach the output.
+            release (bool, optional): Whether to release the output.
               Defaults to False.
 
         Returns:
             AssessmentDict: The assessment of the machine
         """
-        y = self(x, state=state, detach=detach)
+        y = self(x, state=state, release=release)
         return self.assess_y(y, t, reduction_override=reduction_override)
 
     @abstractmethod
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         """
         Args:
             x (IO): The input to the machine
             state (State)
-            detach (bool, optional): Whether to detach the output. Defaults to True.
+            release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
             IO: The output fo the machine
         """
         raise NotImplementedError
 
-    def __call__(self, x: IO, state: State = None, detach: bool = True, *args, **kwargs) -> IO:
+    def __call__(self, x: IO, state: State = None, release: bool = True, *args, **kwargs) -> IO:
         """
         Args:
             x (IO): The input to the machine
             state (State, optional): Defaults to None.
-            detach (bool, optional): Whether to detach the output. Defaults to True.
+            release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
             IO: The output fo the machine
         """
-        return super().__call__(x, state or State(), detach, *args, **kwargs)
+        return super().__call__(x, state or State(), release, *args, **kwargs)
 
     def learn(
         self,
@@ -543,7 +543,7 @@ class StdLearningMachine(LearningMachine):
         return self._step_theta(x, t, state, *args, **kwargs)
     
     @abstractmethod
-    def forward(self, x: IO, state: State, detach: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         pass
 
 

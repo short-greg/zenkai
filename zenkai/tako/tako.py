@@ -10,6 +10,17 @@ from .core import ID, UNDEFINED
 from .nodes import End, In, Info, Layer, Process, ProcessSet, is_defined, to_incoming
 
 
+# TODO:
+# Think more about this. I do not necessarily want to store
+# the outputs (y values).
+# If I store the outputs, for the nested version, I should
+# store the intermediate evaluations as well.
+#
+# When the nested version is used, it will loop over the
+# forward_iter if the inputs are defined else it will not
+#
+
+
 class Tako(nn.Module):
     """Base class for Takos which wrap processses to make more flexible networks"""
 
