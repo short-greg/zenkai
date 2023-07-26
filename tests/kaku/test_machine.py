@@ -203,13 +203,13 @@ class SimpleLearner(core.LearningMachine):
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         if (self, x, 'y') not in state:
             x.freshen(False)
-            assessment = self.assess(x,  t.detach(), state=state, detach=False)
+            assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment['loss'].backward()
         return IO(x[0] - x[0].grad)
 
     def step(self, x: IO, t: IO, state: core.State):
         if (self, x, 'y') not in state:
-            y = self(x, state, detach=False)
+            y = self(x, state, release=False)
         else: y = state[self, x, 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
@@ -240,14 +240,14 @@ class TestLearningMachineWithSimpleLearner:
 
         learner = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
-        y = learner(x, core.State(), detach=True)
+        y = learner(x, core.State(), release=True)
         assert y[0].grad_fn is None
 
     def test_grad_will_be_available_in_trans_if_not_detaching(self):
 
         learner = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
-        y = learner(x, core.State(), detach=False)
+        y = learner(x, core.State(), release=False)
         assert y[0].grad_fn is not None
 
     def test_step_x_updates_x(self):
@@ -319,7 +319,7 @@ class TestLearningMachineWithComplexLearner:
         torch.manual_seed(1)
         learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         x = IO(torch.rand(2, 2))
-        y = learner(x, core.State(), detach=True)
+        y = learner(x, core.State(), release=True)
         assert y[0].grad_fn is None
 
     def test_step_x_updates_x(self):
