@@ -172,3 +172,33 @@ class AETargetPropStepTheta(StepTheta):
         loss.backward()
         self._optim.step()
         state[self, 'stepped'] = True
+
+
+class RecTargetPropStepTheta(StepTheta):
+
+    def __init__(
+        self, target_prop: AETargetPropLearner, forward_machine: LearningMachine, loss: TargetPropLoss, optim: OptimFactory
+    ):
+
+        super().__init__()
+        self._target_prop = target_prop
+        self._loss = loss
+        self._forward_machine = forward_machine
+        self._optim = optim(target_prop.parameters())
+
+    def step(self, x: IO, t: IO, state: State):
+        
+        sub = state.sub(self, 'step')
+
+        y = state.get(self._target_prop, self._target_prop.Y)
+        if y is None or state[self, 'stepped'] is True:
+            y = self._target_prop(x, sub, release=False)
+        
+        y_t = self._forward_machine.step_x(y.detach(), IO(x[0], detach=True), sub)
+        
+        loss = self._loss(y, y_t)
+
+        self._optim.zero_grad()
+        loss.backward()
+        self._optim.step()
+        state[self, 'stepped'] = True
