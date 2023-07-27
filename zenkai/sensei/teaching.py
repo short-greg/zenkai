@@ -207,7 +207,6 @@ def train(
     Returns:
         Record: The results of teaching
     """
-
     record = Record()
     if use_io:
         training_material = IODecorator(training_material)

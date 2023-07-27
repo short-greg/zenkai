@@ -18,7 +18,6 @@ class MaterialDecorator(Material):
         Args:
             base_material (Material): The material to decorate
         """
-
         self._base_material = base_material
 
     @abstractmethod

@@ -135,7 +135,7 @@ class TargetPropLearner(LearningMachine):
         )
     
     def step(self, x: IO, t: IO, state: State):
-        """_summary_
+        """
 
         Args:
             x (IO): _description_
@@ -150,7 +150,7 @@ class TargetPropLearner(LearningMachine):
         self.optim.step()
     
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """_summary_
+        """
 
         Args:
             x (IO): _description_

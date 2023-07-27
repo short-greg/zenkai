@@ -51,7 +51,8 @@ from .scikit import (
     VoterEnsemble, Voter, ScikitLimitGen,
     ScikitEstimator, ScikitRegressor,
     ScikitMulticlass, ScikitBinary,
-    ScikitMachine, VoterEnsembleMachine
+    ScikitMachine, VoterEnsembleMachine,
+    ScikitStepTheta
 
 )
 from .iterable import (

@@ -11,6 +11,9 @@ from sklearn.base import BaseEstimator
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 from torch.nn.functional import one_hot
 
+from zenkai.kaku.io import IO, Idx
+from zenkai.kaku.state import State
+
 # local
 from .. import utils
 from ..kaku import (
@@ -288,7 +291,7 @@ class ScikitMulticlass(ScikitEstimator):
         y = super().forward(x)
 
         if self.output_one_hot:
-            return torch.nn.functional.one_hot(y, n_classes=self._n_classes)
+            return torch.nn.functional.one_hot(y, num_classes=self._n_classes)
         return y
 
 
@@ -328,6 +331,19 @@ class ScikitBinary(ScikitEstimator):
         )
 
 
+class ScikitStepTheta(FeatureIdxStepTheta):
+
+    def __init__(self, estimator: ScikitEstimator):
+        super().__init__()
+        self._estimator = estimator
+
+    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None):
+        
+        self._estimator.fit(
+            x, t[0], feature_idx.tolist() if feature_idx is not None else None
+        )
+
+
 class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
     """Machine used to train a Scikit Learn estimator"""
 
@@ -350,6 +366,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._module = module
         self._loss = loss
         self._step_x = step_x
+        self._step_theta = ScikitStepTheta(module)
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
@@ -371,9 +388,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 
-        self._module.fit(
-            x, t[0], feature_idx.tolist() if feature_idx is not None else None
-        )
+        self._step_theta.step(x, t, state, feature_idx)
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update the estimator
