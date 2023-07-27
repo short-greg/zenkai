@@ -17,9 +17,7 @@ from ..kaku import (
     LearningMachine,
     State,
     Loss,
-    AssessmentDict,
     StepTheta,
-    StepX
 )
 
 def cat_yt(io: IO) -> torch.Tensor:
@@ -158,13 +156,21 @@ class AETargetPropStepTheta(StepTheta):
 
     def step(self, x: IO, t: IO, state: State):
         
-        y_pre = state.get(self._target_prop, self._target_prop.Y_PRE)
+        # Forward pass
+        y = state.get(self._target_prop, self._target_prop.Y)
+        sub = state.sub(self, 'step')
+        if y is None or state.get(self, 'stepped') is True:
+            y = self._target_prop(x, sub, False)
+
+        # Reconstruction
         rec_pre = state.get(self._target_prop, self._target_prop.REC_PRE)
         if rec_pre is None or state.get(self, 'stepped') is True:
-            sub = state.sub(self, 'step')
-            self._target_prop.reconstruct(self._target_prop(x, sub), sub, False)
+            self._target_prop.reconstruct(y, sub, False)
             rec_pre = sub[self._target_prop, self._target_prop.REC_PRE]
-            y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
+        
+        y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
+        
+        # Update
         self._optim.zero_grad()
         loss = self._loss(rec_pre.totuple(), x[1])
         if self._reg is not None:
