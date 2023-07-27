@@ -815,6 +815,7 @@ LOSS_MAP = {
     "bce": nn.BCELoss,
     "bce_with_logits": nn.BCEWithLogitsLoss,
     "cross_entropy": nn.CrossEntropyLoss,
+    "l1": nn.L1Loss
 }
 
 

@@ -7,6 +7,9 @@ from itertools import chain
 import torch
 import torch.nn as nn
 
+from zenkai.kaku.io import IO
+from zenkai.kaku.state import State
+
 # Local
 from ..kaku import AssessmentDict, OptimFactory, ThLoss
 from ..kaku import (
@@ -14,72 +17,10 @@ from ..kaku import (
     LearningMachine,
     State,
     Loss,
-    AssessmentDict
+    AssessmentDict,
+    StepTheta,
+    StepX
 )
-
-
-class TargetPropNet(nn.Module):
-
-    @abstractmethod
-    def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> typing.Tuple[torch.Tensor]:
-        pass
-
-
-class StandardTargetPropNet(nn.Module):
-
-    def __init__(self, base_net: nn.Module):
-        """initializer
-
-        Args:
-            base_net (nn.Module): The base "reverse" network. Must take in the output as an input
-            and predict a variation of the input
-        """
-        super().__init__()
-        self.base_net = base_net
-
-    def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> typing.Tuple[torch.Tensor]:
-        """Calculate the reconstruction of the input
-
-        Args:
-            x (torch.Tensor): The input to the "encoder"
-            t (torch.Tensor): The target for the "encoder"
-            y (torch.Tensor): The output from the "encoder"
-
-        Returns:
-            typing.Tuple[torch.Tensor]: the input predicted by the target, the input predicted by the output
-        """
-        y = self.base_net(torch.cat([t, y]))
-        return y[:len(t)], y[len(t):]
-
-
-class XCatTargetPropNet(nn.Module):
-
-    def __init__(self, base_net: nn.Module):
-        """initializer
-
-        Args:
-            base_net (nn.Module): The base "reverse" network. Must take in the output as an input
-            and predict a variation of the input. Expects module that takes in
-            two inputs
-        """
-        super().__init__()
-        self.base_net = base_net
-
-    def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> typing.Tuple[torch.Tensor]:
-        """Calculate the reconstruction of the input
-
-        Args:
-            x (torch.Tensor): The input to the "encoder"
-            t (torch.Tensor): The target for the "encoder"
-            y (torch.Tensor): The output from the "encoder"
-
-        Returns:
-            typing.Tuple[torch.Tensor]: the input predicted by the target, the input predicted by the output
-        """
-        x = torch.cat([x, x])
-        out = torch.cat([t, y])
-        y = self.base_net(x, out)
-        return y[:len(t)], y[len(t):]
 
 
 class TargetPropLoss(Loss):
@@ -132,160 +73,151 @@ class RegTargetPropLoss(TargetPropLoss):
 
 class TargetPropLearner(LearningMachine):
 
-    def __init__(self, net: TargetPropNet, loss: TargetPropLoss, optim_factory: OptimFactory):
-        """initializer
-
-        Usage:
-        
-        # Typical usage would be to use target prop in the step x method
-        # for a Learning Machine
-        def step_x(self, ...)
-            prop_conn = self.target_prop.prepare_conn(conn, prev_x)
-            x = self.target_prop(prop_conn.step.x).sub(1).detach()
-            self.target_prop.step(prop_conn)
-            conn.step.x = x
-            return conn.step.x.tie_inp()
-
-        Args:
-            net (TargetPropNet): The network to learn the reverse connection
-            loss (TargetPropLoss): The loss function to assess the prediction of the inputs with
-            optim_factory (OptimFactory): The optimizer factory to generate the optim
-        """
-        super().__init__()
-        self.net = net
-        self.optim_factory = optim_factory
-        self.optim = self.optim_factory(net.parameters())
-        self.loss = loss
+    Y_PRE = 'y_pre'
 
     def prepare_io(self, x: IO, t: IO, y: IO):
         return IO(x[0], t[0], y[0]), x
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(
-            tuple(y), t[0], reduction_override
-        )
-    
-    def step(self, x: IO, t: IO, state: State):
-        """_summary_
 
-        Args:
-            x (IO): _description_
-            t (IO): _description_
-            state (State): _description_
-        """
-        
-        y = state[self, 'y']
-        self.optim.zero_grad()
-        assessment = self.assess_y(y, t)
-        assessment['loss'].backward()
-        self.optim.step()
-    
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """_summary_
+class AETargetPropLearner(TargetPropLearner):
 
-        Args:
-            x (IO): _description_
-            t (IO): _description_
-            state (State): _description_
-
-        Returns:
-            IO: _description_
-        """
-        x = x[0]
-        x = x - x.grad
-        x.grad = None
-
-        return IO(x, detach=True)
-    
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        x.freshen()
-        y = state[self, 'y'] = IO(*self.net(*x), detach=False)
-        return y.out(release)
-
-
-class AEDXTargetPropLearner(LearningMachine):
-
-    def __init__(
-        self, net: TargetPropNet, forward_net: nn.Module, 
-        loss: TargetPropLoss, ae_loss: Loss, optim_factory: OptimFactory, 
-        assessment_name: str='loss', train_forward: bool=True
-    ):
-        """initializer
-
-        Usage:
-        
-        # Typical usage would be to use target prop in the step x method
-        # for a Learning Machine
-        def step_x(self, ...)
-            prop_conn = self.target_prop.prepare_conn(conn, prev_x)
-            x = self.target_prop(prop_conn.step.x).sub(1).detach()
-            self.target_prop.step(prop_conn)
-            conn.step.x = x
-            return conn.step.x.tie_inp()
-
-        Args:
-            net (TargetPropNet): The network to learn the reverse connection
-            loss (TargetPropLoss): The loss function to assess the prediction of the inputs with
-            optim_factory (OptimFactory): The optimizer factory to generate the optim
-        """
-        super().__init__()
-        self.net = net
-        self._forward_net = forward_net
-        self.optim_factory = optim_factory
-        if train_forward:
-            self.optim = self.optim_factory(chain(net.parameters(), self._forward_net.parameters()))
-        else:
-            self.optim = self.optim_factory(net.parameters())
-        self.loss = loss
-        self.assessment_name = assessment_name
-        self.ae_loss = ae_loss
-        self.train_forward = train_forward
+    Z_PRE = 'z_pre'
+    REC_PRE = 'rec_pre'
 
     def prepare_io(self, x: IO, t: IO, y: IO):
         return IO(x[0], t[0], y[0]), x
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(
-            tuple(y), t[0], reduction_override
-        )
-    
+    @abstractmethod
+    def reconstruct(self, z: IO):
+        pass
+
+
+class StandardTargetPropStepTheta(StepTheta):
+
+    def __init__(self, target_prop: 'TargetPropLearner', loss: TargetPropLoss, optim: OptimFactory):
+
+        super().__init__()
+        self._target_prop = target_prop
+        self._loss = loss
+        self._optim = optim(target_prop.parameters())
+
     def step(self, x: IO, t: IO, state: State):
-        """
+        
+        y_pre = state.get(self, self._target_prop.Y_PRE)
+        if y_pre is None or state.get(self, 'stepped') is True:
+            sub = state.sub(self, 'step')
+            self._target_prop(x, sub)
+            y_pre = sub[self, 'y_pre']
+        self._optim.zero_grad()
+        loss = self._loss(y_pre[0], t[0])
+        loss.backward()
+        self._optim.step()
+        state[self, 'stepped'] = True
 
-        Args:
-            x (IO): The input
-            t (IO): The output
-            state (State): The learning state
-        """
-        y = state[self, 'y']
-        self.optim.zero_grad()
 
-        reconstruction = self._forward_net(y[0])
-        self.ae_loss.assess(reconstruction, x[1]).backward()
-        self.optim.step()
-    
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """_summary_
+class AETargetPropStepTheta(StepTheta):
 
-        Args:
-            x (IO): _description_
-            t (IO): _description_
-            state (State): _description_
+    def __init__(self, target_prop: AETargetPropLearner, loss: TargetPropLoss, optim: OptimFactory):
 
-        Returns:
-            IO: _description_
-        """
-        x = x[0]
-        x = x - x.grad
-        x.grad = None
+        super().__init__()
+        self._target_prop = target_prop
+        self._loss = loss
+        self._optim = optim(target_prop.parameters())
 
-        return IO(x, detach=True)
-    
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        x.freshen()
-        dy = state[self, 'dy'] = self.net(*x)
-        y = state[self, 'y'] = IO(x[0].detach() + dy[0], x[0].detach() + dy[1])
-        return y.out(release)
+    def step(self, x: IO, t: IO, state: State):
+        
+        rec_pre = state.get(self, self._target_prop.REC_PRE)
+        if rec_pre is None or state.get(self, 'stepped') is True:
+            sub = state.sub(self, 'step')
+            self._target_prop.reconstruct(self._target_prop(x, sub))
+            rec_pre = sub[self, self._target_prop.REC_PRE]
+        self._optim.zero_grad()
+        loss = self._loss(rec_pre[0], t[0])
+        loss.backward()
+        self._optim.step()
+        state[self, 'stepped'] = True
+
+
+# class TargetPropNet(nn.Module):
+
+#     @abstractmethod
+#     def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor, retrieve_pre: bool=False) -> typing.Tuple[torch.Tensor]:
+#         pass
+
+
+# class StandardTargetPropNet(nn.Module):
+
+#     def __init__(self, base_net: nn.Module, postprocessor: nn.Module=None):
+#         """initializer
+
+#         Args:
+#             base_net (nn.Module): The base "reverse" network. Must take in the output as an input
+#             and predict a variation of the input
+#         """
+#         super().__init__()
+#         self.base_net = base_net
+#         self.postprocessor = postprocessor
+
+#     def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor, retrieve_pre: bool=False) -> typing.Tuple[torch.Tensor]:
+#         """Calculate the reconstruction of the input
+
+#         Args:
+#             x (torch.Tensor): The input to the "encoder"
+#             t (torch.Tensor): The target for the "encoder"
+#             y (torch.Tensor): The output from the "encoder"
+
+#         Returns:
+#             typing.Tuple[torch.Tensor]: the input predicted by the target, the input predicted by the output
+#         """
+#         y = self.base_net(torch.cat([t, y]))
+
+#         if self.postprocessor is not None:
+#             y_post = self.postprocessor(y)
+#         else:
+#             y_post = y
+#         if retrieve_pre:
+#             return (y_post[:len(t)], y_post[len(t):]), (y[:len(t)], y[len(t):])
+#         else:
+#             return y_post[:len(t)], y_post[len(t):]
+
+
+# class XCatTargetPropNet(nn.Module):
+
+#     def __init__(self, base_net: nn.Module, postprocessor: nn.Module=None):
+#         """initializer
+
+#         Args:
+#             base_net (nn.Module): The base "reverse" network. Must take in the output as an input
+#             and predict a variation of the input. Expects module that takes in
+#             two inputs
+#         """
+#         super().__init__()
+#         self.base_net = base_net
+#         self.postprocessor = postprocessor
+
+#     def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor, retrieve_pre: bool=False) -> typing.Tuple[torch.Tensor]:
+#         """Calculate the reconstruction of the input
+
+#         Args:
+#             x (torch.Tensor): The input to the "encoder"
+#             t (torch.Tensor): The target for the "encoder"
+#             y (torch.Tensor): The output from the "encoder"
+
+#         Returns:
+#             typing.Tuple[torch.Tensor]: the input predicted by the target, the input predicted by the output
+#         """
+#         x = torch.cat([x, x])
+#         out = torch.cat([t, y])
+#         y = self.base_net(x, out)
+
+#         if self.postprocessor is not None:
+#             y_post = self.postprocessor(y)
+#         else:
+#             y_post = y
+#         if retrieve_pre:
+#             return (y_post[:len(t)], y_post[len(t):]), (y[:len(t)], y[len(t):])
+#         else:
+#             return y_post[:len(t)], y_post[len(t):]
 
 
 # class DXTargetPropLearner(LearningMachine):
