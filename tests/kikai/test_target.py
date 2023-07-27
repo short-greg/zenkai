@@ -16,6 +16,7 @@ from zenkai.utils import get_model_parameters
 
 from torch import nn
 
+
 class DummyTargetPropLearner(TargetPropLearner):
 
     def __init__(self, in_features: int, out_features: int) -> None:
@@ -43,6 +44,7 @@ class DummyTargetPropLearner(TargetPropLearner):
         x = self.linear(x)
         x = split_yt(x)
         state[self, self.Y_PRE] = x
+        state[self, self.Y] = x
         return x.out(release)
 
 
