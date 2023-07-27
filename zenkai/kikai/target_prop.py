@@ -96,6 +96,7 @@ class RegTargetPropLoss(TargetPropLoss):
 
 class TargetPropLearner(LearningMachine):
 
+    Y = 'y'
     Y_PRE = 'y_pre'
 
     def prepare_io(self, x: IO, t: IO, y: IO):
@@ -104,20 +105,24 @@ class TargetPropLearner(LearningMachine):
 
 class AETargetPropLearner(TargetPropLearner):
 
-    Z_PRE = 'z_pre'
+    Y = 'y'
+    Y_PRE = 'y_pre'
     REC_PRE = 'rec_pre'
+    REC = 'rec_pre'
 
     def prepare_io(self, x: IO, t: IO, y: IO):
         return IO(x[0], t[0], y[0]), x
 
     @abstractmethod
-    def reconstruct(self, z: IO, state: State, release: bool=True):
+    def reconstruct(self, z: IO, state: State, release: bool=True) -> IO:
         pass
 
 
 class StandardTargetPropStepTheta(StepTheta):
 
-    def __init__(self, target_prop: 'TargetPropLearner', loss: TargetPropLoss, optim: OptimFactory):
+    def __init__(
+        self, target_prop: 'TargetPropLearner', loss: TargetPropLoss, optim: OptimFactory
+    ):
 
         super().__init__()
         self._target_prop = target_prop
@@ -140,22 +145,30 @@ class StandardTargetPropStepTheta(StepTheta):
 
 class AETargetPropStepTheta(StepTheta):
 
-    def __init__(self, target_prop: AETargetPropLearner, loss: TargetPropLoss, optim: OptimFactory):
+    def __init__(
+        self, target_prop: AETargetPropLearner, loss: TargetPropLoss, optim: OptimFactory,
+        reg: TargetPropLoss=None
+    ):
 
         super().__init__()
         self._target_prop = target_prop
         self._loss = loss
+        self._reg = reg
         self._optim = optim(target_prop.parameters())
 
     def step(self, x: IO, t: IO, state: State):
         
+        y_pre = state.get(self._target_prop, self._target_prop.Y_PRE)
         rec_pre = state.get(self._target_prop, self._target_prop.REC_PRE)
         if rec_pre is None or state.get(self, 'stepped') is True:
             sub = state.sub(self, 'step')
             self._target_prop.reconstruct(self._target_prop(x, sub), sub, False)
             rec_pre = sub[self._target_prop, self._target_prop.REC_PRE]
+            y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
         self._optim.zero_grad()
         loss = self._loss(rec_pre.totuple(), x[1])
+        if self._reg is not None:
+            loss = loss + self._loss(y_pre.totuple(), x[0])
         loss.backward()
         self._optim.step()
         state[self, 'stepped'] = True
