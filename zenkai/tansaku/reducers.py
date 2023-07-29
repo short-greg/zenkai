@@ -143,7 +143,7 @@ class ReducerDecorator(Reducer):
         pass
 
 
-class BestSelectorIndividual(StandardReducer):
+class BestIndividualReducer(StandardReducer):
     """Select the best individual in the population"""
 
     def select(
@@ -159,13 +159,14 @@ class BestSelectorIndividual(StandardReducer):
         Returns:
             torch.Tensor: the best individual in the population
         """
-        return select_best_individual(pop_val, assessment)
+        value = select_best_individual(pop_val, assessment)
+        return value
 
-    def spawn(self) -> "BestSelectorIndividual":
-        return BestSelectorIndividual()
+    def spawn(self) -> "BestIndividualReducer":
+        return BestIndividualReducer()
 
 
-class BestReducerFeature(StandardReducer):
+class BestFeatureReducer(StandardReducer):
     """Selects the best individual in the population
     """
 
@@ -184,8 +185,8 @@ class BestReducerFeature(StandardReducer):
         """
         return select_best_feature(pop_val, assessment)
 
-    def spawn(self) -> "BestReducerFeature":
-        return BestReducerFeature()
+    def spawn(self) -> "BestFeatureReducer":
+        return BestFeatureReducer()
 
 
 class MomentumReducer(ReducerDecorator):

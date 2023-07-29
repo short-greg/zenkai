@@ -116,7 +116,9 @@ class PopulationLimiter(PopulationInfluencer):
             individual_v[:, :, limit] = v[:, :, limit].detach()
             result[k] = individual_v
         return Population(**result)
-
+    
+    def spawn(self) -> 'PopulationLimiter':
+        return PopulationLimiter()
 
 
 # TODO: Probably remove
