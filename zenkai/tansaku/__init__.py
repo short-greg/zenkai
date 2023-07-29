@@ -36,14 +36,17 @@ from .exploration import (
     expand_k,
     remove_noise,
 )
-from .modifiers import (
-    BinaryAdjGaussianModifier,
-    BinaryGaussianModifier,
-    BinaryProbModifier,
-    KeepModifier,
-    PopulationModifier,
-    SelectionModifier,
-    SlopeModifier,
+from .mixers import (
+    KeepMixer,
+    IndividualMixer
+)
+from .influencers import (
+    BinaryAdjGaussianInfluencer,
+    BinaryGaussianInfluencer,
+    BinaryProbInfluencer,
+    IndividualInfluencer,
+    PopulationLimiter,
+    SlopeInfluencer
 )
 from .populators import (
     BinaryPopulator,
@@ -51,7 +54,6 @@ from .populators import (
     ConservativePopulator,
     GaussianPopulator,
     PerceptronProbPopulator,
-    PopulationLimiter,
     Populator,
     PopulatorDecorator,
     RepeatPopulator,
@@ -59,15 +61,15 @@ from .populators import (
     StandardPopulator,
     populate_t,
 )
-from .selectors import (
-    BestSelectorFeature,
+from .reducers import (
+    BestReducerFeature,
     BestSelectorIndividual,
-    BinaryGaussianSelector,
-    BinaryProbSelector,
-    MomentumSelector,
-    Selector,
-    SelectorDecorator,
-    SlopeSelector,
-    StandardSelector,
+    BinaryGaussianReducer,
+    BinaryProbReducer,
+    MomentumReducer,
+    Reducer,
+    ReducerDecorator,
+    SlopeReducer,
+    StandardReducer,
     keep_original,
 )

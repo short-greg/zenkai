@@ -9,34 +9,34 @@ from .core import Individual, Population
 from .exploration import EqualsAssessmentDist
 
 # local
-from .selectors import BinaryProbSelector, SlopeSelector
+from .reducers import BinaryProbReducer, SlopeReducer
 
 
-class PopulationModifier(ABC):
+class IndividualInfluencer(ABC):
     """Modifies an Individual based on the Population"""
 
     @abstractmethod
-    def __call__(self, original: Individual, population: Population) -> Individual:
+    def __call__(self, individual: Individual, population: Population) -> Individual:
         pass
 
     @abstractmethod
-    def spawn(self) -> "PopulationModifier":
+    def spawn(self) -> "IndividualInfluencer":
         pass
 
 
-class SelectionModifier(ABC):
-    """Modifies an Individual with the result of a selection (an Individual)"""
+class PopulationInfluencer(ABC):
+    """"""
 
     @abstractmethod
-    def __call__(self, original: Individual, population: Individual) -> Individual:
+    def __call__(self, population: Population, individual: Population) -> Population:
         pass
 
     @abstractmethod
-    def spawn(self) -> "SelectionModifier":
+    def spawn(self) -> "PopulationInfluencer":
         pass
 
 
-class SlopeModifier(PopulationModifier):
+class SlopeInfluencer(IndividualInfluencer):
     """Modifies an individual based on the slope of a population"""
 
     def __init__(
@@ -53,7 +53,7 @@ class SlopeModifier(PopulationModifier):
               If minimizing, the sign of the lr will be reversed. Defaults to False.
         """
 
-        self._slope_selector = SlopeSelector(momentum)
+        self._slope_selector = SlopeReducer(momentum)
         self._lr = lr if maximize else -lr
         self.x = x
         self._momentum = momentum
@@ -80,11 +80,47 @@ class SlopeModifier(PopulationModifier):
         slope = self._slope_selector(population)[self.x]
         return Individual(**{self.x: x + self.lr * slope})
 
-    def spawn(self) -> "SlopeModifier":
-        return SlopeModifier(self._momentum, self.lr, self.x, self._multiplier == 1)
+    def spawn(self) -> "SlopeInfluencer":
+        return SlopeInfluencer(self._momentum, self.lr, self.x, self._multiplier == 1)
 
 
-class BinaryAdjGaussianModifier(PopulationModifier):
+class PopulationLimiter(PopulationInfluencer):
+    """
+    """
+
+    def __call__(
+        self,
+        population: Population,
+        individual: Individual,
+        limit: torch.LongTensor = None,
+    ) -> Population:
+        """
+
+        Args:
+            population (Population): 
+            individual (Individual): 
+            limit (torch.LongTensor, optional): . Defaults to None.
+
+        Returns:
+            Population: 
+        """
+
+        if limit is None:
+            return population
+
+        result = {}
+
+        for k, v in population:
+            individual_v = individual[k][None]
+            individual_v = individual_v.repeat(v.size(0), 1, 1)
+            individual_v[:, :, limit] = v[:, :, limit].detach()
+            result[k] = individual_v
+        return Population(**result)
+
+
+
+# TODO: Probably remove
+class BinaryAdjGaussianInfluencer(IndividualInfluencer):
     """Choose whether each value should be positive or negative based on the value of each"""
 
     def __init__(self, k: int, x: str = "x", zero_neg: bool = False):
@@ -145,11 +181,12 @@ class BinaryAdjGaussianModifier(PopulationModifier):
 
         return Individual(**{self.x: x_ind})
 
-    def spawn(self) -> "BinaryAdjGaussianModifier":
-        return BinaryAdjGaussianModifier(self.k, self.x, self.zero_neg)
+    def spawn(self) -> "BinaryAdjGaussianInfluencer":
+        return BinaryAdjGaussianInfluencer(self.k, self.x, self.zero_neg)
 
 
-class BinaryGaussianModifier(PopulationModifier):
+# TODO: Probably remove
+class BinaryGaussianInfluencer(IndividualInfluencer):
     """Choose up to k updates for the individual. If there are no
     updates that produce a large change in value. None will be updated"""
 
@@ -183,11 +220,14 @@ class BinaryGaussianModifier(PopulationModifier):
             result = to_zero_neg(result)
         return Individual(**{self.x: result})
 
-    def spawn(self) -> "BinaryGaussianModifier":
-        return BinaryGaussianModifier(self.k, self.x, self.zero_neg)
+    def spawn(self) -> "BinaryGaussianInfluencer":
+        return BinaryGaussianInfluencer(self.k, self.x, self.zero_neg)
 
 
-class BinaryProbModifier(PopulationModifier):
+# TODO: Probably remove
+class BinaryProbInfluencer(IndividualInfluencer):
+
+
     def __init__(self, zero_neg: bool, x: str = "x") -> None:
         """initializer
 
@@ -197,7 +237,7 @@ class BinaryProbModifier(PopulationModifier):
         """
         super().__init__()
         self.zero_neg = zero_neg
-        self._binary_selector = BinaryProbSelector()
+        self._binary_selector = BinaryProbReducer()
         self.x = x
 
     def __call__(self, original: Individual, population: Population) -> Individual:
@@ -227,36 +267,5 @@ class BinaryProbModifier(PopulationModifier):
             result = to_signed_neg(result)
         return Individual(x=result)
 
-    def spawn(self) -> "BinaryProbModifier":
-        return BinaryProbModifier(self.zero_neg, self.x)
-
-
-class KeepModifier(SelectionModifier):
-    """Modify the original based on the selection by keeping the values in
-    the individual with a set probability"""
-
-    def __init__(self, keep_p: float):
-        if not (0 < keep_p < 1.0):
-            raise ValueError(f"{keep_p} must be between 0 and 1.")
-        self.keep_p = keep_p
-
-    def __call__(self, original: Individual, selection: Individual) -> Individual:
-        """Randomly choose whether to select original or selection for each value
-
-        Args:
-            original (Individual): The individual to modify
-            population (Population): The population to modify based on
-
-        Returns:
-            Individual: The modified individual
-        """
-        new_values = {}
-        for k, v in original:
-            if k in selection:
-                keep = (torch.rand_like(v) < self.keep_p).type_as(v)
-                new_values[k] = keep * v + (1 - keep) * selection[k]
-
-        return Individual(**{new_values})
-
-    def spawn(self) -> "KeepModifier":
-        return KeepModifier(self.keep_p)
+    def spawn(self) -> "BinaryProbInfluencer":
+        return BinaryProbInfluencer(self.zero_neg, self.x)

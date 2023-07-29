@@ -2,9 +2,9 @@ import torch
 
 from zenkai import Assessment
 from zenkai.tansaku.core import Individual, Population
-from zenkai.tansaku.modifiers import (BinaryAdjGaussianModifier,
-                                      BinaryGaussianModifier,
-                                      BinaryProbModifier, SlopeModifier)
+from zenkai.tansaku.influencers import (BinaryAdjGaussianInfluencer,
+                                      BinaryGaussianInfluencer,
+                                      BinaryProbInfluencer, SlopeInfluencer)
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2, binary_x,
@@ -14,19 +14,19 @@ from .fixtures import (binary_individual1, binary_individual2, binary_x,
                        population2_with_assessment, x1, x2)
 
 
-class TestSlopeModifier:
+class TestSlopeInfluencer:
 
     def test_slope_modifier_returns_slope_with_one_update(self, population2_with_assessment):
 
         individual = Individual(x=torch.rand(population2_with_assessment["x"][0].size()))
-        modiifer = SlopeModifier(0.1, 0.1)
+        modiifer = SlopeInfluencer(0.1, 0.1)
         individual = modiifer(individual, population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
     def test_slope_modifier_returns_slope_after_two_iterations(self, population2_with_assessment):
         
         individual = Individual(x=torch.rand(population2_with_assessment["x"][0].size()))
-        modifier = SlopeModifier(0.1, 0.1)
+        modifier = SlopeInfluencer(0.1, 0.1)
         individual = modifier(individual, population2_with_assessment)
         individual = modifier(individual, population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
@@ -43,7 +43,7 @@ class TestBinaryProbModifier:
             Assessment(torch.randn(3, 2, 4))
         )
 
-        modifier = BinaryProbModifier(False)
+        modifier = BinaryProbInfluencer(False)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == -1)).all()
 
@@ -56,7 +56,7 @@ class TestBinaryProbModifier:
             Assessment(torch.randn(3, 2, 4))
         )
 
-        modifier = BinaryProbModifier(True)
+        modifier = BinaryProbInfluencer(True)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == 0)).all()
 
@@ -72,7 +72,7 @@ class TestBinaryAdjModifier:
             Assessment(torch.randn(8, 2))
         )
 
-        modifier = BinaryAdjGaussianModifier(8, zero_neg=False)
+        modifier = BinaryAdjGaussianInfluencer(8, zero_neg=False)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == -1)).all()
 
@@ -85,7 +85,7 @@ class TestBinaryAdjModifier:
             Assessment(torch.randn(8, 2))
         )
 
-        modifier = BinaryAdjGaussianModifier(8, zero_neg=True)
+        modifier = BinaryAdjGaussianInfluencer(8, zero_neg=True)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == 0)).all()
 
@@ -101,7 +101,7 @@ class TestBinaryModifier:
             Assessment(torch.randn(8, 2))
         )
 
-        modifier = BinaryGaussianModifier(8, zero_neg=False)
+        modifier = BinaryGaussianInfluencer(8, zero_neg=False)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == -1)).all()
 
@@ -114,6 +114,6 @@ class TestBinaryModifier:
             Assessment(torch.randn(8, 2))
         )
 
-        modifier = BinaryGaussianModifier(8, zero_neg=True)
+        modifier = BinaryGaussianInfluencer(8, zero_neg=True)
         result = modifier(individual, population)
         assert ((result["x"] == 1) | (result["x"] == 0)).all()

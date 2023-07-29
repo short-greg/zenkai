@@ -389,6 +389,9 @@ class PerceptronProbPopulator(Populator):
 
 
 class BinaryProbPopulator(Populator):
+    """
+    """
+
     def __init__(
         self,
         learner: Assessor,
@@ -440,24 +443,3 @@ class BinaryProbPopulator(Populator):
         return BinaryProbPopulator(
             self.learner, self.k, self.zero_neg, self.loss_name, self.x, self.t
         )
-
-
-class PopulationLimiter(object):
-    def __call__(
-        self,
-        individual: Individual,
-        population: Population,
-        limit: torch.LongTensor = None,
-    ) -> Population:
-
-        if limit is None:
-            return population
-
-        result = {}
-
-        for k, v in population:
-            individual_v = individual[k][None]
-            individual_v = individual_v.repeat(v.size(0), 1, 1)
-            individual_v[:, :, limit] = v[:, :, limit].detach()
-            result[k] = individual_v
-        return Population(**result)
