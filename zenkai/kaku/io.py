@@ -8,6 +8,7 @@ import typing
 # 3rd party
 import torch
 import numpy as np
+from torch import nn
 
 # local
 from .. import utils as base_utils
@@ -416,3 +417,19 @@ def update_tensor(
     if detach:
         return destination.detach()
     return destination
+
+
+class ToIO(nn.Module):
+
+    def forward(self, *x: torch.Tensor, detach: bool=False) -> IO:
+
+        return IO(*x, detach=detach)
+
+
+class FromIO(nn.Module):
+
+    def forward(self, io: IO) -> IO:
+
+        if len(io) == 1:
+            return io[0]
+        return io.totuple()

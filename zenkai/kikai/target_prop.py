@@ -20,6 +20,21 @@ from ..kaku import (
     StepTheta,
 )
 
+
+# TODO: Go with this definition. Possibly add more 
+
+
+class TargetPropLearner(nn.Module):
+
+    @abstractmethod
+    def step_target_prop(self, x: IO, t: IO, y: IO):
+        pass
+
+    @abstractmethod
+    def target_prop(self, x: IO, y: IO) -> IO:
+        pass
+
+
 def cat_yt(io: IO) -> torch.Tensor:
 
     return torch.cat(
@@ -92,7 +107,7 @@ class RegTargetPropLoss(TargetPropLoss):
         )
 
 
-class TargetPropLearner(LearningMachine):
+class TargetPropLearnerX(LearningMachine):
 
     Y = 'y'
     Y_PRE = 'y_pre'
@@ -101,7 +116,7 @@ class TargetPropLearner(LearningMachine):
         return IO(x[0], t[0], y[0]), x
 
 
-class AETargetPropLearner(TargetPropLearner):
+class AETargetPropLearner(TargetPropLearnerX):
 
     Y = 'y'
     Y_PRE = 'y_pre'
@@ -179,6 +194,7 @@ class AETargetPropStepTheta(StepTheta):
         self._optim.step()
         state[self, 'stepped'] = True
 
+# TODO: Add in regularization loss to this one and the regular StepTheta
 
 class RecTargetPropStepTheta(StepTheta):
 
@@ -200,7 +216,7 @@ class RecTargetPropStepTheta(StepTheta):
         if y is None or state[self, 'stepped'] is True:
             y = self._target_prop(x, sub, release=False)
         
-        y_t = self._forward_machine.step_x(y.detach(), IO(x[0], detach=True), sub)
+        y_t = self._forward_machine.step_x(IO(y.detach()[0]), IO(x[0], detach=True), sub)
         
         loss = self._loss(y, y_t)
 
