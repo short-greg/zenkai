@@ -62,8 +62,8 @@ from .populators import (
     populate_t,
 )
 from .reducers import (
-    BestReducerFeature,
-    BestSelectorIndividual,
+    BestFeatureReducer,
+    BestIndividualReducer,
     BinaryGaussianReducer,
     BinaryProbReducer,
     MomentumReducer,

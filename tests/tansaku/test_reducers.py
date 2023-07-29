@@ -1,6 +1,6 @@
 from zenkai.tansaku.core import Individual, Population
-from zenkai.tansaku.reducers import (BestReducerFeature,
-                                      BestSelectorIndividual,
+from zenkai.tansaku.reducers import (BestFeatureReducer,
+                                      BestIndividualReducer,
                                       BinaryGaussianReducer, MomentumReducer,
                                       SlopeReducer)
 from zenkai.utils import get_model_parameters
@@ -13,44 +13,44 @@ from .fixtures import (binary_individual1, binary_individual2,
                        population2_with_assessment, x1, x2)
 
 
-class TestBestSelector:
+class TestBestReducer:
     
     def test_best_selector_returns_best_with_one_dimensions(self, population1_with_assessment):
 
-        selector = BestSelectorIndividual()
+        selector = BestIndividualReducer()
         individual = selector(population1_with_assessment)
         assert individual['x'].size() == population1_with_assessment["x"].shape[1:]
 
     def test_best_selector_returns_best_with_two_dimensions(self, population2_with_assessment):
 
-        selector = BestReducerFeature()
+        selector = BestFeatureReducer()
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
 
-class TestMomentumSelector:
+class TestMomentumReducer:
 
     def test_momentum_selector_returns_best_with_one_dimensions(self, population1_with_assessment):
 
-        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
+        selector = MomentumReducer(BestIndividualReducer(), 0.1)
         individual = selector(population1_with_assessment)
         assert individual['x'].size() == population1_with_assessment["x"].shape[1:]
 
     def test_momentum_selector_returns_best_with_two_dimensions(self, population2_with_assessment):
 
-        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
+        selector = MomentumReducer(BestFeatureReducer(), 0.1)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
     def test_momentum_selector_returns_best_after_two_iterations_two_dimensions(self, population2_with_assessment):
 
-        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
+        selector = MomentumReducer(BestFeatureReducer(), 0.1)
         individual = selector(population2_with_assessment)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
 
-class TestSlopeSelector:
+class TestSlopeReducer:
 
     def test_slope_selector_returns_slope_with_one_dimensions(self, population2_with_assessment):
 
@@ -66,7 +66,7 @@ class TestSlopeSelector:
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
 
-class TestBinaryGaussianSelector:
+class TestBinaryGaussianReducer:
 
     def test_gaussian_selector_returns_slope_with_one_dimensions(self, binary_population2_with_assessment):
 

@@ -32,7 +32,7 @@ class TestSlopeInfluencer:
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
 
-class TestBinaryProbModifier:
+class TestBinaryProbInfluencer:
 
     def test_binary_prob_modifier_outputs_neg_one_or_one(self):
 
@@ -61,7 +61,7 @@ class TestBinaryProbModifier:
         assert ((result["x"] == 1) | (result["x"] == 0)).all()
 
 
-class TestBinaryAdjModifier:
+class TestBinaryAdjInfluencer:
 
     def test_binary_adj_modifier_outputs_neg_one_or_one(self):
 
@@ -90,7 +90,7 @@ class TestBinaryAdjModifier:
         assert ((result["x"] == 1) | (result["x"] == 0)).all()
 
 
-class TestBinaryModifier:
+class TestBinaryGaussianInfluencer:
 
     def test_binary_modifier_returns_slope_with_one_update(self):
 
