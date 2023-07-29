@@ -1,8 +1,8 @@
 from zenkai.tansaku.core import Individual, Population
-from zenkai.tansaku.selectors import (BestSelectorFeature,
+from zenkai.tansaku.reducers import (BestReducerFeature,
                                       BestSelectorIndividual,
-                                      BinaryGaussianSelector, MomentumSelector,
-                                      SlopeSelector)
+                                      BinaryGaussianReducer, MomentumReducer,
+                                      SlopeReducer)
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2,
@@ -23,7 +23,7 @@ class TestBestSelector:
 
     def test_best_selector_returns_best_with_two_dimensions(self, population2_with_assessment):
 
-        selector = BestSelectorFeature()
+        selector = BestReducerFeature()
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
@@ -32,19 +32,19 @@ class TestMomentumSelector:
 
     def test_momentum_selector_returns_best_with_one_dimensions(self, population1_with_assessment):
 
-        selector = MomentumSelector(BestSelectorIndividual(), 0.1)
+        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
         individual = selector(population1_with_assessment)
         assert individual['x'].size() == population1_with_assessment["x"].shape[1:]
 
     def test_momentum_selector_returns_best_with_two_dimensions(self, population2_with_assessment):
 
-        selector = MomentumSelector(BestSelectorFeature(), 0.1)
+        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
     def test_momentum_selector_returns_best_after_two_iterations_two_dimensions(self, population2_with_assessment):
 
-        selector = MomentumSelector(BestSelectorFeature(), 0.1)
+        selector = MomentumReducer(BestSelectorIndividual(), 0.1)
         individual = selector(population2_with_assessment)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
@@ -54,13 +54,13 @@ class TestSlopeSelector:
 
     def test_slope_selector_returns_slope_with_one_dimensions(self, population2_with_assessment):
 
-        selector = SlopeSelector(0.1)
+        selector = SlopeReducer(0.1)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
     def test_slope_selector_returns_slope_after_two_iterations(self, population2_with_assessment):
 
-        selector = SlopeSelector(0.1)
+        selector = SlopeReducer(0.1)
         individual = selector(population2_with_assessment)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
@@ -70,12 +70,12 @@ class TestBinaryGaussianSelector:
 
     def test_gaussian_selector_returns_slope_with_one_dimensions(self, binary_population2_with_assessment):
 
-        selector = BinaryGaussianSelector('x')
+        selector = BinaryGaussianReducer('x')
         individual = selector(binary_population2_with_assessment)
         assert individual['x'].size() == binary_population2_with_assessment["x"].shape[1:]
 
     def test_gaussian_selector_returns_slope_after_two_iterations(self, binary_population2_with_assessment):
 
-        selector = BinaryGaussianSelector('x')
+        selector = BinaryGaussianReducer('x')
         individual = selector(binary_population2_with_assessment)
         assert individual['x'].size() == binary_population2_with_assessment["x"].shape[1:]

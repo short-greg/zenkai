@@ -39,8 +39,8 @@ def keep_original(
     return (~to_keep).float() * candidate + to_keep.float() * original
 
 
-class Selector(ABC):
-    """Base class for Selector. A selector chooses an individual from a population
+class Reducer(ABC):
+    """Base class for Reducer. A Reducer reduces a population to an Individual
     or does an aggregation or other operation on the population to convert 
     the population to an individual
     """
@@ -50,11 +50,16 @@ class Selector(ABC):
         pass
 
     @abstractmethod
-    def spawn(self) -> "Selector":
+    def spawn(self) -> "Reducer":
         pass
 
 
-class StandardSelector(Selector):
+class StandardReducer(Reducer):
+    """Standard reducer. Loops over all of the fields in the population and reduces them
+    Override only be writing the select method
+    """
+
+
     @abstractmethod
     def select(
         self, key: str, pop_val: torch.Tensor, assessment: Assessment
@@ -62,6 +67,18 @@ class StandardSelector(Selector):
         pass
 
     def __call__(self, population: Population) -> Individual:
+        """Loops over all of the fields in the population and reduces them
+
+        Args:
+            population (Population): The populatin to reduce
+
+        Raises:
+            ValueError: If the population has not been assessed
+
+        Returns:
+            Individual: The reduced population
+        """
+
         if population.assessments is None:
             raise ValueError("Population has not been assessed")
         result = {}
@@ -71,19 +88,45 @@ class StandardSelector(Selector):
         return Individual(**result)
 
 
-class SelectorDecorator(Selector):
-    def __init__(self, base_selector: Selector):
-        self.base_selector = base_selector
+class ReducerDecorator(Reducer):
+    """Decorates the result of a reduction
+    """
+
+    def __init__(self, base_reducer: Reducer):
+        """initializer
+
+        Args:
+            base_reducer (Reducer): The reducer to decoraet
+        """
+        self.base_reducer = base_reducer
 
     @abstractmethod
     def decorate(
         self, key: str, individual: torch.Tensor, assessment: Assessment
     ) -> torch.Tensor:
+        """Decorates the reduction
+
+        Args:
+            key (str): The field name
+            individual (torch.Tensor): The individual resulting from the reduction
+            assessment (Assessment): The assessment for the individual
+
+        Returns:
+            torch.Tensor: The decorated individual
+        """
         pass
 
     def __call__(self, population: Population) -> Individual:
+        """Reduces the population and decorates it
 
-        selected = self.base_selector(population)
+        Args:
+            population (Population): The population to reduce
+
+        Returns:
+            Individual: The reduction (individual)
+        """
+
+        selected = self.base_reducer(population)
 
         result = {}
         for k, v in selected:
@@ -91,11 +134,16 @@ class SelectorDecorator(Selector):
         return Individual(**result)
 
     @abstractmethod
-    def spawn(self) -> "SelectorDecorator":
+    def spawn(self) -> "ReducerDecorator":
+        """_summary_
+
+        Returns:
+            ReducerDecorator: _description_
+        """
         pass
 
 
-class BestSelectorIndividual(StandardSelector):
+class BestSelectorIndividual(StandardReducer):
     """Select the best individual in the population"""
 
     def select(
@@ -117,7 +165,10 @@ class BestSelectorIndividual(StandardSelector):
         return BestSelectorIndividual()
 
 
-class BestSelectorFeature(StandardSelector):
+class BestReducerFeature(StandardReducer):
+    """Selects the best individual in the population
+    """
+
     def select(
         self, key: str, pop_val: torch.Tensor, assessment: Assessment
     ) -> torch.Tensor:
@@ -133,19 +184,22 @@ class BestSelectorFeature(StandardSelector):
         """
         return select_best_feature(pop_val, assessment)
 
-    def spawn(self) -> "BestSelectorFeature":
-        return BestSelectorFeature()
+    def spawn(self) -> "BestReducerFeature":
+        return BestReducerFeature()
 
 
-class MomentumSelector(SelectorDecorator):
-    def __init__(self, base_selector: Selector, momentum: float = None):
+class MomentumReducer(ReducerDecorator):
+    """Reduces the population to momentum
+    """
+
+    def __init__(self, best_reducer: Reducer, momentum: float = None):
         """initializer
 
         Args:
             momentum (float, optional): Weight for previous time step Defaults to None.
             maximize (bool, optional): Whether to maximize the evaluation. Defaults to True.
         """
-        super().__init__(base_selector)
+        super().__init__(best_reducer)
         self._momentum = momentum
         self._params_updated = None
         self._keep_s = True
@@ -156,6 +210,16 @@ class MomentumSelector(SelectorDecorator):
     def decorate(
         self, key: str, individual: torch.Tensor, assessment: Assessment
     ) -> torch.Tensor:
+        """Decorates the individual with the momentum
+
+        Args:
+            key (str): The name of the field
+            individual (torch.Tensor): The individual to decorate
+            assessment (Assessment): The assessment for the individual
+
+        Returns:
+            torch.Tensor: The decorated reducer
+        """
 
         if self.diff is None and self.cur is None:
             self.cur = individual
@@ -168,13 +232,13 @@ class MomentumSelector(SelectorDecorator):
 
         return self.cur
 
-    def spawn(self) -> "MomentumSelector":
-        return MomentumSelector(self.base_selector.spawn(), self._momentum)
+    def spawn(self) -> "MomentumReducer":
+        return MomentumReducer(self.base_reducer.spawn(), self._momentum)
 
 
-class SlopeSelector(StandardSelector):
+class SlopeReducer(StandardReducer):
     """
-    'Selects' the slope from current evaluation.
+    'Reduces' the population to the slope from current evaluation.
     Can be used to add to the value before 'spawning'
     """
 
@@ -204,20 +268,35 @@ class SlopeSelector(StandardSelector):
         )
         return self._slope
 
-    def spawn(self) -> "SlopeSelector":
-        return SlopeSelector(self._momentum)
+    def spawn(self) -> "SlopeReducer":
+        return SlopeReducer(self._momentum)
 
 
-class BinaryProbSelector(Selector):
+class BinaryProbReducer(Reducer):
+    """
+    """
 
     neg_count = "neg_count"
     pos_count = "pos_count"
 
     def __init__(self, x: str = "x") -> None:
+        """initializer
+
+        Args:
+            x (str, optional): _description_. Defaults to "x".
+        """
         super().__init__()
         self.x = x
 
     def __call__(self, population: Population) -> Individual:
+        """
+
+        Args:
+            population (Population): The population to reduce
+
+        Returns:
+            Individual: The reduction (individual)
+        """
 
         x = population[self.x]
         assessment = population.stack_assessments()
@@ -228,11 +307,11 @@ class BinaryProbSelector(Selector):
         updated, pos_count, neg_count = binary_prob(x, loss, True)
         return Individual(x=updated, pos_count=pos_count, neg_count=neg_count)
 
-    def spawn(self) -> "BinaryProbSelector":
-        return BinaryProbSelector(self.x)
+    def spawn(self) -> "BinaryProbReducer":
+        return BinaryProbReducer(self.x)
 
 
-class BinaryGaussianSelector(Selector):
+class BinaryGaussianReducer(Reducer):
     """Value based selector for binary inputs. Uses the Gaussian distribution to
     either select based on a sample or the mean
     """
@@ -275,7 +354,7 @@ class BinaryGaussianSelector(Selector):
             result = to_signed_neg(result)
         return Individual(**{self.x: result})
 
-    def spawn(self) -> "BinaryGaussianSelector":
-        return BinaryGaussianSelector(
+    def spawn(self) -> "BinaryGaussianReducer":
+        return BinaryGaussianReducer(
             self.x, self.zero_neg, self.to_sample, self.batch_equal
         )

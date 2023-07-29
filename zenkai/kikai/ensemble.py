@@ -6,22 +6,27 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional
 from collections import deque
+from abc import abstractmethod
 
 # 3rd party
 from torch.nn.functional import one_hot
+
+from zenkai.kaku import IO, State
+from zenkai.kaku.io import IO, Idx
+from zenkai.kaku.state import State
+
 
 # local
 from .. import utils
 from ..kaku import (
     IO,
     AssessmentDict,
-    FeatureIdxStepTheta,
-    FeatureIdxStepX,
     StepX,
     LearningMachine,
     Loss,
     State,
 )
+
 
 # TODO: Improve the voter and make it more object oriented
 class Voter(nn.Module):
@@ -35,7 +40,7 @@ class Voter(nn.Module):
             n_classes (int, optional): Whether the inputs are . Defaults to None.
 
         Raises:
-            ValueError: _description_
+            ValueError: 
         """
 
         # TODO: Add support for LongTensors by using one_hot encoding
@@ -82,7 +87,18 @@ class Voter(nn.Module):
         return chosen
 
 
-class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
+class EnsembleLearner(LearningMachine):
+
+    @abstractmethod
+    def forward_all(self, x: IO, state: State, release: bool=False) -> typing.List[IO]:
+        pass
+
+    @abstractmethod
+    def reduce(self, x: IO, state: State, release: bool=False) -> IO:
+        pass
+
+
+class VoterEnsembleLearner(EnsembleLearner):
     """Machine that runs an ensemble of sub machines"""
 
     def __init__(
@@ -95,7 +111,6 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         temporary: LearningMachine=None
     ):
         """
-
         Args:
             base_estimator (scikit.ScikitEstimator): Base estimator
             n_keep (int): Number of estimators to keep each round
@@ -163,9 +178,8 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         else:
             self._estimators.append(spawned)
 
-    def step(
-        self, x: IO, t: IO, state: State, *args, **kwargs
-    ):
+    
+    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Update the machine
 
         Args:
@@ -195,6 +209,13 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         
         return self._step_x.step_x(x, t, state, *args, **kwargs)
 
+    def forward_all(self, x: IO, state: State, release: bool = False) -> typing.List[IO]:
+        votes = state[self, 'votes'] = [machine(x, state, release)[0] for machine in self._estimators]
+        return votes
+    
+    def reduce(self, x: IO, state: State, release: bool = False) -> IO:
+        return IO(self._voter(x)).out(release)
+
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         """
         To send the input through the voting ensemble
@@ -211,6 +232,4 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         if len(self._estimators) == 0:
             return self._temporary(x, state, release)
         
-        votes = state[self, 'votes'] = [machine(x, state, release)[0] for machine in self._estimators]
-
-        return IO(self._voter(votes)).out(release)
+        return self.reduce(self.forward_all(x, state), state, release)
