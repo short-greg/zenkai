@@ -87,6 +87,71 @@ class Voter(nn.Module):
         return chosen
 
 
+class Ensemble(nn.Module):
+    """Machine that runs an ensemble of sub machines"""
+
+    def __init__(
+        self,
+        spawner: typing.Callable[[], nn.Module],
+        n_keep: int,
+        temporary: nn.Module=None
+    ):
+        """
+        Args:
+            base_estimator (scikit.ScikitEstimator): Base estimator
+            n_keep (int): Number of estimators to keep each round
+            step_x (StepX): StepX to update machine with
+            loss (Loss): The loss to evaluate the machine with
+            preprocessor (nn.Module, optional): Module to execute before . Defaults to None.
+        """
+        super().__init__()
+
+        self._estimators = nn.ModuleList()
+        self._temporary = temporary
+        self._spawner = spawner
+        if self._temporary is None:
+            self._estimators.append(spawner())
+        self._n_keep = n_keep
+
+    @property
+    def n_keep(self) -> int:
+        """
+        Returns:
+            int: The number of modules to make up the ensemble
+        """
+        return self._n_keep
+
+    @n_keep.setter
+    def n_keep(self, n_keep: int):
+        """
+        Args:
+            n_keep (int): The number of estimators to keep
+
+        Raises:
+            ValueError: If the number of estimators to keep is less than or equal to 0
+        """
+        if n_keep <= 0:
+            raise ValueError(f"Argument n_keep must be greater than 0 not {n_keep}.")
+        self._n_keep = n_keep
+        # remove estimators beyond n_keep
+        if n_keep < len(self._estimators):
+            difference = len(self._estimators) - n_keep
+            self._estimators = nn.ModuleList((self._estimators)[difference:])
+
+    def adv(self):
+        
+        spawned = self._spawner()
+        if len(self._estimators) == self._n_keep:
+            self._estimators = self.estimators[1:]
+        self._estimators.append(spawned)
+
+    def forward(self, *x: torch.Tensor) -> typing.List[torch.Tensor]:
+        if len(self._estimators) == 0:
+            return [self._temporary(*x)]
+
+        return [estimator(*x) for estimator in self._estimators]
+
+
 class EnsembleLearner(LearningMachine):
 
     @abstractmethod

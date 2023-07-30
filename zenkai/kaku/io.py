@@ -421,15 +421,29 @@ def update_tensor(
 
 class ToIO(nn.Module):
 
-    def forward(self, *x: torch.Tensor, detach: bool=False) -> IO:
+    def __init__(self, detach: bool=False):
+        super().__init__()
+        self.detach = detach
 
+    def forward(self, *x: torch.Tensor, detach_override: bool=None) -> IO:
+        if detach_override is not None:
+            detach = detach_override
+        else:
+            detach = self.detach
         return IO(*x, detach=detach)
 
 
 class FromIO(nn.Module):
 
+    def __init__(self, detach: bool=False):
+        super().__init__()
+        self.detach = detach
+
     def forward(self, io: IO) -> IO:
 
+        if self.detach:
+            io = io.detach()
+    
         if len(io) == 1:
             return io[0]
         return io.totuple()

@@ -30,6 +30,8 @@ from .io import (
     update_tensor,
     idx_io,
     idx_th,
+    ToIO,
+    FromIO
 )
 from .machine import (
     BatchIdxStepTheta,
