@@ -264,7 +264,29 @@ class Individual(object):
 
     @property
     def assessment(self) -> Assessment:
+        """
+        Returns:
+            Assessment: The assessment for the individual
+        """
         return self._assessment
+
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], key: str=None) -> 'Individual':
+        """Apply a function to he individual to generate a new individual
+
+        Args:
+            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
+            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+
+        Returns:
+            Population: The resulting individual
+        """
+        results = {}
+        for k, v in self._parameters.items():
+            if key is None or key == k:
+                results[key] = f(v)
+            else:
+                results[key] = torch.clone(v)
+        return Individual(**results)
 
 
 class Population(object):
@@ -515,6 +537,24 @@ class Population(object):
         """
         for k, v in self._parameters.items():
             yield k, v
+
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], key: str=None) -> 'Population':
+        """Apply a function to he population to generate a new population
+
+        Args:
+            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
+            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+
+        Returns:
+            Population: The resulting population
+        """
+        results = {}
+        for k, v in self._parameters.items():
+            if key is None or key == k:
+                results[key] = f(v)
+            else:
+                results[key] = torch.clone(v)
+        return Population(**results)
 
 
 def reduce_assessment_dim0(
