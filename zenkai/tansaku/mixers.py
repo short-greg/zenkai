@@ -9,7 +9,7 @@ class IndividualMixer(ABC):
     """Mixes two individuals together"""
 
     @abstractmethod
-    def __call__(self, original: Individual, population: Individual) -> Individual:
+    def __call__(self, individual1: Individual, individual2: Individual) -> Individual:
         pass
 
     @abstractmethod
@@ -21,7 +21,7 @@ class PopulationMixer(ABC):
     """Mixes two populations together"""
 
     @abstractmethod
-    def __call__(self, original: Population, population: Population) -> Population:
+    def __call__(self, population1: Population, population2: Population) -> Population:
         pass
 
     @abstractmethod
