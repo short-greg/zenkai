@@ -27,11 +27,11 @@ from ..kaku import (
 class TargetPropLearner(nn.Module):
 
     @abstractmethod
-    def step_target_prop(self, x: IO, t: IO, y: IO):
+    def step_target_prop(self, x: IO, t: IO, y: IO, state: State):
         pass
 
     @abstractmethod
-    def target_prop(self, x: IO, y: IO) -> IO:
+    def target_prop(self, x: IO, y: IO, state: State, release: bool=True) -> IO:
         pass
 
 
