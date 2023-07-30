@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from zenkai.tansaku.core import Population
+
 from .core import Individual, Population
 
 import torch
@@ -67,3 +69,25 @@ class KeepMixer(IndividualMixer):
 
     def spawn(self) -> "KeepMixer":
         return KeepMixer(self.keep_p)
+
+
+class StandardPopulationMixer(PopulationMixer):
+
+    @abstractmethod
+    def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
+        pass
+
+    def __call__(self, population1: Population, population2: Population) -> Population:
+
+        results = {}
+        for k, v in population1:
+            results[k] = self.mix(k, v, population2[k])
+
+        return Population(**results)
+
+
+class CrossOverMixer(StandardPopulationMixer):
+
+    def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
+        to_choose = (torch.rand_like(val1) > 0.5)
+        return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
