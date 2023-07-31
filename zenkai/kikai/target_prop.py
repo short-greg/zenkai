@@ -11,7 +11,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # Local
-from ..kaku import AssessmentDict, OptimFactory, ThLoss
+from ..kaku import OptimFactory, ThLoss
 from ..kaku import (
     IO,
     LearningMachine,
@@ -77,13 +77,15 @@ class StandardTargetPropLoss(TargetPropLoss):
         super().__init__(base_loss.reduction, base_loss.maximize)
         self.base_loss = base_loss
     
-    def forward(self, x: typing.Tuple[torch.Tensor], t, reduction_override: str = None) -> torch.Tensor:
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         
         # 1) map y to the input (learn to autoencode)
-        return self.base_loss(x[1], t, reduction_override=reduction_override)
+        return self.base_loss(x.sub(1), t.sub(0), reduction_override=reduction_override)
 
 
 class RegTargetPropLoss(TargetPropLoss):
+    """Calculate the target prop loss while minimizing the difference between the predicted value 
+    """
 
     def __init__(self, base_loss: ThLoss, reg_loss: Loss):
         """initializer
@@ -97,13 +99,13 @@ class RegTargetPropLoss(TargetPropLoss):
         self.base_loss = base_loss
         self.reg_loss = reg_loss
     
-    def forward(self, x: typing.Tuple[torch.Tensor], t, reduction_override: str = None) -> torch.Tensor:
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         
         # 1) map y to the input (learn to autoencode)
         # 2) reduce the difference between the mapping from y to x and the mapping from t to x 
         return (
-            self.base_loss(x[1], t, reduction_override=reduction_override) +
-            self.reg_loss(x[0], x[1].detach(), reduction_override=reduction_override)
+            self.base_loss(x.sub(1), t.sub(0), reduction_override=reduction_override) +
+            self.reg_loss(x.sub(0), x.sub(1).detach(), reduction_override=reduction_override)
         )
 
 
@@ -150,7 +152,7 @@ class StandardTargetPropStepTheta(StepTheta):
             self._target_prop(x, sub)
             y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
         self._optim.zero_grad()
-        loss = self._loss(y_pre.totuple(), t[0])
+        loss = self._loss(y_pre, t)
         loss.backward()
         self._optim.step()
         state[self, 'stepped'] = True
@@ -187,9 +189,9 @@ class AETargetPropStepTheta(StepTheta):
         
         # Update
         self._optim.zero_grad()
-        loss = self._loss(rec_pre.totuple(), x[1])
+        loss = self._loss(rec_pre, x.sub(1))
         if self._reg is not None:
-            loss = loss + self._loss(y_pre.totuple(), x[0])
+            loss = loss + self._loss(y_pre, x.sub(0))
         loss.backward()
         self._optim.step()
         state[self, 'stepped'] = True

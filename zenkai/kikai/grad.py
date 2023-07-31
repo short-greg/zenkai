@@ -275,7 +275,7 @@ class GradLearner(LearningMachine):
         self._x_step = GradStepX(x_lr)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._loss.assess_dict(y[0], t[0], reduction_override)
+        assessment = self._loss.assess_dict(y, t, reduction_override)
         return assessment
 
     def step(self, x: IO, t: IO, state: State):
@@ -329,7 +329,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._loss.assess_dict(y[0], t[0], reduction_override)
+        assessment = self._loss.assess_dict(y, t, reduction_override)
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 

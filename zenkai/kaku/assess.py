@@ -784,9 +784,9 @@ class Loss(nn.Module):
         )
         
         return Reduction[reduction].reduce(loss)
-
+    
     def assess(
-        self, x, t, reduction_override: str = None
+        self, x: IO, t: IO, reduction_override: str = None
     ) -> Assessment:
         """Calculate the assessment of
 
@@ -802,11 +802,22 @@ class Loss(nn.Module):
 
     def assess_dict(
         self,
-        x,
-        t,
+        x: IO,
+        t: IO,
         reduction_override: str = None,
         name: str = "loss",
-    ):
+    ) -> AssessmentDict:
+        """Assess and return the result in an AssessDict
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            reduction_override (str, optional): the . Defaults to None.
+            name (str, optional): The name of the loss. Defaults to "loss".
+
+        Returns:
+            AssessmentDict: The resulting assessment dict
+        """
         return AssessmentDict(
             **{
                 name: Assessment(
@@ -834,7 +845,7 @@ def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Loss) -> A
 
     result = None
     for k, loss in kwargs.items():
-        cur = loss.assess_dict(x[0], t[0], reduction_override, name=k)
+        cur = loss.assess_dict(x, t, reduction_override, name=k)
         if result is None:
             result = cur
         else:
@@ -892,7 +903,7 @@ class ThLoss(Loss):
     def add_weight(self, evaluation: torch.Tensor):
         return evaluation * self._weight if self._weight is not None else evaluation
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, reduction_override: str = None):
+    def forward(self, x: IO, t: IO, reduction_override: str = None):
         
         if self.reduction == 'NA':
             reduction = 'NA'
@@ -902,17 +913,17 @@ class ThLoss(Loss):
         if Reduction.is_torch(reduction):
             # use built in reduction
             return self.add_weight(
-                self.base_loss(reduction=reduction, **self._loss_kwargs).forward(x, t)
+                self.base_loss(reduction=reduction, **self._loss_kwargs).forward(x[0], t[0])
             )
 
         if reduction == 'NA':
             return self.reduce(
-                self.base_loss(**self._loss_kwargs).forward(x, t)
+                self.base_loss(**self._loss_kwargs).forward(x[0], t[0])
             )
 
         return self.add_weight(
             self.reduce(
-                self.base_loss(reduction="none", **self._loss_kwargs).forward(x, t),
+                self.base_loss(reduction="none", **self._loss_kwargs).forward(x[0], t[0]),
                 reduction,
             )
         )
@@ -929,24 +940,24 @@ class ModLoss(Loss):
 
     @abstractmethod
     def forward(
-        self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, reduction_override=None
+        self, x: IO, y: IO, IO, reduction_override=None
     ):
         raise NotImplementedError
 
     def assess(
         self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        t: torch.Tensor,
+        x: IO,
+        y: IO,
+        t: IO,
         reduction_override: str = None,
     ):
         return Assessment(self(x, y, t, reduction_override), self._maximize)
 
     def assess_dict(
         self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        t: torch.Tensor,
+        x: IO,
+        y: IO,
+        t: IO,
         reduction_override: str = None,
         name: str = "loss",
     ):
@@ -977,6 +988,6 @@ class ThModLoss(ModLoss):
         self._weight = weight
 
     def forward(
-        self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, reduction_override=None
+        self, x: IO, y: IO, t: IO, reduction_override=None
     ):
         return self.reduce(self.base_loss(x, y, t), reduction_override)

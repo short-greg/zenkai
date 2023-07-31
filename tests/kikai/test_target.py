@@ -35,7 +35,7 @@ class DummyTargetPropLearner(TargetPropLearnerX):
         return x
     
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y.totuple(), t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
@@ -67,7 +67,7 @@ class DummyAETargetPropLearner(AETargetPropLearner):
         return x
     
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y.totuple(), t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
     
     def reconstruct(self, z: IO, state: State, release: bool=True):
         
@@ -109,7 +109,7 @@ class DummyRecTargetPropLearner(TargetPropLearnerX):
         return x
     
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y.totuple(), t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
@@ -154,9 +154,9 @@ class TestStandardTargetPropLoss:
         t = torch.rand(4, 2)
         x = torch.rand(4, 2)
         result = target_loss.forward(
-            (t, y), x
+            IO(t, y), IO(x)
         )
-        target = target_loss.base_loss(y, x)
+        target = target_loss.base_loss(IO(y), IO(x))
 
         assert result.item() == target.item()
 
@@ -172,10 +172,10 @@ class TestRegTargetPropLoss:
         t = torch.rand(4, 2)
         x = torch.rand(4, 2)
         result = target_loss.forward(
-            (t, y), x
+            IO(t, y), IO(x)
         )
-        target = target_loss.base_loss(y, x)
-        target_reg = target_loss.reg_loss(y, t)
+        target = target_loss.base_loss(IO(y), IO(x))
+        target_reg = target_loss.reg_loss(IO(y), IO(t))
 
         assert result.item() == (target.item() + target_reg.item())
 
