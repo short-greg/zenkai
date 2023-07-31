@@ -16,7 +16,7 @@ class SimpleLearner(LearningMachine):
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(*y, *t, reduction_override, 'loss')
+        return self.loss.assess_dict(y, t, reduction_override, 'loss')
     
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         x = state[self, 'x'][0]

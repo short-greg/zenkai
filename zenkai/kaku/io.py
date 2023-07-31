@@ -162,6 +162,17 @@ class IO(object):
 
     def is_empty(self) -> bool:
         return len(self) == 0
+    
+    def sub(self, idx, detach: bool=False) -> 'IO':
+
+        if isinstance(idx, int):
+            return IO(self._x[idx], detach=detach)
+
+        return IO(*self._x[idx], detach=detach)
+    
+    def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
+
+        return IO(*self._x[low:high], detach=detach)
 
     @classmethod
     def cat(cls, ios: 'IO') -> 'IO':

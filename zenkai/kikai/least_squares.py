@@ -248,7 +248,7 @@ class LeastSquaresLearner(LearningMachine):
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y[0], t[0], reduction_override=reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override=reduction_override)
 
     def step(self, x: IO, t: IO, state: State):
         self._step_theta.step(x, t, state)

@@ -34,7 +34,7 @@ class ReversibleMachine(LearningMachine):
         self.loss = loss
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(y[0], t[0], reduction_override)
+        return self.loss.assess_dict(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x

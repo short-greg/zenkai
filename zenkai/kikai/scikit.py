@@ -370,7 +370,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y[0], t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None
@@ -384,9 +384,8 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             feature_idx (Idx, optional): . Defaults to None.
 
         """
-        x = x[0]
         if self._preprocessor is not None:
-            x = self._preprocessor(x)
+            x = IO(self._preprocessor(*x))
 
         self._step_theta.step(x, t, state, feature_idx)
 
@@ -654,7 +653,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         Returns:
             AssessmentDict: The assessment
         """
-        return self._loss.assess_dict(y[0], t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None

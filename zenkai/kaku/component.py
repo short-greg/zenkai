@@ -99,6 +99,7 @@ class Autoencoder(Encoder, Decoder):
 
 
 class Assessor(NNComponent):
+    
     @abstractmethod
     def assess(self, x, t, reduction_override: str = None) -> AssessmentDict:
         pass
