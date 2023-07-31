@@ -27,6 +27,7 @@ class Reduction(Enum):
     batchmean = "batchmean"
     samplemeans = "samplemeans"
     samplesums = "samplesums"
+    NA = "NA"
 
     @classmethod
     def is_torch(cls, reduction: str) -> bool:
@@ -60,6 +61,7 @@ class Reduction(Enum):
             return loss.view(view).mean(1)
         if self == Reduction.sum:
             return loss.view(view).sum(1)
+        
         raise ValueError(f"{self.name} cannot be reduced by sample.")
 
     def reduce(
@@ -82,27 +84,29 @@ class Reduction(Enum):
             torch.Tensor: The reduced loss
         """
 
+        if self == self.NA:
+            return loss
         if self == self.mean and dim is None:
             return loss.mean()
-        elif self == self.sum and dim is None:
+        if self == self.sum and dim is None:
             return loss.sum()
-        elif self == self.mean:
+        if self == self.mean:
             return loss.mean(dim=dim, keepdim=keepdim)
-        elif self == self.sum:
+        if self == self.sum:
             return loss.sum(dim=dim, keepdim=keepdim)
-        elif self == self.batchmean and dim is None:
+        if self == self.batchmean and dim is None:
             return loss.sum() / loss.size(0)
-        elif self == self.batchmean:
+        if self == self.batchmean:
             return loss.sum(dim=dim, keepdim=keepdim) / loss.size(0)
-        elif self == self.samplemeans:
+        if self == self.samplemeans:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).mean(dim=1, keepdim=keepdim)
-        elif self == self.samplesums:
+        if self == self.samplesums:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).sum(dim=1, keepdim=keepdim)
-        elif self == self.none:
+        if self == self.none:
             return loss
         raise ValueError(f"{self.value} cannot be reduced.")
 
@@ -773,7 +777,13 @@ class Loss(nn.Module):
         Returns:
             torch.Tensor: the reduced loss
         """
-        return Reduction[reduction_override or self.reduction].reduce(loss)
+        reduction = (
+            self.reduction 
+            if self.reduction == 'NA' or reduction_override is None 
+            else reduction_override
+        )
+        
+        return Reduction[reduction].reduce(loss)
 
     def assess(
         self, x, t, reduction_override: str = None
@@ -810,12 +820,40 @@ class Loss(nn.Module):
         pass
 
 
+def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Loss) -> AssessmentDict:
+    """Convenience method to do an assessment for multiple losses
+
+    Args:
+        x (IO): Input
+        t (IO): Target
+        reduction_override (str, optional): the reduction override if any. Defaults to None.
+
+    Returns:
+        AssessmentDict: the unioned assessment dict
+    """
+
+    result = None
+    for k, loss in kwargs.items():
+        cur = loss.assess_dict(x[0], t[0], reduction_override, name=k)
+        if result is None:
+            result = cur
+        else:
+            result = result.union(cur)
+    return result
+
+
 LOSS_MAP = {
     "mse": nn.MSELoss,
     "bce": nn.BCELoss,
     "bce_with_logits": nn.BCEWithLogitsLoss,
     "cross_entropy": nn.CrossEntropyLoss,
-    "l1": nn.L1Loss
+    "l1": nn.L1Loss,
+    "nll": nn.NLLLoss,
+    "nll_poisson": nn.PoissonNLLLoss,
+    "nll_gaussian": nn.GaussianNLLLoss,
+    "kl": nn.KLDivLoss,
+    "soft_margin": nn.SoftMarginLoss,
+    "cosine_embedding": nn.CosineEmbeddingLoss
 }
 
 
@@ -855,11 +893,21 @@ class ThLoss(Loss):
         return evaluation * self._weight if self._weight is not None else evaluation
 
     def forward(self, x: torch.Tensor, t: torch.Tensor, reduction_override: str = None):
-        reduction = reduction_override or self.reduction
+        
+        if self.reduction == 'NA':
+            reduction = 'NA'
+        else:
+            reduction = reduction_override or self.reduction
+
         if Reduction.is_torch(reduction):
             # use built in reduction
             return self.add_weight(
                 self.base_loss(reduction=reduction, **self._loss_kwargs).forward(x, t)
+            )
+
+        if reduction == 'NA':
+            return self.reduce(
+                self.base_loss(**self._loss_kwargs).forward(x, t)
             )
 
         return self.add_weight(

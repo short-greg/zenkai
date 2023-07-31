@@ -474,6 +474,18 @@ class Population(object):
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
 
+    def sub(self, idx: typing.Union[typing.List[int], torch.LongTensor]) -> 'Population':
+        """Retrieve a sub popopulation
+
+        Args:
+            idx (typing.Union[typing.List[int], torch.LongTensor]): The index to retrieve
+
+        Returns:
+            Population: the resulting population
+        """
+
+        return Population(**{k: v[idx] for k, v in self})
+
     def __contains__(self, key: str) -> bool:
         """
         Args:
