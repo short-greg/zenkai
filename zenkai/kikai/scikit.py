@@ -340,7 +340,7 @@ class ScikitStepTheta(FeatureIdxStepTheta):
     def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None):
         
         self._estimator.fit(
-            x, t[0], feature_idx.tolist() if feature_idx is not None else None
+            x[0], t[0], feature_idx.tolist() if feature_idx is not None else None
         )
 
 
