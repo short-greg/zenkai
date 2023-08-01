@@ -335,11 +335,18 @@ class ScikitStepTheta(FeatureIdxStepTheta):
 
     def __init__(self, estimator: ScikitEstimator):
         super().__init__()
-        self._estimator = estimator
+        self.estimator = estimator
 
     def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None):
-        
-        self._estimator.fit(
+        """Update the ScikitEstimator
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            feature_idx (Idx, optional): limits on the connections else None. Defaults to None.
+        """
+        self.estimator.fit(
             x[0], t[0], feature_idx.tolist() if feature_idx is not None else None
         )
 

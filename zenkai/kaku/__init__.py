@@ -9,6 +9,8 @@ from .assess import (
     Reduction,
     ThLoss,
     ThModLoss,
+    assess_dict,
+    reduce_assessment
 )
 from .component import (
     Assessor,

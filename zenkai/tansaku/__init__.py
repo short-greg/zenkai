@@ -73,3 +73,8 @@ from .reducers import (
     StandardReducer,
     keep_original,
 )
+from .mappers import (
+    GaussianMapper,
+    BinaryMapper
+
+)

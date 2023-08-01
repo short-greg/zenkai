@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from .core import Individual, Population, pop_like
 import torch
+import typing
 
 
 class IndividualMapper(ABC):
@@ -28,11 +29,23 @@ class PopulationMapper(ABC):
         pass
 
 
+def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=None, decay: float=0.1) -> torch.Tensor:
+
+    if cur_v is None or decay == 0.0:
+        return new_v
+    return decay * cur_v + (1 - decay) * new_v
+
+
+def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
+
+    return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
+
+
 class GaussianMapper(PopulationMapper):
     """Calculate the Gaussian parameters based on the population and sample values based on them
     """
 
-    def __init__(self, k: int, decay: float=0.1, mu0: float=0.0, std0: float=1e-1):
+    def __init__(self, k: int, decay: float=0.1, mu0: float=None, std0: float=None):
         """initializer
 
         Args:
@@ -41,7 +54,6 @@ class GaussianMapper(PopulationMapper):
             mu0 (float, optional): the initial mean. Defaults to 0.0.
             std0 (float, optional): the initial std. Defaults to 1e-1.
         """
-
         self.k = k
         self.decay = decay
         self._mu0 = mu0
@@ -62,19 +74,10 @@ class GaussianMapper(PopulationMapper):
         samples = {}
         
         for k, v in population:
-            if k not in self._mean:
-
-                self._mean[k] = v.mean(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._mu0
-                self._std[k] = v.std(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._std0
-            else:
-                self._mean[k] = v.mean(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._mean[k]
-                self._std[k] = v.std(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._std[k]
-
-            params = pop_like(self.k, self._mean[k])
+            self._mean[k] = decay(v.mean(dim=0, keepdim=True), self._mean.get(k, self._mu0), self.decay)
+            self._std[k] = decay(v.std(dim=0, keepdim=True), self._std.get(k, self._std0))
             samples[k] = (
-                torch.randn(
-                    *params['shape'], dtype=params['dtype'], device=params['device']
-                ) * self._std[k] + self._mean[k]
+                gen_like(torch.randn, self.k, self._mean[k]) * self._std[k] + self._mean[k]
             )
         return Population(**samples)
 
@@ -89,7 +92,7 @@ class BinaryMapper(PopulationMapper):
     """Calculate the Bernoulli parameters and sample from them
     """
 
-    def __init__(self, k: int, decay: float=0.1, p0: float=0.5, sign_neg: bool=False):
+    def __init__(self, k: int, decay: float=0.9, p0: float=None, sign_neg: bool=False):
         """initializer
 
         Args:
@@ -119,18 +122,14 @@ class BinaryMapper(PopulationMapper):
         for k, v in population:
             if self._sign_neg:
                 v = (v + 1) / 2
-            if k not in self._p:
-                self._p[k] = v.mean(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._p0
-            else:
-                self._p[k] = v.mean(dim=0, keepdim=True) * self.decay + (1 - self.decay) * self._p[k]
+            self._p[k] = decay(v.mean(dim=0, keepdim=True), self._p.get(k, self._p0), self.decay)
+            cur_samples = (
+                gen_like(torch.rand, self.k, self._p[k]) < self._p[k]
+            ).float()
 
-            params = pop_like(self.k, self._p[k])
-            samples = (torch.rand(
-                *params['shape'], dtype=params['dtype'], device=params['device']
-            ) < self._p[k]).float()
             if self._sign_neg:
-                samples = (samples * 2) - 1
-            samples[k] = samples
+                cur_samples = (cur_samples * 2) - 1
+            samples[k] = cur_samples
         return Population(**samples)
 
     def spawn(self) -> 'BinaryMapper':
