@@ -1,6 +1,4 @@
 # 1st party
-from abc import ABC, abstractmethod
-
 from torch import nn
 
 # local

@@ -627,7 +627,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         loss: Loss,
         preprocessor: nn.Module = None,
     ):
-        """
+        """initializer
 
         Args:
             base_estimator (scikit.ScikitEstimator): Base estimator
