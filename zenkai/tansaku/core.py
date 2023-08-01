@@ -624,3 +624,12 @@ def expand_t(t: IO, k: int) -> IO:
         ts.append(flatten(expand(t_i, k)))
 
     return IO(*ts)
+
+
+def pop_like(k: int, x: torch.Tensor):
+
+    return dict(
+        shape=[k, *x.shape],
+        device=x.device,
+        dtype=x.dtype
+    )
