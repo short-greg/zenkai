@@ -11,9 +11,8 @@ from abc import abstractmethod
 # 3rd party
 from torch.nn.functional import one_hot
 
-from zenkai.kaku import IO, State
-from zenkai.kaku.io import IO, Idx
-from zenkai.kaku.state import State
+from ..kaku import IO, State, Idx
+from ..utils.modules import sign_ste, binary_ste
 
 
 # local
@@ -27,12 +26,70 @@ from ..kaku import (
     State,
 )
 
+def weighted_mean(x: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:
+
+    # (batch, voters, vote)
+    if weights is None:
+        return x.mean(dim=1)
+    if weights.dim() != 1:
+        raise ValueError(f"Argument weights must be one dimensional not {weights.dim()} dimensional")
+    if weights.size(0) != x.size(1):
+        raise ValueError(f"Argument weight must have the same dimension size as the number of voters {x.size(1)} not {weights.size(0)}")
+    
+    return (x * weights[None,:,None]).sum(dim=1) / ((weights[None,:,None] + 1e-7).sum(dim=1))
+
 
 # TODO: Improve the voter and make it more object oriented
 class Voter(nn.Module):
     """Module that chooses the best"""
 
-    def __init__(self, use_sign: bool = False, n_classes: int = None):
+    @abstractmethod
+    def forward(
+        self, votes: torch.Tensor, weights: typing.List[float] = None
+    ) -> torch.Tensor:
+        """Aggregate the votes from the estimators
+
+        Args:
+            votes (torch.Tensor): The votes output by the ensemble
+            weights (typing.List[float], optional): Weights to use on the votes. Defaults to None.
+
+        Returns:
+            torch.Tensor: The aggregated result
+        """
+        pass
+
+
+class MeanVoter(Voter):
+    """Module that chooses the best"""
+
+    def forward(
+        self, votes: torch.Tensor, weights: torch.Tensor = None
+    ) -> torch.Tensor:
+        """Aggregate the votes from the estimators
+
+        Args:
+            votes (torch.Tensor): The votes output by the ensemble
+            weights (typing.List[float], optional): Weights to use on the votes. Defaults to None.
+
+        Returns:
+            torch.Tensor: The aggregated result
+        """
+
+        return weighted_mean(votes, weights)
+
+        # if weights is not None:
+        #     votes_ = votes.view(votes.size(0), -1)
+        #     weights_th = torch.tensor(weights, device=votes.device)[None]
+        #     chosen = (votes_ * weights_th).sum(dim=0) / weights_th.sum(dim=0)
+        #     return chosen.view(votes.shape[1:])
+        # else:
+        #     return votes.mean(dim=0)
+
+
+class BinaryVoter(Voter):
+    """Module that chooses the best"""
+
+    def __init__(self, use_sign: bool = False):
         """initializer
 
         Args:
@@ -48,13 +105,46 @@ class Voter(nn.Module):
         #
         super().__init__()
         self._use_sign = use_sign
+
+    def forward(
+        self, votes: torch.Tensor, weights: torch.Tensor = None
+    ) -> torch.Tensor:
+        """Aggregate the votes from the estimators
+
+        Args:
+            votes (torch.Tensor): The votes output by the ensemble
+            weights (typing.List[float], optional): Weights to use on the votes. Defaults to None.
+
+        Returns:
+            torch.Tensor: The aggregated result
+        """
+        chosen = weighted_mean(votes, weights)
+        
+        if self._use_sign:
+            return sign_ste(chosen)
+
+        return binary_ste(chosen)
+
+
+class MulticlassVoter(Voter):
+    """Module that chooses the best"""
+
+    def __init__(self, n_classes: int = None):
+        """initializer
+
+        Args:
+            use_sign (bool, optional): Whether to use the sign on the output for binary results. Defaults to False.
+            n_classes (int, optional): Whether the inputs are . Defaults to None.
+
+        Raises:
+            ValueError: 
+        """
+
+        # TODO: Add support for LongTensors by using one_hot encoding
+        # I will split the voter up at that point though
+        #
+        super().__init__()
         self._n_classes = n_classes
-        if n_classes and use_sign:
-            raise ValueError(
-                "Arguments use_counts and use_sign are mutually exclusive so cannot both be true"
-            )
-        if self._n_classes is not None:
-            raise NotImplementedError
 
     def forward(
         self, votes: torch.Tensor, weights: typing.List[float] = None
@@ -68,23 +158,11 @@ class Voter(nn.Module):
         Returns:
             torch.Tensor: The aggregated result
         """
+        # (batch, voters) -> (batch, voters, vote) -> (batch, votes)
+        votes = one_hot(votes, self._n_classes).float()
+        votes = weighted_mean(votes, weights)
 
-        if self._n_classes is not None:
-            votes = one_hot(votes, self._n_classes).sum(dim=-2)
-            # TODO: FINISH
-            return votes
-
-        if weights is not None:
-            votes_ = votes.view(votes.size(0), -1)
-            weights_th = torch.tensor(weights, device=votes.device)[None]
-            chosen = (votes_ * weights_th).sum(dim=0) / weights_th.sum(dim=0)
-            chosen = chosen.view(votes.shape[1:])
-        else:
-            chosen = votes.mean(dim=0)
-        if self._use_sign:
-            return chosen.sign()
-
-        return chosen
+        return votes.argmax(dim=-1)
 
 
 class Ensemble(nn.Module):
@@ -94,7 +172,9 @@ class Ensemble(nn.Module):
         self,
         spawner: typing.Callable[[], nn.Module],
         n_keep: int,
-        temporary: nn.Module=None
+        temporary: nn.Module=None,
+        spawner_args: typing.List=None,
+        spawner_kwargs: typing.Dict=None
     ):
         """
         Args:
@@ -109,8 +189,10 @@ class Ensemble(nn.Module):
         self._estimators = nn.ModuleList()
         self._temporary = temporary
         self._spawner = spawner
+        self._spawner_args = spawner_args or []
+        self._spawner_kwargs = spawner_kwargs or {}
         if self._temporary is None:
-            self._estimators.append(spawner())
+            self._estimators.append(spawner(*self._spawner_args, **self._spawner_kwargs))
         self._n_keep = n_keep
 
     @property
@@ -140,9 +222,9 @@ class Ensemble(nn.Module):
 
     def adv(self):
         
-        spawned = self._spawner()
+        spawned = self._spawner(*self._spawner_args, **self._spawner_kwargs)
         if len(self._estimators) == self._n_keep:
-            self._estimators = self.estimators[1:]
+            self._estimators = self._estimators[1:]
         self._estimators.append(spawned)
 
     def forward(self, *x: torch.Tensor) -> typing.List[torch.Tensor]:
@@ -207,7 +289,7 @@ class VoterEnsembleLearner(EnsembleLearner):
         Returns:
             AssessmentDict: The assessment
         """
-        return self._loss.assess_dict(y[0], t[0], reduction_override)
+        return self._loss.assess_dict(y, t, reduction_override)
 
     @property
     def n_keep(self) -> int:

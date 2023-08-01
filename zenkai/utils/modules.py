@@ -27,31 +27,30 @@ class Argmax(nn.Module):
 
 
 class Sign(nn.Module):
+
     def __init__(self, grad: bool = True):
         super().__init__()
         self._grad = grad
 
     def forward(self, x: torch.Tensor):
         if self._grad:
-            return SignFG.apply(x)
+            return SignSTE.apply(x)
         return torch.sign(x)
 
 
-class SignFG(torch.autograd.Function):
-    """Use to clip the grad between two values
-    Useful for smooth maximum/smooth minimum
-    """
+class Binary(nn.Module):
 
-    @staticmethod
-    def forward(ctx, x: torch.Tensor):
-        return torch.sign(x).type_as(x)
+    def __init__(self, grad: bool = True):
+        super().__init__()
+        self._grad = grad
 
-    @staticmethod
-    def backward(ctx, grad: torch.Tensor):
-        return grad
+    def forward(self, x: torch.Tensor):
+        if self._grad:
+            return BinarySTE.apply(x)
+        return torch.clamp(x, 0, 1).round()
 
 
-class BinaryStep(torch.autograd.Function):
+class SignSTE(torch.autograd.Function):
     """Use to clip the grad between two values
     Useful for smooth maximum/smooth minimum
     """
@@ -74,6 +73,39 @@ class BinaryStep(torch.autograd.Function):
         # return grad_input.clamp(-1, 1)
         grad_input[(x < -1) | (x > 1)] = 0
         return grad_input
+
+
+class BinarySTE(torch.autograd.Function):
+    """Use to clip the grad between two values
+    Useful for smooth maximum/smooth minimum
+    """
+
+    @staticmethod
+    def forward(ctx, x):
+        """
+        Forward pass of the Binary Step function.
+        """
+        ctx.save_for_backward(x)
+        return torch.clamp(x, 0, 1).round()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        """
+        Backward pass of the Binary Step function using the Straight-Through Estimator.
+        """
+        x, = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        # return grad_input.clamp(-1, 1)
+        grad_input[(x < -1) | (x > 1)] = 0
+        return grad_input
+
+
+def binary_ste(x: torch.Tensor) -> torch.Tensor:
+    return BinarySTE.apply(x)
+
+
+def sign_ste(x: torch.Tensor) -> torch.Tensor:
+    return SignSTE.apply(x)
 
 
 class Clamp(torch.autograd.Function):
