@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional
 from collections import deque
-from abc import abstractmethod
+from abc import abstractmethod, abstractproperty
 
 # 3rd party
 from torch.nn.functional import one_hot
@@ -40,7 +40,7 @@ def weighted_mean(x: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:
 
 
 # TODO: Improve the voter and make it more object oriented
-class Voter(nn.Module):
+class VoteAggregator(nn.Module):
     """Module that chooses the best"""
 
     @abstractmethod
@@ -59,7 +59,7 @@ class Voter(nn.Module):
         pass
 
 
-class MeanVoter(Voter):
+class MeanVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
     def forward(
@@ -78,7 +78,7 @@ class MeanVoter(Voter):
         return weighted_mean(votes, weights)
 
 
-class BinaryVoter(Voter):
+class BinaryVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
     def __init__(self, use_sign: bool = False):
@@ -118,7 +118,7 @@ class BinaryVoter(Voter):
         return binary_ste(chosen)
 
 
-class MulticlassVoter(Voter):
+class MulticlassVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
     def __init__(self, n_classes: int = None):
@@ -157,7 +157,26 @@ class MulticlassVoter(Voter):
         return votes.argmax(dim=-1)
 
 
-class Ensemble(nn.Module):
+class Voter(nn.Module):
+
+    @abstractproperty
+    def n_votes(self) -> int:
+        """
+        Returns:
+            int: The current number of votes for the voter
+        """
+        pass
+
+    @abstractproperty
+    def max_votes(self) -> int:
+        """
+        Returns:
+            int: The number of possible votes for the voter
+        """
+        pass
+
+
+class EnsembleVoter(Voter):
     """Machine that runs an ensemble of sub machines"""
 
     def __init__(
@@ -185,18 +204,18 @@ class Ensemble(nn.Module):
         self._spawner_kwargs = spawner_kwargs or {}
         if self._temporary is None:
             self._estimators.append(spawner(*self._spawner_args, **self._spawner_kwargs))
-        self._n_keep = n_keep
+        self._n_votes = n_keep
 
     @property
-    def n_keep(self) -> int:
+    def max_votes(self) -> int:
         """
         Returns:
             int: The number of modules to make up the ensemble
         """
-        return self._n_keep
+        return self._n_votes
 
-    @n_keep.setter
-    def n_keep(self, n_keep: int):
+    @max_votes.setter
+    def max_votes(self, max_votes: int):
         """
         Args:
             n_keep (int): The number of estimators to keep
@@ -204,38 +223,109 @@ class Ensemble(nn.Module):
         Raises:
             ValueError: If the number of estimators to keep is less than or equal to 0
         """
-        if n_keep <= 0:
-            raise ValueError(f"Argument n_keep must be greater than 0 not {n_keep}.")
-        self._n_keep = n_keep
+        if max_votes <= 0:
+            raise ValueError(f"Argument n_keep must be greater than 0 not {max_votes}.")
+        self._max_votes = max_votes
         # remove estimators beyond n_keep
-        if n_keep < len(self._estimators):
-            difference = len(self._estimators) - n_keep
+        if max_votes < len(self._estimators):
+            difference = len(self._estimators) - max_votes
             self._estimators = nn.ModuleList((self._estimators)[difference:])
+
+    @property
+    def n_votes(self) -> int:
+        return self._n_votes
 
     @property
     def cur(self) -> nn.Module:
         return self._estimators[-1]
 
     def adv(self):
-        
+        """Spawn a new voter. If exceeds n_keep will remove the first voter
+        """
         spawned = self._spawner(*self._spawner_args, **self._spawner_kwargs)
-        if len(self._estimators) == self._n_keep:
+        if len(self._estimators) == self._n_votes:
             self._estimators = self._estimators[1:]
         self._estimators.append(spawned)
 
-    def forward(self, *x: torch.Tensor) -> typing.List[torch.Tensor]:
+    def forward(self, *x: torch.Tensor) -> torch.Tensor:
         if len(self._estimators) == 0:
             return [self._temporary(*x)]
 
-        return [estimator(*x) for estimator in self._estimators]
+        return torch.stack([estimator(*x) for estimator in self._estimators])
 
+
+class StochasticVoter(Voter):
+
+    def __init__(self, stochastic_model: nn.Module, max_votes: int):
+        """initializer
+
+        Args:
+            stochastic_model (nn.Module): The stochastic model to use for voting (such as dropout)
+            n_votes (int): The size of the 'ensemble'
+        """
+        super().__init__()
+        self.stochastic_model = stochastic_model
+        self._max_votes = max_votes
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Get n_votes by forwarding x through the model n_votes times
+
+        Args:
+            x (torch.Tensor): The input - Shape[batch_size, *feature_shape]
+
+        Returns:
+            torch.Tensor: The n votes - Shape[votes, batch size, *feature_shape]
+        """
+
+        y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).view(
+            self._max_votes * x.shape[0], *x.shape[1:]
+        )
+        y = self.stochastic_model(y)
+        return y.reshape(
+            self._max_votes, x.shape[0], *y.shape[1:]
+        )
+    
+    @property
+    def max_votes(self) -> int:
+        return self._max_votes
+    
+    @max_votes.setter
+    def max_votes(self, max_votes: int):
+        if max_votes <= 0 or not isinstance(max_votes, int):
+            raise ValueError(f"{max_votes} must be an integer of greater than 1")
+        self._max_votes = max_votes
+
+    @property
+    def n_votes(self) -> int:
+        return self._max_votes
+    
 
 class EnsembleLearner(LearningMachine):
 
     @abstractmethod
-    def forward_all(self, x: IO, state: State, release: bool=False) -> typing.List[IO]:
+    def vote(self, x: IO, state: State, release: bool=False) -> IO:
+        """Get all of the votes
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+            release (bool, optional): Whether to release the output. Defaults to False.
+
+        Returns:
+            IO: the io for all of the votes
+        """
         pass
 
     @abstractmethod
     def reduce(self, x: IO, state: State, release: bool=False) -> IO:
+        """Aggregate the votes
+
+        Args:
+            x (IO): The votes
+            state (State): The learning state
+            release (bool, optional): Whether to release the output. Defaults to False.
+
+        Returns:
+            IO: The aggregated vote
+        """
         pass
