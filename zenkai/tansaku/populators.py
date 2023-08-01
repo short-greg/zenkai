@@ -305,7 +305,6 @@ class VoterPopulator(Populator):
         Returns:
             Population: The resulting population
         """
-
         result = {self.x_name: self.voter(individual[self.x_name])}
         return Population(
             **result
