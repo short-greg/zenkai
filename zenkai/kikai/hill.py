@@ -17,6 +17,7 @@ from ..tansaku.reducers import BestFeatureReducer
 class HillClimbStepX(FeatureIdxStepX):
     """StepX that uses hill climbing for updating
     """
+    
     def __init__(
         self,
         learner: LearningMachine,

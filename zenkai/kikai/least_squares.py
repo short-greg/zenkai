@@ -23,6 +23,9 @@ from ..utils import to_np, to_th_as
 
 
 class LeastSquaresSolver(ABC):
+    """
+    """
+
     @abstractmethod
     def solve(self, a: torch.Tensor, b: torch.Tensor):
         pass
@@ -120,6 +123,9 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
 
 
 class LeastSquaresStepTheta(StepTheta):
+    """
+    """
+
     def __init__(
         self,
         linear: nn.Linear,

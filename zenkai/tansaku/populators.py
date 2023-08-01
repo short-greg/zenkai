@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 import torch
 from torch.nn.parameter import Parameter
 
-
 # local
 from ..kaku import Assessor
 from .core import (
