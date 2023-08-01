@@ -52,7 +52,6 @@ class SlopeInfluencer(IndividualInfluencer):
             maximize (bool, optional): Whether to maximize or minimize.
               If minimizing, the sign of the lr will be reversed. Defaults to False.
         """
-
         self._slope_selector = SlopeReducer(momentum)
         self._lr = lr if maximize else -lr
         self.x = x

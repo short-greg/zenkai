@@ -11,58 +11,29 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # Local
-from ..kaku import OptimFactory, ThLoss
 from ..kaku import (
     IO,
-    LearningMachine,
     State,
     Loss,
-    StepTheta,
+    StepX,
 )
 
 
-# TODO: Go with this definition. Possibly add more 
-
-
-class TargetPropLearner(nn.Module):
+class TargetPropStepX(StepX):
 
     @abstractmethod
     def step_target_prop(self, x: IO, t: IO, y: IO, state: State):
         pass
 
     @abstractmethod
-    def target_prop(self, x: IO, y: IO, state: State, release: bool=True) -> IO:
+    def step_x(self, x: IO, y: IO, state: State, release: bool=True) -> IO:
         pass
-
-
-def cat_yt(io: IO) -> torch.Tensor:
-
-    return torch.cat(
-        [io[1], io[2]]
-    )
-
-
-def cat_z(io: IO) -> torch.Tensor:
-
-    return torch.cat(
-        [io[0], io[1]]
-    )
-
-
-def split_yt(x: torch.Tensor, detach: bool=False) -> IO:
-
-    n_elements = len(x) // 2
-    return IO(
-        x[:n_elements],
-        x[n_elements:],
-        detach=detach
-    )
 
 
 class TargetPropLoss(Loss):
 
     @abstractmethod
-    def forward(self, x: typing.Tuple[torch.Tensor], t, reduction_override: str=None) -> torch.Tensor:
+    def forward(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         pass
 
 
@@ -87,7 +58,7 @@ class RegTargetPropLoss(TargetPropLoss):
     """Calculate the target prop loss while minimizing the difference between the predicted value 
     """
 
-    def __init__(self, base_loss: ThLoss, reg_loss: Loss):
+    def __init__(self, base_loss: Loss, reg_loss: Loss):
         """initializer
 
         Args:
@@ -107,122 +78,3 @@ class RegTargetPropLoss(TargetPropLoss):
             self.base_loss(x.sub(1), t.sub(0), reduction_override=reduction_override) +
             self.reg_loss(x.sub(0), x.sub(1).detach(), reduction_override=reduction_override)
         )
-
-
-class TargetPropLearnerX(LearningMachine):
-
-    Y = 'y'
-    Y_PRE = 'y_pre'
-
-    def prepare_io(self, x: IO, t: IO, y: IO):
-        return IO(x[0], t[0], y[0]), x
-
-
-class AETargetPropLearner(TargetPropLearnerX):
-
-    Y = 'y'
-    Y_PRE = 'y_pre'
-    REC_PRE = 'rec_pre'
-    REC = 'rec_pre'
-
-    def prepare_io(self, x: IO, t: IO, y: IO):
-        return IO(x[0], t[0], y[0]), x
-
-    @abstractmethod
-    def reconstruct(self, z: IO, state: State, release: bool=True) -> IO:
-        pass
-
-
-class StandardTargetPropStepTheta(StepTheta):
-
-    def __init__(
-        self, target_prop: 'TargetPropLearner', loss: TargetPropLoss, optim: OptimFactory
-    ):
-
-        super().__init__()
-        self._target_prop = target_prop
-        self._loss = loss
-        self._optim = optim(target_prop.parameters())
-
-    def step(self, x: IO, t: IO, state: State):
-        
-        y_pre = state.get(self._target_prop, self._target_prop.Y_PRE)
-        if y_pre is None or state.get(self, 'stepped') is True:
-            sub = state.sub(self, 'step')
-            self._target_prop(x, sub)
-            y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
-        self._optim.zero_grad()
-        loss = self._loss(y_pre, t)
-        loss.backward()
-        self._optim.step()
-        state[self, 'stepped'] = True
-
-
-class AETargetPropStepTheta(StepTheta):
-
-    def __init__(
-        self, target_prop: AETargetPropLearner, loss: TargetPropLoss, optim: OptimFactory,
-        reg: TargetPropLoss=None
-    ):
-
-        super().__init__()
-        self._target_prop = target_prop
-        self._loss = loss
-        self._reg = reg
-        self._optim = optim(target_prop.parameters())
-
-    def step(self, x: IO, t: IO, state: State):
-        
-        # Forward pass
-        y = state.get(self._target_prop, self._target_prop.Y)
-        sub = state.sub(self, 'step')
-        if y is None or state.get(self, 'stepped') is True:
-            y = self._target_prop(x, sub, False)
-
-        # Reconstruction
-        rec_pre = state.get(self._target_prop, self._target_prop.REC_PRE)
-        if rec_pre is None or state.get(self, 'stepped') is True:
-            self._target_prop.reconstruct(y, sub, False)
-            rec_pre = sub[self._target_prop, self._target_prop.REC_PRE]
-        
-        y_pre = sub[self._target_prop, self._target_prop.Y_PRE]
-        
-        # Update
-        self._optim.zero_grad()
-        loss = self._loss(rec_pre, x.sub(1))
-        if self._reg is not None:
-            loss = loss + self._loss(y_pre, x.sub(0))
-        loss.backward()
-        self._optim.step()
-        state[self, 'stepped'] = True
-
-# TODO: Add in regularization loss to this one and the regular StepTheta
-
-class RecTargetPropStepTheta(StepTheta):
-
-    def __init__(
-        self, target_prop: AETargetPropLearner, forward_machine: LearningMachine, loss: TargetPropLoss, optim: OptimFactory
-    ):
-
-        super().__init__()
-        self._target_prop = target_prop
-        self._loss = loss
-        self._forward_machine = forward_machine
-        self._optim = optim(target_prop.parameters())
-
-    def step(self, x: IO, t: IO, state: State):
-        
-        sub = state.sub(self, 'step')
-
-        y = state.get(self._target_prop, self._target_prop.Y)
-        if y is None or state[self, 'stepped'] is True:
-            y = self._target_prop(x, sub, release=False)
-        
-        y_t = self._forward_machine.step_x(IO(y.detach()[0]), IO(x[0], detach=True), sub)
-        
-        loss = self._loss(y, y_t)
-
-        self._optim.zero_grad()
-        loss.backward()
-        self._optim.step()
-        state[self, 'stepped'] = True

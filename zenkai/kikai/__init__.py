@@ -61,7 +61,6 @@ from .iterable import (
     IterStepX
 )
 from .target_prop import (
-    TargetPropLearner, TargetPropLoss, RegTargetPropLoss, AETargetPropStepTheta, 
-    StandardTargetPropStepTheta, split_yt, cat_yt, cat_z, RecTargetPropStepTheta,
-    StandardTargetPropLoss, StandardTargetPropStepTheta, AETargetPropLearner, TargetPropLearnerX, 
+    TargetPropStepX, TargetPropLoss, RegTargetPropLoss,
+    StandardTargetPropLoss
 )
