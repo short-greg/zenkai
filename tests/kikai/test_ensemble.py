@@ -9,16 +9,17 @@ class TestMeanVoter:
 
         votes = torch.rand(3, 4, 2)
         voter = ensemble.MeanVoter()
-        assert (voter(votes) == votes.mean(dim=1)).all()
+        assert (voter(votes) == votes.mean(dim=0)).all()
 
     def test_mean_voter_returns_weighted_mean(self):
         
         weights = torch.tensor([0.25, 0.2, 0.25, 0.3])
-        votes = torch.rand(3, 4, 2)
+        votes = torch.rand(4, 4, 2)
         voter = ensemble.MeanVoter()
         assert torch.isclose(
-            voter(votes, weights), (votes * weights[None,:,None]).sum(dim=1) / 
-            (weights[None,:,None]).sum(dim=1)).all()
+            voter(votes, weights), 
+            (votes * weights[:,None,None]).sum(dim=0)
+            / (weights[:,None,None]).sum(dim=0)).all()
 
 
 class TestBinaryVoter:
@@ -27,13 +28,13 @@ class TestBinaryVoter:
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
         voter = ensemble.BinaryVoter()
-        assert (voter(votes) == votes.mean(dim=1).round()).all()
+        assert (voter(votes) == votes.mean(dim=0).round()).all()
 
     def test_binary_voter_returns_mean_with_value(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
         voter = ensemble.BinaryVoter(use_sign=True)
-        assert (voter(votes) == votes.mean(dim=1).sign()).all()
+        assert (voter(votes) == votes.mean(dim=0).sign()).all()
 
 
 class TestMulticlassVoter:
@@ -43,7 +44,7 @@ class TestMulticlassVoter:
         votes = (torch.randint(0, 3, (3, 4)))
         voter = ensemble.MulticlassVoter(4)
 
-        assert voter(votes).shape == torch.Size([3])
+        assert voter(votes).shape == torch.Size([4])
 
 
 class TestEnsemble:
