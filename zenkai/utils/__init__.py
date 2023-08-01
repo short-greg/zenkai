@@ -13,6 +13,16 @@ from .reversibles import (
     TargetReverser,
     ZeroToNeg1,
 )
+from .ensemble import (
+    weighted_votes,
+    VoteAggregator,
+    MeanVoteAggregator,
+    MulticlassVoteAggregator,
+    BinaryVoteAggregator,
+    Voter,
+    EnsembleVoter,
+    StochasticVoter
+)
 from .utils import (
     add_prev,
     binary_encoding,
