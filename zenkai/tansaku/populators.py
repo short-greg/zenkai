@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 import torch
 from torch.nn.parameter import Parameter
 
+
 # local
 from ..kaku import Assessor
 from .core import (
@@ -18,6 +19,8 @@ from .core import (
     expand,
     flatten,
 )
+from ..utils import Voter
+from .core import pop_like
 
 
 class Populator(ABC):
@@ -216,82 +219,6 @@ class GaussianPopulator(StandardPopulator):
         return GaussianPopulator(self.k, self.std, self.equal_change_dim)
 
 
-class BinaryPopulator(StandardPopulator):
-    def __init__(
-        self,
-        k: int = 1,
-        keep_p: float = 0.1,
-        equal_change_dim: int = None,
-        to_change: typing.Union[int, float] = None,
-        reorder_params: bool = True,
-        zero_neg: bool = False,
-    ):
-        if 0.0 >= keep_p or 1.0 < keep_p:
-            raise RuntimeError("Argument p must be in range (0.0, 1.0] not {keep_p}")
-        assert k > 1
-        self.keep_p = keep_p
-        self.k = k
-        self._equal_change_dim = equal_change_dim
-        self._is_percent_change = isinstance(to_change, float)
-        if self._is_percent_change:
-            assert 0 < to_change <= 1.0
-        elif to_change is not None:
-            assert to_change > 0
-        self._to_change = to_change
-        self._reorder_params = reorder_params
-        self._zero_neg = zero_neg
-
-    # TODO: Move this to a "PopulationModifier" or a Decorator
-    def _generate_keep(self, param: torch.Tensor):
-
-        shape = [self.k - 1, *param.shape]
-        if self._equal_change_dim is not None:
-            shape[self._equal_change_dim] = 1
-
-        param = (param > 0.0).type_as(param)
-        keep = (torch.rand(*shape, device=param.device) < self.keep_p).type(param.dtype)
-
-        if self._to_change is None:
-            return keep
-
-        if self._is_percent_change:
-            ignore_change = (
-                torch.rand(1, 1, *param.shape[1:], device=param.device)
-                > self._to_change
-            ).type_as(param)
-        else:
-            _, indices = torch.rand(
-                math.prod(param.shape[1:]), device=param.device
-            ).topk(self._to_change, dim=-1)
-            ignore_change = torch.ones(math.prod(param.shape[1:]), device=param.device)
-            ignore_change[indices] = 0.0
-            ignore_change = ignore_change.view(1, 1, *param.shape[1:])
-
-        return torch.max(keep, ignore_change)
-
-    def populate(self, key: str, val: torch.Tensor):
-
-        keep = self._generate_keep(val)
-
-        changed = -val[None] if not self._zero_neg else (1 - val[None])
-        perturbed_params = keep * val[None] + (1 - keep) * changed
-        concatenated = cat_params(val, perturbed_params, reorder=True)
-        if not self._reorder_params:
-            return concatenated
-        reordered = torch.randperm(len(concatenated), device=concatenated.device)
-        return concatenated[reordered]
-
-    def spawn(self) -> "BinaryPopulator":
-        return BinaryPopulator(
-            self.k,
-            self.keep_p,
-            self._equal_change_dim,
-            self._to_change,
-            self._reorder_params,
-            self._zero_neg,
-        )
-
-
 class ConservativePopulator(PopulatorDecorator):
     """Decorator for a populator that replaces the initial results of the populator
     algorithm with the original values
@@ -355,6 +282,40 @@ class ConservativePopulator(PopulatorDecorator):
             self.base_populator.spawn(), self.percent_change, self.same_change
         )
 
+
+class VoterPopulator(Populator):
+    """Populator that uses multiple outputs from votes
+    """
+    
+    def __init__(self, voter: Voter, x_name: str):
+        """initializer
+
+        Args:
+            voter (Voter): the module to use for voting
+            x_name (str): the name of the input into x
+        """
+        self.voter = voter
+        self.x_name = x_name
+
+    def __call__(self, individual: Individual) -> Population:
+        """Populator function
+
+        Args:
+            individual (Individual): the individual to populate based on
+
+        Returns:
+            Population: The resulting population
+        """
+
+        result = {self.x_name: self.voter(individual[self.x_name])}
+        return Population(
+            **result
+        )
+    
+    def spawn(self) -> Populator:
+        return VoterPopulator(
+            self.voter, self.x_name
+        )
 
 
 # TODO: Consider Removing the ones below
@@ -442,4 +403,80 @@ class BinaryProbPopulator(Populator):
     def spawn(self) -> "BinaryProbPopulator":
         return BinaryProbPopulator(
             self.learner, self.k, self.zero_neg, self.loss_name, self.x, self.t
+        )
+
+
+class BinaryPopulator(StandardPopulator):
+    def __init__(
+        self,
+        k: int = 1,
+        keep_p: float = 0.1,
+        equal_change_dim: int = None,
+        to_change: typing.Union[int, float] = None,
+        reorder_params: bool = True,
+        zero_neg: bool = False,
+    ):
+        if 0.0 >= keep_p or 1.0 < keep_p:
+            raise RuntimeError("Argument p must be in range (0.0, 1.0] not {keep_p}")
+        assert k > 1
+        self.keep_p = keep_p
+        self.k = k
+        self._equal_change_dim = equal_change_dim
+        self._is_percent_change = isinstance(to_change, float)
+        if self._is_percent_change:
+            assert 0 < to_change <= 1.0
+        elif to_change is not None:
+            assert to_change > 0
+        self._to_change = to_change
+        self._reorder_params = reorder_params
+        self._zero_neg = zero_neg
+
+    # TODO: Move this to a "PopulationModifier" or a Decorator
+    def _generate_keep(self, param: torch.Tensor):
+
+        shape = [self.k - 1, *param.shape]
+        if self._equal_change_dim is not None:
+            shape[self._equal_change_dim] = 1
+
+        param = (param > 0.0).type_as(param)
+        keep = (torch.rand(*shape, device=param.device) < self.keep_p).type(param.dtype)
+
+        if self._to_change is None:
+            return keep
+
+        if self._is_percent_change:
+            ignore_change = (
+                torch.rand(1, 1, *param.shape[1:], device=param.device)
+                > self._to_change
+            ).type_as(param)
+        else:
+            _, indices = torch.rand(
+                math.prod(param.shape[1:]), device=param.device
+            ).topk(self._to_change, dim=-1)
+            ignore_change = torch.ones(math.prod(param.shape[1:]), device=param.device)
+            ignore_change[indices] = 0.0
+            ignore_change = ignore_change.view(1, 1, *param.shape[1:])
+
+        return torch.max(keep, ignore_change)
+
+    def populate(self, key: str, val: torch.Tensor):
+
+        keep = self._generate_keep(val)
+
+        changed = -val[None] if not self._zero_neg else (1 - val[None])
+        perturbed_params = keep * val[None] + (1 - keep) * changed
+        concatenated = cat_params(val, perturbed_params, reorder=True)
+        if not self._reorder_params:
+            return concatenated
+        reordered = torch.randperm(len(concatenated), device=concatenated.device)
+        return concatenated[reordered]
+
+    def spawn(self) -> "BinaryPopulator":
+        return BinaryPopulator(
+            self.k,
+            self.keep_p,
+            self._equal_change_dim,
+            self._to_change,
+            self._reorder_params,
+            self._zero_neg,
         )
