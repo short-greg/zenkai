@@ -220,6 +220,10 @@ class Ensemble(nn.Module):
             difference = len(self._estimators) - n_keep
             self._estimators = nn.ModuleList((self._estimators)[difference:])
 
+    @property
+    def cur(self) -> nn.Module:
+        return self._estimators[-1]
+
     def adv(self):
         
         spawned = self._spawner(*self._spawner_args, **self._spawner_kwargs)
