@@ -83,7 +83,7 @@ class OptimFactory(object):
         return self._optim(params, *self._args, **kwargs)
 
 
-class FilterOptim(optim.Optimizer):
+class ParamFilter(optim.Optimizer):
     """Use to smooth the results of an optimization. Especially one that makes large
     changes in the parameters such as a least squares optimizer
     """

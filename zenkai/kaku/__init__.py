@@ -57,7 +57,7 @@ from .machine import (
 )
 from .optimize import (
     OPTIM_MAP,
-    FilterOptim,
+    ParamFilter,
     NullOptim,
     OptimFactory,
     OptimFactoryX,
