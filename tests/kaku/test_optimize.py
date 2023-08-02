@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 # Local
-from zenkai.kaku.optimize import FilterOptim, OptimFactory
+from zenkai.kaku.optimize import ParamFilter, OptimFactory
 from zenkai.utils import get_model_parameters
 
 
@@ -13,7 +13,7 @@ class TestFilterOptim:
 
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
-        optim = FilterOptim(
+        optim = ParamFilter(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
@@ -30,7 +30,7 @@ class TestFilterOptim:
 
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
-        optim = FilterOptim(
+        optim = ParamFilter(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
@@ -48,7 +48,7 @@ class TestFilterOptim:
         linear = nn.Linear(2, 2)
         linear_test = nn.Linear(2, 2)
         before = get_model_parameters(linear_test)
-        optim = FilterOptim(
+        optim = ParamFilter(
             linear.parameters(), OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )
@@ -66,7 +66,7 @@ class TestFilterOptim:
         
         x_test = torch.rand(2, 3)
         before = torch.clone(x_test)
-        optim = FilterOptim(
+        optim = ParamFilter(
             [x], OptimFactory("sgd", lr=1e-2),
             OptimFactory("sgd", 1e-3)
         )

@@ -406,6 +406,7 @@ class NullLearner(LearningMachine):
         return x
 
 
+# TODO remove this.. Only used by LayerAssess
 @dataclass
 class Conn(object):
     """Connection is a container for the IO for an incoming and outgoing layers
