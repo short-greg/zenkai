@@ -13,6 +13,7 @@ from torch.nn.functional import one_hot
 
 from zenkai.kaku.io import IO, Idx
 from zenkai.kaku.state import State
+import sklearn.base
 
 # local
 from .. import utils
@@ -721,3 +722,26 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
             bool: whether the module was fitted or not
         """
         return self._module.fitted
+
+
+class SciClone(object):
+    """Factory that clones an estimator based on the estimator passed in
+    """
+
+    def __init__(self, estimator: BaseEstimator):
+        """initializer
+
+        Args:
+            estimator (BaseEstimator): The estimator to clone
+        """
+
+        self.estimator = estimator
+
+    def __call__(self) -> BaseEstimator:
+        """
+        Returns:
+            BaseEstimator: Cloned estimator
+        """
+
+        return sklearn.base.clone(self.estimator)
+
