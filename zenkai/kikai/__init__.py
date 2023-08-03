@@ -52,7 +52,7 @@ from .scikit import (
     ScikitEstimator, ScikitRegressor,
     ScikitMulticlass, ScikitBinary,
     ScikitMachine, VoterEnsembleMachine,
-    ScikitStepTheta
+    ScikitStepTheta, SciClone
 
 )
 from .iterable import (
