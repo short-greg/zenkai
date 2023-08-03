@@ -59,6 +59,7 @@ from .populators import (
     RepeatPopulator,
     SimpleGaussianPopulator,
     StandardPopulator,
+    VoterPopulator,
     populate_t,
 )
 from .reducers import (
