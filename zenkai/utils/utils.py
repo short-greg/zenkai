@@ -310,6 +310,8 @@ def get_model_grads(model: nn.Module) -> typing.Union[torch.Tensor, None]:
         if p.grad is None:
             return None
         grads.append(p.grad.flatten())
+    if len(grads) == 0:
+        return None
     return torch.cat(grads)
 
 

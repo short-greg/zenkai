@@ -68,6 +68,8 @@ class ScikitEstimator(nn.Module):
         self._output = self._predict if use_predict else self._transform
         self.fit = self._partial_fit if partial_fit else self._full_fit
         self._fitted = False
+        self._use_partial_fit = partial_fit
+        self._use_predict = use_predict
         self._in_features = in_features
         self._out_features = out_features
         self.backup = backup or nn.Linear(in_features, out_features)
@@ -201,6 +203,15 @@ class ScikitEstimator(nn.Module):
         """
         return self._fitted
 
+    def clone(self) -> 'ScikitEstimator':
+        return ScikitEstimator(
+            sklearn.base.clone(self.estimator), self._in_features,
+            self._out_features,
+            self._use_partial_fit,
+            self._use_predict,
+            self.backup
+        )
+
 
 class ScikitRegressor(ScikitEstimator):
     """Adapter for Scikit-Learn regressors"""
@@ -226,9 +237,11 @@ class ScikitRegressor(ScikitEstimator):
             postprocessor (nn.Module, optional): . Defaults to None.
             use_predict (bool, optional): Whether to predict the output or use 'transform'. Defaults to True.
         """
+        self._base = sklearn_estimator
         if multi:
             sklearn_estimator = MultiOutputRegressor(sklearn_estimator)
         backup = nn.Linear(in_features, out_features)
+        self._multi = multi
         super().__init__(
             sklearn_estimator,
             in_features,
@@ -236,6 +249,14 @@ class ScikitRegressor(ScikitEstimator):
             partial_fit,
             use_predict,
             backup,
+        )
+
+
+    def clone(self) -> 'ScikitRegressor':
+        return ScikitRegressor(
+            sklearn.base.clone(self._base), self._in_features,
+            self._out_features, self._multi, self._use_partial_fit,
+            self._use_predict
         )
 
 
@@ -266,9 +287,11 @@ class ScikitMulticlass(ScikitEstimator):
             output_one_hot (bool, optional): Whether the output should be a one hot vector. Defaults to True.
         """
 
+        self._base = sklearn_estimator
         if multi and out_features > 1:
             sklearn_estimator = MultiOutputClassifier(sklearn_estimator)
 
+        self._multi = multi
         backup = nn.Sequential(nn.Linear(in_features, n_classes), Argmax())
         self.output_one_hot = output_one_hot
         self._n_classes = n_classes
@@ -295,6 +318,14 @@ class ScikitMulticlass(ScikitEstimator):
             return torch.nn.functional.one_hot(y, num_classes=self._n_classes)
         return y
 
+    def clone(self) -> 'ScikitMulticlass':
+        return ScikitMulticlass(
+            sklearn.base.clone(self._base), self._in_features,
+            self._n_classes, self._multi,
+            self._out_features, self._use_partial_fit,
+            self._use_predict, self.output_one_hot
+        )
+
 
 class ScikitBinary(ScikitEstimator):
     """Adapter for a binary estimator"""
@@ -318,9 +349,11 @@ class ScikitBinary(ScikitEstimator):
             partial_fit (bool, optional): Whether to use partial_fit() or fit(). Defaults to True.
             use_predict (bool, optional): Whether to predict the output or use 'transform'. Defaults to True.
         """
+        self._base = sklearn_estimator
         if multi and out_features > 1:
             sklearn_estimator = MultiOutputClassifier(sklearn_estimator)
 
+        self._multi = multi
         backup = nn.Sequential(nn.Linear(in_features, out_features), Sign())
         super().__init__(
             sklearn_estimator,
@@ -329,6 +362,14 @@ class ScikitBinary(ScikitEstimator):
             partial_fit,
             use_predict,
             backup,
+        )
+
+    def clone(self) -> 'ScikitBinary':
+        return ScikitBinary(
+            sklearn.base.clone(self._base), self._in_features,
+            self._out_features, self._multi,
+            self._use_partial_fit,
+            self._use_predict,
         )
 
 
@@ -526,7 +567,7 @@ class Voter(nn.Module):
             return chosen.sign()
 
         return chosen
-
+    
 
 class VoterEnsemble(nn.Module):
     """Module containing multiple modules that vote on output
@@ -728,7 +769,7 @@ class SciClone(object):
     """Factory that clones an estimator based on the estimator passed in
     """
 
-    def __init__(self, estimator: BaseEstimator):
+    def __init__(self, estimator: ScikitEstimator):
         """initializer
 
         Args:
@@ -743,5 +784,5 @@ class SciClone(object):
             BaseEstimator: Cloned estimator
         """
 
-        return sklearn.base.clone(self.estimator)
+        return self.estimator.clone()
 

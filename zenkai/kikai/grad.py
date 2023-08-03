@@ -18,6 +18,8 @@ from ..kaku import (
     idx_io,
     AssessmentDict,
     OptimFactory,
+    NullOptim,
+    itadaki,
     ThLoss
 )
 from ..utils import get_model_grads, update_model_grads, set_model_grads
@@ -60,6 +62,7 @@ class GradStepTheta(StepTheta):
         assessment.backward("loss")
         state[self.learner, 'stepped'] = True
         grads = state.get(self, 'grad_theta')
+        
         if grads is None:
             state[self, 'grad_theta'] = get_model_grads(self.learner)
         else:
@@ -251,7 +254,7 @@ class GradLearner(LearningMachine):
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
         loss: ThLoss,
-        optim_factory: OptimFactory,
+        optim_factory: OptimFactory=None,
         theta_reduction: str = "mean",
         x_lr: float=None
     ):
@@ -271,6 +274,9 @@ class GradLearner(LearningMachine):
         else:
             self._net = nn.Sequential(*module)
         self._loss = loss
+        if optim_factory is not None:
+            optim_factory = itadaki.null()
+        
         self._theta_step = GradStepTheta(self, optim_factory, theta_reduction)
         self._x_step = GradStepX(x_lr)
 
