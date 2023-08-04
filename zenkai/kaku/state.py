@@ -5,6 +5,7 @@ from collections import deque
 
 # local
 from .io import IO
+from .assess import Assessment, AssessmentDict
 
 
 class IDable:
@@ -28,6 +29,7 @@ class State(object):
         super().__init__()
         self._data = {}
         self._subs = {}
+        self._logs = {}
 
     def id(self, obj) -> str:
         """Get the key for an object
@@ -269,6 +271,40 @@ class State(object):
             sub = None
         id = self.id(obj)
         return id in self._data and key in self._data[id]
+    
+    def log_assessment_dict(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, assessment_dict: AssessmentDict):
+        """Log an assessment
+
+        Args:
+            obj: The object to log for
+            assessment_dict (AssessmentDict): the values to log
+        """
+
+        if isinstance(obj, typing.Tuple):
+            key = (id(obj[0], id(obj[1])))
+        else:
+            key = id(obj)
+        
+        self._logs[key][obj_name] = assessment_dict
+
+    def log_assessment(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, log_name: str, assessment: Assessment):
+        """Log an assessment
+
+        Args:
+            obj: The object to log for
+            assessment_dict (AssessmentDict): the values to log
+        """
+
+        if isinstance(obj, typing.Tuple):
+            key = (id(obj[0], id(obj[1])))
+        else:
+            key = id(obj)
+        
+        self._logs[key][obj_name] = AssessmentDict(**{log_name: assessment})
+
+    @property
+    def logs(self) -> typing.Dict:
+        return self._logs
 
 
 class MyState(object):

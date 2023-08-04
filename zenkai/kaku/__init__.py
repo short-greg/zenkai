@@ -23,7 +23,7 @@ from .component import (
     Regressor,
     SelfLearner,
 )
-from .layer_assess import AssessContext, DiffLayerAssessor, LayerAssessor
+from .layer_assess import LayerAssessor, StepAssessHook
 from .limit import FeatureLimitGen, RandomFeatureIdxGen
 from .io import (
     IO,
