@@ -2,11 +2,11 @@
 import typing
 from abc import ABC, abstractmethod
 
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
-
 # local
-from .machine import IO, State, StepXHook, StepHook
+from .machine import IO, State, StepXHook, StepHook, LearningMachine
+from .state import State
+from .io import IO
+from .assess import AssessmentDict
 
 
 class LayerAssessor(ABC):
@@ -18,6 +18,26 @@ class LayerAssessor(ABC):
     @abstractmethod
     def post(self, x: IO, t: IO, state: State, *args, **kwargs):
         pass
+
+    @abstractmethod
+    def assessment(self, state: State) -> AssessmentDict:
+        pass
+
+
+def union_pre_and_post(pre: typing.Union[AssessmentDict, None]=None, post: typing.Union[AssessmentDict, None]=None) -> AssessmentDict:
+    """combine pre and post assessments
+
+    Returns:
+        AssessmentDict: the unified assessment dict
+    """
+    if pre is None:
+        return post
+    if post is None:
+        return pre
+    if pre is None and post is None:
+        return AssessmentDict()
+    
+    return pre.union(post)
 
 
 class StepAssessHook(StepXHook, StepHook):
@@ -41,7 +61,7 @@ class StepAssessHook(StepXHook, StepHook):
             state (State): The learning state
 
         Returns:
-            typing.Tuple[IO, IO]: _description_
+            typing.Tuple[IO, IO]: The input and target
         """
         if self._pre:
             self._assessor.pre(x, t, state, *args, **kwargs)
@@ -51,170 +71,89 @@ class StepAssessHook(StepXHook, StepHook):
         return x, t
 
 
-# class LayerAssessor(ABC):
-#     """Base class for assessing a layer"""
+class StepXLayerAssessor(LayerAssessor):
 
-#     CHOICES = set()
+    def __init__(self, learning_machine: LearningMachine, step_x: bool=True):
+        """initializer
 
-#     def __init__(self):
-#         self._registry: typing.Dict[
-#             str, typing.Tuple[LearningMachine, LearningMachine]
-#         ] = {}
-#         self._assessments = None
-#         self._retrieve_choice = {}
+        Args:
+            learning_machine (LearningMachine): The learning machien
+            step_x (bool, optional): Whether to do step_x (True) or step (False). Defaults to True.
+        """
+        super().__init__()
+        self._learning_machine = learning_machine
+        self._pre_hook = StepAssessHook(self, True)
+        self._post_hook = StepAssessHook(self, False)
+        self._step_x = step_x
+        if step_x:
+            self._learning_machine.step_x_prehook(self._pre_hook)
+            self._learning_machine.step_x_posthook(self._post_hook)
+        else:
+            self._learning_machine.step_prehook(self._pre_hook)
+            self._learning_machine.step_posthook(self._post_hook)
 
-#     def register(
-#         self,
-#         name: str,
-#         machine: LearningMachine,
-#         outgoing: LearningMachine,
-#         retrieve_choice: typing.Iterable[str] = None,
-#     ):
-#         retrieve_choice = retrieve_choice or self.CHOICES
-#         retrieve_choice = set(retrieve_choice)
-#         if len(retrieve_choice.difference(self.CHOICES)) != 0:
-#             raise ValueError(
-#                 f"Retrieve choice must be from {self.CHOICES} not {retrieve_choice}"
-#             )
-#         self._registry[name] = (machine, outgoing)
-#         self._retrieve_choice[name] = retrieve_choice
+    def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """The assessment before the step
 
-#     @abstractmethod
-#     def update_before(self, name: str, x_in: IO, x_out: IO, t: IO):
-#         pass
+        Args:
+            x (IO): The input
+            t (IO): The Target
+            state (State): The learning state
+        """
+        state[self, 'pre'] = self._learning_machine.assess(x, t).prepend('Pre')
+    
+    def post(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """The assessment after the step
 
-#     @abstractmethod
-#     def update_after(self, name: str, x_in: IO, x_out: IO, t: IO):
-#         pass
-
-#     def layer_assess(self, name: str, x_in: IO, x_out: IO, t: IO):
-#         return AssessContext(self, name, x_in, x_out, t)
-
-#     @abstractproperty
-#     def assessment_dict(self) -> AssessmentDict:
-#         pass
-
-
-# class DiffLayerAssessor(LayerAssessor):
-#     """ """
-
-#     CHOICES = set(["incoming", "full", "outgoing"])
-
-#     def __init__(
-#         self,
-#         prefix: str,
-#         weight: float = 0.2,
-#         loss_name: str = "loss",
-#     ):
-#         super().__init__()
-#         self._before: typing.Dict[str, typing.Dict[Assessment]] = {}
-#         self._after: typing.Dict[str, typing.Dict[Assessment]] = {}
-#         self._diff: typing.Dict[str, typing.Dict[str, Assessment]] = {}
-#         self.weight = weight
-#         self.loss_name = loss_name
-#         self.prefix = prefix
-
-#     def _calc_assessments(
-#         self, name: str, conn: Conn
-#     ) -> typing.Dict[str, AssessmentDict]:
-
-#         machine, outgoing = self._registry[name]
-#         status = machine.training
-#         machine.train(False)
-#         if outgoing is not None:
-#             outgoing_status = outgoing.training
-#             outgoing.train(False)
-#         y = machine(conn.in_x)
-#         retrieve_choice = self._retrieve_choice[name]
-#         retrieved = {}
-
-#         if "incoming" in retrieve_choice:
-#             retrieved["incoming"] = (
-#                 machine.assess_y(y, conn.in_t, "mean")[self.loss_name].detach().cpu()
-#             )
-#         if "full" in retrieve_choice:
-#             if outgoing is None:
-#                 raise ValueError("Cannot calculate assessment as outgoing is none")
-#             retrieved["full"] = (
-#                 outgoing.assess(y, conn.out_t, "mean")[self.loss_name].detach().cpu()
-#             )
-#         if "outgoing" in retrieve_choice:
-#             if outgoing is None:
-#                 raise ValueError("Cannot calculate assessment as outgoing is none")
-#             retrieved["outgoing"] = (
-#                 outgoing.assess(conn.out_x, conn.out_t, "mean")[self.loss_name]
-#                 .detach()
-#                 .cpu()
-#             )
-
-#         if outgoing is not None:
-#             outgoing.train(outgoing_status)
-#         machine.train(status)
-#         return retrieved
-
-#     def update_before(self, name: str, conn: Conn):
-#         self._before[name] = self._calc_assessments(name, conn)
-#         self._after[name] = {}
-
-#     def update_after(self, name: str, conn):
-#         if len(self._after[name]) != 0:
-#             raise ValueError(
-#                 "Must call 'update_before' before calling 'update after'"
-#             )
-#         self._after[name] = self._calc_assessments(name, conn)
-
-#         diff = {}
-#         for k, b_i in self._before[name].items():
-#             a_i = self._after[name][k]
-#             diff[k] = Assessment((a_i.value - b_i.value))
-#         self._diff[name] = diff
-
-#     def layer_assess(self, name: str, conn):
-#         return AssessContext(self, name, conn)
-
-#     def _to_dict(self):
-
-#         results = {}
-
-#         for name in self._after.keys():
-
-#             for k, v in self._after[name].items():
-#                 results[f"{self.prefix}_{name}_{k}_after"] = v
-
-#         for name in self._before.keys():
-#             for k, v in self._before[name].items():
-#                 results[f"{self.prefix}_{name}_{k}_before"] = v
-#         for name in self._diff.keys():
-#             for k, v in self._diff[name].items():
-#                 results[f"{self.prefix}_{name}_{k}"] = v
-#         return results
-
-#     @property
-#     def assessment_dict(self) -> AssessmentDict:
-#         if self._diff is None:
-#             return AssessmentDict()
-
-#         # results = {}
-#         # for k in self._diff.keys():
-
-#         #     results.update(self._to_dict(k))
-
-#         return AssessmentDict(**self._to_dict())
+        Args:
+            x (IO): The input
+            t (IO): The Target
+            state (State): The learning state
+        """
+        state[self, 'post'] = self._learning_machine.assess(x, t).prepend('Post')
+    
+    def assessment(self, state: State) -> AssessmentDict:
+        return union_pre_and_post(state.get(self, 'pre'), state.get(self, 'post'))
 
 
-# class AssessContext(object):
-#     def __init__(self, layer_assessor: LayerAssessor, name: str, conn: Conn):
+class StepFullLayerAssessor(LayerAssessor):
+    """Do full assessment
+    """
 
-#         self.layer_assessor = layer_assessor
-#         self.name = name
-#         self.conn = conn
+    def __init__(self, learning_machine: LearningMachine, outgoing: LearningMachine):
+        """initializer
 
-#     def __enter__(self):
-#         self.layer_assessor.update_before(self.name, self.conn)
-#         return self
+        Args:
+            learning_machine (LearningMachine): The learning machine to assess
+            outgoing (LearningMachine): The outgoing machine to assess
+        """
+        super().__init__()
+        self._learning_machine = learning_machine
+        self._outgoing = outgoing
+        self._pre_hook = StepAssessHook(self, True)
+        self._post_hook = StepAssessHook(self, False)
+        self._learning_machine.step_prehook(self._pre_hook)
+        self._learning_machine.step_posthook(self._post_hook)
 
-#     def __exit__(self, type, value, traceback):
-#         if type is not None:
-#             return False
-#         self.layer_assessor.update_after(self.name, self.conn)
-#         return True
+    def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """The assessment before the step
+
+        Args:
+            x (IO): The input
+            t (IO): The Target
+            state (State): The learning state
+        """
+        state[self, 'pre'] = self._outgoing.assess(self._learning_machine(x), t).prepend('Pre')
+    
+    def post(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """The assessment after the step
+
+        Args:
+            x (IO): The input
+            t (IO): The Target
+            state (State): The learning state
+        """
+        state[self, 'post'] = self._outgoing.assess(self._learning_machine(x), t).prepend('Post')
+    
+    def assessment(self, state: State) -> AssessmentDict:
+        return union_pre_and_post(state.get(self, 'pre'), state.get(self, 'post'))

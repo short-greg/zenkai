@@ -421,7 +421,6 @@ def update_tensor(
     Returns:
         torch.Tensor: The updated tensor
     """
-
     if idx is None:
         idx = Idx()
     idx.update_th(source, destination)
