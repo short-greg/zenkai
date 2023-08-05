@@ -97,12 +97,12 @@ class PopulationLimiter(PopulationInfluencer):
         """
 
         Args:
-            population (Population): 
-            individual (Individual): 
-            limit (torch.LongTensor, optional): . Defaults to None.
+            population (Population): The population to limit
+            individual (Individual): The individual
+            limit (torch.LongTensor, optional): The index to use to limit. Defaults to None.
 
         Returns:
-            Population: 
+            Population: The limited population
         """
 
         if limit is None:

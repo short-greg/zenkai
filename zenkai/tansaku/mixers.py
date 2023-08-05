@@ -91,6 +91,13 @@ class KBestElitism(PopulationMixer):
     """
 
     def __init__(self, k: int):
+        """initializer
+
+        Args:
+            k (int): The number to keep
+        """
+        if k <= 0:
+            raise ValueError(f'Argument k must be greater than 0 not {self.k}')
         self.k = k
 
     def __call__(self, population1: Population, population2: Population) -> Population:
@@ -116,10 +123,20 @@ class KBestElitism(PopulationMixer):
 
 
 class BinaryRandCrossOverBreeder(StandardPopulationMixer):
+    """Mix two tensors together by choosing one gene for each
     """
 
-    """
     def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
+        """Mix two tensors together by choosing one gene for each
+
+        Args:
+            key (str): The name of the field
+            val1 (torch.Tensor): The first value to mix
+            val2 (torch.Tensor): The second value to mix
+    
+        Returns:
+            torch.Tensor: The mixed result
+        """
         to_choose = (torch.rand_like(val1) > 0.5)
         return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
 
@@ -128,8 +145,17 @@ class SmoothCrossOverBreeder(StandardPopulationMixer):
     """Do a smooth interpolation between the values to breed
     """
 
-
     def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
+        """Mix two tensors together with smooth interpolation
+
+        Args:
+            key (str): The name of the field
+            val1 (torch.Tensor): The first value to mix
+            val2 (torch.Tensor): The second value to mix
+
+        Returns:
+            torch.Tensor: The mixed result
+        """
         degree = torch.rand_like(val1)
         return val1 * degree + val2 * (1 - degree)
 
