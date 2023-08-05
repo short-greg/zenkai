@@ -134,7 +134,7 @@ def select_best_individual(
     return pop_val[idx[0]]
 
 
-def select_best_feature(pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
+def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
     """
     Args:
         pop_val (torch.Tensor): The population to select from

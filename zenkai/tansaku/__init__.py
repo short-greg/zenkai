@@ -14,7 +14,7 @@ from .core import (
     gaussian_sample,
     reduce_assessment_dim0,
     reduce_assessment_dim1,
-    select_best_feature,
+    select_best_sample,
     select_best_individual,
 )
 from .exploration import (
@@ -63,7 +63,7 @@ from .populators import (
     populate_t,
 )
 from .reducers import (
-    BestFeatureReducer,
+    BestSampleReducer,
     BestIndividualReducer,
     BinaryGaussianReducer,
     BinaryProbReducer,
@@ -75,7 +75,7 @@ from .reducers import (
     keep_original,
 )
 from .mappers import (
-    GaussianMapper,
-    BinaryMapper
+    GaussianSampleMapper,
+    BinarySampleMapper
 
 )

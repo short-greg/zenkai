@@ -11,7 +11,7 @@ from .core import (
     Individual,
     Population,
     binary_prob,
-    select_best_feature,
+    select_best_sample,
     select_best_individual,
 )
 from .exploration import EqualsAssessmentDist
@@ -166,7 +166,7 @@ class BestIndividualReducer(StandardReducer):
         return BestIndividualReducer()
 
 
-class BestFeatureReducer(StandardReducer):
+class BestSampleReducer(StandardReducer):
     """Selects the best individual in the population
     """
 
@@ -183,10 +183,10 @@ class BestFeatureReducer(StandardReducer):
         Returns:
             torch.Tensor: the best set of features in the population (uses the second dimension)
         """
-        return select_best_feature(pop_val, assessment)
+        return select_best_sample(pop_val, assessment)
 
-    def spawn(self) -> "BestFeatureReducer":
-        return BestFeatureReducer()
+    def spawn(self) -> "BestSampleReducer":
+        return BestSampleReducer()
 
 
 class MomentumReducer(ReducerDecorator):

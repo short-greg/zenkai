@@ -12,7 +12,7 @@ class TestGaussianMapper:
 
     def test_gaussian_mapper_generates_gaussian_population_after_one(self):
 
-        mapper = tansaku.GaussianMapper(
+        mapper = tansaku.GaussianSampleMapper(
             4
         )
         population = tansaku.Population(
@@ -23,7 +23,7 @@ class TestGaussianMapper:
     
     def test_gaussian_mapper_generates_gaussian_population_after_one_with_std_and_mu(self):
 
-        mapper = tansaku.GaussianMapper(
+        mapper = tansaku.GaussianSampleMapper(
             4, mu0=0.0, std0=1.0
         )
         population = tansaku.Population(
@@ -34,7 +34,7 @@ class TestGaussianMapper:
 
     def test_gaussian_mapper_generates_gaussian_population_after_two_updates(self):
 
-        mapper = tansaku.GaussianMapper(
+        mapper = tansaku.GaussianSampleMapper(
             4
         )
         population = tansaku.Population(
@@ -52,7 +52,7 @@ class TestBinaryMapper:
 
     def test_binary_mapper_generates_population_after_one(self):
 
-        mapper = tansaku.BinaryMapper(
+        mapper = tansaku.BinarySampleMapper(
             4
         )
         population = tansaku.Population(
@@ -63,7 +63,7 @@ class TestBinaryMapper:
     
     def test_binary_mapper_generates_population_after_two(self):
 
-        mapper = tansaku.BinaryMapper(
+        mapper = tansaku.BinarySampleMapper(
             4
         )
         population = tansaku.Population(
@@ -78,7 +78,7 @@ class TestBinaryMapper:
 
     def test_binary_mapper_generates_population_after_two_with_signed_neg(self):
 
-        mapper = tansaku.BinaryMapper(
+        mapper = tansaku.BinarySampleMapper(
             4, sign_neg=True
         )
         population = tansaku.Population(
