@@ -406,53 +406,6 @@ class NullLearner(LearningMachine):
         return x
 
 
-# TODO remove this.. Only used by LayerAssess
-@dataclass
-class Conn(object):
-    """Connection is a container for the IO for an incoming and outgoing layers
-    Incoming is for updating "step" and Outgoing is for updating "step_x"
-    """
-
-    in_x: IO=None
-    in_t: IO=None
-    out_x: IO=None
-    out_t: IO=None
-    in_y: IO=None
-    out_y: IO=None
-
-    def __post_init__(self):
-
-        if self.in_t is None and self.out_x is not None:
-            self.in_t = self.out_x
-        if self.out_x is None and self.in_t is not None:
-            self.out_x = self.in_t
-
-    def tie_in_t(self) -> 'Conn':
-        self.in_t = self.out_x
-        return self
-
-    def tie_out_x(self) -> 'Conn':
-        self.out_x = self.in_y
-        return self
-    
-    def connect_in(self, in_x: IO) -> 'Conn':
-
-        return Conn(
-            in_x=in_x, in_t=self.in_x, out_x=self.in_x, out_t=self.in_t,
-            out_y=self.in_y
-        )
-    
-    def step_x(self, out_x: IO, tie_in_x: bool=True) -> 'Conn':
-
-        conn = Conn(
-            in_x=self.in_x, in_t=self.in_t, out_x=out_x, out_t=self.out_t,
-            out_y=self.out_y, in_y=self.in_y
-        )
-        if tie_in_x:
-            conn.in_t = conn.out_x
-        return conn
-
-
 class StepLoop(object):
     """
     """
