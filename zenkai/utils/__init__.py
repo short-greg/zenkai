@@ -38,7 +38,6 @@ from .utils import (
     get_indexed,
     get_model_parameters,
     repeat_on_indices,
-    sequential,
     set_parameters,
     to_float,
     to_np,

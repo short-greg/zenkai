@@ -23,7 +23,15 @@ from .component import (
     Regressor,
     SelfLearner,
 )
-from .layer_assess import LayerAssessor, StepAssessHook
+from .layer_assess import (
+    LayerAssessor, 
+    StepAssessHook, 
+    union_pre_and_post, 
+    StepHook, 
+    StepXHook, 
+    StepXLayerAssessor,
+    StepFullLayerAssessor,
+) 
 from .limit import FeatureLimitGen, RandomFeatureIdxGen
 from .io import (
     IO,
@@ -49,7 +57,6 @@ from .machine import (
     InDepStepX,
     OutDepStepTheta,
     StepLoop,
-    Conn,
     StdLearningMachine,
     NullStepTheta,
     PostStepTheta,

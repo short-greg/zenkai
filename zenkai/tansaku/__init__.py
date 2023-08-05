@@ -49,11 +49,8 @@ from .influencers import (
     SlopeInfluencer
 )
 from .populators import (
-    BinaryPopulator,
-    BinaryProbPopulator,
     ConservativePopulator,
     GaussianPopulator,
-    PerceptronProbPopulator,
     Populator,
     PopulatorDecorator,
     RepeatPopulator,
@@ -76,6 +73,8 @@ from .reducers import (
 )
 from .mappers import (
     GaussianSampleMapper,
-    BinarySampleMapper
+    BinarySampleMapper,
+    GaussianMutator,
+    BinaryMutator
 
 )
