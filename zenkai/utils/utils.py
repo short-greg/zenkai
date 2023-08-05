@@ -413,25 +413,3 @@ def binary_encoding(
     shape = list(range(results.dim()))
     shape = shape[1:] + shape[0:1]
     return results.permute(*shape)
-
-
-def sequential(modules: typing.List[nn.Module], x: torch.Tensor) -> torch.Tensor:
-
-    for module in modules:
-        x = module(x)
-    return x
-
-
-# class DatasetLoader(ABC):
-
-#     @abstractmethod
-#     def training(self) -> torch_data.Dataset:
-#         pass
-
-#     @abstractmethod
-#     def testing(self) -> torch_data.Dataset:
-#         pass
-
-#     @abstractmethod
-#     def validation(self) -> torch_data.Dataset:
-#         pass
