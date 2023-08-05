@@ -86,8 +86,50 @@ class StandardPopulationMixer(PopulationMixer):
         return Population(**results)
 
 
-class CrossOverMixer(StandardPopulationMixer):
+class KBestElitism(PopulationMixer):
+    """Add the k best from the previous generation to the new generation
+    """
 
+    def __init__(self, k: int):
+        self.k = k
+
+    def __call__(self, population1: Population, population2: Population) -> Population:
+        """
+
+        Args:
+            population1 (Population): previous generation
+            population2 (Population): new generation
+
+        Returns:
+            Population: the updated new generation
+        """
+        
+        _, indices = population1.stack_assessments().reduce('samplemeans').topk(self.k)
+        results = {}
+        for k, v in population1:
+            if k in population2:
+                results[k] = torch.cat(
+                    [v[indices], population2[k]]
+                )
+
+        return Population(**results)
+
+
+class BinaryRandCrossOverBreeder(StandardPopulationMixer):
+    """
+
+    """
     def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
         to_choose = (torch.rand_like(val1) > 0.5)
         return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
+
+
+class SmoothCrossOverBreeder(StandardPopulationMixer):
+    """Do a smooth interpolation between the values to breed
+    """
+
+
+    def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
+        degree = torch.rand_like(val1)
+        return val1 * degree + val2 * (1 - degree)
+

@@ -11,7 +11,7 @@ from ..tansaku.assessors import XPopulationAssessor
 from ..tansaku.core import Individual
 from ..tansaku.influencers import SlopeInfluencer, PopulationLimiter
 from ..tansaku.populators import BinaryPopulator, GaussianPopulator
-from ..tansaku.reducers import BestFeatureReducer
+from ..tansaku.reducers import BestSampleReducer
 
 
 class HillClimbStepX(FeatureIdxStepX):
@@ -80,7 +80,7 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         super().__init__()
         self.learner = learner
         self.populator = BinaryPopulator(k, keep_p)
-        self.selector = BestFeatureReducer()  # to_sample=False)
+        self.selector = BestSampleReducer()  # to_sample=False)
         self.limiter = PopulationLimiter()
         self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
 

@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from zenkai.tansaku.core import Population
+
 from .core import Individual, Population, pop_like
 import torch
 import typing
@@ -41,7 +43,7 @@ def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typi
     return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
 
 
-class GaussianMapper(PopulationMapper):
+class GaussianSampleMapper(PopulationMapper):
     """Calculate the Gaussian parameters based on the population and sample values based on them
     """
 
@@ -81,14 +83,13 @@ class GaussianMapper(PopulationMapper):
             )
         return Population(**samples)
 
-
-    def spawn(self) -> 'GaussianMapper':
-        return GaussianMapper(
+    def spawn(self) -> 'GaussianSampleMapper':
+        return GaussianSampleMapper(
             self.k, self.decay, self._mu0, self._std0
         )
 
 
-class BinaryMapper(PopulationMapper):
+class BinarySampleMapper(PopulationMapper):
     """Calculate the Bernoulli parameters and sample from them
     """
 
@@ -132,7 +133,75 @@ class BinaryMapper(PopulationMapper):
             samples[k] = cur_samples
         return Population(**samples)
 
-    def spawn(self) -> 'BinaryMapper':
-        return BinaryMapper(
+    def spawn(self) -> 'BinarySampleMapper':
+        return BinarySampleMapper(
             self.k, self.decay, self._p0, self._sign_neg
         )
+
+
+class GaussianMutator(PopulationMapper):
+
+    def __init__(self, std: float, mean: float=0.0):
+        """initializer
+
+        Args:
+            std (float): The std by which to mutate
+            mean (float): The mean with which to mutate
+        """
+
+        super().__init__()
+        self.mean = mean
+
+        if std < 0:
+            raise ValueError(f'Argument std must be >= 0 not {std}')
+        self.std = std
+
+    def __call__(self, population: Population) -> Population:
+        """Mutate all fields in the population
+
+        Args:
+            population (Population): The population to mutate
+
+        Returns:
+            Population: The mutated population
+        """
+        
+        result = {}
+        for k, v in population:
+            result[k] = v + torch.rand_like(v) * self.std + self.mean
+        return Population(**result)
+
+
+class BinaryMutator(PopulationMapper):
+    """Randomly mutate boolean genes in the population
+    """
+
+    def __init__(self, flip_p: bool, signed_neg: bool=True):
+        """initializer
+
+        Args:
+            flip_p (bool): The probability of flipping
+            signed_neg (bool, optional): Whether the negative is -1 (true) or 0 (false). Defaults to True.
+        """
+
+        self.flip_p = flip_p
+        self.signed_neg = signed_neg
+
+    def __call__(self, population: Population) -> Population:
+        """Mutate all fields in the population
+
+        Args:
+            population (Population): The population to mutate
+
+        Returns:
+            Population: The mutated population
+        """
+        
+        result = {}
+        for k, v in population:
+            to_flip = (torch.rand_like(v) > self.flip_p).float()
+            if self.signed_neg:
+                result[k] = to_flip(v)
+            else:
+                result[k] = (v - to_flip).abs()
+        return Population(**result)
