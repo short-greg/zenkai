@@ -22,7 +22,7 @@ from ..kaku import (
     itadaki,
     ThLoss
 )
-from ..utils import get_model_grads, update_model_grads, set_model_grads
+from ..utils import get_model_grads, update_model_grads, set_model_grads, get_model_parameters
 
 
 class GradStepTheta(StepTheta):
@@ -45,7 +45,7 @@ class GradStepTheta(StepTheta):
         """
         super().__init__()
         self.learner = learner
-        self.optim = optim_factory(learner.parameters())
+        self.optim = optim_factory(self.learner.parameters())
         self.reduction = reduction
         self.y_name = y_name
         self.auto_adv = auto_adv
@@ -156,7 +156,6 @@ class GradLoopStepTheta(BatchIdxStepTheta):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         if state.get(self, "stepped", False):
-
             set_model_grads(self.learner, state[self, 'grad'])
             self.optim.step()
             self.optim.zero_grad()
@@ -274,7 +273,7 @@ class GradLearner(LearningMachine):
         else:
             self._net = nn.Sequential(*module)
         self._loss = loss
-        if optim_factory is not None:
+        if optim_factory is None:
             optim_factory = itadaki.null()
         
         self._theta_step = GradStepTheta(self, optim_factory, theta_reduction)

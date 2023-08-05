@@ -71,7 +71,7 @@ class TestTHGradMachine1:
         t = IO(torch.rand(2, 3))
         state = State()
         before = utils.get_model_parameters(learner)
-        learner.forward(x, state)
+        learner(x, state)
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
