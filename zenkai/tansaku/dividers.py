@@ -61,9 +61,6 @@ class FitnessProportionateDivider(Divider):
         return population[parents1], population[parents2]
 
 
-# 3. Gaussian Mutator
-# 4. couple selector
-
 class EqualSelector(Divider):
 
     def __call__(self, population: Population) -> typing.Tuple[Population]:

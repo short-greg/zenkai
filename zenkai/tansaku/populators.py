@@ -17,7 +17,6 @@ from .core import (
     flatten,
 )
 from ..utils import Voter
-from .core import pop_like
 
 
 class Populator(ABC):
