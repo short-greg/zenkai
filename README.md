@@ -16,11 +16,11 @@ Zenkai's primary feature is the "LearningMachine" which aims to make defining le
 Here is a (non-working) example
 ```bash
 
-class MyLearner(zenkai.LearningMachine):
+class MyLearner(LearningMachine):
     """A LearningMachine couples the learning mechanics for the machine with its internal mechanics."""
 
     def __init__(
-        self, module: nn.Module, step_theta: zenkai.StepTheta, 
+        self, module: nn.Module, step_theta: StepTheta, 
         step_x: StepX, loss: Loss
         super().__init__()
         self.module = module
@@ -38,8 +38,8 @@ class MyLearner(zenkai.LearningMachine):
         return self.loss.assess_dict(x, t, reduction_override)
 
     def step(
-        self, x: IO, t: IO, state: zenkai.State
-    ) -> zenkai.Conn:
+        self, x: IO, t: IO, state: State
+    ):
         # step is analogous to accGradParameters in Torch but more general
         # Conn (Connection) is an object that contains the inputs and
         # outputs for a connection of two machines
@@ -52,8 +52,8 @@ class MyLearner(zenkai.LearningMachine):
         # it calculates "new targets" for the incoming layer
         return self._step_x(x, t, state)
 
-    def forward(self, x: IO, state: State, release: bool=True) -> zenkai.IO:
-        y = state[self, 'y'] = zenkai.IO(self.module[x[0]])
+    def forward(self, x: IO, state: State, release: bool=True) -> IO:
+        y = state[self, 'y'] = IO(self.module[x[0]])
         return y.out()
 
 
