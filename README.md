@@ -21,40 +21,40 @@ class MyLearner(zenkai.LearningMachine):
 
     def __init__(
         self, module: nn.Module, step_theta: zenkai.StepTheta, 
-        step_x: StepX, loss: zenkai.Loss
-    ):
+        step_x: StepX, loss: Loss
         super().__init__()
         self.module = module
         # step_theta is used to update the parameters of the
         # module
-        self.step_theta = step_theta
+        self._step_theta = step_theta
         # step_x is used to update the inputs to the module
-        self.step_x = step_x
+        self._step_x = step_x
         self.loss = loss
 
     def assess_y(
-        self, x: zenkai.IO, t: zenkai.IO, reduction_override: str=None
-    ) -> zenkai.AssessmentDict:
+        self, x: IO, t: IO, reduction_override: str=None
+    ) -> AssessmentDict:
         # assess_y evaluates the learning machine
-        return self.loss.assess_dict(x[0], t[0], reduction_override)
+        return self.loss.assess_dict(x, t, reduction_override)
 
     def step(
-        self, conn: zenkai.Conn, state: zenkai.State, from_: zenkai.IO
+        self, x: IO, t: IO, state: zenkai.State
     ) -> zenkai.Conn:
         # step is analogous to accGradParameters in Torch but more general
         # Conn (Connection) is an object that contains the inputs and
         # outputs for a connection of two machines
-        return self.step(conn, state, from_)
+        return self._step_theta(x, t, state)
 
     def step_x(
-        self, conn: zenkai.Conn, state: zenkai.State
-    ) -> zenkai.Conn:
+        self, x: IO, t: IO, state: State
+    ) -> IO:
         # step_x is analogous to updateGradInputs in Torch except
         # it calculates "new targets" for the incoming layer
-        return self.step_x(conn, state)
+        return self._step_x(x, t, state)
 
-    def forward(self, x: zenkai.IO) -> zenkai.IO:
-        return zenkai.IO(self.module[x[0]])
+    def forward(self, x: IO, state: State, release: bool=True) -> zenkai.IO:
+        y = state[self, 'y'] = zenkai.IO(self.module[x[0]])
+        return y.out()
 
 
 my_learner = MyLearner(...)
