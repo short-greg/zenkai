@@ -2,8 +2,6 @@
 # local
 from abc import abstractmethod
 
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
 import numpy as np
 
 from ..kaku import (

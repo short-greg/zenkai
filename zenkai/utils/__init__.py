@@ -1,7 +1,10 @@
 # flake8: noqa
 
 from .filtering import Stride2D, TargetStride, UndoStride2D
-from .modules import Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout
+from .modules import (
+    Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout,
+    binary_ste, sign_ste, Clamp
+)
 from .reversibles import (
     BatchNorm1DReversible,
     LeakyReLUInvertable,

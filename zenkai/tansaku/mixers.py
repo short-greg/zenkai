@@ -1,10 +1,11 @@
+# 1st party
 from abc import ABC, abstractmethod
 
-from zenkai.tansaku.core import Population
-
-from .core import Individual, Population
-
+# 3rd party
 import torch
+
+# local
+from .core import Population, Individual
 
 
 class IndividualMixer(ABC):

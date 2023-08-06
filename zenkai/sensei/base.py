@@ -2,7 +2,7 @@
 import typing
 from abc import ABC, abstractmethod
 
-# 3rd party
+# local
 from ..kaku import AssessmentDict, Learner
 
 

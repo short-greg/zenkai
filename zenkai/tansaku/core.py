@@ -12,6 +12,96 @@ from ..kaku import Reduction
 # local
 from ..utils import get_model_parameters, update_model_parameters
 
+# TODO: Move to utils
+
+def expand(x: torch.Tensor, k: int):
+    """Expand an input to repeat k times"""
+    return x[None].repeat(k, *([1] * len(x.shape)))
+
+
+def flatten(x: torch.Tensor):
+    """Flatten the population and batch dimensions of a population"""
+    return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
+
+
+def deflatten(x: torch.Tensor, k: int) -> torch.Tensor:
+    """Deflatten the population and batch dimensions of a population"""
+    if x.dim() == 0:
+        raise ValueError("Input dimension == 0")
+
+    return x.view(k, -1, *x.shape[1:])
+
+
+def reduce_assessment_dim0(
+    assessment: Assessment, k: int, reduction: str = "mean"
+) -> Assessment:
+    """
+    Args:
+        assessment (Assessment): The assessment for the population
+        k (int): The size of the population
+        reduction (str, optional): The name of the reduction. Defaults to "mean".
+
+    Returns:
+        Assessment: The reduced assessment
+    """
+    return Assessment(
+        Reduction[reduction].sample_reduce(assessment.value.view(k, -1).value)
+    )
+
+
+def reduce_assessment_dim1(
+    assessment: Assessment, k: int, flattened: bool = True, reduction: str = "mean"
+) -> Assessment:
+    """
+    Args:
+        assessment (Assessment): The assessment for the population
+        k (int): The size of the population
+        flattened (bool, optional): Whether the population and batch dimensions are flattened. Defaults to True.
+        reduction (str, optional): The name of the reduction.. Defaults to "mean".
+
+    Returns:
+        Assessment: The reduced assessment
+    """
+
+    if not flattened:
+        value = assessment.value.view(k * assessment.value.size(1))
+    else:
+        value = assessment.value
+
+    return Assessment(Reduction[reduction].sample_reduce(value).view(k, -1))
+
+
+def expand_t(t: IO, k: int) -> IO:
+    """expand the population dimension for t
+
+    Args:
+        t (IO): the target IO
+        k (int): the size of the population
+
+    Returns:
+        IO: the expanded target IO
+    """
+
+    ts = []
+    for t_i in t:
+        ts.append(flatten(expand(t_i, k)))
+
+    return IO(*ts)
+
+def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
+    """generate a 
+
+    Args:
+        f (_type_): _description_
+        k (int): _description_
+        orig_p (torch.Tensor): _description_
+        requires_grad (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        typing.Dict: _description_
+    """
+    return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
+
 
 def cat_params(
     params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bool = False
@@ -35,24 +125,6 @@ def cat_params(
         reordered = torch.randperm(len(perturbed_params) + 1, device=params.device)
         return ordered[reordered]
     return ordered
-
-
-def expand(x: torch.Tensor, k: int):
-    """Expand an input to repeat k times"""
-    return x[None].repeat(k, *([1] * len(x.shape)))
-
-
-def flatten(x: torch.Tensor):
-    """Flatten the population and batch dimensions of a population"""
-    return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
-
-
-def deflatten(x: torch.Tensor, k: int) -> torch.Tensor:
-    """Deflatten the population and batch dimensions of a population"""
-    if x.dim() == 0:
-        raise ValueError("Input dimension == 0")
-
-    return x.view(k, -1, *x.shape[1:])
 
 
 def binary_prob(
@@ -567,60 +639,3 @@ class Population(object):
             else:
                 results[key] = torch.clone(v)
         return Population(**results)
-
-
-def reduce_assessment_dim0(
-    assessment: Assessment, k: int, reduction: str = "mean"
-) -> Assessment:
-    """
-    Args:
-        assessment (Assessment): The assessment for the population
-        k (int): The size of the population
-        reduction (str, optional): The name of the reduction. Defaults to "mean".
-
-    Returns:
-        Assessment: The reduced assessment
-    """
-    return Assessment(
-        Reduction[reduction].sample_reduce(assessment.value.view(k, -1).value)
-    )
-
-
-def reduce_assessment_dim1(
-    assessment: Assessment, k: int, flattened: bool = True, reduction: str = "mean"
-) -> Assessment:
-    """
-    Args:
-        assessment (Assessment): The assessment for the population
-        k (int): The size of the population
-        flattened (bool, optional): Whether the population and batch dimensions are flattened. Defaults to True.
-        reduction (str, optional): The name of the reduction.. Defaults to "mean".
-
-    Returns:
-        Assessment: The reduced assessment
-    """
-
-    if not flattened:
-        value = assessment.value.view(k * assessment.value.size(1))
-    else:
-        value = assessment.value
-
-    return Assessment(Reduction[reduction].sample_reduce(value).view(k, -1))
-
-
-def expand_t(t: IO, k: int) -> IO:
-    """expand the population dimension for t
-
-    Args:
-        t (IO): the target IO
-        k (int): the size of the population
-
-    Returns:
-        IO: the expanded target IO
-    """
-
-    ts = []
-    for t_i in t:
-        ts.append(flatten(expand(t_i, k)))
-
-    return IO(*ts)

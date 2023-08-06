@@ -26,7 +26,7 @@ class TargetPropStepX(StepX):
         pass
 
     @abstractmethod
-    def step_x(self, x: IO, y: IO, state: State, release: bool=True) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, release: bool=True) -> IO:
         pass
 
 

@@ -18,7 +18,6 @@ from ..kaku import (
     idx_io,
     AssessmentDict,
     OptimFactory,
-    NullOptim,
     itadaki,
     ThLoss
 )
