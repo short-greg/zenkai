@@ -3,11 +3,10 @@ Modules to implement exploration
 on the forward pass
 """
 
-import typing
-from abc import ABC, abstractmethod
-
 # 1st party
+import typing
 from typing import Any
+from abc import ABC, abstractmethod
 
 # 3rd party
 import torch

@@ -100,14 +100,6 @@ class BinarySTE(torch.autograd.Function):
         return grad_input
 
 
-def binary_ste(x: torch.Tensor) -> torch.Tensor:
-    return BinarySTE.apply(x)
-
-
-def sign_ste(x: torch.Tensor) -> torch.Tensor:
-    return SignSTE.apply(x)
-
-
 class Clamp(torch.autograd.Function):
     """Use to clip the grad between two values
     Useful for smooth maximum/smooth minimum
@@ -158,6 +150,14 @@ class FreezeDropout(nn.Module):
         
         self._cur = f
         return f * x
+
+
+def binary_ste(x: torch.Tensor) -> torch.Tensor:
+    return BinarySTE.apply(x)
+
+
+def sign_ste(x: torch.Tensor) -> torch.Tensor:
+    return SignSTE.apply(x)
 
 
 # class BatchNorm1DS(nn.BatchNorm1d):

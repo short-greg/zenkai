@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from zenkai.tansaku.core import Population
 
-from .core import Individual, Population
+from .core import Individual, Population, gen_like
 import torch
 import typing
 
@@ -45,11 +45,6 @@ def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=No
     if cur_v is None or decay == 0.0:
         return new_v
     return decay * cur_v + (1 - decay) * new_v
-
-
-def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
-
-    return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
 
 
 class GaussianSampleMapper(PopulationMapper):

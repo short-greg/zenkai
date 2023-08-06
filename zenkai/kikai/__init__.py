@@ -48,7 +48,7 @@ from .least_squares import (
 )
 from .reversible import ReversibleMachine
 from .scikit import (
-    VoterEnsemble, Voter, ScikitLimitGen,
+    ScikitLimitGen,
     ScikitEstimator, ScikitRegressor,
     ScikitMulticlass, ScikitBinary,
     ScikitMachine, VoterEnsembleMachine,
@@ -64,3 +64,4 @@ from .target_prop import (
     TargetPropStepX, TargetPropLoss, RegTargetPropLoss,
     StandardTargetPropLoss
 )
+from .ensemble import EnsembleLearner, EnsembleLearnerVoter

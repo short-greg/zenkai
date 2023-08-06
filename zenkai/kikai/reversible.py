@@ -13,7 +13,7 @@ from ..utils import Reversible, SequenceReversible
 
 
 class ReversibleMachine(LearningMachine):
-    """..."""
+    """Machine that executes a reverse operation to update x"""
 
     def __init__(
         self,

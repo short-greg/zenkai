@@ -16,6 +16,7 @@ from .core import (
     reduce_assessment_dim1,
     select_best_sample,
     select_best_individual,
+    gen_like
 )
 from .exploration import (
     AssessmentDist,

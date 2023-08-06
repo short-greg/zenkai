@@ -274,7 +274,7 @@ class ScikitMulticlass(ScikitEstimator):
         use_predict: bool = True,
         output_one_hot: bool = True,
     ):
-        """_summary_
+        """initializer
 
         Args:
             sklearn_machine : The estimator to adapt
