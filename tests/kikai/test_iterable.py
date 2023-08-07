@@ -39,7 +39,6 @@ class TestIterStepX:
         iter_step = IterStepX(learner2, 1, 128)
         state = State()
         y1 = learner1(x, state)
-        print('y1: ', id(y1))
         learner2(y1, state)
         learner2.step(y1, t, state)
         before = torch.clone(y1[0])
