@@ -312,7 +312,7 @@ class ScikitMulticlass(ScikitEstimator):
         Returns:
             torch.Tensor: Output of the estimator convert to one hot if required
         """
-        y = super().forward(x)
+        y = super().forward(x).long()
 
         if self.output_one_hot:
             return torch.nn.functional.one_hot(y, num_classes=self._n_classes)

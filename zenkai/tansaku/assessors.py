@@ -27,7 +27,6 @@ class XPopulationAssessor(PopulationAssessor):
         names: typing.List[str],
         loss_name: str,
         reduction: str,
-        k: int,
     ):
         """initializer
 
@@ -36,14 +35,12 @@ class XPopulationAssessor(PopulationAssessor):
             names (typing.List[str]): The names of the fields to assess
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
-            k (int): The population size
         """
 
         self.learner = learner
         self.names = names
         self.reduction = reduction
         self.loss_name = loss_name
-        self.k = k
 
     def assess(self, population: Population, t: IO) -> Population:
         """Assess a population
@@ -61,7 +58,7 @@ class XPopulationAssessor(PopulationAssessor):
         assessment = self.learner.assess(
             IO(*population.flattened(self.names)), t, reduction_override="none"
         )[self.loss_name]
-        assessment = reduce_assessment_dim1(assessment, self.k, True)
+        assessment = reduce_assessment_dim1(assessment, population.k, True)
         population.report(assessment)
 
         return population
