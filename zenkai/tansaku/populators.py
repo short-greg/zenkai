@@ -170,13 +170,14 @@ class VoterPopulator(Populator):
     """Populator that uses multiple outputs from votes
     """
     
-    def __init__(self, voter: Voter, x_name: str):
+    def __init__(self, k: int, voter: Voter, x_name: str):
         """initializer
 
         Args:
             voter (Voter): the module to use for voting
             x_name (str): the name of the input into x
         """
+        self.k = k
         self.voter = voter
         self.x_name = x_name
 
@@ -189,7 +190,10 @@ class VoterPopulator(Populator):
         Returns:
             Population: The resulting population
         """
-        result = {self.x_name: self.voter(individual[self.x_name])}
+        x = expand(individual[self.x_name], self.k)
+        y = self.voter(x.view(x.shape[0] * x.shape[1], *x.shape[2:]))
+    
+        result = {self.x_name: y.view(x.shape[0], x.shape[1], *y.shape[1:])}
         return Population(
             **result
         )
