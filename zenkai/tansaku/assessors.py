@@ -54,11 +54,15 @@ class XPopulationAssessor(PopulationAssessor):
         """
 
         t = expand_t(t, len(population))
+        x = population.flattened(self.names)
 
         assessment = self.learner.assess(
-            IO(*population.flattened(self.names)), t, reduction_override="none"
+            IO(*x), t, reduction_override="none"
         )[self.loss_name]
-        assessment = reduce_assessment_dim1(assessment, population.k, True)
+
+        if assessment.value.dim() >= 2:
+            assessment = reduce_assessment_dim1(assessment, population.k, True)
+        assessment = assessment.reshape(population.k, -1)
         population.report(assessment)
 
         return population
