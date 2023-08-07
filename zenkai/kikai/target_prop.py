@@ -1,7 +1,6 @@
 # 1st party
 import typing
 from abc import abstractmethod
-from itertools import chain
 
 # 3rd Party
 import torch
@@ -49,9 +48,17 @@ class StandardTargetPropLoss(TargetPropLoss):
         self.base_loss = base_loss
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """
+        Args:
+            x (IO[yx_prime, tx_prime]): The reconstruction of the input using t and y
+            t (IO[x]): The input to the machine
+            reduction_override (str, optional): Override for the reduction. Defaults to None.
+
+        Returns:
+            torch.Tensor: The resulting loss
+        """
         
-        # 1) map y to the input (learn to autoencode)
-        return self.base_loss(x.sub(1), t.sub(0), reduction_override=reduction_override)
+        return self.base_loss(x.sub(1), t, reduction_override=reduction_override)
 
 
 class RegTargetPropLoss(TargetPropLoss):
@@ -71,10 +78,17 @@ class RegTargetPropLoss(TargetPropLoss):
         self.reg_loss = reg_loss
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """
+        Args:
+            x (IO[yx_prime, tx_prime]): The reconstruction of the input using t and y
+            t (IO[x]): The input to the machine
+            reduction_override (str, optional): Override for the reduction. Defaults to None.
+
+        Returns:
+            torch.Tensor: The resulting loss
+        """
         
-        # 1) map y to the input (learn to autoencode)
-        # 2) reduce the difference between the mapping from y to x and the mapping from t to x 
         return (
-            self.base_loss(x.sub(1), t.sub(0), reduction_override=reduction_override) +
-            self.reg_loss(x.sub(0), x.sub(1).detach(), reduction_override=reduction_override)
+            self.base_loss(x.sub(1), t, reduction_override=reduction_override) +
+            self.reg_loss(x.sub(1), x.sub(0).detach(), reduction_override=reduction_override)
         )
