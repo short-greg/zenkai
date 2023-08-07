@@ -17,3 +17,4 @@ class TestXPopulationAssessor:
         )
         assessor.assess(population, IO(t))
         assert len(population.stack_assessments()) == 8
+    
