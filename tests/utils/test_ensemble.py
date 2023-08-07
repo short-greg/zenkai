@@ -1,6 +1,7 @@
 from zenkai.utils import ensemble
 import torch
 from torch import nn
+from torch.nn.functional import one_hot
 
 
 class TestMeanVoteAggregator:
@@ -39,12 +40,25 @@ class TestBinaryVoteAggregator:
 
 class TestMulticlassVoteAggregator:
 
-    def test_multiclass_voter_returns_best(self):
+    def test_multiclass_voter_returns_correct_shape(self):
 
         votes = (torch.randint(0, 3, (3, 4)))
         voter = ensemble.MulticlassVoteAggregator(4)
 
         assert voter(votes).shape == torch.Size([4])
+
+    def test_multiclass_aggregator_returns_correct_shape_with_one_hot(self):
+
+        votes = (torch.randint(0, 3, (3, 4)))
+        votes = one_hot(votes, 4)
+        voter = ensemble.MulticlassVoteAggregator(4, input_one_hot=True)
+        assert voter(votes).shape == torch.Size([4])
+
+    def test_multiclass_aggregator_returns_correct_shape_with_output_one_hot(self):
+
+        votes = (torch.randint(0, 3, (3, 4)))
+        voter = ensemble.MulticlassVoteAggregator(4, output_one_hot=True)
+        assert voter(votes).shape == torch.Size([4, 4])
 
 
 class TestEnsembleVoter:

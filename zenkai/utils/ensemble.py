@@ -122,12 +122,14 @@ class BinaryVoteAggregator(VoteAggregator):
 class MulticlassVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def __init__(self, n_classes: int = None):
+    def __init__(self, n_classes: int = None, input_one_hot: bool=False, output_one_hot: bool=False):
         """initializer
 
         Args:
             use_sign (bool, optional): Whether to use the sign on the output for binary results. Defaults to False.
-            n_classes (int, optional): Whether the inputs are . Defaults to None.
+            n_classes (int, optional): . Defaults to None.
+            input_one_hot (bool): Whether the inputs are one hot vectors
+            output_one_hot (bool): Whether to output a one hot vector
 
         Raises:
             ValueError: 
@@ -138,6 +140,8 @@ class MulticlassVoteAggregator(VoteAggregator):
         #
         super().__init__()
         self._n_classes = n_classes
+        self.input_one_hot = input_one_hot
+        self.output_one_hot = output_one_hot
 
     def forward(
         self, votes: torch.Tensor, weights: typing.List[float] = None
@@ -152,10 +156,15 @@ class MulticlassVoteAggregator(VoteAggregator):
             torch.Tensor: The aggregated result
         """
         # (batch, voters) -> (batch, voters, vote) -> (batch, votes)
-        votes = one_hot(votes, self._n_classes).float()
+        if not self.input_one_hot:
+            votes = one_hot(votes, self._n_classes)
+        votes = votes.float()
         votes = weighted_votes(votes, weights)
 
-        return votes.argmax(dim=-1)
+        result = votes.argmax(dim=-1)
+        if self.output_one_hot:
+            return one_hot(result, self._n_classes).float()
+        return result
 
 
 class Voter(nn.Module):
