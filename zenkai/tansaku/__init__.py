@@ -42,9 +42,6 @@ from .mixers import (
     IndividualMixer
 )
 from .influencers import (
-    BinaryAdjGaussianInfluencer,
-    BinaryGaussianInfluencer,
-    BinaryProbInfluencer,
     IndividualInfluencer,
     PopulationLimiter,
     SlopeInfluencer
