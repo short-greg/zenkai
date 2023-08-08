@@ -10,26 +10,11 @@ from ..kaku import IO, Assessment
 from ..kaku import Reduction
 
 # local
-from ..utils import get_model_parameters, update_model_parameters
+from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0
 
 # TODO: Move to utils
 
-def expand(x: torch.Tensor, k: int):
-    """Expand an input to repeat k times"""
-    return x[None].repeat(k, *([1] * len(x.shape)))
 
-
-def flatten(x: torch.Tensor):
-    """Flatten the population and batch dimensions of a population"""
-    return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
-
-
-def deflatten(x: torch.Tensor, k: int) -> torch.Tensor:
-    """Deflatten the population and batch dimensions of a population"""
-    if x.dim() == 0:
-        raise ValueError("Input dimension == 0")
-
-    return x.view(k, -1, *x.shape[1:])
 
 
 def reduce_assessment_dim0(
@@ -84,7 +69,7 @@ def expand_t(t: IO, k: int) -> IO:
 
     ts = []
     for t_i in t:
-        ts.append(flatten(expand(t_i, k)))
+        ts.append(expand_dim0(t_i, k, True))
 
     return IO(*ts)
 
@@ -614,9 +599,14 @@ class Population(object):
         Returns:
             torch.Tensor: The value at key
         """
+        if isinstance(key, slice):
+            if key == slice():
+                # return all
+                pass
         if isinstance(key, tuple):
             field, i = key
             return self._parameters[field][i]
+        
         return self._parameters[key]
 
     def __iter__(self) -> typing.Iterator[torch.Tensor]:
