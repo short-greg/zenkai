@@ -175,7 +175,7 @@ class IO(object):
         return IO(*self._x[low:high], detach=detach)
 
     @classmethod
-    def cat(cls, ios: 'IO') -> 'IO':
+    def cat(cls, ios: typing.Iterable['IO']) -> 'IO':
         """Concatenate
 
         Args:
@@ -184,17 +184,16 @@ class IO(object):
         Returns:
             IO: the concatenated IO
         """
-        de_io = [tuple(*io) for io in ios]
-        de_io = np.array(de_io).T.tolist()
-        xs = []
-        for x in de_io:
-            if isinstance(x, torch.Tensor):
-                xs.append(torch.cat(x))
-            elif isinstance(x, np.ndarray):
-                xs.append(np.concatenate(x))
+        results = []
+        for elements in zip(*ios):
+            if isinstance(elements[0], torch.Tensor):
+                results.append(torch.cat(elements))
+            elif isinstance(elements[0], np.ndarray):
+                results.append(np.concatenate(elements))
             else:
-                xs.append(x)
-        return IO(*xs)
+                # TODO: revisit if i want to do it like this
+                results.append(elements)
+        return IO(*results)
 
 
 class Idx(object):

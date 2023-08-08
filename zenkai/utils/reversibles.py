@@ -256,7 +256,7 @@ class Neg1ToZero(Reversible):
         Returns:
             torch.Tensor: the tensor with Negative one for
         """
-        return self._neg(y)
+        return (y * 2) - 1
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert Negative one to zero
@@ -267,4 +267,4 @@ class Neg1ToZero(Reversible):
         Returns:
             torch.Tensor: The tensor with zeros for negatives
         """
-        return self._neg.reverse(x)
+        return (x + 1) / 2
