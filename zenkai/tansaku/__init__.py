@@ -36,7 +36,11 @@ from .exploration import (
 )
 from .mixers import (
     KeepMixer,
-    IndividualMixer
+    IndividualMixer,
+    KBestElitism,
+    StandardPopulationMixer,
+    BinaryRandCrossOverBreeder,
+    SmoothCrossOverBreeder
 )
 from .influencers import (
     IndividualInfluencer,

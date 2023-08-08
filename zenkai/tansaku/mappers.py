@@ -175,6 +175,9 @@ class GaussianMutator(PopulationMapper):
             result[k] = v + torch.rand_like(v) * self.std + self.mean
         return Population(**result)
 
+    def spawn(self) -> 'GaussianMutator':
+        return GaussianMutator(self.std, self.mean)
+
 
 class BinaryMutator(PopulationMapper):
     """Randomly mutate boolean genes in the population
@@ -203,9 +206,14 @@ class BinaryMutator(PopulationMapper):
         
         result = {}
         for k, v in population:
-            to_flip = (torch.rand_like(v) > self.flip_p).float()
+            to_flip = (torch.rand_like(v) > self.flip_p)
             if self.signed_neg:
-                result[k] = to_flip(v)
+                result[k] = to_flip.float() * -v + (~to_flip).float() * v
             else:
-                result[k] = (v - to_flip).abs()
+                result[k] = (v - to_flip.float()).abs()
         return Population(**result)
+
+    def spawn(self) -> 'BinaryMutator':
+        return BinaryMutator(
+            self.flip_p, self.signed_neg
+        )

@@ -59,7 +59,7 @@ class FitnessProportionateDivider(Divider):
             )
             parents1.append(parent1)
             parents2.append(parent2)
-        return population.sub(parents1), population.sub(parents2)
+        return population.sub[parents1], population.sub[parents2]
 
     def spawn(self) -> Divider:
         return FitnessProportionateDivider(self.n_divisions)
@@ -86,7 +86,7 @@ class EqualDivider(Divider):
             p, 2 * len(fitness), True
         ).view(2, -1)
 
-        return population.sub(selection1), population.sub(selection2)
+        return population.sub[selection1], population.sub[selection2]
 
     def spawn(self) -> Divider:
         return EqualDivider()

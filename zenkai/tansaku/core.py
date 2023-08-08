@@ -551,7 +551,8 @@ class Population(object):
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
 
-    def sub(self, idx: typing.Union[typing.List[int], torch.LongTensor]) -> 'Population':
+    @property
+    def sub(self):
         """Retrieve a sub popopulation
 
         Args:
@@ -561,7 +562,7 @@ class Population(object):
             Population: the resulting population
         """
 
-        return Population(**{k: v[idx] for k, v in self})
+        return _popSub(self)
 
     def __contains__(self, key: str) -> bool:
         """
@@ -644,3 +645,19 @@ class Population(object):
             else:
                 results[key] = torch.clone(v)
         return Population(**results)
+
+
+class _popSub(object):
+
+    def __init__(self, population: Population):
+
+        self._population = population
+
+    def __getitem__(self, idx) -> Population:
+
+        return Population(**{k: v[idx] for k, v in self._population})
+
+# TODO:
+# add functional
+# cat, topk, math
+# 

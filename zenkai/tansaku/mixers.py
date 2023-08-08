@@ -45,7 +45,7 @@ class KeepMixer(IndividualMixer):
         Raises:
             ValueError: If the probability is invalid
         """
-        if not (0 < keep_p < 1.0):
+        if not (0 <= keep_p <= 1.0):
             raise ValueError(f"{keep_p} must be between 0 and 1.")
         self.keep_p = keep_p
 
@@ -59,14 +59,13 @@ class KeepMixer(IndividualMixer):
         Returns:
             Individual: The modified individual
         """
-        individual1, individual2 = individual2
         new_values = {}
         for k, v in individual1:
             if k in individual2:
                 keep = (torch.rand_like(v) < self.keep_p).type_as(v)
                 new_values[k] = keep * v + (1 - keep) * individual2[k]
 
-        return Individual(**{new_values})
+        return Individual(**new_values)
 
     def spawn(self) -> "KeepMixer":
         return KeepMixer(self.keep_p)
@@ -112,7 +111,9 @@ class KBestElitism(PopulationMixer):
             Population: the updated new generation
         """
         
-        _, indices = population1.stack_assessments().reduce('samplemeans').topk(self.k)
+        assessment = population1.stack_assessments().reduce('samplemeans')
+
+        _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
         results = {}
         for k, v in population1:
             if k in population2:
@@ -121,11 +122,18 @@ class KBestElitism(PopulationMixer):
                 )
 
         return Population(**results)
+    
+    def spawn(self) -> 'KBestElitism':
+        return KBestElitism(self.k)
 
 
 class BinaryRandCrossOverBreeder(StandardPopulationMixer):
     """Mix two tensors together by choosing one gene for each
     """
+
+    def __init__(self, p: float=0.5):
+        super().__init__()
+        self.p = p
 
     def mix(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
         """Mix two tensors together by choosing one gene for each
@@ -138,7 +146,7 @@ class BinaryRandCrossOverBreeder(StandardPopulationMixer):
         Returns:
             torch.Tensor: The mixed result
         """
-        to_choose = (torch.rand_like(val1) > 0.5)
+        to_choose = (torch.rand_like(val1) > self.p)
         return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
 
 
