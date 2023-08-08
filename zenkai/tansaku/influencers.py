@@ -87,7 +87,7 @@ class PopulationLimiter(PopulationInfluencer):
     
     """
 
-    def __init__(self, limit: torch.LongTensor):
+    def __init__(self, limit: torch.LongTensor=None):
 
         self.limit = limit
 
@@ -108,6 +108,9 @@ class PopulationLimiter(PopulationInfluencer):
             Population: The limited population
         """
         result = {}
+
+        if self.limit is None:
+            return population
 
         for k, v in population:
             individual_v = individual[k][None].clone()

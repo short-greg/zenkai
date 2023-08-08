@@ -149,6 +149,9 @@ class BinaryRandCrossOverBreeder(StandardPopulationMixer):
         to_choose = (torch.rand_like(val1) > self.p)
         return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
 
+    def spawn(self) -> 'BinaryRandCrossOverBreeder':
+        return BinaryRandCrossOverBreeder(self.p)
+
 
 class SmoothCrossOverBreeder(StandardPopulationMixer):
     """Do a smooth interpolation between the values to breed
@@ -167,4 +170,7 @@ class SmoothCrossOverBreeder(StandardPopulationMixer):
         """
         degree = torch.rand_like(val1)
         return val1 * degree + val2 * (1 - degree)
+    
+    def spawn(self) -> 'SmoothCrossOverBreeder':
+        return SmoothCrossOverBreeder()
 

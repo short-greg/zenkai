@@ -43,7 +43,7 @@ class HillClimbStepX(FeatureIdxStepX):
         self.limiter = PopulationLimiter()
         self.populator = GaussianPopulator(k, std=std)
         self.modifier = SlopeInfluencer(momentum, lr, maximize=maximize)
-        self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
+        self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean")
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update x
@@ -59,10 +59,10 @@ class HillClimbStepX(FeatureIdxStepX):
         """
         individual = Individual(x=x[0])
 
+        self.limiter.limit = feature_idx.tolist() if feature_idx is not None else None
         population = self.limiter(
             self.populator(individual),
             individual,
-            feature_idx.tolist() if feature_idx is not None else None,
         )
         population = self.assessor(population, t)
         selected = self.modifier(individual, population)
