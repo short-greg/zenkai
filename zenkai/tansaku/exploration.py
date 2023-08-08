@@ -17,9 +17,6 @@ from ..kaku import IO, Assessment
 from ..utils import get_model_parameters, update_model_parameters
 from .core import gather_idx_from_population, gaussian_sample
 
-# TODO: Consider how to handle these
-# Probably get rid of the first
-
 
 class NoiseReplace(torch.autograd.Function):
     """
@@ -41,77 +38,6 @@ class NoiseReplace(torch.autograd.Function):
 
         x, noisy = ctx.saved_tensors
         return (noisy + grad_output) - x, None
-
-
-class NoiseReplace2(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, noisy):
-        ctx.save_for_backward(x, noisy)
-        return noisy
-
-    @staticmethod
-    def backward(ctx, grad_output):
-
-        x, noisy = ctx.saved_tensors
-        grad_input = (noisy + grad_output) - x
-        direction = torch.sign(grad_input)
-        magnitude = torch.min(grad_output.abs(), grad_input.abs())
-        return direction * magnitude, None
-
-
-class NoiseReplace3(torch.autograd.Function):
-    """
-    Replace x with a noisy value. The gradInput for x will be the gradOutput and
-    for the noisy value it will be x.
-
-    Uses kind of a hack with 'chosen_idx' so that all entries that are not chosen
-    will be zero
-    """
-
-    @staticmethod
-    def forward(ctx, x, noisy, chosen_idx):
-        ctx.save_for_backward(x, noisy)
-        return noisy.clone(), chosen_idx.clone()
-
-    @staticmethod
-    def backward(ctx, grad_output: torch.Tensor, chosen_idx):
-
-        x, noisy = ctx.saved_tensors
-        # grad_input_ = grad_input.gather(1, chosen_idx)
-        # noisy = noisy.gather(1, chosen_idx)
-        # x = x.gather(1, chosen_idx)
-        # grad_output = grad_output.gather(1, chosen_idx)
-        grad_input_base = (noisy + grad_output) - x
-
-        grad_input_base = grad_input_base.view(
-            chosen_idx.shape[0], chosen_idx.shape[1], -1
-        )
-        chosen_idx_cur = chosen_idx[:, :, None].repeat(1, 1, grad_input_base.shape[2])
-
-        grad_input_zeros = torch.zeros_like(grad_input_base)
-        grad_input_zeros.scatter_(
-            1, chosen_idx_cur, grad_input_base.gather(1, chosen_idx_cur)
-        )
-
-        return grad_input_zeros.view(grad_output.shape), None, chosen_idx
-
-
-class ChooseIdx(torch.autograd.Function):
-    """
-    Use with NoiseReplace3
-
-    This chooses an index so that on the backpropagation only
-    """
-
-    @staticmethod
-    def forward(ctx, x, chosen_idx):
-        ctx.save_for_backward(chosen_idx)
-        return x
-
-    @staticmethod
-    def backward(ctx: Any, grad_output: torch.Tensor) -> Any:
-        (chosen_idx,) = ctx.saved_tensors
-        return grad_output, chosen_idx
 
 
 class ExplorerNoiser(nn.Module):
@@ -362,9 +288,9 @@ class ModuleNoise(nn.Module):
             raise ValueError("Weight must be in range (0, 1)")
         self._module_clone = module_clone
         self._weight = weight
-        self._parameters = get_model_parameters(module_clone)
-        self._direction_mean = torch.zeros_like(self._parameters)
-        self._direction_std = torch.zeros_like(self._parameters)
+        self._p = get_model_parameters(module_clone)
+        self._direction_mean = torch.zeros_like(self._p)
+        self._direction_var = torch.zeros_like(self._p)
         self._updated = False
         self._n_instances = n_instances
 
@@ -376,7 +302,7 @@ class ModuleNoise(nn.Module):
         """
 
         parameters = get_model_parameters(base_module)
-        dp = parameters - self._parameters
+        dp = parameters - self._p
         self._direction_var = (
             1 - self._weight
         ) * self._direction_var + self._weight * (dp - self._direction_mean) ** 2
@@ -393,23 +319,26 @@ class ModuleNoise(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the noisy output from the input
 
+        TODO: Make work with varying numbers of xs
+
         Args:
-            x (torch.Tensor): The input
+            x (torch.Tensor): The input dimensions[population, sample, *feature]
 
         Returns:
             torch.Tensor: The output
         """
-        x = x.view(self._n_instances, -1, *x.shape)
+        x = x.view(self._n_instances, -1, *x.shape[1:])
         ps = (
-            torch.randn(1, *self._direction_mean.shape, dtype=x.dtype, device=x.device)
+            torch.randn(self._n_instances, *self._direction_mean.shape, dtype=x.dtype, device=x.device)
             * torch.sqrt(self._direction_var[None])
             + self._direction_mean[None]
-        )
-        for x_i, p_i in (x, ps):
+        ) + get_model_parameters(self._module_clone)[None]
+        ys = []
+        for x_i, p_i in zip(x, ps):
             update_model_parameters(self._module_clone, p_i)
-            ys = self._module_clone(x_i)
-        ys = torch.vstack(ys)
-        return ys.view(ys.shape[0] * ys.shape[1], *ys.shape)
+            ys.append(self._module_clone(x_i))
+        
+        return torch.cat(ys)
 
 
 class AssessmentDist(ABC):
@@ -437,9 +366,14 @@ class AssessmentDist(ABC):
 
 class EqualsAssessmentDist(AssessmentDist):
     """Determine the distribution of the assessment to draw samples 
-    or get the mean"""
+    or get the mean. Use for binary or disrete sets"""
 
     def __init__(self, equals_value):
+        """initializer
+
+        Args:
+            equals_value: The value to get the distribution for
+        """
 
         self.equals_value = equals_value
 
@@ -455,13 +389,15 @@ class EqualsAssessmentDist(AssessmentDist):
             ValueError: The dimension of x is not 3
 
         Returns:
-            torch.Tensor: _description_
+            typing.Tuple[torch.Tensor, torch.Tensor] : mean, std  
         """
-        value = assessment.value[:, :, None]
-        if value.dim() != 3:
-            raise ValueError("Value must have dimension of 3 ")
-        if x.dim() != 3:
-            raise ValueError("Argument x must have dimension of 3")
+        if assessment.value.dim() != 2:
+            raise ValueError("Value must have dimension of 2 ")
+        if x.dim() == 3:
+            value = assessment.value[:, :, None]
+        else: value = assessment.value
+        if x.dim() not in (2, 3):
+            raise ValueError("Argument x must have dimension of 2 or 3")
         equals = (x == self.equals_value).type_as(x)
         value_assessment = (equals).type_as(x) * value
         var = value_assessment.var(dim=0)
@@ -499,3 +435,77 @@ class EqualsAssessmentDist(AssessmentDist):
         """
         mean, _ = self(assessment, x)
         return mean
+
+
+# TODO: Consider how to handle these
+# Probably get rid of the first
+
+# class NoiseReplace2(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, x, noisy):
+#         ctx.save_for_backward(x, noisy)
+#         return noisy
+
+#     @staticmethod
+#     def backward(ctx, grad_output):
+
+#         x, noisy = ctx.saved_tensors
+#         grad_input = (noisy + grad_output) - x
+#         direction = torch.sign(grad_input)
+#         magnitude = torch.min(grad_output.abs(), grad_input.abs())
+#         return direction * magnitude, None
+
+
+# class NoiseReplace3(torch.autograd.Function):
+#     """
+#     Replace x with a noisy value. The gradInput for x will be the gradOutput and
+#     for the noisy value it will be x.
+
+#     Uses kind of a hack with 'chosen_idx' so that all entries that are not chosen
+#     will be zero
+#     """
+
+#     @staticmethod
+#     def forward(ctx, x, noisy, chosen_idx):
+#         ctx.save_for_backward(x, noisy)
+#         return noisy.clone(), chosen_idx.clone()
+
+#     @staticmethod
+#     def backward(ctx, grad_output: torch.Tensor, chosen_idx):
+
+#         x, noisy = ctx.saved_tensors
+#         # grad_input_ = grad_input.gather(1, chosen_idx)
+#         # noisy = noisy.gather(1, chosen_idx)
+#         # x = x.gather(1, chosen_idx)
+#         # grad_output = grad_output.gather(1, chosen_idx)
+#         grad_input_base = (noisy + grad_output) - x
+
+#         grad_input_base = grad_input_base.view(
+#             chosen_idx.shape[0], chosen_idx.shape[1], -1
+#         )
+#         chosen_idx_cur = chosen_idx[:, :, None].repeat(1, 1, grad_input_base.shape[2])
+
+#         grad_input_zeros = torch.zeros_like(grad_input_base)
+#         grad_input_zeros.scatter_(
+#             1, chosen_idx_cur, grad_input_base.gather(1, chosen_idx_cur)
+#         )
+
+#         return grad_input_zeros.view(grad_output.shape), None, chosen_idx
+
+
+# class ChooseIdx(torch.autograd.Function):
+#     """
+#     Use with NoiseReplace3
+
+#     This chooses an index so that on the backpropagation only
+#     """
+
+#     @staticmethod
+#     def forward(ctx, x, chosen_idx):
+#         ctx.save_for_backward(chosen_idx)
+#         return x
+
+#     @staticmethod
+#     def backward(ctx: Any, grad_output: torch.Tensor) -> Any:
+#         (chosen_idx,) = ctx.saved_tensors
+#         return grad_output, chosen_idx

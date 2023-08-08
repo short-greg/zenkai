@@ -1,7 +1,8 @@
 import pytest
 import torch
 
-from zenkai.tansaku.core import Individual, Population
+from zenkai import Assessment
+from zenkai.tansaku.core import Individual, Population, select_best_individual, select_best_sample
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (assessment1, binary_individual1, binary_individual2,
@@ -69,4 +70,80 @@ class TestPopulation:
         population = Population(x=pop_x1)
         population.set_p(p1, "x", 1)
         assert (p1 == pop_x1[1]).all()
+
+
+class TestSelectBestSample:
+
+    def test_select_best_sample_returns_best_sample(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([[0.1, 2.0], [2.0, 0.05]])
+        )
+        samples = select_best_sample(x, value)
+        assert (samples[0] == x[0, 0]).all()
+        assert (samples[1] == x[1, 1]).all()
+
+    def test_select_best_sample_returns_best_sample_with_maximize(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([[0.1, 2.0], [2.0, 0.05]]), maximize=True
+        )
+        samples = select_best_sample(x, value)
+        assert (samples[0] == x[1, 0]).all()
+        assert (samples[1] == x[0, 1]).all()
+
+    def test_select_best_raises_value_error_if_assessment_size_is_wrong(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([0.1, 0.2])
+        )
+        with pytest.raises(ValueError):
+            select_best_sample(x, value)
     
+
+class TestSelectBestIndividual:
+
+    def test_select_best_individual_raises_value_error_with_incorrect_assessment_dim(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([[0.1, 2.0], [2.0, 0.05]])
+        )
+        with pytest.raises(ValueError):
+            select_best_individual(x, value)
+
+    def test_select_best_individual_returns_best_individual(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([0.1, 2.0])
+        )
+        samples = select_best_individual(x, value)
+        assert (samples[0] == x[0, 0]).all()
+        assert (samples[1] == x[0, 1]).all()
+
+
+    def test_select_best_individual_returns_best_individual_with_maximize(self):
+
+        x = torch.tensor(
+            [[[0, 1], [0, 2]], [[1, 0], [2, 0]]]
+        )
+        value = Assessment(
+            torch.tensor([0.1, 2.0]), maximize=True
+        )
+        samples = select_best_individual(x, value)
+        assert (samples[0] == x[1, 0]).all()
+        assert (samples[1] == x[1, 1]).all()

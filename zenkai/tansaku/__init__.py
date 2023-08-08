@@ -20,7 +20,6 @@ from .core import (
 )
 from .exploration import (
     AssessmentDist,
-    ChooseIdx,
     EqualsAssessmentDist,
     Explorer,
     ExplorerNoiser,
@@ -29,8 +28,6 @@ from .exploration import (
     Indexer,
     ModuleNoise,
     NoiseReplace,
-    NoiseReplace2,
-    NoiseReplace3,
     RandSelector,
     RepeatSpawner,
     collapse_k,
