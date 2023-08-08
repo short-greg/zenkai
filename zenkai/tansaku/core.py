@@ -201,7 +201,8 @@ def select_best_individual(
     Returns:
         Tensor: the best individual in the population
     """
-
+    if (assessment.value.dim() != 1):
+        raise ValueError('Expected one assessment for each individual')
     _, idx = assessment.best(0, True)
     return pop_val[idx[0]]
 
@@ -222,6 +223,8 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
     else:
         idx = value.argmin(0, True)
 
+    if (assessment.value.dim() != 2):
+        raise ValueError('Expected assessment for each sample for each individual')
     pop_val = pop_val.view(value.shape[0], value.shape[1], -1)
     idx = idx[:, :, None].repeat(1, 1, pop_val.shape[2])
     return pop_val.gather(0, idx).squeeze(0)
@@ -453,6 +456,8 @@ class Population(object):
         Returns:
             Population: self
         """
+        if not isinstance(assessment, Assessment):
+            raise ValueError(f'Argument assessment must be of type Assessment not {type(assessment)}')
         if len(assessment) != self._k:
             raise ValueError(
                 "Length of assessment must be same "

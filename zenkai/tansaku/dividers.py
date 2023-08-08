@@ -45,12 +45,13 @@ class FitnessProportionateDivider(Divider):
         """
         assessment = population.stack_assessments()
         assessment = assessment.view(assessment.shape[0], -1)
-        assessment.mean(1)
+        assessment = assessment.mean(dim=1)
         loss = assessment.value
         if not assessment.maximize:
             loss = 1 / (0.1 + loss)
         prob = (loss / loss.sum()).numpy()
-        
+        if (prob < 0.0).any():
+            raise ValueError('All assessments must be greater than 0 to use this divider')
         parents1, parents2 = [], []
         for _ in range(self.n_divisions):
             parent1, parent2 = np.random.choice(
@@ -58,10 +59,13 @@ class FitnessProportionateDivider(Divider):
             )
             parents1.append(parent1)
             parents2.append(parent2)
-        return population[parents1], population[parents2]
+        return population.sub(parents1), population.sub(parents2)
+
+    def spawn(self) -> Divider:
+        return FitnessProportionateDivider(self.n_divisions)
 
 
-class EqualSelector(Divider):
+class EqualDivider(Divider):
 
     def __call__(self, population: Population) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
@@ -78,14 +82,11 @@ class EqualSelector(Divider):
         else:
             p = torch.nn.functional.softmax(fitness.value, dim=0).detach()
         
-        selection = torch.multinomial(
+        selection1, selection2 = torch.multinomial(
             p, 2 * len(fitness), True
-        )
-        parents1, parents2 = [], []
+        ).view(2, -1)
 
-        for k, v in population:
-        # selection = selection.view(2, p.size(0))
-            selected1, selected2 = v[selection].view(2, selection.size(0) // 2, *v.shape[1:])
-            parents1.append(selected1)
-            parents2.append(selected2)
-        return Population(*parents1), Population(*parents2)
+        return population.sub(selection1), population.sub(selection2)
+
+    def spawn(self) -> Divider:
+        return EqualDivider()

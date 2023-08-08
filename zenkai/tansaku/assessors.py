@@ -36,7 +36,6 @@ class XPopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
-
         self.learner = learner
         self.names = names
         self.reduction = reduction
@@ -59,7 +58,6 @@ class XPopulationAssessor(PopulationAssessor):
         assessment = self.learner.assess(
             IO(*x), t, reduction_override="none"
         )[self.loss_name]
-
         if assessment.value.dim() >= 2:
             assessment = reduce_assessment_dim1(assessment, population.k, True)
         assessment = assessment.reshape(population.k, -1)
