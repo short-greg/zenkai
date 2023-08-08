@@ -13,11 +13,8 @@ from .core import (
     Population,
     binary_prob,
     cat_params,
-    deflatten,
-    expand,
-    flatten,
 )
-from ..utils import Voter
+from ..utils import Voter, expand_dim0
 
 
 class Populator(ABC):
@@ -143,7 +140,7 @@ class RepeatPopulator(StandardPopulator):
         Returns:
             typing.Union[torch.Tensor, Parameter]: The expanded value
         """
-        return expand(val, self.k)
+        return expand_dim0(val, self.k, False)
 
     def spawn(self) -> "RepeatPopulator":
         return RepeatPopulator(self.k)

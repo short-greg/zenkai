@@ -324,7 +324,7 @@ class BinaryGaussianReducer(Reducer):
         to_sample: bool = True,
         batch_equal: bool = False,
     ):
-        """_summary_
+        """initializer
 
         Args:
             x (str, optional): _description_. Defaults to 'x'.
