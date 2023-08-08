@@ -25,7 +25,6 @@ class ReversibleMachine(LearningMachine):
         Args:
             reversible (typing.Union[Reversible, typing.List[Reversible]]): Reversible module to adapt
             loss (ThLoss): The loss
-            maximize (bool, optional): _description_. Defaults to False.
         """
         super().__init__()
         if isinstance(reversible, typing.List):

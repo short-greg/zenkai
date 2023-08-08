@@ -1,9 +1,10 @@
-# TODO: Add code for post optim in here
-# local
+# 1st party
 from abc import abstractmethod
 
+# 3rd party
 import numpy as np
 
+# local
 from ..kaku import (
     IO,
     StepTheta,
@@ -30,8 +31,10 @@ class StackPostStepTheta(PostStepTheta):
     def step(self, x: IO, t: IO, state: State):
         
         if (self, 'stack') not in state:
-            state[self, 'stack'] = []
-        state[self, 'stack'].append((x, t))
+            state[self, 'stack_x'] = []
+            state[self, 'stack_t'] = []
+        state[self, 'stack_x'].append(x)
+        state[self, 'stack_t'].append(t)
     
     def adv(self, state: State):
         """complete the step by concatenating all ios and running
@@ -44,11 +47,11 @@ class StackPostStepTheta(PostStepTheta):
             RuntimeError: if step has not been executed
         """
         
-        stack = state.get(self, 'stack')
-        if stack is None:
+        stack_x = state.get(self, 'stack_x')
+        stack_t = state.get(self, 'stack_t')
+        if stack_x is None or stack_t is None:
             raise RuntimeError('Cannot adv if step has not been executed')
         
-        x_stack, t_stack = np.array(stack).T.tolist()
-        x = IO.cat(x_stack)
-        t = IO.cat(t_stack)
+        x = IO.cat(stack_x)
+        t = IO.cat(stack_t)
         self._base_step_theta.step(x, t, state)

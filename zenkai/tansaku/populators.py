@@ -317,6 +317,9 @@ class ConservativePopulator(PopulatorDecorator):
 
 
 class BinaryPopulator(StandardPopulator):
+    """
+    """
+
     def __init__(
         self,
         k: int = 1,
@@ -326,6 +329,19 @@ class BinaryPopulator(StandardPopulator):
         reorder_params: bool = True,
         zero_neg: bool = False,
     ):
+        """initializer
+
+        Args:
+            k (int, optional): The population size. Defaults to 1.
+            keep_p (float, optional): Probability of keeping the current value. Defaults to 0.1.
+            equal_change_dim (int, optional): Whether to change all values in an individual the same. Defaults to None.
+            to_change (typing.Union[int, float], optional): the number of elements to change. Defaults to None.
+            reorder_params (bool, optional): . Defaults to True.
+            zero_neg (bool, optional): whether the negative is 0 or -1. Defaults to False.
+
+        Raises:
+            RuntimeError: If the probability of keeping p is not valid
+        """
         if 0.0 >= keep_p or 1.0 < keep_p:
             raise RuntimeError("Argument p must be in range (0.0, 1.0] not {keep_p}")
         assert k > 1
