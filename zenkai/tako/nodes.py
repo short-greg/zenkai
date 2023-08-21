@@ -72,7 +72,7 @@ class Process(ABC):
     def y(self, y):
         """
         Args:
-            y (): The output for the node
+            y: The output for the node
         """
         raise NotImplementedError
 
@@ -91,7 +91,7 @@ class Process(ABC):
     def x(self, x):
         """
         Args:
-            x (): Set the input to the network
+            x: Set the input to the network
         """
         if isinstance(self._x, Process):
             self._x._remove_outgoing(self)
@@ -102,10 +102,10 @@ class Process(ABC):
     def lookup(self, by: dict):
         """
         Args:
-            by (): _description_
+            by: the outputs of the processes
 
         Returns:
-            _type_: _description_
+            typing.Any: Get the output of the node
         """
         return by.get(self._name, UNDEFINED)
 
@@ -113,8 +113,8 @@ class Process(ABC):
         """Set the value of y
 
         Args:
-            by (dict):
-            y (): The output to the network
+            by (dict): the outputs of the processes
+            y: The output to the network
         """
         by[self.name] = y
 
@@ -138,7 +138,7 @@ class Process(ABC):
             info (Info, optional): Info for the layer. Defaults to None.
 
         Returns:
-            Layer:
+            Layer: A new layer with self as incoming
         """
         return Layer(nn_module, x=to_incoming(self), name=name, info=info)
 
@@ -163,8 +163,8 @@ class Process(ABC):
         """Get an index from the output
 
         Args:
-            idx (typing.Union[slice, int]):
-            info (Info, optional): _description_. Defaults to None.
+            idx (typing.Union[slice, int]): 
+            info (Info, optional): The . Defaults to None.
 
         Returns:
             Index
@@ -174,10 +174,10 @@ class Process(ABC):
     def __getitem__(self, idx: int) -> typing.Any:
         """
         Args:
-            idx (int): 
+            idx (int): The 
 
         Returns:
-            typing.Any: _description_
+            typing.Any: The value from the process
         """
         return self.get(idx)
 
@@ -185,17 +185,17 @@ class Process(ABC):
     def _probe_out(self, by: dict):
         raise NotImplementedError
 
-    def probe(self, by):
-        """Probe the layer
+    def probe(self, by) -> typing.Any:
+        """Probe the layer. If 
 
         Args:
-            by (dict)
+            by (dict): The outputs of the processes
 
         Returns:
             result: value
         """
-        value = self._info.lookup(by)
-        if value is not None:
+        value = self.lookup(by)
+        if value is not UNDEFINED:
             return value
 
         result = self._probe_out(by)
@@ -203,17 +203,6 @@ class Process(ABC):
         if len(self._outgoing) > 1:
             self.set_by(by, result)
         return result
-
-    # def nest(self, tako: 'Tako', name=None, info=None, dive: bool=True) -> typing.Iterator['Process']:
-
-    #     # TODO: Brainsorm more about this
-    #     if dive is None:
-    #         yield Nested(tako, x=to_incoming(self), name=name, info=info)
-    #     else:
-    #         nested = Nested(tako, x=to_incoming(self), name=name, info=info)
-    #         for layer in nested.y_iter():
-    #             yield layer
-
 
 
 class Joint(Process):
@@ -224,7 +213,7 @@ class Joint(Process):
         """initializer
 
         Args:
-            x (_type_, optional): Input to the node. Defaults to UNDEFINED.
+            x (typing.Any, optional): Input to the node. Defaults to UNDEFINED.
             name (str, optional): Name of the node. Defaults to None.
             info (Info, optional): Info for the node. Defaults to None.
         """
@@ -401,9 +390,6 @@ class End(Process):
             x = self._x.probe(by)
         return x
 
-    # def y_(self, store: bool = True):
-    #     pass
-
 
 class Layer(Process):
     """
@@ -467,14 +453,6 @@ class Layer(Process):
         else:
             x = self._x.probe(by)
         return self.op(x)
-
-    # def y_(self, store: bool = True):
-    #     """_summary_
-
-    #     Args:
-    #         store (bool, optional): _description_. Defaults to True.
-    #     """
-    #     pass
 
 
 class In(Process):

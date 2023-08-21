@@ -75,7 +75,7 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         """use a hill climbing algorithm to update the input values
 
         Args:
-            learner (LearningMachine):
+            learner (LearningMachine): The learning machine to step for
         """
         super().__init__()
         self.learner = learner

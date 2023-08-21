@@ -27,12 +27,9 @@ from .ensemble import (
     StochasticVoter
 )
 from .utils import (
-    add_prev,
     binary_encoding,
-    calc_correlation_mae,
     calc_size2d,
     calc_stride2d,
-    coalesce,
     expand_dim0,
     flatten_dim0,
     deflatten_dim0,

@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from .core import ID, UNDEFINED, Func, Gen, Info
+from .core import ID, UNDEFINED, Gen, Info
 from .nodes import (
     Apply,
     End,

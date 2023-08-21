@@ -6,7 +6,7 @@ from functools import partial
 # 3rd party
 import torch.nn as nn
 
-from .core import Func
+from ..utils.modules import Lambda
 
 # local
 from .nodes import Info, Process
@@ -88,7 +88,7 @@ class FSpawner(ProcessSpawner):
         Returns:
             Process: The resulting process
         """
-        return process.to(Func(self.f, *args, **kwargs), name=self.name, info=self.info)
+        return process.to(Lambda(self.f, *args, **kwargs), name=self.name, info=self.info)
 
     @classmethod
     def partial(

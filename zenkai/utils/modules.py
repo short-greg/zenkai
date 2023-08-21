@@ -6,15 +6,17 @@ import torch.nn.functional
 
 class Lambda(nn.Module):
     """
-    Use as a
+    A generic function
     """
 
-    def __init__(self, f):
+    def __init__(self, f, *args, **kwargs):
         super().__init__()
         self._f = f
+        self._args = args
+        self._kwargs = kwargs
 
     def forward(self, *x: torch.Tensor):
-        return self._f(*x)
+        return self._f(*x, *self._args, **self._kwargs)
 
 
 class Argmax(nn.Module):
@@ -22,7 +24,7 @@ class Argmax(nn.Module):
         super().__init__()
         self._dim = dim
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.LongTensor:
         return torch.argmax(x, dim=-1)
 
 

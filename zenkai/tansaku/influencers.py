@@ -84,18 +84,23 @@ class SlopeInfluencer(IndividualInfluencer):
 
 class PopulationLimiter(PopulationInfluencer):
     """
-    
+    Allows the user to specify certain indices that can be updated in the individual.
+    Values at other indices will remain the same
     """
 
     def __init__(self, limit: torch.LongTensor=None):
+        """initializer
+
+        Args:
+            limit (torch.LongTensor, optional): The indices to use in the update. If None there is no limit. Defaults to None.
+        """
 
         self.limit = limit
 
     def __call__(
         self,
         population: Population,
-        individual: Individual,
-        limit: torch.LongTensor = None,
+        individual: Individual
     ) -> Population:
         """
 
@@ -115,7 +120,7 @@ class PopulationLimiter(PopulationInfluencer):
         for k, v in population:
             individual_v = individual[k][None].clone()
             individual_v = individual_v.repeat(v.size(0), 1, 1)
-            individual_v[:, :, limit] = v[:, :, limit].detach()
+            individual_v[:, :, self.limit] = v[:, :, self.limit].detach()
             result[k] = individual_v
         return Population(**result)
     

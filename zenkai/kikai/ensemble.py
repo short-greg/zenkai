@@ -65,15 +65,22 @@ class EnsembleLearner(LearningMachine):
 
 
 class EnsembleLearnerVoter(nn.Module):
+    """Wraps a learner in order to collect its votes
+    """
 
     def __init__(self, ensemble_learner: EnsembleLearner):
+        """initializer
+
+        Args:
+            ensemble_learner (EnsembleLearner): The learner to wrap
+        """
 
         super().__init__()
         self.ensemble_learner = ensemble_learner
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
 
-        y = self.ensemble_learner(IO(*x))
+        y = self.ensemble_learner.vote(IO(*x))
         if len(y) > 1:
             return y.totuple()
         return y[0]

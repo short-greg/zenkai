@@ -10,9 +10,6 @@ from collections import deque
 from sklearn.base import BaseEstimator
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 from torch.nn.functional import one_hot
-
-from zenkai.kaku.io import IO, Idx
-from zenkai.kaku.state import State
 import sklearn.base
 
 # local
