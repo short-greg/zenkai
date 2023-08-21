@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 
 
+
 class ID(object):
     """ID for a Tako
     """
@@ -24,25 +25,6 @@ class _UNDEFINED:
 
 
 UNDEFINED = _UNDEFINED() # instance of undefined object
-
-
-# TODO
-class Func(nn.Module):
-    """Module that wraps a function call"""
-
-    def __init__(self, f: typing.Callable, *args, **kwargs):
-        """initializer
-
-        Args:
-            f (typing.Callable): The function to wrap
-        """
-        super().__init__()
-        self._f = f
-        self.args = args
-        self.kwargs = kwargs
-
-    def forward(self, x) -> typing.Any:
-        return self._f(x, *self.args, **self.kwargs)
 
 
 class Gen(nn.Module):

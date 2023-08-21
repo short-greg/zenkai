@@ -70,19 +70,6 @@ def to_th_as(
     return x
 
 
-def coalesce(value, default_value) -> typing.Any:
-    """
-    Args:
-        value: Value to coalesce if none
-        default_value: Value to coalesce to
-
-    Returns:
-        Any: Either the default value or the value if not None
-    """
-
-    return value if value is not None else default_value
-
-
 def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False):
     """Expand an input to repeat k times"""
     y = x[None].repeat(k, *([1] * len(x.size())))  # .transpose(0, 1)
@@ -123,56 +110,6 @@ def set_parameters(parameters: torch.Tensor, net: nn.Module):
 def get_parameters(net: nn.Module):
     return parameters_to_vector(net.parameters())
 
-
-def update(
-    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
-):
-    assert lr is None or (0.0 <= lr <= 1.0)
-    if lr is not None:
-        new_ = (lr * new_) + (1 - lr) * (current)
-    return new_
-
-
-def update_param(
-    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
-):
-    p = nn.parameter.Parameter(update(current, new_, lr).detach())
-    return p
-
-
-def to_zero_neg(x: torch.Tensor) -> torch.Tensor:
-    """convert a 'signed' binary tensor to have zeros for negatives
-
-    Args:
-        x (torch.Tensor): Signed binary tensor
-
-    Returns:
-        torch.Tensor: The binary tensor with negatives as zero
-    """
-
-    return (x + 1) / 2
-
-
-def to_signed_neg(x: torch.Tensor) -> torch.Tensor:
-    """convert a 'zero' binary tensor to have negative ones for negatives
-
-    Args:
-        x (torch.Tensor): Binary tensor with zeros for negatives
-
-    Returns:
-        torch.Tensor: The signed binary tensor
-    """
-    return (x * 2) - 1
-
-
-def add_prev(cur, prev=None):
-
-    if cur is not None and prev is not None:
-        return cur + prev
-    if cur is not None:
-        return cur
-
-    return prev
 
 
 def get_model_parameters(model: nn.Module) -> torch.Tensor:
@@ -273,45 +210,46 @@ def update_grads_from_model(model: nn.Module, theta_grad: torch.Tensor, to_add: 
             raise RuntimeError(f"To add is set to False but the gradient has already been set")
 
 
-def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
-    """Calculate the mean absolute error in correlation
+
+def update(
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
+):
+    assert lr is None or (0.0 <= lr <= 1.0)
+    if lr is not None:
+        new_ = (lr * new_) + (1 - lr) * (current)
+    return new_
+
+
+def update_param(
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
+):
+    p = nn.parameter.Parameter(update(current, new_, lr).detach())
+    return p
+
+
+def to_zero_neg(x: torch.Tensor) -> torch.Tensor:
+    """convert a 'signed' binary tensor to have zeros for negatives
 
     Args:
-        x1 (torch.Tensor)
-        x2 (torch.Tensor)
+        x (torch.Tensor): Signed binary tensor
 
     Returns:
-        torch.Tensor: The correlation MAE
+        torch.Tensor: The binary tensor with negatives as zero
     """
 
-    corr1 = torch.corrcoef(torch.flatten(x1, 1))
-    corr2 = torch.corrcoef(torch.flatten(x2, 1))
-    return torch.abs(corr1 - corr2).mean()
+    return (x + 1) / 2
 
 
-def calc_stride2d(x: torch.Tensor, stride):
-    return (x.stride(0), x.stride(1), x.stride(2), stride[0], x.stride(2), stride[1])
+def to_signed_neg(x: torch.Tensor) -> torch.Tensor:
+    """convert a 'zero' binary tensor to have negative ones for negatives
 
+    Args:
+        x (torch.Tensor): Binary tensor with zeros for negatives
 
-def calc_size2d(x: torch.Tensor, stride, kernel_size):
-    return (
-        x.size(0),
-        x.size(1),
-        (x.size(2) - (kernel_size[0] - 1)) // stride[0],
-        (x.size(3) - (kernel_size[1] - 1)) // stride[1],
-        kernel_size[0],
-        kernel_size[1],
-    )
-
-
-@singledispatch
-def to_2dtuple(value: int) -> typing.Tuple[int, int]:
-    return (value, value)
-
-
-@to_2dtuple.register
-def _(value: tuple) -> typing.Tuple[int, int]:
-    return value
+    Returns:
+        torch.Tensor: The signed binary tensor
+    """
+    return (x * 2) - 1
 
 
 def binary_encoding(
@@ -338,6 +276,67 @@ def binary_encoding(
     shape = list(range(results.dim()))
     shape = shape[1:] + shape[0:1]
     return results.permute(*shape)
+
+
+def calc_stride2d(x: torch.Tensor, stride) -> typing.Tuple[int, int, int, int, int, int]:
+    """Calculate the stride when collapsing an image to a twod tensor
+
+    Args:
+        x (torch.Tensor): the image
+        stride (Tuple[int, int]): the stride to collapse with
+
+    Returns:
+        typing.Tuple: The resulting shape to collapse with
+    """
+    return (x.stride(0), x.stride(1), x.stride(2), stride[0], x.stride(2), stride[1])
+
+
+def calc_size2d(x: torch.Tensor, stride, kernel_size) -> typing.Tuple[int, int, int, int, int, int]:
+    """Calculate the size 2d
+
+    Args:
+        x (torch.Tensor): image
+        stride (int): The amount to stride by
+        kernel_size (Tuple[int, int]): the kernel used
+
+    Returns:
+        Tuple: The 
+    """
+    return (
+        x.size(0),
+        x.size(1),
+        (x.size(2) - (kernel_size[0] - 1)) // stride[0],
+        (x.size(3) - (kernel_size[1] - 1)) // stride[1],
+        kernel_size[0],
+        kernel_size[1],
+    )
+
+
+@singledispatch
+def to_2dtuple(value: int) -> typing.Tuple[int, int]:
+    return (value, value)
+
+
+@to_2dtuple.register
+def _(value: tuple) -> typing.Tuple[int, int]:
+    return value
+
+
+# def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
+#     """Calculate the mean absolute error in correlation
+
+#     Args:
+#         x1 (torch.Tensor)
+#         x2 (torch.Tensor)
+
+#     Returns:
+#         torch.Tensor: The correlation MAE
+#     """
+
+#     corr1 = torch.corrcoef(torch.flatten(x1, 1))
+#     corr2 = torch.corrcoef(torch.flatten(x2, 1))
+#     return torch.abs(corr1 - corr2).mean()
+
 
 
 # def chain(x, torch_modules: typing.Iterable[nn.Module]):

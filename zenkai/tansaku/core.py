@@ -16,7 +16,6 @@ from ..utils import get_model_parameters, update_model_parameters, expand_dim0, 
 
 
 
-
 def reduce_assessment_dim0(
     assessment: Assessment, k: int, reduction: str = "mean"
 ) -> Assessment:

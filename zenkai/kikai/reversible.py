@@ -1,11 +1,5 @@
 # 1st party
 import typing
-import torch
-import torch.nn as nn
-from zenkai.kaku.assess import AssessmentDict
-
-from zenkai.kaku.machine import IO
-from zenkai.kaku.state import State
 
 # local
 from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, ThLoss

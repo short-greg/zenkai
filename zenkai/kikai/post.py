@@ -1,9 +1,6 @@
 # 1st party
 from abc import abstractmethod
 
-# 3rd party
-import numpy as np
-
 # local
 from ..kaku import (
     IO,
