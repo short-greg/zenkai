@@ -20,7 +20,7 @@ def to_np(x: torch.Tensor) -> np.ndarray:
 def to_th(
     x: np.ndarray,
     dtype: torch.dtype,
-    device: torch.device,
+    device: torch.device=None,
     requires_grad: bool = False,
     retains_grad: bool = False,
 ) -> torch.Tensor:
@@ -34,7 +34,7 @@ def to_th(
         retains_grad (bool, optional): Whether the tensor retains a grad. Defaults to False.
 
     Returns:
-        torch.Tensor: _description_
+        torch.Tensor: result
     """
     x: torch.Tensor = torch.tensor(
         x, dtype=dtype, requires_grad=requires_grad, device=device
@@ -53,13 +53,13 @@ def to_th_as(
     """
 
     Args:
-        x (np.ndarray): _description_
-        as_ (torch.Tensor): _description_
-        requires_grad (bool, optional): _description_. Defaults to False.
-        retains_grad (bool, optional): _description_. Defaults to False.
+        x (np.ndarray): Array to convert
+        as_ (torch.Tensor): The array to base conversion off of
+        requires_grad (bool, optional): Whether the tensor requires grad. Defaults to False.
+        retains_grad (bool, optional): Whether the tensor retains a grad. Defaults to False.
 
     Returns:
-        torch.Tensor: _description_
+        torch.Tensor: result
     """
 
     x: torch.Tensor = torch.tensor(
@@ -70,8 +70,23 @@ def to_th_as(
     return x
 
 
-def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False):
-    """Expand an input to repeat k times"""
+def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
+    """Expand an input to repeat k times
+
+    Args:
+        x (torch.Tensor): input tensor
+        k (int): Number of times to repeat. Must be greater than 0
+        reshape (bool, optional): Whether to reshape the output so the first and second dimensions are combined. Defaults to False.
+
+    Raises:
+        ValueError: If k is less than or equal to 0
+
+    Returns:
+        torch.Tensor: the expanded tensor
+    """
+    if k <= 0:
+        raise ValueError(f'Argument k must be greater than 0 not {k}')
+
     y = x[None].repeat(k, *([1] * len(x.size())))  # .transpose(0, 1)
     if reshape:
         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
@@ -80,6 +95,8 @@ def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False):
 
 def flatten_dim0(x: torch.Tensor):
     """Flatten the population and batch dimensions of a population"""
+    if x.dim() < 2:
+        return x
     return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
 
 
@@ -98,18 +115,10 @@ def freshen(x: torch.Tensor, requires_grad: bool = True, inplace: bool = False):
         x.detach_()
     else:
         x = x.detach()
-    x = x.requires_grad_(requires_grad)
-    x.retain_grad()
+    if requires_grad:
+        x = x.requires_grad_(requires_grad)
+        x.retain_grad()
     return x
-
-
-def set_parameters(parameters: torch.Tensor, net: nn.Module):
-    vector_to_parameters(parameters, net.parameters())
-
-
-def get_parameters(net: nn.Module):
-    return parameters_to_vector(net.parameters())
-
 
 
 def get_model_parameters(model: nn.Module) -> torch.Tensor:
@@ -122,7 +131,7 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
         torch.Tensor: _description_
     """
 
-    return nn_utils.parameters_to_vector(model.parameters())
+    return parameters_to_vector(model.parameters())
 
 
 def update_model_parameters(model: nn.Module, theta: torch.Tensor):
@@ -133,7 +142,7 @@ def update_model_parameters(model: nn.Module, theta: torch.Tensor):
         theta (torch.Tensor): The new parameters for the model
     """
 
-    nn_utils.vector_to_parameters(theta, model.parameters())
+    vector_to_parameters(theta, model.parameters())
 
 
 def set_model_grads(model: nn.Module, theta_grad: torch.Tensor):
@@ -157,17 +166,16 @@ def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=
     Args:
         model (nn.Module): The module to update gradients for
         theta_grad (torch.Tensor): The gradient values to update with
+        to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
     """
     start = 0
     for p in model.parameters():
         finish = start + p.numel()
         cur = theta_grad[start:finish].reshape(p.shape)
-        if p.grad is None:
+        if p.grad is None or not to_add:
             p.grad = cur.detach()
         elif to_add:
-            p.grad.data += cur.detach()
-        else:
-            raise RuntimeError(f"To add is set to False but the gradient has already been set")
+            p.grad.data = p.grad.data + cur.detach()
         start = finish
 
 
@@ -191,39 +199,38 @@ def get_model_grads(model: nn.Module) -> typing.Union[torch.Tensor, None]:
     return torch.cat(grads)
 
 
-def update_grads_from_model(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
-    """Update the gradients of a module
+def lr_update(
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None) -> torch.Tensor:
+    """update tensor with learning rate
 
     Args:
-        model (nn.Module): The module to update gradients for
-        theta_grad (torch.Tensor): The gradient values to update with
+        current (torch.Tensor): current tensor
+        new_ (torch.Tensor): the new tensor
+        lr (typing.Optional[float], optional): the learning rate. Defaults to None.
+
+    Returns:
+        torch.Tensor: the updated tensor
     """
-    start = 0
-    for p in model.parameters():
-        finish = p.numel()
-        cur = theta_grad[start:finish].reshape(p.shape)
-        if p.grad is None:
-            p.grad = cur.detach()
-        elif to_add:
-            p.grad.data += cur.detach()
-        else:
-            raise RuntimeError(f"To add is set to False but the gradient has already been set")
-
-
-
-def update(
-    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
-):
     assert lr is None or (0.0 <= lr <= 1.0)
     if lr is not None:
         new_ = (lr * new_) + (1 - lr) * (current)
     return new_
 
 
-def update_param(
+def lr_update_param(
     current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
-):
-    p = nn.parameter.Parameter(update(current, new_, lr).detach())
+) -> nn.parameter.Parameter:
+    """update tensor with learning rate
+
+    Args:
+        current (torch.Tensor): current tensor
+        new_ (torch.Tensor): the new tensor
+        lr (typing.Optional[float], optional): the learning rate. Defaults to None.
+
+    Returns:
+        nn.parameter.Parameter: the updated tensor as a parameter
+    """
+    p = nn.parameter.Parameter(lr_update(current, new_, lr).detach())
     return p
 
 
@@ -231,7 +238,7 @@ def to_zero_neg(x: torch.Tensor) -> torch.Tensor:
     """convert a 'signed' binary tensor to have zeros for negatives
 
     Args:
-        x (torch.Tensor): Signed binary tensor
+        x (torch.Tensor): Signed binary tensor. Tensor must be all -1s or 1s to get expected result
 
     Returns:
         torch.Tensor: The binary tensor with negatives as zero
@@ -244,7 +251,7 @@ def to_signed_neg(x: torch.Tensor) -> torch.Tensor:
     """convert a 'zero' binary tensor to have negative ones for negatives
 
     Args:
-        x (torch.Tensor): Binary tensor with zeros for negatives
+        x (torch.Tensor): Binary tensor with zeros for negatives. Tensor must be all zeros and ones to get expected result
 
     Returns:
         torch.Tensor: The signed binary tensor
