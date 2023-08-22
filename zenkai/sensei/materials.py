@@ -66,13 +66,14 @@ class IODecorator(MaterialDecorator):
 class DLMaterial(Material):
     """Material that wraps a DataLoader"""
 
-    def __init__(self, dataloader_factory: typing.Callable[[], DataLoader]):
+    def __init__(self, dataloader_factory: typing.Callable[[], DataLoader], batch_size: int):
         """initializer
 
         Args:
             dataloader_factory (typing.Callable[[], DataLoader]): The DataLoader factory to wrap
         """
         self.dataloader_factory = dataloader_factory
+        self.batch_size = batch_size
 
     def __iter__(self) -> typing.Iterator:
         """Iterator
@@ -83,7 +84,7 @@ class DLMaterial(Material):
         Yields:
             typing.Any: The output of the dataloader
         """
-        for x in self.dataloader_factory():
+        for x in self.dataloader_factory(batch_size=self.batch_size):
             yield x
 
     @classmethod
@@ -109,18 +110,17 @@ class DLMaterial(Material):
         """
         if isinstance(dataset, typing.Iterable):
             dataset = ConcatDataset(dataset)
-        return DLMaterial(partial(DataLoader, dataset, batch_size, shuffle, **kwargs))
+        return DLMaterial(partial(DataLoader, dataset, shuffle=shuffle, **kwargs), batch_size)
 
     def update(
         self, 
         dataset: typing.Union[Dataset, typing.List[Dataset]],
-        batch_size: int,
         shuffle: bool = True,
         **kwargs
     ):
         if isinstance(dataset, typing.Iterable):
             dataset = ConcatDataset(dataset)
-        self.dataloader_factory = partial(DataLoader, dataset, batch_size, shuffle, **kwargs)
+        self.dataloader_factory = partial(DataLoader, dataset, shuffle=shuffle, **kwargs)
 
     @classmethod
     def load_tensor(
@@ -141,17 +141,16 @@ class DLMaterial(Material):
             DLMaterial: _description_
         """
         dataset = TensorDataset(*tensors)
-        return DLMaterial(partial(DataLoader, dataset, batch_size, shuffle, **kwargs))
+        return DLMaterial(partial(DataLoader, dataset, shuffle=shuffle, **kwargs), batch_size)
     
     def update_tensor(
         self, 
         tensors: typing.Tuple[torch.Tensor],
-        batch_size: int,
         shuffle: bool = True,
         **kwargs
     ):
         dataset = TensorDataset(*tensors)
-        self.dataloader_factory = partial(DataLoader, dataset, batch_size, shuffle, **kwargs)
+        self.dataloader_factory = partial(DataLoader, dataset, shuffle=shuffle, **kwargs)
 
     def __len__(self) -> int:
         return len(self.dataloader_factory())
