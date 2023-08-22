@@ -1,38 +1,195 @@
-# 1st party
-
-
 # 3rd party
 import torch
 import torch.nn as nn
+import numpy as np
+
+import pytest
 
 from zenkai.utils import utils
 
-# from .. import ThLoss
-# class TestThLoss:
 
-#     def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):
+class TestToTH:
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'none')
-#         evaluation = loss.forward(x, t)
-#         assert (evaluation == nn.MSELoss(reduction='none')(x, t)).all()
+    def test_to_th_converts_to_correct_dtype(self):
 
-#     def test_th_loss_outputs_correct_loss_with_mse_and_mean_reduction(self):
+        x = np.random.randn(2, 4)
+        y = utils.to_th(x, dtype=torch.float64)
+        assert y.dtype == torch.float64
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'mean')
-#         evaluation = loss.forward(x, t)
-#         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+    def test_to_th_sets_requires_grad(self):
+
+        x = np.random.randn(2, 4)
+        y = utils.to_th(x, dtype=torch.float64, requires_grad=True)
+        assert y.requires_grad is True
+
+    def test_to_th_sets_retain_grad(self):
+
+        x = np.random.randn(2, 4)
+        y = utils.to_th(x, dtype=torch.float64, requires_grad=True, retains_grad=True)
+        (y).sum().backward()
+        assert y.grad is not None
+
+
+class TestToTHAs:
+
+    def test_to_th_converts_to_correct_dtype(self):
+
+        x = np.random.randn(2, 4)
+        y = torch.randn(2, 4)
+        x = utils.to_th_as(x, y)
+        assert x.dtype == y.dtype
+
+    def test_to_th_sets_requires_grad(self):
+
+        x = np.random.randn(2, 4)
+        y = torch.randn(2, 4)
+        x = utils.to_th_as(x, y, requires_grad=True)
+        assert x.requires_grad is True
+
+    def test_to_th_sets_retain_grad(self):
+
+        x = np.random.randn(2, 4)
+        y = torch.randn(2, 4)
+        x = utils.to_th_as(x, y, requires_grad=True, retains_grad=True)
+        (x).sum().backward()
+        assert x.grad is not None
+
+
+class TestExpandDim0:
+
+    def test_expand_dim0_returns_correct_size_without_reshape(self):
+
+        x = torch.randn(2, 4)
+        x = utils.expand_dim0(x, 3)
+        assert x.shape[0] == 3
     
-#     def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
+    def test_expand_dim0_returns_correct_values_without_reshape(self):
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'none')
-#         evaluation = loss.forward(x, t, 'mean')
-#         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+        x = torch.randn(2, 4)
+        y = utils.expand_dim0(x, 3)
+        assert (x[None] == y).all()
+    
+    def test_expand_dim0_returns_correct_size_with_reshape(self):
+
+        x = torch.randn(2, 4)
+        x = utils.expand_dim0(x, 3, reshape=True)
+        assert x.shape[0] == 6
+    
+    def test_expand_dim0_raises_error_with_incorrect_k(self):
+
+        x = torch.randn(2, 4)
+        with pytest.raises(ValueError):
+            utils.expand_dim0(x, -1, reshape=True)
+
+
+class TestFlattenDim0:
+
+    def test_flatten_dim0_combines_first_two_dimensions(self):
+
+        x = torch.randn(2, 4, 2)
+        x = utils.flatten_dim0(x)
+        assert x.shape[0] == 8
+    
+    def test_flatten_dim0_leaves_tensor_same_if_one_dimensional(self):
+
+        x = torch.randn(2)
+        x = utils.flatten_dim0(x)
+        assert x.shape[0] == 2
+
+
+class TestDeflattenDim0:
+
+    def test_deflatten_dim0_undoes_the_flattening(self):
+
+        x = torch.randn(8, 2)
+        x = utils.deflatten_dim0(x, 2)
+        assert x.shape[0] == 2
+        assert x.shape[1] == 4
+
+
+class TestFreshen:
+
+    def test_freshen_retains_grad_if_require_grad_is_true(self):
+
+        x = torch.randn(8, 2)
+        x = utils.freshen(x, True)
+        (x).sum().backward()
+        assert x.grad is not None
+    
+    def test_freshen_detaches_grad_function(self):
+
+        x_base = utils.freshen(torch.rand(8, 2), True) * 2
+        x = utils.freshen(x_base)
+        assert x.grad_fn is None
+
+    def test_freshen_does_nothing_if_not_tensor(self):
+
+        x = utils.freshen(4, True)
+        assert x == 4
+
+
+class TestSetModelParameters:
+
+    def test_set_parameters_makes_the_two_modules_the_same(self):
+
+        mod1 = nn.Linear(2, 4)
+        mod2 = nn.Linear(2, 4)
+        utils.update_model_parameters(mod2, utils.get_model_parameters(mod1))
+        assert (
+            utils.get_model_parameters(mod1) == utils.get_model_parameters(mod2)
+        ).all()
+
+
+class TestSetModelGrads:
+
+    def test_set_model_grads_sets_correctly(self):
+
+        mod1 = nn.Linear(2, 4)
+        grads = torch.randn(12)
+
+        utils.update_model_grads(mod1, grads, False)
+        new_grads = utils.get_model_grads(mod1)
+        assert (new_grads == grads).all()
+
+    def test_set_model_grads_adds_grads_when_set_to_true(self):
+
+        mod1 = nn.Linear(2, 4)
+        grads = torch.randn(12)
+        grads2 = torch.randn(12)
+
+        utils.update_model_grads(mod1, grads, False)
+        utils.update_model_grads(mod1, grads2, True)
+        new_grads = utils.get_model_grads(mod1)
+        assert (new_grads == (grads + grads2)).all()
+
+    def test_set_model_grads_does_not_add_when_not_set_to_true(self):
+
+        mod1 = nn.Linear(2, 4)
+        grads = torch.randn(12)
+        grads2 = torch.randn(12)
+
+        utils.update_model_grads(mod1, grads, False)
+        utils.update_model_grads(mod1, grads2, False)
+        new_grads = utils.get_model_grads(mod1)
+        assert (new_grads == grads2).all()
+
+
+class TestLR:
+
+    def test_lr_update_interpolates_between_current_and_new(self):
+
+        x = torch.rand(2, 4)
+        y = torch.rand(2, 4)
+        z = utils.lr_update(x, y, 0.2)
+        assert (z == (y * 0.2 + x * 0.8)).all()
+
+    def test_lr_update_returns_new_if_no_learning_rate(self):
+
+        x = torch.rand(2, 4)
+        y = torch.rand(2, 4)
+        z = utils.lr_update(x, y)
+        assert (z == y).all()
+
 
 
 class TestBinaryEncoding(object):
@@ -59,46 +216,31 @@ class TestBinaryEncoding(object):
         assert encoding.shape == torch.Size([4, 2, 2])
 
 
-# class TestNullLoop(object):
-    
-#     def test_null_loop_does_not_loop(self): 
-        
-#         loop = utils.NullLoop()
-#         xt  = torch.rand(8, 4), torch.rand(8)
-#         result = [x_i for x_i in loop.loop(*xt)]
-#         assert len(result) == 1
+class TestToSignedNeg:
+
+    def test_to_signed_neg_converts_zero_to_neg1(self):
+
+        x = torch.zeros(2, 4)
+        x = utils.to_signed_neg(x)
+        assert (x == -1).all()
+
+    def test_to_signed_neg_leaves_one_as_one(self):
+
+        x = torch.ones(2, 4)
+        x = utils.to_signed_neg(x)
+        assert (x == 1).all()
 
 
-# class TestTensorIDX:
+class TestToZeroNeg:
 
-#     def test_tensor_update_x_is_correct_value(self):
+    def test_to_zero_neg_converts_neg1_to_zero(self):
 
-#         x = torch.rand(4)
-#         update = utils.Idx()
-#         assert update.idx is None
+        x = -torch.ones(2, 4)
+        x = utils.to_zero_neg(x)
+        assert (x == 0).all()
 
-#     def test_tensor_update_idx_is_correct_value(self):
+    def test_to_signed_neg_leaves_one_as_one(self):
 
-#         x = torch.rand(4)
-#         idx = torch.LongTensor([0, 1, 2, 4])
-#         update = utils.Idx(idx)
-#         assert (idx == update.idx).all()
-
-
-# class TestDLLoop(object):
-
-#     def test_create_dataloader_outputs_correct_length(self):
-
-#         dlloop = utils.DLLoop(4)
-#         loader = dlloop.create_dataloader(torch.rand(8, 4), torch.rand(8))
-#         assert len(loader) == 2
-
-#     def test_loop_over_dl_returns_correct_values(self):
-
-#         dlloop = utils.DLLoop(4, shuffle=False)
-#         xt  = torch.rand(8, 4), torch.rand(8)
-#         result = [x_i for x_i in dlloop.loop(*xt)]
-#         assert (result[0][0] == xt[0][:4]).all()
-#         assert (result[0][1] == xt[1][:4]).all()
-#         assert (result[1][0] == xt[0][4:]).all()
-#         assert (result[1][1] == xt[1][4:]).all()
+        x = torch.ones(2, 4)
+        x = utils.to_zero_neg(x)
+        assert (x == 1).all()
