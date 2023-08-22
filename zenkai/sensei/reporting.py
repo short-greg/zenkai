@@ -203,6 +203,7 @@ class Record(object):
     def __init__(self):
         """initializer"""
         self._logs: typing.Dict[str, Log] = {}
+        self._data = {}
 
     def create_logger(self, teacher_name: str, material: Material) -> "Logger":
         """Create a logger for a teacher (Review and see if this is necessary)
@@ -289,6 +290,32 @@ class Record(object):
             ignore_index=True,
         )
 
+    def store_data(self, teacher_name: str, key: str, data):
+        """add data to the record for the teacher
+
+        Args:
+            key (str): the name for the data
+            data (Any): The data to store
+        """
+        if teacher_name not in self._data:
+            self._data[teacher_name] = {}
+        self._data[teacher_name][key] = data
+
+    def get_data(self, teacher_name: str, key: str) -> typing.Any:
+        """get data from the record for the teacher
+
+        Args:
+            teacher_name (str): name of teacher to get data for
+            key (str): the name for the data
+
+        Returns:
+            typing.Any: the stored data, None if no data
+        """
+
+        if teacher_name not in self._data:
+            return None
+        return self._data[teacher_name].get(key)
+
     def __getitem__(self, teacher_name: str) -> Log:
         """
         Args:
@@ -301,8 +328,11 @@ class Record(object):
 
 
 class Logger(object):
+    """Convenience class to make updating a log easier
+    """
+
     def __init__(self, record: Record, teacher: str, material: Material):
-        """Convenience class to make updating a log easier
+        """initializer
 
         Args:
             record (Record): The record to update
@@ -365,6 +395,27 @@ class Logger(object):
             pd.DataFrame: The DataFrame for the Teacher
         """
         return self._record[self._teacher].df
+    
+    def store_data(self, key: str, data):
+        """add data to the record for the teacher
+
+        Args:
+            key (str): the name for the data
+            data (Any): The data to store
+        """
+        self._record.store_data(self._teacher, key, data)
+
+    def get_data(self, key: str) -> typing.Any:
+        """get data from the record for the teacher
+
+        Args:
+            key (str): the name for the data
+
+        Returns:
+            typing.Any: the stored data, None if no data
+        """
+
+        return self._record.get_data(self._teacher, key)
 
 
 class Results(object):
@@ -428,3 +479,26 @@ class Results(object):
                 result = result[-window:]
             aggregated[k] = np.mean(result)
         return aggregated
+
+
+class TrainingProgress(object):
+    """Data structure for training progress
+    """
+
+    def __init__(self, n_epochs: int, n_iterations: int):
+
+        self.cur_epoch = 0
+        self.n_epochs = n_epochs
+        self.cur_iteration = 0
+        self.n_iterations = n_iterations
+
+    def adv_epoch(self, n_iterations: int=None):
+        """Move the progress forward one epoch
+
+        Args:
+            n_iterations (int, optional): The number of iterations in the epoch. Use None to keep it the same. Defaults to None.
+        """
+        self.cur_iteration = 0
+        if self.n_iterations is not None:
+            self.n_iterations = n_iterations
+        self.cur_epoch += 1

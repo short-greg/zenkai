@@ -111,6 +111,17 @@ class DLMaterial(Material):
             dataset = ConcatDataset(dataset)
         return DLMaterial(partial(DataLoader, dataset, batch_size, shuffle, **kwargs))
 
+    def update(
+        self, 
+        dataset: typing.Union[Dataset, typing.List[Dataset]],
+        batch_size: int,
+        shuffle: bool = True,
+        **kwargs
+    ):
+        if isinstance(dataset, typing.Iterable):
+            dataset = ConcatDataset(dataset)
+        self.dataloader_factory = partial(DataLoader, dataset, batch_size, shuffle, **kwargs)
+
     @classmethod
     def load_tensor(
         self,
@@ -131,6 +142,16 @@ class DLMaterial(Material):
         """
         dataset = TensorDataset(*tensors)
         return DLMaterial(partial(DataLoader, dataset, batch_size, shuffle, **kwargs))
+    
+    def update_tensor(
+        self, 
+        tensors: typing.Tuple[torch.Tensor],
+        batch_size: int,
+        shuffle: bool = True,
+        **kwargs
+    ):
+        dataset = TensorDataset(*tensors)
+        self.dataloader_factory = partial(DataLoader, dataset, batch_size, shuffle, **kwargs)
 
     def __len__(self) -> int:
         return len(self.dataloader_factory())
