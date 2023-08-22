@@ -99,6 +99,7 @@ class TestFreezeDropout:
 
     def test_freeze_dropout_outputs_same_value(self):
 
+        torch.manual_seed(1)
         dropout = modules.FreezeDropout(0.1, True)
         x = torch.rand(2, 2)
         y = dropout(x)
@@ -107,6 +108,7 @@ class TestFreezeDropout:
 
     def test_freeze_dropout_outputs_same_value_when_testing(self):
 
+        torch.manual_seed(1)
         dropout = modules.FreezeDropout(0.1, True)
         dropout.eval()
         x = torch.rand(2, 2)
@@ -116,6 +118,7 @@ class TestFreezeDropout:
 
     def test_freeze_dropout_outputs_different_values_with_unfrozen(self):
 
+        torch.manual_seed(1)
         dropout = modules.FreezeDropout(0.1, False)
         x = torch.rand(2, 2)
         y2 = dropout(x)
@@ -124,6 +127,7 @@ class TestFreezeDropout:
 
     def test_freeze_dropout_outputs_different_value_after_unfreezing(self):
 
+        torch.manual_seed(1)
         dropout = modules.FreezeDropout(0.1, True)
         x = torch.rand(2, 2)
         y = dropout(x)
