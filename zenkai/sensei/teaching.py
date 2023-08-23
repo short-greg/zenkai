@@ -160,6 +160,9 @@ def validation_train(
     validation_material: Material,
     n_epochs: int = 1,
     use_io: bool = False,
+    trainer_name: str='Trainer',
+    validator_name: str='Validator',
+    record: Record=None
 ) -> Record:
     """Train the learner for validation
 
@@ -174,12 +177,12 @@ def validation_train(
         Record: The results of teaching
     """
 
-    record = Record()
+    record = record or Record()
     if use_io:
         training_material = IODecorator(training_material)
         validation_material = IODecorator(validation_material)
-    trainer = Trainer("Trainer", learner, training_material, record=record)
-    validator = Validator("Validator", learner, validation_material, record=record)
+    trainer = Trainer(trainer_name, learner, training_material, record=record)
+    validator = Validator(validator_name, learner, validation_material, record=record)
 
     for i in range(n_epochs):
         trainer.teach(epoch=i, n_epochs=n_epochs)
@@ -194,6 +197,9 @@ def train(
     n_epochs: int = 1,
     use_io: bool = False,
     window: int = 30,
+    trainer_name: str='Trainer',
+    tester_name: str='Tester',
+    record: Record=None
 ) -> Record:
     """Train the learner for testing
 
@@ -207,14 +213,14 @@ def train(
     Returns:
         Record: The results of teaching
     """
-    record = Record()
+    record = record or Record()
     if use_io:
         training_material = IODecorator(training_material)
-    trainer = Trainer("Trainer", learner, training_material, record=record, window=window)
+    trainer = Trainer(trainer_name, learner, training_material, record=record, window=window)
     if testing_material:
         if use_io:
             testing_material = IODecorator(testing_material)
-        tester = Validator("Validator", learner, testing_material, record=record)
+        tester = Validator(tester_name, learner, testing_material, record=record)
     else:
         tester = None
 
