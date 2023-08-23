@@ -270,23 +270,32 @@ class Teacher(ABC):
         """
         pass
 
-    def register(self, assistant: Assistant):
+    def register(self, assistant: typing.Union[typing.Iterable[Assistant], Assistant]):
         """Add an assistant to the registry
 
         Args:
             assistant (Assistant): The assistant to add
         """
+
         if not hasattr(self, "_assistants"):
             self._assistants = {}
-        self._assistants[assistant.name] = assistant
 
-    def deregister(self, assistant: str):
+        if isinstance(assistant, str):
+            assistant = [assistant]
+        for assistant_i in assistant:
+            self._assistants[assistant_i.name] = assistant_i
+
+    def deregister(self, assistant: typing.Union[typing.Iterable[str], str]):
         """Remove an assistant from the registry
 
         Args:
             assistant (str): Assistant to remove
         """
-        del self._assistants[assistant]
+        if isinstance(assistant, str):
+            assistant = [assistant]
+        
+        for assistant_i in assistant:
+            del self._assistants[assistant_i]
 
     def __call__(self, *args, **kwargs):
         """Execute the teaching process
