@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 # local
 from ..kaku import Learner
-from .base import Classroom, Desk, Teacher
+from .base import Classroom, Desk, Teacher, Assistant
 from .materials import IODecorator, Material
 from .reporting import Record, Results
 
@@ -160,6 +160,8 @@ def validation_train(
     validation_material: Material,
     n_epochs: int = 1,
     use_io: bool = False,
+    training_assistants: typing.List[Assistant]=None,
+    validation_assistants: typing.List[Assistant]=None,
     trainer_name: str='Trainer',
     validator_name: str='Validator',
     record: Record=None
@@ -182,8 +184,11 @@ def validation_train(
         training_material = IODecorator(training_material)
         validation_material = IODecorator(validation_material)
     trainer = Trainer(trainer_name, learner, training_material, record=record)
+    if training_assistants is not None:
+        trainer.register(training_assistants)
     validator = Validator(validator_name, learner, validation_material, record=record)
-
+    if validation_assistants is not None:
+        validator.register(validation_assistants)
     for i in range(n_epochs):
         trainer.teach(epoch=i, n_epochs=n_epochs)
         validator.teach(epoch=i, n_epochs=n_epochs)
@@ -197,6 +202,8 @@ def train(
     n_epochs: int = 1,
     use_io: bool = False,
     window: int = 30,
+    training_assistants: typing.List[Assistant]=None,
+    testing_assistants: typing.List[Assistant]=None,
     trainer_name: str='Trainer',
     tester_name: str='Tester',
     record: Record=None
@@ -217,10 +224,14 @@ def train(
     if use_io:
         training_material = IODecorator(training_material)
     trainer = Trainer(trainer_name, learner, training_material, record=record, window=window)
+    if training_assistants is not None:
+        trainer.register(training_assistants)
     if testing_material:
         if use_io:
             testing_material = IODecorator(testing_material)
         tester = Validator(tester_name, learner, testing_material, record=record)
+        if testing_assistants is not None:
+            tester.register(testing_assistants)
     else:
         tester = None
 
