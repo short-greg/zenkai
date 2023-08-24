@@ -221,6 +221,7 @@ def train(
         Record: The results of teaching
     """
     record = record or Record()
+    print(training_material.batch_size, len(training_material))
     if use_io:
         training_material = IODecorator(training_material)
     trainer = Trainer(trainer_name, learner, training_material, record=record, window=window)

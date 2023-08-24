@@ -226,6 +226,18 @@ class AssistantTeam(object):
             del self._assistants[assistant.name]
         self._assistants[assistant.name] = assistant
 
+    def remove(self, assistant: str, ignore_lack: bool=True):
+        """Remove an assistant from the team
+
+        Args:
+            assistant (str): the name of the assistant to remove
+        """
+        if assistant not in self._assistants:
+            if ignore_lack:
+                return
+            raise ValueError(f'No assistant named {assistant} to remove in team')
+        del self._assistants[assistant]
+
     def assist(
         self,
         teacher_name: str,
@@ -283,7 +295,9 @@ class Teacher(ABC):
         if isinstance(assistant, str):
             assistant = [assistant]
         for assistant_i in assistant:
-            self._assistants[assistant_i.name] = assistant_i
+            self._assistants.add(
+                assistant_i, True
+            )
 
     def deregister(self, assistant: typing.Union[typing.Iterable[str], str]):
         """Remove an assistant from the registry
@@ -295,7 +309,7 @@ class Teacher(ABC):
             assistant = [assistant]
         
         for assistant_i in assistant:
-            del self._assistants[assistant_i]
+            self._assistants.remove(assistant_i)
 
     def __call__(self, *args, **kwargs):
         """Execute the teaching process

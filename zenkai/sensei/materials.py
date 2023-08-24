@@ -153,7 +153,7 @@ class DLMaterial(Material):
         self.dataloader_factory = partial(DataLoader, dataset, shuffle=shuffle, **kwargs)
 
     def __len__(self) -> int:
-        return len(self.dataloader_factory())
+        return len(self.dataloader_factory(batch_size=self.batch_size))
 
 
 def split_dataset(
