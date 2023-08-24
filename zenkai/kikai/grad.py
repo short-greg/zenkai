@@ -5,6 +5,9 @@ import typing
 import torch.nn as nn
 import torch
 
+from .. import kaku
+from ..utils import module_factory
+
 # Local
 from ..kaku import (
     IO,
@@ -13,6 +16,7 @@ from ..kaku import (
     Idx,
     LearningMachine,
     State,
+    Loss,
     StepTheta,
     StepX,
     idx_io,
@@ -241,6 +245,36 @@ class GradLoopStepX(BatchIdxStepX):
         assessment.backward(self.loss_name)
         x_state.optim.step()
         return x
+
+
+class ActivationLearner(LearningMachine):
+
+    def __init__(
+        self, activation: typing.Union[str, nn.Module], 
+        loss: typing.Union[str, Loss]='mse'
+    ):
+        super().__init__()
+        self.activation = module_factory(activation)
+        if isinstance(loss, str):
+            loss = ThLoss(loss)
+        self.loss = loss
+
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+
+        x.freshen() 
+        y = state[self, x, 'y'] = IO(self.activation(x[0]))
+        return y.out(release)
+    
+    def step(self, x: IO, t: IO, state: State):
+        pass
+
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        
+        y = state.get(self, x, 'y')
+        if y is None:
+            y = self(y, state, release=False)
+        self.loss(y, t).backward()
+        return IO(y[0] - y[0].grad, detach=True)
 
 
 class GradLearner(LearningMachine):

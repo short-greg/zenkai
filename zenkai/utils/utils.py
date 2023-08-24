@@ -329,6 +329,20 @@ def _(value: tuple) -> typing.Tuple[int, int]:
     return value
 
 
+
+def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.Module:
+
+    if isinstance(module, nn.Module):
+        if len(args) != 0:
+            raise ValueError(f'Cannot set args if module is already defined')
+        if len(kwargs) != 0:
+            raise ValueError(f'Cannot set kwargs if module is already defined')
+
+        return module
+    
+    return getattr(nn, module)(*args, **kwargs)
+
+
 # def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
 #     """Calculate the mean absolute error in correlation
 
