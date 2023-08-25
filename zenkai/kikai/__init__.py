@@ -66,5 +66,5 @@ from .target_prop import (
 )
 from .ensemble import EnsembleLearner, EnsembleLearnerVoter
 from .feedback_alignment import (
-    BStepX, FALinearLearner
+    BStepX, FALinearLearner, DFALearner, FALearner
 )
