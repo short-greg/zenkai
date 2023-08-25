@@ -40,13 +40,7 @@ class State(object):
         Returns:
             str: The key
         """
-        if isinstance(obj, str):
-            return obj
-
-        try:
-            return obj.id
-        except AttributeError:
-            return id(obj)
+        return id(obj)
 
     def store(self, obj: IDable, key: typing.Hashable, value):
         """Store data in the state
@@ -149,12 +143,14 @@ class State(object):
         """
         if len(index) == 3:
             obj, sub, key = index
-            sub = self.id(sub)
+            key = (self.id(sub), key)
         else:
             obj, key = index
             sub = None
 
-        return self.store(obj, key, value)
+        obj_data, _ = self._get_obj(obj)
+        obj_data[key] = value
+        return value
 
     def _get_obj(self, obj, to_add: bool = True):
         id = self.id(obj)
@@ -270,6 +266,7 @@ class State(object):
             obj, key = key
             sub = None
         id = self.id(obj)
+        print(key)
         return id in self._data and key in self._data[id]
     
     def log_assessment_dict(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, assessment_dict: AssessmentDict):

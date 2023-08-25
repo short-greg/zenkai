@@ -65,6 +65,6 @@ from .target_prop import (
     StandardTargetPropLoss
 )
 from .ensemble import EnsembleLearner, EnsembleLearnerVoter
-from .fa import (
+from .feedback_alignment import (
     BStepX, FALinearLearner
 )
