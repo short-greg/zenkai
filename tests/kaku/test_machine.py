@@ -56,6 +56,12 @@ class TestState:
         sub2 = state.sub(x, 'sub', to_add=False)
         assert sub1 is sub2
 
+    def test_data_is_in_state_after_setting(self):
+
+        io = IO()
+        state = core.State()
+        state[self, io, 'x'] = 2
+        assert (self, io, 'x') in state
 
 class Base:
 
@@ -217,6 +223,7 @@ class SimpleLearner(core.LearningMachine):
         self.optim.step()
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+        x.freshen()
         y = state[self, x, 'y'] = IO(self.linear(x[0])) 
         return y.out(release)
 
