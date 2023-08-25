@@ -161,24 +161,25 @@ class FALearner(LearningMachine):
         Returns:
             IO: the updated target
         """
+        my_state = state.mine((self, x))
         self.optim.zero_grad()
         self.netB.zero_grad()    
 
-        if ((self, x), 'y') not in state:
+        if 'y' not in my_state:
             self(x, state=state)
         y = self.netB(x[0])
-        y.data = state[(self, x), 'y'][0].data
+        y.data = my_state.y[0].data
         self.loss(IO(y), t).backward()
 
-        grads = state.get(self, (x, 'grad'))
+        grads = state.get((self, x), 'grad')
         if grads is None:
-            state[(self, x), 'grad'] = get_model_grads(self.netB)
-            state[(self, x), 'x_grad'] = x[0].grad
+            my_state.grad = get_model_grads(self.netB)
+            my_state.x_grad = x[0].grad
         else:
-            state[(self, x), 'grad'] = get_model_grads(self.netB) + grads
-            state[(self, x), 'x_grad'] = state[self, x, 'x_grad'] + x[0].grad
+            my_state.grad = get_model_grads(self.netB) + grads
+            my_state.x_grad = my_state.x_grad + x[0].grad
         
-        state[(self, x), 'stepped'] = True
+        my_state.stepped = True
         if self.auto_adv:
             self.adv(x, state)
 
@@ -236,14 +237,14 @@ class DFALearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        x = state[(self, x), 'y'] = IO(self.net(x[0]))
-        return x
+        y = state[(self, x), 'y'] = IO(self.net(x[0]))
+        return y
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
     
     def step(self, x: IO, t: IO, state: State):
-        """Update the 
+        """Update the net parameters
 
         Args:
             x (IO[x]): the input
@@ -253,29 +254,31 @@ class DFALearner(LearningMachine):
         Returns:
             IO: the updated target
         """
+        my_state = state.mine((self, x))
         self.optim.zero_grad()
         self.netB.zero_grad()
         self.B.zero_grad()
+        if 'y' not in my_state:
+            self(x, state=state)
+        
         y = self.netB(x[0])
-        if (self, x, 'y') not in state:
-            self(x, state)
-
-        y[0].data = state[(self, x), 'y'][0].data
+        y.data = my_state.y[0].data
         y = self.B(y)
-        self.loss(y, t).backward()
+        self.loss(IO(y), t).backward()
+        assert x[0].grad is not None
+        grads = state.get((self, x), 'grad')
 
-        grads = state.get(self, x, 'grad')
         if grads is None:
-            state[(self, x), 'grad'] = get_model_grads(self.netB)
-            state[(self, x), 'x_grad'] = x[0].grad
+            my_state.grad = get_model_grads(self.netB)
+            my_state.x_grad = x[0].grad
         else:
-            state[(self, x), 'grad'] = get_model_grads(self.netB) + grads
-            state[(self, x), 'x_grad'] = state[(self, x), 'x_grad'] + x[0].grad
+            my_state.grad = get_model_grads(self.netB) + grads
+            my_state.x_grad = my_state['x_grad'] + x[0].grad
 
-        state[(self, x), 'x_grad'] = x[0].grad
+        my_state.stepped = True
         if self.auto_adv:
-            self.adv(state)
-
+            self.adv(x, state)
+        
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
 
@@ -289,7 +292,7 @@ class DFALearner(LearningMachine):
         """
         if ((self, x), 'x_grad') not in state:
             raise ValueError(f'Must call step before calling step_x')
-        return IO(x[0] - state[self, x, 'x_grad'], detach=True)
+        return IO(x[0] - state[(self, x), 'x_grad'], detach=True)
     
     def adv(self, x: IO, state: State) -> bool:
         """Advance the optimizer
