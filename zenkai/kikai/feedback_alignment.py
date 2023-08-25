@@ -144,8 +144,8 @@ class FALearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        x = state[self, x, 'y'] = IO(self.net(x[0]))
-        return x
+        y = state[self, x, 'y'] = IO(self.net(x[0]))
+        return y
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
@@ -165,20 +165,22 @@ class FALearner(LearningMachine):
         self.netB.zero_grad()    
 
         if (self, x, 'y') not in state:
-            self(x, state)
+            self(x, state=state)
         y = self.netB(x[0])
-        y[0].data = state[self, x, 'y'][0].data
-        self.loss(y, t).backward()
+        y.data = state[self, x, 'y'][0].data
+        self.loss(IO(y), t).backward()
 
-        grads = state.get(self, x, 'grad')
+        grads = state.get(self, (x, 'grad'))
         if grads is None:
             state[self, x, 'grad'] = get_model_grads(self.netB)
             state[self, x, 'x_grad'] = x[0].grad
         else:
             state[self, x, 'grad'] = get_model_grads(self.netB) + grads
             state[self, x, 'x_grad'] = state[self, x, 'x_grad'] + x[0].grad
+        
+        state[self, x, 'stepped'] = True
         if self.auto_adv:
-            self.adv(state)
+            self.adv(x, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
@@ -199,7 +201,7 @@ class FALearner(LearningMachine):
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        if state.get(self, x, "stepped", False):
+        if state.get(self, (x, "stepped"), False):
             self.optim.zero_grad()
             set_model_grads(self.net, state[self, x, 'grad'])
             self.optim.step()
