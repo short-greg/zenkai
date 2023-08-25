@@ -104,3 +104,64 @@ class TestFALearner:
         learner.step(x, t, state)
         x_prime = learner.step_x(x, t, state)
         assert (x_prime[0] != x[0]).any()
+
+class TestDFALearner:
+
+    def test_fa_updates_the_parameters(self):
+        
+        net = nn.Linear(3, 4)
+        learner = feedback_alignment.DFALearner(
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse'
+        )
+        t = IO(torch.rand(3, 3))
+        x = IO(torch.rand(3, 3))
+        before = get_model_parameters(net)
+        learner.step(x, t, State())
+        assert (get_model_parameters(net) != before).any()
+
+    def test_fa_does_not_auto_adv_if_false(self):
+    
+        net = nn.Linear(3, 4)
+        learner = feedback_alignment.DFALearner(
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            auto_adv=False
+        )
+        t = IO(torch.rand(3, 3))
+        x = IO(torch.rand(3, 3))
+        before = get_model_parameters(net)
+        learner.step(x, t, State())
+        assert (get_model_parameters(net) == before).all()
+
+    def test_fa_adv_when_adv_called(self):
+    
+        net = nn.Linear(3, 4)
+        learner = feedback_alignment.DFALearner(
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            auto_adv=False
+        )
+        t = IO(torch.rand(3, 3))
+        x = IO(torch.rand(3, 3))
+        before = get_model_parameters(net)
+        state = State()
+        learner.step(x, t, state)
+        learner.adv(x, state)
+        assert (get_model_parameters(net) != before).any()
+
+    def test_fa_updates_x_with_correct_size(self):
+    
+        net = nn.Linear(3, 4)
+        learner = feedback_alignment.DFALearner(
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            auto_adv=False
+        )
+        t = IO(torch.rand(3, 3))
+        x = IO(torch.rand(3, 3))
+        state = State()
+        learner.step(x, t, state)
+        x_prime = learner.step_x(x, t, state)
+        assert (x_prime[0] != x[0]).any()
+
