@@ -86,7 +86,7 @@ class IterStepX(StepX):
                 if isinstance(self.base_step, BatchIdxStepX):
                     updated_x = self.base_step.step_x(x, t, state, idx)
                 else:
-                    updated_x = self.base_step.step_x(idx(x), idx(t), state)
+                    updated_x = self.base_step.step_x(idx(x, detach=True), idx(t, detach=True), state)
                 
                 update_io(updated_x, x, idx)
         return x

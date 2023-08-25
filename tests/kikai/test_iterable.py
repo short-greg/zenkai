@@ -36,6 +36,7 @@ class TestIterStepX:
         learner2 = SimpleLearner(3, 3)    
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
+    
         iter_step = IterStepX(learner2, 1, 128)
         state = State()
         y1 = learner1(x, state)

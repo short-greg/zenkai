@@ -60,8 +60,8 @@ class TestState:
 
         io = IO()
         state = core.State()
-        state[self, io, 'x'] = 2
-        assert (self, io, 'x') in state
+        state[(self, io), 'x'] = 2
+        assert ((self, io), 'x') in state
 
 class Base:
 
@@ -207,24 +207,24 @@ class SimpleLearner(core.LearningMachine):
         return self.loss.assess_dict(y, t, reduction_override, 'loss')
     
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, 'y') not in state:
-            x.freshen(False)
+        if ((self, x), 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment['loss'].backward()
+            
         return IO(x[0] - x[0].grad)
 
     def step(self, x: IO, t: IO, state: core.State):
-        if (self, x, 'y') not in state:
+        if ((self, x), 'y') not in state:
             y = self(x, state, release=False)
-        else: y = state[self, x, 'y']
+        else: y = state[(self, x), 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward('loss')
         self.optim.step()
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
-        x.freshen()
-        y = state[self, x, 'y'] = IO(self.linear(x[0])) 
+        x.freshen(False)
+        y = state[(self, x), 'y'] = IO(self.linear(x[0])) 
         return y.out(release)
 
 
