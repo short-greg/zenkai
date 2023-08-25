@@ -40,6 +40,8 @@ class State(object):
         Returns:
             str: The key
         """
+        if isinstance(obj, tuple):
+            return tuple(id(el) for el in obj)
         return id(obj)
 
     def store(self, obj: IDable, key: typing.Hashable, value):
@@ -53,12 +55,6 @@ class State(object):
         Returns:
             The value that was stored
         """
-        if isinstance(key, tuple):
-            sub, key = key
-            sub = self.id(sub)
-            key = (sub, key)
-        else:
-            sub = None
         obj_data, _ = self._get_obj(obj)
         obj_data[key] = value
         return value
@@ -74,24 +70,15 @@ class State(object):
         Returns:
             typing.Any: The value stored in the object
         """
-        if isinstance(key, tuple):
-            sub, key = key
-            sub = self.id(sub)
-        else:
-            sub = None
 
         obj_id = self.id(obj)
         try:
             if isinstance(key, typing.List):
                 result = []
                 for key_i in key:
-                    if sub is not None:
-                        key_i = (sub, key_i)
                     result.append(self._data[obj_id][key_i])
                 return result
             else:
-                if sub is not None:
-                    key = (sub, key)
                 return self._data[obj_id][key]
         except KeyError:
             return default
@@ -108,12 +95,7 @@ class State(object):
         Returns:
             typing.Any: The value stored for the object / key pair
         """
-        if len(index) == 3:
-            obj, sub, key = index
-            sub = self.id(sub)
-        else:
-            obj, key = index
-            sub = None
+        obj, key = index
 
         obj_id = self.id(obj)
         
@@ -121,13 +103,9 @@ class State(object):
             if isinstance(key, typing.List):
                 result = []
                 for key_i in key:
-                    if sub is not None:
-                        key_i = (sub, key_i)
                     result.append(self._data[obj_id][key_i])
                 return result
             else:
-                if sub is not None:
-                    key = (sub, key)
                 return self._data[obj_id][key]
         except KeyError:
             raise StateKeyError(
@@ -141,12 +119,7 @@ class State(object):
             index (typing.Tuple[IDable, typing.Hashable]): The obj/key to set the value for
             value: The value to set
         """
-        if len(index) == 3:
-            obj, sub, key = index
-            key = (self.id(sub), key)
-        else:
-            obj, key = index
-            sub = None
+        obj, key = index
 
         obj_data, _ = self._get_obj(obj)
         obj_data[key] = value
@@ -258,29 +231,19 @@ class State(object):
         Returns:
             bool: Whether the key is contained
         """
-        if len(key) == 3:
-            obj, sub, key = key
-            sub = self.id(sub)
-            key = (sub, key)
-        else: 
-            obj, key = key
-            sub = None
+        obj, key = key
         id = self.id(obj)
         print(key)
         return id in self._data and key in self._data[id]
     
-    def log_assessment_dict(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, assessment_dict: AssessmentDict):
+    def log_assessment_dict(self, obj: IDable, obj_name: str, assessment_dict: AssessmentDict):
         """Log an assessment
 
         Args:
             obj: The object to log for
             assessment_dict (AssessmentDict): the values to log
         """
-
-        if isinstance(obj, typing.Tuple):
-            key = (id(obj[0], id(obj[1])))
-        else:
-            key = id(obj)
+        key = self.id(obj)
         
         self._logs[key][obj_name] = assessment_dict
 
@@ -292,11 +255,7 @@ class State(object):
             assessment_dict (AssessmentDict): the values to log
         """
 
-        if isinstance(obj, typing.Tuple):
-            key = (id(obj[0], id(obj[1])))
-        else:
-            key = id(obj)
-        
+        key = self.id(obj)
         self._logs[key][obj_name] = AssessmentDict(**{log_name: assessment})
 
     @property
