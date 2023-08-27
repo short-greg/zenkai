@@ -121,18 +121,21 @@ class FALearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
-        """initializer
+    def __init__(self, net: nn.Module, netB: nn.Module, activation: nn.Module, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+        """_summary_
 
         Args:
-            in_features (int): 
-            out_features (int): 
-            optim_factory (OptimFactory): 
-            loss (typing.Union[Loss, str], optional): . Defaults to 'mse'.
+            net (nn.Module): _description_
+            netB (nn.Module): _description_
+            activation (nn.Module): _description_
+            optim_factory (OptimFactory): _description_
+            loss (typing.Union[Loss, str], optional): _description_. Defaults to 'mse'.
+            auto_adv (bool, optional): _description_. Defaults to True.
         """
         super().__init__()
         self.net = net
         self.netB = netB
+        self.activation = activation
         self.flatten = nn.Flatten()
         # self.B = torch.randn(out_features, t_features)
         self.optim = optim_factory(self.net.parameters())
@@ -144,8 +147,13 @@ class FALearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        y = state[(self, x), 'y'] = IO(self.net(x[0]))
-        return y
+        y = self.net(x[0])
+        y = y.detach()
+        state[(self, x), 'y_det'] = y
+        y.requires_grad = True
+        y.retain_grad()
+        y = state[(self, x), 'y'] = self.activation(y)
+        return IO(y).out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
@@ -168,8 +176,16 @@ class FALearner(LearningMachine):
         if 'y' not in my_state:
             self(x, state=state)
         y = self.netB(x[0])
+
         y.data = my_state.y[0].data
         self.loss(IO(y), t).backward()
+
+        y = state[(self, x), 'y']
+        y2 = self.netB(x)
+        
+        self.loss(IO(y), t).backward()
+        y_det = state[(self, x), 'y_det']
+        y2.backward(y_det.grad)
 
         grads = state.get((self, x), 'grad')
         if grads is None:
@@ -214,18 +230,23 @@ class DFALearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
-        """initializer
+    def __init__(self, net: nn.Module, netB: nn.Module, activation: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+        """_summary_
 
         Args:
-            in_features (int): 
-            out_features (int): 
-            optim_factory (OptimFactory): 
-            loss (typing.Union[Loss, str], optional): . Defaults to 'mse'.
+            net (nn.Module): _description_
+            netB (nn.Module): _description_
+            activation (nn.Module): _description_
+            out_features (int): _description_
+            t_features (int): _description_
+            optim_factory (OptimFactory): _description_
+            loss (typing.Union[Loss, str], optional): _description_. Defaults to 'mse'.
+            auto_adv (bool, optional): _description_. Defaults to True.
         """
         super().__init__()
         self.net = net
         self.netB = netB
+        self.activation = activation
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
         self.optim = optim_factory(self.net.parameters())
@@ -237,8 +258,13 @@ class DFALearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        y = state[(self, x), 'y'] = IO(self.net(x[0]))
-        return y
+        y = self.net(x[0])
+        y = y.detach()
+        state[(self, x), 'y_det'] = y
+        y.requires_grad = True
+        y.retain_grad()
+        y = state[(self, x), 'y'] = self.activation(y)
+        return IO(y).out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
@@ -261,10 +287,14 @@ class DFALearner(LearningMachine):
         if 'y' not in my_state:
             self(x, state=state)
         
-        y = self.netB(x[0])
-        y.data = my_state.y[0].data
+        y = state[(self, x), 'y']
+        y2 = self.netB(x)
+        
         y = self.B(y)
-        self.loss(IO(y), t).backward()
+        self.loss(IO(y2), t).backward()
+        y_det = state[(self, x), 'y_mod']
+        y2.backward(y_det.grad)
+
         assert x[0].grad is not None
         grads = state.get((self, x), 'grad')
 
