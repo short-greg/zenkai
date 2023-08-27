@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 # local
 from ..kaku import Learner
-from .base import Classroom, Desk, Teacher, Assistant
+from .base import Classroom, Teacher, Assistant
 from .materials import IODecorator, Material
 from .reporting import Record, Results
 
@@ -21,7 +21,6 @@ class Trainer(Teacher):
         default_learner: typing.Union[Learner, str],
         default_material: typing.Union[Material, str],
         record: Record = None,
-        desk: Desk = None,
         classroom: Classroom = None,
         window: int = 30,
     ):
@@ -37,7 +36,6 @@ class Trainer(Teacher):
             window (int, optional): The size of the widnow for showing results. Defaults to 30.
         """
         super().__init__(name)
-        self._desk = desk or Desk()
         self._classroom = classroom or Classroom()
 
         self.record = record or Record()
@@ -60,12 +58,10 @@ class Trainer(Teacher):
             epoch (int, optional): The current epoch. Defaults to None.
             n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
-        learner = self._classroom.get(override_learner) or self._classroom.get(
-            self.learner
+        learner = self._classroom.choose_student(override_learner, self.learner)
+        material = self._classroom.choose_material(
+            override_material, self.material
         )
-        material = self._desk.get_material(
-            override_material
-        ) or self._desk.get_material(self.material)
         results = Results(self.window)
         logger = self.record.create_logger(self.name, material)
         with tqdm(total=len(material)) as pbar:
@@ -91,7 +87,6 @@ class Validator(Teacher):
         default_learner: typing.Union[Learner, str],
         default_material: typing.Union[Material, str],
         record: Record = None,
-        desk: Desk = None,
         classroom: Classroom = None,
         show_progress: bool = True,
     ):
@@ -102,13 +97,11 @@ class Validator(Teacher):
             default_learner (typing.Union[Learner, str]): The default learning to train
             default_material (typing.Union[Material, str]): The default material to train with
             record (Record, optional): Record for the teacher to use. Defaults to None.
-            desk (Desk, optional): Desk to use for retrieving materials and storing info. Defaults to None.
             classroom (Classroom, optional): The classroom to use. Defaults to None.
             window (int, optional): The size of the widnow for showing results. Defaults to 30.
         """
 
         super().__init__(name)
-        self._desk = desk or Desk()
         self._classroom = classroom or Classroom()
 
         self.record = record or Record()
@@ -131,12 +124,12 @@ class Validator(Teacher):
             epoch (int, optional): The current epoch. Defaults to None.
             n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
-        learner = self._classroom.get(override_learner) or self._classroom.get(
-            self.learner
+        learner = self._classroom.choose_student(
+            override_learner, self.learner
         )
-        material = self._desk.get_material(
-            override_material
-        ) or self._desk.get_material(self.material)
+        material = self._classroom.choose_material(
+            override_material, self.material
+        )
 
         results = Results(None)
         logger = self.record.create_logger(self._name, material)

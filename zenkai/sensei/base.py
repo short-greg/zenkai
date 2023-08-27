@@ -21,33 +21,34 @@ class Material(ABC):
 class Classroom:
     """Stores the students in a class."""
 
-    def __init__(self, **students: Learner):
+    def __init__(self, 
+        students: typing.Dict[str, Learner]=None,
+        materials: typing.Dict[str, Material] = None,
+        info: typing.Dict[str, typing.Any] = None
+    ):
         """initializer"""
         super().__init__()
-        self._students = students
+        self._students = students or {}
+        self._materials = materials or {}
+        self._info = info or {}
 
-    def __getitem__(self, key: str) -> Learner:
-        """retrieve the student
-
+    def choose_material(self, material: typing.Union[str, Material, None], backup: typing.Union[str, Material, None]=None) -> Material:
+        """
         Args:
-            key (str): the name of the student
+            material (typing.Union[str, Material, None]): _description_
 
         Returns:
-            Learner: The studennt
+            Material: the retrieved material
         """
-        return self._students[key]
+        material = material or backup
 
-    def __setitem__(self, key: str, student: Learner):
-        """Add a student to the classroom
+        if isinstance(material, Material):
+            return material
+        if material is not None:
+            return self._materials[material]
+        return None
 
-        Args:
-            key (str): the name of the student
-            student (Learner): the instance for the student
-        """
-
-        self._students[key] = student
-
-    def get(self, student: typing.Union[str, Learner, None]) -> Learner:
+    def choose_student(self, student: typing.Union[str, Learner, None], backup: typing.Union[str, Learner, None]=None) -> Learner:
         """Convenience method to retrieve a student from the classroom.
 
         Args:
@@ -56,93 +57,27 @@ class Classroom:
         Returns:
             Learner: The learner
         """
+        student = student or backup
         if isinstance(student, Learner):
             return student
         if student is not None:
             return self._students[student]
         return None
 
+    @property
+    def students(self) -> typing.Dict[str, Learner]:
 
-# TODO: Consider to remove an consolidate with Classroom
-class Desk(object):
-    """Class used to store information or materials for a teacher
-    """
+        return self._students
 
-    def __init__(
-        self,
-        materials: typing.Dict[str, Material] = None,
-        info: typing.Dict[str, typing.Any] = None,
-    ):
-        """Stores information for sharing between teachers and the materials
+    @property
+    def materials(self) -> typing.Dict[str, Material]:
 
-        Args:
-            materials (typing.Dict[str, Material], optional): The materials used in the class. Defaults to None.
-            info (typing.Dict[str, typing.Any], optional): Generic data to 
-              share info between teachers related to teaching. Defaults to None.
-        """
-        super().__init__()
-        self._materials = materials or {}
-        self._info = info or {}
-
-    def get_material(self, material: typing.Union[str, Material, None]) -> Material:
-        """
-        Args:
-            material (typing.Union[str, Material, None]): _description_
-
-        Returns:
-            Material: the retrieved material
-        """
-
-        if isinstance(material, Material):
-            return material
-        if material is not None:
-            return self._materials[material]
-        return None
-
-    def add_material(self, name: str, material: Material):
-        """add a material to the desk
-
-        Args:
-            name (str): name of the material
-            material (Material): the material
-        """
-
-        self._materials[name] = material
-
-    def remove_material(self, name: str):
-        """Remove a material from the desk
-
-        Args:
-            name (str): name of the material
-        """
-
-        del self._materials[name]
-
-    def get_info(self, key: str) -> typing.Any:
-        """Retrieve info from the desk
-
-        Args:
-            key (str): The key to the info
-
-        Returns:
-            typing.Any: _description_
-        """
-        return self._info[key]
-
-    def add_info(self, key: str, info: typing.Any):
-        """
-        Args:
-            key (str): the key for the info
-            info (typing.Any): the info
-        """
-        self._info[key] = info
-
-    def remove_info(self, key: str):
-        """
-        Args:
-            key (str): the key for the info to remvoe
-        """
-        del self._info[key]
+        return self._materials
+    
+    @property
+    def info(self) -> typing.Dict:
+    
+        return self._info
 
 
 class Assistant(ABC):
@@ -315,3 +250,108 @@ class Teacher(ABC):
         """Execute the teaching process
         """
         self.teach(*args, **kwargs)
+
+
+
+# # TODO: Consider to remove an consolidate with Classroom
+# class Desk(object):
+#     """Class used to store information or materials for a teacher
+#     """
+
+#     def __init__(
+#         self,
+#         materials: typing.Dict[str, Material] = None,
+#         info: typing.Dict[str, typing.Any] = None,
+#     ):
+#         """Stores information for sharing between teachers and the materials
+
+#         Args:
+#             materials (typing.Dict[str, Material], optional): The materials used in the class. Defaults to None.
+#             info (typing.Dict[str, typing.Any], optional): Generic data to 
+#               share info between teachers related to teaching. Defaults to None.
+#         """
+#         super().__init__()
+#         self._materials = materials or {}
+#         self._info = info or {}
+
+#     def choose_material(self, material: typing.Union[str, Material, None]) -> Material:
+#         """
+#         Args:
+#             material (typing.Union[str, Material, None]): _description_
+
+#         Returns:
+#             Material: the retrieved material
+#         """
+
+#         if isinstance(material, Material):
+#             return material
+#         if material is not None:
+#             return self._materials[material]
+#         return None
+
+#     @property
+#     def materials(self) -> typing.Dict[str, Material]:
+
+#         return self._materials
+    
+#     @property
+#     def info(self) -> typing.Dict:
+    
+#         return self._info
+
+    # def get_info(self, key: str) -> typing.Any:
+    #     """Retrieve info from the desk
+
+    #     Args:
+    #         key (str): The key to the info
+
+    #     Returns:
+    #         typing.Any: _description_
+    #     """
+    #     return self._info[key]
+    
+    # def add_info(self, key: str, info: typing.Any):
+    #     """
+    #     Args:
+    #         key (str): the key for the info
+    #         info (typing.Any): the info
+    #     """
+    #     self._info[key] = info
+
+    # def remove_info(self, key: str):
+    #     """
+    #     Args:
+    #         key (str): the key for the info to remvoe
+    #     """
+    #     del self._info[key]
+
+    # def remove_material(self, name: str):
+    #     """Remove a material from the desk
+
+    #     Args:
+    #         name (str): name of the material
+    #     """
+
+    #     del self._materials[name]
+
+
+    # def __getitem__(self, key: str) -> Learner:
+    #     """retrieve the student
+
+    #     Args:
+    #         key (str): the name of the student
+
+    #     Returns:
+    #         Learner: The studennt
+    #     """
+    #     return self._students[key]
+
+    # def __setitem__(self, key: str, student: Learner):
+    #     """Add a student to the classroom
+
+    #     Args:
+    #         key (str): the name of the student
+    #         student (Learner): the instance for the student
+    #     """
+
+    #     self._students[key] = student

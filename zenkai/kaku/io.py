@@ -28,17 +28,19 @@ class IO(object):
         """
         super().__init__()
 
-        self._x = []
+        self._x = tuple(
+            x_i.detach() if isinstance(x_i, torch.Tensor) and detach else x_i
+            for x_i in x
+        )
         self._freshened = False
         self._singular = len(x) == 1
-        for x_i in x:
-            if isinstance(x_i, torch.Tensor) and detach:
-                x_i = x_i.detach()
-
-            self._x.append(x_i)
         
-        # TODO: Use this
-        self._names = enumerate(dict(names or []))
+        if names is not None:
+            if len(names) != len(x):
+                raise ValueError(f'Number of names, {len(names)}, must be the same as the number of elements {len(x)}')
+            self._names = {name: i for i, name in enumerate(names)}
+        else:
+            self._names = None
 
     def freshen(self, inplace: bool = False) -> 'IO':
         """Set the values of the IO
@@ -58,22 +60,6 @@ class IO(object):
 
     def items(self) -> typing.Dict:
         return dict(enumerate(self._x))
-
-    def tolist(self) -> typing.List:
-        """Convert to a list
-
-        Returns:
-            list: The values in the IO
-        """
-        return list(self._x)
-    
-    def totuple(self) -> typing.Tuple:
-        """Convert to a list
-
-        Returns:
-            typing.Tuple: the values making up the io as a tuple
-        """
-        return tuple(self._x)
 
     def __getitem__(self, idx: int):
         """Retrieve item from the IO
@@ -112,8 +98,9 @@ class IO(object):
         Returns:
             typing.List[str]: The names of all of the fields
         """
-        return [*self._names]
-
+        if self._names is None: return None
+        return list(self._names.keys())
+    
     def __len__(self) -> int:
         """
         Returns:
@@ -138,7 +125,7 @@ class IO(object):
             IO: The cloned IO
         """
         x = [torch.clone(x_i) for x_i in self._x]
-        result = IO(*x, detach=detach, names=self._names)
+        result = IO(*x, detach=detach, names=list(self._names.keys()) if self._names is not None else None)
         if not detach:
             result._freshened = self._freshened
         return result
@@ -170,9 +157,19 @@ class IO(object):
 
         return IO(*self._x[idx], detach=detach)
     
-    def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
+    @property
+    def f(self) -> typing.Any:
+        if len(self) == 0: return None
+        return self._x[0]
 
-        return IO(*self._x[low:high], detach=detach)
+    @property
+    def l(self) -> typing.Any:
+        if len(self) == 0: return None
+        return self._x[-1]
+    
+    @property
+    def u(self) -> typing.List:
+        return self._x
 
     @classmethod
     def cat(cls, ios: typing.Iterable['IO']) -> 'IO':
@@ -193,7 +190,26 @@ class IO(object):
             else:
                 # TODO: revisit if i want to do it like this
                 results.append(elements)
-        return IO(*results)
+        return IO(*results, ios[0].names)
+
+    def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
+        return IO(*self._x[low:high], detach=detach)
+
+    def tolist(self) -> typing.List:
+        """Convert to a list
+
+        Returns:
+            list: The values in the IO
+        """
+        return list(self._x)
+    
+    def totuple(self) -> typing.Tuple:
+        """Convert to a list
+
+        Returns:
+            typing.Tuple: the values making up the io as a tuple
+        """
+        return tuple(self._x)
 
 
 class Idx(object):
