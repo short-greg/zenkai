@@ -175,13 +175,11 @@ class FALearner(LearningMachine):
 
         if 'y' not in my_state:
             self(x, state=state)
-        y = self.netB(x[0])
 
-        y.data = my_state.y[0].data
-        self.loss(IO(y), t).backward()
+        # y.data = my_state.y[0].data
 
         y = state[(self, x), 'y']
-        y2 = self.netB(x)
+        y2 = self.netB(x.f)
         
         self.loss(IO(y), t).backward()
         y_det = state[(self, x), 'y_det']
@@ -258,7 +256,7 @@ class DFALearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        y = self.net(x[0])
+        y = self.net(x.f)
         y = y.detach()
         state[(self, x), 'y_det'] = y
         y.requires_grad = True
@@ -288,11 +286,11 @@ class DFALearner(LearningMachine):
             self(x, state=state)
         
         y = state[(self, x), 'y']
-        y2 = self.netB(x)
+        y2 = self.netB(x.f)
         
         y = self.B(y)
-        self.loss(IO(y2), t).backward()
-        y_det = state[(self, x), 'y_mod']
+        self.loss(IO(y), t).backward()
+        y_det = state[(self, x), 'y_det']
         y2.backward(y_det.grad)
 
         assert x[0].grad is not None
