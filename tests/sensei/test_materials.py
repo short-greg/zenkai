@@ -71,4 +71,3 @@ class TestSplitDataset:
         dataset = TensorDataset(target_x, target_t)
         with pytest.raises(ValueError): 
             materials.split_dataset(dataset, [1, 4], True)
-

@@ -44,14 +44,14 @@ class TestClassroom:
     def test_call_student_retrieves_student(self):
 
         learner = DummyLearner()
-        classroom = Classroom(learner=learner)
-        assert classroom["learner"] is learner
+        classroom = Classroom({'learner': learner})
+        assert classroom.students["learner"] is learner
 
     def test_add_student_adds_student(self):
 
         learner = DummyLearner()
         learner2 = DummyLearner()
-        classroom = Classroom(learner=learner)
-        classroom["learner2"] = learner2
-        assert classroom["learner2"] is learner2
+        classroom = Classroom({'learner': learner})
+        classroom.students["learner2"] = learner2
+        assert classroom.students["learner2"] is learner2
 

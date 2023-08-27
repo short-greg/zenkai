@@ -407,7 +407,6 @@ class EmissionStack(object):
         Returns:
             IO: the element that was added
         """
-
         self._stack.append(io)
         return io
 
@@ -420,7 +419,6 @@ class EmissionStack(object):
         Args:
             io (IO): the io to stack the current stack onto
         """
-
         self._stack.insert(0, io)
 
     def pop(self) -> typing.Union[IO, None]:
@@ -437,7 +435,6 @@ class EmissionStack(object):
             return self._stack.pop()
         except IndexError:
             return None
-            # raise IndexError("No more elements left in the EmissionStack to pop")
 
     def __iter__(self):
         """

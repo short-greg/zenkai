@@ -250,10 +250,6 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             return io[0].to(device)
         return tuple(io_i.to(device) for io_i in io)
 
-    @property
-    def id(self) -> str:
-        return str(id(self))
-
     @abstractmethod
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         """Assess the learning machine
@@ -352,15 +348,21 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             state.clear(self)
         return assessment
 
-    def full_step(
-        self, x: IO, t: IO, state: State, clear_state: bool = False
+    def backward(
+        self, x: IO, t: IO, state: State
     ) -> IO:
-        self.step(x, t, state)
-        x_prime = self.step_x(x, t, state)
+        """Convenience function to execute step and step_x
 
-        if clear_state:
-            state.clear(self)
-        return x_prime
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+    
+        Returns:
+            IO: _description_
+        """
+        self.step(x, t, state)
+        return self.step_x(x, t, state)
 
     def test(self, x: IO, t: IO) -> AssessmentDict:
         """Assess the machine in "testing" mode
@@ -377,6 +379,10 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
             return self.assess_y(self(x), t).cpu().detach()
+
+    @property
+    def id(self) -> str:
+        return str(id(self))
 
 
 class NullLearner(LearningMachine):
@@ -506,20 +512,24 @@ class PostStepTheta(StepTheta):
     """
     
     @abstractmethod
-    def adv(self, state: State):
+    def adv(self, x: IO, state: State):
         pass
 
 
 class PostOptim(object):
-    """Convenience optimizer to use with PostStepTheta
+    """Convenience optimizer to wrap multiple PostStepTheta
     """
 
     def __init__(self, step_thetas: typing.List[PostStepTheta]):
+        """initializer
 
+        Args:
+            step_thetas (typing.List[PostStepTheta]): The step thetas to optimize
+        """
         super().__init__()
         self.step_thetas = step_thetas
 
-    def adv(self, state: State):
+    def adv(self, x: IO, state: State):
 
         for step_theta in self.step_thetas:
-            step_theta.adv(state)
+            step_theta.adv(x, state)
