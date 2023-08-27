@@ -57,7 +57,7 @@ class HillClimbStepX(FeatureIdxStepX):
         Returns:
             IO: The updated X
         """
-        individual = Individual(x=x[0])
+        individual = Individual(x=x.f)
 
         self.limiter.limit = feature_idx.tolist() if feature_idx is not None else None
         population = self.limiter(
@@ -106,13 +106,12 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         Returns:
             IO: The updated X
         """
-        individual = Individual(x=x[0])
+        individual = Individual(x=x.f)
         population = self.limiter(
             self.populator(individual),
             individual,
             feature_idx.tolist() if feature_idx is not None else None,
         )
-        print(type(population))
         population = self.assessor(population, t)
         selected = self.selector(population)
         update_io(IO(selected["x"], detach=True), x)

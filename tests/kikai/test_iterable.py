@@ -42,10 +42,10 @@ class TestIterStepX:
         y1 = learner1(x, state)
         learner2(y1, state)
         learner2.step(y1, t, state)
-        before = torch.clone(y1[0])
+        before = torch.clone(y1.f)
         x = iter_step.step_x(y1, t, state)
 
-        assert (before != x[0]).any()
+        assert (before != x.f).any()
 
 
 class TestIterStepHidden:

@@ -28,6 +28,38 @@ from ..kaku import (
 from ..utils import get_model_grads, update_model_grads, set_model_grads, get_model_parameters
 
 
+class GradManager(object):
+
+
+    def __init__(self, net: nn.Module, optim: torch.optim.Optimizer):
+
+        self.net = net
+        self.optim = optim
+
+    def accumulate(self, x: IO, state: State):
+
+        my_state = state.mine((self, x))
+        grads = state.get((self, x), 'grad')
+
+        if grads is None:
+            my_state.grad = get_model_grads(self.net)
+            my_state.x_grad = x.f.grad
+        else:
+            my_state.grad = get_model_grads(self.net) + grads
+            my_state.x_grad = my_state['x_grad'] + x[0].grad
+        state[(self, x), 'stepped'] = True
+
+    def step(self, x: IO, state: State, net_override: nn.Module=None) -> bool:
+
+        if state.get((self, x), "stepped", False):     
+            net = net_override or self.net
+            self.optim.zero_grad()
+            set_model_grads(net, state[(self, x), 'grad'])
+            self.optim.step()
+            return True
+        return False
+    
+
 class GradStepTheta(StepTheta):
     """Update theta with the loss between y and t on the forward pass"""
 

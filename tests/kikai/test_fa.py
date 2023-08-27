@@ -23,8 +23,8 @@ class TestFA:
         t = feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
         x2 = learner.step_x(x, t, State())
-        assert x2[0].shape == x[0].shape
-        assert (x2[0] != x[0]).any()
+        assert x2.f.shape == x.f.shape
+        assert (x2.f != x.f).any()
 
     def test_fa_linear_outputs_correct_value_forward(self):
         
@@ -33,7 +33,7 @@ class TestFA:
         x = IO(torch.rand(3, 3))
 
         y = learner(x)
-        assert (y[0].shape[1] == 4)
+        assert (y.f.shape[1] == 4)
 
 
 class TestBStepX:
@@ -44,8 +44,8 @@ class TestBStepX:
         t = feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
         x2 = step_x.step_x(x, t, State())
-        assert x2[0].shape == x[0].shape
-        assert (x2[0] != x[0]).any()
+        assert x2.f.shape == x.f.shape
+        assert (x2.f != x.f).any()
 
 
 class TestFALearner:
@@ -103,7 +103,7 @@ class TestFALearner:
         state = State()
         learner.step(x, t, state)
         x_prime = learner.step_x(x, t, state)
-        assert (x_prime[0] != x[0]).any()
+        assert (x_prime.f != x.f).any()
 
 
 class TestDFALearner:
@@ -164,5 +164,5 @@ class TestDFALearner:
         state = State()
         learner.step(x, t, state)
         x_prime = learner.step_x(x, t, state)
-        assert (x_prime[0] != x[0]).any()
+        assert (x_prime.f != x.f).any()
 
