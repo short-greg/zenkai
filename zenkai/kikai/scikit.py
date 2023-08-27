@@ -386,7 +386,7 @@ class ScikitStepTheta(FeatureIdxStepTheta):
             feature_idx (Idx, optional): limits on the connections else None. Defaults to None.
         """
         self.estimator.fit(
-            x[0], t[0], feature_idx.tolist() if feature_idx is not None else None
+            x.f, t.f, feature_idx.tolist() if feature_idx is not None else None
         )
 
 
@@ -461,7 +461,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             IO: output of the machine
         """
 
-        x = x[0]
+        x = x.f
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 
@@ -712,7 +712,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
             state (State): State for training
             feature_idx (Idx, optional): A limit on the connections that get trained. Defaults to None.
         """
-        x = x[0]
+        x = x.f
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 
@@ -746,7 +746,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         Returns:
             IO: Output
         """
-        x = x[0]
+        x = x.f
         if self._preprocessor is not None:
             x = self._preprocessor(x)
 

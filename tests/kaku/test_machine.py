@@ -117,13 +117,13 @@ class TestIO:
         x = torch.rand(2, 2)
         io = IO(x)
         io.freshen(True)
-        assert x is io[0]
+        assert x is io.f
 
     def test_freshen_not_inplace_changes_the_tensor(self):
         x = torch.rand(2, 2)
         io = IO(x)
         io.freshen()
-        assert x is not io[0]
+        assert x is not io.f
 
     def test_freshen_sets_required_grad_to_true(self):
         x = torch.rand(2, 2)
@@ -153,7 +153,7 @@ class TestIO:
         x = torch.rand(2, 2)
         x2 = torch.rand(2, 2)
         io = IO(x, x2)
-        assert io[0] is x
+        assert io.f is x
         
     def test_iter_iterates_over_all_elements(self):
         x = torch.rand(2, 2)
@@ -186,13 +186,13 @@ class TestIO:
         val = torch.rand(3, 2)
         x = IO(val)
         y = IO(val)
-        assert x[0] is y[0]
+        assert x.f is y.f
 
     def test_the_values_of_two_trans_are_not_the_same_if_has_been_detached(self):
         val = torch.rand(3, 2)
         x = IO(val).detach()
         y = IO(val)
-        assert not x[0] is y[0]
+        assert not x.f is y.f
 
 
 class SimpleLearner(core.LearningMachine):
@@ -211,7 +211,7 @@ class SimpleLearner(core.LearningMachine):
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment['loss'].backward()
             
-        return IO(x[0] - x[0].grad)
+        return IO(x.f - x.f.grad)
 
     def step(self, x: IO, t: IO, state: core.State):
         if ((self, x), 'y') not in state:
@@ -224,7 +224,7 @@ class SimpleLearner(core.LearningMachine):
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x[0])) 
+        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
         return y.out(release)
 
 
@@ -248,14 +248,14 @@ class TestLearningMachineWithSimpleLearner:
         learner = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
         y = learner(x, core.State(), release=True)
-        assert y[0].grad_fn is None
+        assert y.f.grad_fn is None
 
     def test_grad_will_be_available_in_trans_if_not_detaching(self):
 
         learner = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
         y = learner(x, core.State(), release=False)
-        assert y[0].grad_fn is not None
+        assert y.f.grad_fn is not None
 
     def test_step_x_updates_x(self):
 
@@ -268,7 +268,7 @@ class TestLearningMachineWithSimpleLearner:
         learner.step(x, t, state)
         x_prime = learner.step_x(x, t, state)
 
-        assert (x_prime[0] != base_x).any()
+        assert (x_prime.f != base_x).any()
 
     def test_step_updates_parameters(self):
 
@@ -327,7 +327,7 @@ class TestLearningMachineWithComplexLearner:
         learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         x = IO(torch.rand(2, 2))
         y = learner(x, core.State(), release=True)
-        assert y[0].grad_fn is None
+        assert y.f.grad_fn is None
 
     def test_step_x_updates_x(self):
         torch.manual_seed(1)
@@ -340,7 +340,7 @@ class TestLearningMachineWithComplexLearner:
         learner(x, state)
         learner.step(x, t, state)
         x_prime = learner.step_x(x, t, state)
-        assert (x_prime[0] != x_[0]).any()
+        assert (x_prime.f != x_.f).any()
 
     def test_step_updates_parameters(self):
         torch.manual_seed(1)

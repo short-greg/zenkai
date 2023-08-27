@@ -79,9 +79,9 @@ class TestLeastSquaresStepX:
         step_x = least_squares.LeastSquaresStepX(
             linear2, solver, True
         )
-        before = torch.clone(x[0])
+        before = torch.clone(x.f)
         x = step_x.step_x(x, t, State())
-        assert (before != x[0]).any()
+        assert (before != x.f).any()
 
     def test_step_x_with_optimize_x(self, linear2, conn2):
         x, t, y = conn2
@@ -89,9 +89,9 @@ class TestLeastSquaresStepX:
         step_x = least_squares.LeastSquaresStepX(
             linear2, solver, False
         )
-        before = torch.clone(x[0])
+        before = torch.clone(x.f)
         x = step_x.step_x(x, t, State())
-        assert (before != x[0]).any()
+        assert (before != x.f).any()
 
     def test_step_x_with_optimize_x_wo_bias(self, linear2_wo_bias, conn2):
         x, t, y = conn2
@@ -99,6 +99,6 @@ class TestLeastSquaresStepX:
         step_x = least_squares.LeastSquaresStepX(
             linear2_wo_bias, solver, False
         )
-        before = torch.clone(x[0])
+        before = torch.clone(x.f)
         x = step_x.step_x(x, t, State())
-        assert (before != x[0]).any()
+        assert (before != x.f).any()

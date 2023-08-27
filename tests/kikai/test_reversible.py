@@ -16,8 +16,8 @@ class TestReversibleMachine:
             reversibles.Neg1ToZero(), ThLoss('mse')
         )
         x = IO(torch.randn(4, 3).sign())
-        t = IO((x[0] + 1) / 2)
-        assert (reversible.step_x(x, t, State())[0] == x[0]).all()
+        t = IO((x.f + 1) / 2)
+        assert (reversible.step_x(x, t, State()).f == x.f).all()
 
     def test_step_x_results_in_valid_values(self):
 
@@ -25,8 +25,8 @@ class TestReversibleMachine:
             reversibles.Neg1ToZero(), ThLoss('mse')
         )
         x = IO(torch.randn(4, 3).sign())
-        t = IO((x[0] + 1) / 2)
-        reversed = reversible.step_x(x, t, State())[0]
+        t = IO((x.f + 1) / 2)
+        reversed = reversible.step_x(x, t, State()).f
         assert ((reversed == -1) | (reversed == 1)).all()
 
     def test_forward_converts_to_correct_value(self):
@@ -35,6 +35,6 @@ class TestReversibleMachine:
             reversibles.Neg1ToZero(), ThLoss('mse')
         )
         x = IO(torch.randn(4, 3).sign())
-        t = (x[0] + 1) / 2
-        y = reversible(x, State())[0]
+        t = (x.f + 1) / 2
+        y = reversible(x, State()).f
         assert (y == t).all()

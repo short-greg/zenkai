@@ -42,7 +42,7 @@ class TestTHGradMachine1:
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
         result = learner.assess_y(y, t, 'sum')['loss']
-        target = nn.MSELoss(reduction='sum')(y[0], t[0])
+        target = nn.MSELoss(reduction='sum')(y.f, t.f)
         assert result.item() == target.item()
 
     def test_forward_detaches_y(self):
@@ -50,7 +50,7 @@ class TestTHGradMachine1:
         learner = THGradLearnerT1(2, 3)
         x = IO(torch.rand(2, 2))
         y = learner.forward(x, State())
-        assert y[0].grad_fn is None
+        assert y.f.grad_fn is None
 
     def test_step_x_updates_x(self):
 
@@ -62,7 +62,7 @@ class TestTHGradMachine1:
         learner.forward(x, state)
         learner.step(x, t, state)
         x = learner.step_x(x, t, state)
-        assert (x[0] != x_[0]).any()
+        assert (x.f != x_.f).any()
 
     def test_step_updates_parameters(self):
 
@@ -85,7 +85,7 @@ class TestTHGradMachine2:
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
         result = learner.assess_y(y, t, 'sum')['loss']
-        target = nn.MSELoss(reduction='sum')(y[0], t[0])
+        target = nn.MSELoss(reduction='sum')(y.f, t.f)
         assert result.item() == target.item()
 
     def test_step_x_updates_x(self):
@@ -99,7 +99,7 @@ class TestTHGradMachine2:
         learner(x, state)
         learner.step(x, t, state)
         x = learner.step_x(x, t, state)
-        assert (x[0] != og_x[0]).any()
+        assert (x.f != og_x.f).any()
 
     def test_step_x_updates_x_repeated(self):
 
@@ -112,7 +112,7 @@ class TestTHGradMachine2:
         learner.step(x, t, state)
         x = learner.step_x(x, t, state)
         x = learner.step_x(x, t, state)
-        assert (x[0] != og_x[0]).any()
+        assert (x.f != og_x.f).any()
 
     def test_step_updates_parameters(self):
 

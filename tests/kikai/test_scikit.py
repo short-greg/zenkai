@@ -112,7 +112,7 @@ class TestSklearnMachine(object):
         # TODO: add Limit
         machine.step(x2, t2, State())
         y = machine(IO(torch.rand(8, 3)))
-        assert y[0].shape == torch.Size([8, 2])
+        assert y.f.shape == torch.Size([8, 2])
 
 
 class TestScikitLimitGen(object):

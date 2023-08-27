@@ -56,7 +56,7 @@ class FALinearLearner(LearningMachine):
         return self.loss.assess_dict(y, t, reduction_override)
     
     def step(self, x: IO, t: IO, state: State):
-        """Update the 
+        """Update the base parameters
 
         Args:
             x (IO): the input
@@ -122,7 +122,7 @@ class FALearner(LearningMachine):
     """
 
     def __init__(self, net: nn.Module, netB: nn.Module, activation: nn.Module, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
-        """_summary_
+        """initializer
 
         Args:
             net (nn.Module): _description_
@@ -137,7 +137,6 @@ class FALearner(LearningMachine):
         self.netB = netB
         self.activation = activation
         self.flatten = nn.Flatten()
-        # self.B = torch.randn(out_features, t_features)
         self.optim = optim_factory(self.net.parameters())
         if isinstance(loss, str):
             self.loss = ThLoss(loss)
@@ -175,8 +174,6 @@ class FALearner(LearningMachine):
 
         if 'y' not in my_state:
             self(x, state=state)
-
-        # y.data = my_state.y[0].data
 
         y = state[(self, x), 'y']
         y2 = self.netB(x.f)

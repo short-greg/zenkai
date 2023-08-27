@@ -264,4 +264,4 @@ class LeastSquaresLearner(LearningMachine):
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
-        return IO(self._linear(x[0]), detach=release)
+        return IO(self._linear(x.f), detach=release)
