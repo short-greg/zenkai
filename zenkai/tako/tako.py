@@ -186,13 +186,22 @@ class Filter(ABC):
 
     def apply(self, tako: Tako, process: Process):
         for layer in self.filter(tako):
-            if self.check(layer):
+            if layer is not None:
                 process.apply(layer)
 
     def filter(self, tako: "Tako") -> typing.Iterator:
         for layer in tako.forward_iter():
             if self.check(layer):
                 yield layer
+
+    def decorate_filter(self, tako: 'Tako', decorator: typing.Callable[[Process], typing.Any]):
+        
+        for layer in self.filter(tako):
+
+            if layer is None:
+                yield None
+            else:
+                yield decorator(layer)
 
 
 class TagFilter(Filter):
@@ -204,6 +213,26 @@ class TagFilter(Filter):
 
     def check(self, layer: Layer) -> bool:
         return len(self._filter_tags.intersection(layer.info.tags)) > 0
+
+
+class OrderedNameFilter(Filter):
+    """Filter the Tako by a tag"""
+
+    def __init__(self, names: typing.List[str]):
+        """
+        """
+        self._filter_names = names
+
+    def check(self, layer: Layer) -> bool:
+        return layer.name in self._filter_names
+
+    def filter(self, tako: "Tako") -> typing.Iterator:
+        layers = {}
+        for layer in tako.forward_iter():
+            if self.check(layer):
+                layers[layer.name] = layer
+        for name in self._filter_names:
+            yield layers[name] if name in layers else None 
 
 
 def layer_dive(layer: Layer) -> typing.Iterator[Process]:
