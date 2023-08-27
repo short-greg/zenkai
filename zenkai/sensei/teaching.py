@@ -67,7 +67,7 @@ class Trainer(Teacher):
         with tqdm(total=len(material)) as pbar:
             for i, (x, t) in enumerate(material):
                 assessment_dict = logger(learner.learn(x, t))
-                self._assistants.assist(self._name, assessment_dict, (x, t))
+                self._assistants.assist(self._name)
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
                 if epoch is not None:
@@ -136,7 +136,7 @@ class Validator(Teacher):
         with tqdm(total=len(material)) as pbar:
             for i, (x, t) in enumerate(material):
                 assessment_dict = logger(learner.test(x, t))
-                self._assistants.assist(self._name, assessment_dict, (x, t))
+                self._assistants.assist(self._name)
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
                 if epoch is not None:

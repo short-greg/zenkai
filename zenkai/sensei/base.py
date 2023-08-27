@@ -101,8 +101,8 @@ class Assistant(ABC):
     def assist(
         self,
         teacher_name: str,
-        assessment_dict: AssessmentDict = None,
-        data: typing.Any = None,
+        # assessment_dict: AssessmentDict = None,
+        # data: typing.Any = None,
     ):
         """Assist the teacher
 
@@ -116,8 +116,8 @@ class Assistant(ABC):
     def __call__(
         self,
         teacher_name: str,
-        assessment_dict: AssessmentDict = None,
-        data: typing.Any = None,
+        # assessment_dict: AssessmentDict = None,
+        # data: typing.Any = None,
     ):
         """Assist the teacher
 
@@ -127,7 +127,8 @@ class Assistant(ABC):
             data (typing.Any, optional): _description_. Defaults to None.
 
         """
-        self.assist(teacher_name, assessment_dict, data)
+        self.assist(teacher_name)
+        # self.assist(teacher_name, assessment_dict, data)
 
 
 class AssistantTeam(object):
@@ -176,8 +177,8 @@ class AssistantTeam(object):
     def assist(
         self,
         teacher_name: str,
-        assessment_dict: AssessmentDict = None,
-        data: typing.Any = None,
+        # assessment_dict: AssessmentDict = None,
+        # data: typing.Any = None,
     ):
         """Call all of the assistants in the team
 
@@ -187,7 +188,8 @@ class AssistantTeam(object):
             data (typing.Any): _description_
         """
         for assistant in self._assistants.values():
-            assistant(teacher_name, assessment_dict, data)
+            # assistant(teacher_name, assessment_dict, data)
+            assistant(teacher_name)
 
 
 class Teacher(ABC):
