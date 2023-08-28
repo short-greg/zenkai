@@ -55,6 +55,8 @@ class XPopulationAssessor(PopulationAssessor):
         t = expand_t(t, len(population))
         x = population.flattened(self.names)
 
+        x = IO(*x)
+
         assessment = self.learner.assess(
             IO(*x), t, reduction_override="none"
         )[self.loss_name]

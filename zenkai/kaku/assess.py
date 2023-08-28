@@ -903,7 +903,7 @@ class ThLoss(Loss):
     def add_weight(self, evaluation: torch.Tensor):
         return evaluation * self._weight if self._weight is not None else evaluation
 
-    def forward(self, x: IO, t: IO, reduction_override: str = None):
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         
         if self.reduction == 'NA':
             reduction = 'NA'
@@ -918,12 +918,12 @@ class ThLoss(Loss):
 
         if reduction == 'NA':
             return self.reduce(
-                self.base_loss(**self._loss_kwargs).forward(x[0], t[0])
+                self.base_loss(**self._loss_kwargs).forward(x.f, t.f)
             )
 
         return self.add_weight(
             self.reduce(
-                self.base_loss(reduction="none", **self._loss_kwargs).forward(x[0], t[0]),
+                self.base_loss(reduction="none", **self._loss_kwargs).forward(x.f, t.f),
                 reduction,
             )
         )

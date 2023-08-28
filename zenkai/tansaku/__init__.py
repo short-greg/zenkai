@@ -42,7 +42,8 @@ from .mixers import (
 from .influencers import (
     IndividualInfluencer,
     PopulationLimiter,
-    SlopeInfluencer
+    SlopeInfluencer,
+    JoinInfluencer
 )
 from .populators import (
     ConservativePopulator,
@@ -71,6 +72,8 @@ from .mappers import (
     GaussianSampleMapper,
     BinarySampleMapper,
     GaussianMutator,
-    BinaryMutator
+    BinaryMutator,
+    IndividualMapper,
+    PopulationMapper
 
 )
