@@ -122,7 +122,7 @@ class BinaryVoteAggregator(VoteAggregator):
 class MulticlassVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def __init__(self, n_classes: int = None, input_one_hot: bool=False, output_one_hot: bool=False):
+    def __init__(self, n_classes: int = None, input_one_hot: bool=False, output_mean: bool=False):
         """initializer
 
         Args:
@@ -134,14 +134,10 @@ class MulticlassVoteAggregator(VoteAggregator):
         Raises:
             ValueError: 
         """
-
-        # TODO: Add support for LongTensors by using one_hot encoding
-        # I will split the voter up at that point though
-        #
         super().__init__()
         self._n_classes = n_classes
         self.input_one_hot = input_one_hot
-        self.output_one_hot = output_one_hot
+        self.output_mean = output_mean
 
     def forward(
         self, votes: torch.Tensor, weights: typing.List[float] = None
@@ -156,15 +152,15 @@ class MulticlassVoteAggregator(VoteAggregator):
             torch.Tensor: The aggregated result
         """
         # (batch, voters) -> (batch, voters, vote) -> (batch, votes)
+        n_votes = votes.shape[1]
         if not self.input_one_hot:
             votes = one_hot(votes, self._n_classes)
         votes = votes.float()
         votes = weighted_votes(votes, weights)
+        if self.output_mean:
+            return votes / n_votes
 
-        result = votes.argmax(dim=-1)
-        if self.output_one_hot:
-            return one_hot(result, self._n_classes).float()
-        return result
+        return votes.argmax(dim=-1)
 
 
 class Voter(nn.Module):
@@ -266,7 +262,7 @@ class EnsembleVoter(Voter):
 
 class StochasticVoter(Voter):
 
-    def __init__(self, stochastic_model: nn.Module, max_votes: int):
+    def __init__(self, stochastic_model: nn.Module, n_votes: int):
         """initializer
 
         Args:
@@ -275,7 +271,7 @@ class StochasticVoter(Voter):
         """
         super().__init__()
         self.stochastic_model = stochastic_model
-        self._max_votes = max_votes
+        self._n_votes = n_votes
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Get n_votes by forwarding x through the model n_votes times
@@ -288,11 +284,11 @@ class StochasticVoter(Voter):
         """
 
         y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).view(
-            self._max_votes * x.shape[0], *x.shape[1:]
+            self._n_votes * x.shape[0], *x.shape[1:]
         )
         y = self.stochastic_model(y)
         return y.reshape(
-            self._max_votes, x.shape[0], *y.shape[1:]
+            self._n_votes, x.shape[0], *y.shape[1:]
         )
     
     @property
@@ -303,9 +299,9 @@ class StochasticVoter(Voter):
     def max_votes(self, max_votes: int):
         if max_votes <= 0 or not isinstance(max_votes, int):
             raise ValueError(f"{max_votes} must be an integer of greater than 1")
-        self._max_votes = max_votes
+        self._n_votes = max_votes
 
     @property
     def n_votes(self) -> int:
-        return self._max_votes
+        return self._n_votes
     

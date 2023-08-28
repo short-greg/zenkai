@@ -57,7 +57,7 @@ class TestMulticlassVoteAggregator:
     def test_multiclass_aggregator_returns_correct_shape_with_output_one_hot(self):
 
         votes = (torch.randint(0, 3, (3, 4)))
-        voter = ensemble.MulticlassVoteAggregator(4, output_one_hot=True)
+        voter = ensemble.MulticlassVoteAggregator(4, output_mean=True)
         assert voter(votes).shape == torch.Size([4, 4])
 
 

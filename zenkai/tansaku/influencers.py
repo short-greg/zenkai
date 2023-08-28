@@ -82,6 +82,38 @@ class SlopeInfluencer(IndividualInfluencer):
         return SlopeInfluencer(self._momentum, self.lr, self.x, self._multiplier == 1)
 
 
+class JoinInfluencer(PopulationInfluencer):
+    """
+    Add the individual to the front of the pouplation
+    """
+
+    def __call__(
+        self,
+        population: Population,
+        individual: Individual
+    ) -> Population:
+        """
+
+        Args:
+            population (Population): The population to limit
+            individual (Individual): The individual
+            limit (torch.LongTensor, optional): The index to use to limit. Defaults to None.
+
+        Returns:
+            Population: The limited population
+        """
+        result = {}
+
+        for k, v in population:
+            result[k] = torch.cat(
+                [individual[k][None], v], dim=0
+            )
+        return Population(**result)
+    
+    def spawn(self) -> 'PopulationLimiter':
+        return PopulationLimiter(self.limit.clone())
+
+
 class PopulationLimiter(PopulationInfluencer):
     """
     Allows the user to specify certain indices that can be updated in the individual.
