@@ -18,8 +18,10 @@ from ..kaku import (
     StepX,
     ThLoss,
     update_io,
+    OptimFactory
 )
 from ..utils import to_np, to_th_as
+from .grad import GradStepTheta
 
 
 class LeastSquaresSolver(ABC):
@@ -267,3 +269,59 @@ class LeastSquaresLearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
         return IO(self._linear(x.f), detach=release)
+
+
+class GradLeastSquaresLearner(LearningMachine):
+    """Learner that uses grad to optimize theta and least squares to optimize x. It wraps a standard linear model. 
+    Uses a ridge regresion solver"""
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = True,
+        optimize_dx: bool = True,
+        optim_factory: OptimFactory=None,
+        loss: str='mse',
+        reduction: str='mean',
+        lam_x: float=1e-4,
+        auto_adv: bool=True
+    ):
+        """initializer
+
+        Args:
+            in_features (int): The number of features into the linear model
+            out_features (int): The number of features out of the model
+            bias (bool, optional): Whether to use the bias. Defaults to True.
+            optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
+        """
+        super().__init__()
+        self._linear = nn.Linear(in_features, out_features, bias)
+        self._loss = ThLoss(loss, reduction)
+        self._step_x = LeastSquaresStepX(
+            self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
+        )
+        optim_factory = optim_factory or OptimFactory('adam', lr=1e-3)
+        self._step_theta = GradStepTheta(
+            self, optim_factory, reduction, auto_adv=False
+        )
+        self.auto_adv = auto_adv
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+        return self._loss.assess_dict(y, t, reduction_override=reduction_override)
+
+    def step(self, x: IO, t: IO, state: State):
+        self._step_theta.step(x, t, state)
+        if self.auto_adv:
+            self._step_theta.adv(x, state)
+
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return self._step_x.step_x(x, t, state)
+
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        x.freshen(False)
+        return IO(self._linear(x.f), detach=release)
+
+    def adv(self, x: IO, state: State):
+
+        return self._step_theta.adv(x, state)
