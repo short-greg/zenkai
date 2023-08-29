@@ -9,7 +9,7 @@ from ..kaku import (
 )
 from .grad import GradUpdater
 
-from ..utils import get_model_grads, set_model_grads
+from ..utils import get_model_grads, set_model_grads, Null
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool=True) -> IO:
@@ -122,21 +122,21 @@ class FALearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, activation: nn.Module, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
         """initializer
 
         Args:
-            net (nn.Module): _description_
-            netB (nn.Module): _description_
-            activation (nn.Module): _description_
-            optim_factory (OptimFactory): _description_
-            loss (typing.Union[Loss, str], optional): _description_. Defaults to 'mse'.
-            auto_adv (bool, optional): _description_. Defaults to True.
+            net (nn.Module): the net to use for forward prop
+            netB (nn.Module): the net to use for backprop
+            optim_factory (OptimFactory): The opimtizer
+            activation (nn.Module): The activation
+            loss (typing.Union[Loss, str], optional): The loss. Defaults to 'mse'.
+            auto_adv (bool, optional): Whether to automatically update the parameters after step. Defaults to True.
         """
         super().__init__()
         self.net = net
         self.netB = netB
-        self.activation = activation
+        self.activation = activation or Null()
         self.flatten = nn.Flatten()
         self._optim = optim_factory(self.net.parameters())
         
@@ -217,23 +217,23 @@ class DFALearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, activation: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
-        """_summary_
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+        """initializer
 
         Args:
-            net (nn.Module): _description_
-            netB (nn.Module): _description_
-            activation (nn.Module): _description_
-            out_features (int): _description_
-            t_features (int): _description_
-            optim_factory (OptimFactory): _description_
-            loss (typing.Union[Loss, str], optional): _description_. Defaults to 'mse'.
-            auto_adv (bool, optional): _description_. Defaults to True.
+            net (nn.Module): the net to use for forward prop
+            netB (nn.Module): the net to use for backprop
+            out_features (int): the number of out features
+            t_features (int): the number of target features
+            optim_factory (OptimFactory): The opimtizer
+            activation (nn.Module): The activation
+            loss (typing.Union[Loss, str], optional): The loss. Defaults to 'mse'.
+            auto_adv (bool, optional): Whether to automatically update the parameters after step. Defaults to True.
         """
         super().__init__()
         self.net = net
         self.netB = netB
-        self.activation = activation
+        self.activation = activation or Null()
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
         self.optim = optim_factory(self.net.parameters())

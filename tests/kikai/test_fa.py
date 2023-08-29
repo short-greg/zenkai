@@ -54,8 +54,8 @@ class TestFALearner:
         
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(),
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse'
+            net, nn.Linear(3, 4), 
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse'
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -67,8 +67,8 @@ class TestFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(),
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', auto_adv=False
+            net, nn.Linear(3, 4), 
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', activation=nn.Sigmoid(), auto_adv=False
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -80,8 +80,8 @@ class TestFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(),
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', auto_adv=False
+            net, nn.Linear(3, 4), 
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse', auto_adv=False
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -95,8 +95,8 @@ class TestFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(),
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', auto_adv=False
+            net, nn.Linear(3, 4), 
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse', auto_adv=False
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -112,8 +112,8 @@ class TestDFALearner:
         
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse'
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse'
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
@@ -125,8 +125,8 @@ class TestDFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  loss='mse',
             auto_adv=False
         )
         t = IO(torch.rand(3, 3))
@@ -139,8 +139,8 @@ class TestDFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse',
             auto_adv=False
         )
         t = IO(torch.rand(3, 3))
@@ -155,8 +155,8 @@ class TestDFALearner:
     
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), nn.Sigmoid(), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse',
+            net, nn.Linear(3, 4), 4, 3,
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  loss='mse',
             auto_adv=False
         )
         t = IO(torch.rand(3, 3))
