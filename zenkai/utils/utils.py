@@ -343,6 +343,7 @@ def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.
     return getattr(nn, module)(*args, **kwargs)
 
 
+
 # def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
 #     """Calculate the mean absolute error in correlation
 
@@ -357,87 +358,3 @@ def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.
 #     corr1 = torch.corrcoef(torch.flatten(x1, 1))
 #     corr2 = torch.corrcoef(torch.flatten(x2, 1))
 #     return torch.abs(corr1 - corr2).mean()
-
-
-
-# def chain(x, torch_modules: typing.Iterable[nn.Module]):
-
-#     for module in torch_modules:
-#         x = module.forward(x)
-#     return x
-
-
-# def create_dataloader(
-#     x: torch.Tensor,
-#     t: torch.Tensor,
-#     batch_size: int = 64,
-#     shuffle: bool = True,
-#     get_indices: bool = False,
-# ):
-#     """Create data loader to loop over an input
-
-#     Args:
-#         x (torch.Tensor): _description_
-#         t (torch.Tensor): _description_
-#         batch_size (int, optional): _description_. Defaults to 64.
-#         shuffle (bool, optional): _description_. Defaults to True.
-#         get_indices (bool, optional): _description_. Defaults to False.
-
-#     Returns:
-#         _type_: _description_
-#     """
-#     if get_indices:
-#         indices = torch.range(0, len(x))
-#         dataset = torch_data.TensorDataset(x, t, indices)
-#     else:
-#         dataset = torch_data.TensorDataset(x, t)
-#     return torch_data.DataLoader(dataset, batch_size, shuffle)
-
-# def detach(x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]):
-
-#     if isinstance(x, list) or isinstance(x, tuple):
-#         result = []
-#         for x_i in x:
-#             if isinstance(x_i, torch.Tensor):
-#                 result.append(x_i.detach())
-#             else:
-#                 result.append(x_i)
-#         return result
-
-#     return x.detach() if isinstance(x, torch.Tensor) else x
-
-# def to_float(x: typing.List[torch.Tensor]):
-#     return list(map(lambda xi: xi.mean().item(), x))
-
-
-# def get_indexed(
-#     x: torch.Tensor, indices: typing.Optional[torch.LongTensor] = None
-# ) -> torch.Tensor:
-
-#     if indices is not None:
-#         return x[indices]
-
-#     return x
-
-
-# def repeat_on_indices(
-#     x: torch.Tensor, t: torch.Tensor, indices: torch.LongTensor, iterations: int
-# ):
-#     """Convenience function to loop over indieces
-
-#     Args:
-#         x (torch.Tensor): The input tensor
-#         t (torch.Tensor): The target tensor
-#         indices (torch.LongTensor): The indices to retrieve
-#         iterations (int): Number of times to iterate
-
-#     Yields:
-#         torch.Tensor, torch.Tensor : The sampled input and target tensor
-#     """
-
-#     x = get_indexed(x, indices)
-#     t = get_indexed(t, indices)
-
-#     for i in range(iterations):
-
-#         yield x, t

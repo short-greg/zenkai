@@ -233,7 +233,9 @@ class LeastSquaresLearner(LearningMachine):
         in_features: int,
         out_features: int,
         bias: bool = True,
-        optimize_dx: bool = True
+        optimize_dx: bool = True,
+        lam_theta: float=1e-3,
+        lam_x: float=1e-4
     ):
         """initializer
 
@@ -247,10 +249,10 @@ class LeastSquaresLearner(LearningMachine):
         self._linear = nn.Linear(in_features, out_features, bias)
         self._loss = ThLoss("mse", "mean")
         self._step_x = LeastSquaresStepX(
-            self._linear, LeastSquaresRidgeSolver(1e-4, False), optimize_dx
+            self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
         self._step_theta = LeastSquaresStepTheta(
-            self._linear, LeastSquaresRidgeSolver(1e-3, bias=bias), optimize_dx
+            self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:

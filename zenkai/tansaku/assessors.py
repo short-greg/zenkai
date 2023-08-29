@@ -63,6 +63,8 @@ class XPopulationAssessor(PopulationAssessor):
         if assessment.value.dim() >= 2:
             assessment = reduce_assessment_dim1(assessment, population.k, True)
         assessment = assessment.reshape(population.k, -1)
+
+        # print(assessment.value[:,0])
         population.report(assessment)
 
         return population

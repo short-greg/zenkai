@@ -25,40 +25,72 @@ from ..kaku import (
     itadaki,
     ThLoss
 )
-from ..utils import get_model_grads, update_model_grads, set_model_grads, get_model_parameters
+from ..utils import get_model_grads, set_model_grads
 
 
-class GradManager(object):
+class GradUpdater(object):
+    """Convenience class to manage the gradients"""
+ 
+    def __init__(self, net: nn.Module, optim: torch.optim.Optimizer, to_update_theta: bool=True, to_update_x: bool=True):
+        """initializer
 
-
-    def __init__(self, net: nn.Module, optim: torch.optim.Optimizer):
-
+        Args:
+            net (nn.Module): The network to manage for
+            optim (torch.optim.Optimizer): The optimizer to use for updating
+        """
         self.net = net
         self.optim = optim
+        self.to_update_theta = to_update_theta
+        self.to_update_x = to_update_x
 
     def accumulate(self, x: IO, state: State):
+        """accumulate the gradients
 
+        Args:
+            x (IO): The input 
+            state (State): The state
+        """
         my_state = state.mine((self, x))
         grads = state.get((self, x), 'grad')
 
         if grads is None:
-            my_state.grad = get_model_grads(self.net)
-            my_state.x_grad = x.f.grad
+            if self.to_update_theta: my_state.grad = get_model_grads(self.net)
+            if self.to_update_x: my_state.x_grad = x.f.grad
         else:
-            my_state.grad = get_model_grads(self.net) + grads
-            my_state.x_grad = my_state['x_grad'] + x[0].grad
-        state[(self, x), 'stepped'] = True
+            if self.to_update_theta: my_state.grad = get_model_grads(self.net) + grads
+            if self.to_update_x: my_state.x_grad = my_state['x_grad'] + x[0].grad
 
-    def step(self, x: IO, state: State, net_override: nn.Module=None) -> bool:
+    def update(self, x: IO, state: State, net_override: nn.Module=None) -> bool:
+        """Update the network 
 
-        if state.get((self, x), "stepped", False):     
+        Args:
+            x (IO): _description_
+            state (State): _description_
+            net_override (nn.Module, optional): Override network if you want to 
+              update the network for a different network than the member network. Defaults to None.
+
+        Returns:
+            bool: Whether the update was successful. Will return false if no grads have been set
+        """
+        grad = state.get((self, x), 'grad')
+
+        if grad is not None:     
             net = net_override or self.net
             self.optim.zero_grad()
-            set_model_grads(net, state[(self, x), 'grad'])
+            set_model_grads(net, grad)
             self.optim.step()
             return True
         return False
     
+    def update_x(self, x: IO, state: State) -> IO:
+
+        x_grad = state.get((self, x), 'x_grad')
+        if x_grad is not None:
+
+            return IO(x[0] - x_grad, detach=True), True
+
+        return x, False
+        
 
 class GradStepTheta(StepTheta):
     """Update theta with the loss between y and t on the forward pass"""
@@ -80,10 +112,11 @@ class GradStepTheta(StepTheta):
         """
         super().__init__()
         self.learner = learner
-        self.optim = optim_factory(self.learner.parameters())
+        self._optim = optim_factory(self.learner.parameters())
         self.reduction = reduction
         self.y_name = y_name
         self.auto_adv = auto_adv
+        self._grad_updater = GradUpdater(self.learner, self._optim, to_update_x=False)
 
     def step(self, x: IO, t: IO, state: State):
         y = state.get(self.learner, self.y_name)
@@ -92,32 +125,20 @@ class GradStepTheta(StepTheta):
         if stepped or y is None:
             x.freshen(False)
             y = self.learner(x, release=False)
-        self.optim.zero_grad()
+        self.learner.zero_grad()
         assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward("loss")
-        state[self.learner, 'stepped'] = True
-        grads = state.get(self, 'grad_theta')
-        
-        if grads is None:
-            state[self, 'grad_theta'] = get_model_grads(self.learner)
-        else:
-            state[self, 'grad_theta'] = get_model_grads(self.learner) + grads
+        self._grad_updater.accumulate(x, state)
         if self.auto_adv:
-            self.adv(state)
+            self.adv(x, state)
     
-    def adv(self, state: State) -> bool:
+    def adv(self, x: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        grads = state.get(self, 'grad_theta')
-        if grads is not None:
-            set_model_grads(self.learner, grads)
-            self.optim.step()
-            self.optim.zero_grad()
-            return True
-        return False
+        return self._grad_updater.update(x, state)
 
 
 class NullStepTheta(StepTheta):
@@ -148,11 +169,11 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         """
         super().__init__()
         self.learner = learner
-        self.optim = optim_factory(learner.parameters())
-        self.optim.zero_grad()
+        self._optim = optim_factory(learner.parameters())
         self.reduction = reduction
         self.loss_name = loss_name
         self.auto_adv = auto_adv
+        self._grad_updater = GradUpdater(self.learner, self._optim, to_update_x=False)
 
     def step(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
@@ -165,7 +186,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
             batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
         """
         x.freshen(False)
-        self.optim.zero_grad()
+        self.learner.zero_grad()
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
@@ -175,27 +196,17 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         assessment = self.learner.assess_y(y_idx, t_idx, self.reduction)
         assessment[self.loss_name].backward()
-        state[self, 'stepped'] = True
-        grads = state.get(self, 'grad')
-        if grads is None:
-            state[self, 'grad'] = get_model_grads(self.learner)
-        else:
-            state[self, 'grad'] = get_model_grads(self.learner) + grads
+        self._grad_updater.accumulate(x, state)
         if self.auto_adv:
-            self.adv(state)
+            self.adv(x, state)
 
-    def adv(self, state: State) -> bool:
+    def adv(self, x: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        if state.get(self, "stepped", False):
-            set_model_grads(self.learner, state[self, 'grad'])
-            self.optim.step()
-            self.optim.zero_grad()
-            return True
-        return False
+        return self._grad_updater.update(x, state)
 
 
 class GradStepX(StepX):
@@ -264,8 +275,10 @@ class GradLoopStepX(BatchIdxStepX):
             IO: The updated input. The tensor x is updated in this case
         """
         x_state = state.mine(x)
+
         if "optim" not in x_state:
             x_state.optim = self.optim_factory([*x])
+            
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
