@@ -151,14 +151,14 @@ class MulticlassVoteAggregator(VoteAggregator):
         Returns:
             torch.Tensor: The aggregated result
         """
-        # (batch, voters) -> (batch, voters, vote) -> (batch, votes)
-        n_votes = votes.shape[1]
+        # (voters, batch, ) -> (voters, batch, vote) -> (batch, votes)
+        n_votes = votes.shape[0]
         if not self.input_one_hot:
             votes = one_hot(votes, self._n_classes)
         votes = votes.float()
         votes = weighted_votes(votes, weights)
         if self.output_mean:
-            return votes / n_votes
+            return votes
 
         return votes.argmax(dim=-1)
 

@@ -7,6 +7,7 @@ from ..kaku import (
     IO, State, LearningMachine, AssessmentDict, 
     OptimFactory, StepX, Loss, ThLoss
 )
+from .grad import GradUpdater
 
 from ..utils import get_model_grads, set_model_grads
 
@@ -137,7 +138,9 @@ class FALearner(LearningMachine):
         self.netB = netB
         self.activation = activation
         self.flatten = nn.Flatten()
-        self.optim = optim_factory(self.net.parameters())
+        self._optim = optim_factory(self.net.parameters())
+        
+        self._grad_updater = GradUpdater(self.netB, self._optim)
         if isinstance(loss, str):
             self.loss = ThLoss(loss)
         else: self.loss = loss
@@ -169,7 +172,7 @@ class FALearner(LearningMachine):
             IO: the updated target
         """
         my_state = state.mine((self, x))
-        self.optim.zero_grad()
+        self.net.zero_grad()
         self.netB.zero_grad()    
 
         if 'y' not in my_state:
@@ -181,16 +184,9 @@ class FALearner(LearningMachine):
         self.loss(IO(y), t).backward()
         y_det = state[(self, x), 'y_det']
         y2.backward(y_det.grad)
-
-        grads = state.get((self, x), 'grad')
-        if grads is None:
-            my_state.grad = get_model_grads(self.netB)
-            my_state.x_grad = x[0].grad
-        else:
-            my_state.grad = get_model_grads(self.netB) + grads
-            my_state.x_grad = my_state.x_grad + x[0].grad
         
-        my_state.stepped = True
+        self._grad_updater.accumulate(x, state)
+
         if self.auto_adv:
             self.adv(x, state)
 
@@ -205,7 +201,8 @@ class FALearner(LearningMachine):
         Returns:
             IO: the updated target
         """
-        return IO(x[0] - state[(self, x), 'x_grad'], detach=True)
+        x_prime, _ = self._grad_updater.update_x(x, state)
+        return x_prime
 
     def adv(self, x: IO, state: State) -> bool:
         """Advance the optimizer
@@ -213,12 +210,7 @@ class FALearner(LearningMachine):
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        if state.get((self, x), "stepped", False):
-            self.optim.zero_grad()
-            set_model_grads(self.net, state[(self, x), 'grad'])
-            self.optim.step()
-            return True
-        return False
+        return self._grad_updater.update(x, state, self.net)
 
 
 class DFALearner(LearningMachine):
