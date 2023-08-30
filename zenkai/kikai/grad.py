@@ -25,7 +25,7 @@ from ..kaku import (
     itadaki,
     ThLoss
 )
-from ..utils import get_model_grads, set_model_grads
+from ..utils import get_model_grads, set_model_grads, get_model_parameters
 
 
 class GradUpdater(object):
@@ -76,6 +76,7 @@ class GradUpdater(object):
 
         if grad is not None:     
             net = net_override or self.net
+            
             self.optim.zero_grad()
             set_model_grads(net, grad)
             self.optim.step()
