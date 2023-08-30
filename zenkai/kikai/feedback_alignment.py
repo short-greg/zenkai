@@ -274,12 +274,12 @@ class DFALearner(LearningMachine):
         if 'y' not in my_state:
             self(x, state=state)
         
-        y = state[(self, x), 'y']
         y2 = self.netB(x.f)
         
+        y_det = state[(self, x), 'y_det']
+        y = state[(self, x), 'y']
         y = self.B(y)
         self.loss(IO(y), t).backward()
-        y_det = state[(self, x), 'y_det']
         y2.backward(y_det.grad)
 
         assert x[0].grad is not None

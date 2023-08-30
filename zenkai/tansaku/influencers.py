@@ -36,12 +36,11 @@ class PopulationInfluencer(ABC):
 
 
 class SlopeInfluencer(IndividualInfluencer):
-    """Modifies an individual based on the slope of a population"""
 
     def __init__(
         self, momentum: float, lr: float = 0.1, x: str = "x", maximize: bool = False
     ):
-        """initializer
+        """Modifies an individual based on the slope of a population
 
         Args:
             momentum (float): The amount of momentum for the slope

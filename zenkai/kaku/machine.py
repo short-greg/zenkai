@@ -516,8 +516,46 @@ class PostStepTheta(StepTheta):
         pass
 
 
+class AdvHook(StepHook):
+    """Hook that executes the advance method
+    """
+
+    def __init__(self, step: PostStepTheta):
+        """initializer
+
+        Args:
+            step (PostStepTheta): The step to automatically advance
+        """
+
+        self.step = step
+
+    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+
+        self.step.adv(x, state)
+        return x, t  
+
+
+class PostLearner(LearningMachine, PostStepTheta):
+    """Consider whether to use the auto advance hook
+    """
+    pass
+
+    # def __init__(self, auto_adv: bool=False):
+    #     """initializer
+
+    #     Args:
+    #         auto_adv (bool, optional): _description_. Defaults to False.
+    #     """
+
+    #     super().__init__()
+    #     self._auto_adv = auto_adv
+    #     self._hook = AdvHook(self)
+    #     if auto_adv:
+    #         self.step_posthook(self._hook)
+
+
 class PostOptim(object):
-    """Convenience optimizer to wrap multiple PostStepTheta
+    """Convenience optimizer to wrap multiple PostStepTheta or PostLearners
     """
 
     def __init__(self, step_thetas: typing.List[PostStepTheta]):

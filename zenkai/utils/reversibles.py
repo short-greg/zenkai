@@ -217,6 +217,32 @@ class LeakyReLUInvertable(Reversible):
         return nn_func.leaky_relu(x, self._negative_slope)
 
 
+class ReLUReversible(Reversible):
+    """ReLU that can reverse the output"""
+
+    def reverse(self, y: torch.Tensor) -> torch.Tensor:
+        """Reverse the ReLU function. Simply takes the relu of it
+
+        Args:
+            y (torch.Tensor): the output to the layer
+
+        Returns:
+            torch.Tensor: the inverted output
+        """
+        return nn_func.relu(y)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Reverse the ReLU function. Simply takes the relu of it
+
+        Args:
+            x (torch.Tensor): the input to the layer
+
+        Returns:
+            torch.Tensor: the output of the layer
+        """
+        return nn_func.relu(x)
+
+
 class ZeroToNeg1(Reversible):
     """Converts binary valued inputs so that -1 is negative, and 1 is positive"""
 

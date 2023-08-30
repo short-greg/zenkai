@@ -13,6 +13,7 @@ from .reversibles import (
     Reversible,
     SequenceReversible,
     SigmoidInvertable,
+    ReLUReversible,
     TargetReverser,
     ZeroToNeg1,
 )
