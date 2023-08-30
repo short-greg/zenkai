@@ -186,7 +186,6 @@ class FALearner(LearningMachine):
         y2.backward(y_det.grad)
         
         self._grad_updater.accumulate(x, state)
-
         if self.auto_adv:
             self.adv(x, state)
 
@@ -236,10 +235,11 @@ class DFALearner(LearningMachine):
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
-        self.optim = optim_factory(self.net.parameters())
+        self._optim = optim_factory(self.net.parameters())
         if isinstance(loss, str):
             self.loss = ThLoss(loss)
         else: self.loss = loss
+        self._grad_updater = GradUpdater(self.netB, self._optim)
         self.auto_adv = auto_adv
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
@@ -268,7 +268,7 @@ class DFALearner(LearningMachine):
             IO: the updated target
         """
         my_state = state.mine((self, x))
-        self.optim.zero_grad()
+        self.net.zero_grad()
         self.netB.zero_grad()
         self.B.zero_grad()
         if 'y' not in my_state:
@@ -283,16 +283,7 @@ class DFALearner(LearningMachine):
         y2.backward(y_det.grad)
 
         assert x[0].grad is not None
-        grads = state.get((self, x), 'grad')
-
-        if grads is None:
-            my_state.grad = get_model_grads(self.netB)
-            my_state.x_grad = x[0].grad
-        else:
-            my_state.grad = get_model_grads(self.netB) + grads
-            my_state.x_grad = my_state['x_grad'] + x[0].grad
-
-        my_state.stepped = True
+        self._grad_updater.accumulate(x, state)
         if self.auto_adv:
             self.adv(x, state)
         
@@ -307,19 +298,13 @@ class DFALearner(LearningMachine):
         Returns:
             IO: the updated target
         """
-        if ((self, x), 'x_grad') not in state:
-            raise ValueError(f'Must call step before calling step_x')
-        return IO(x[0] - state[(self, x), 'x_grad'], detach=True)
-    
+        x_prime, _ = self._grad_updater.update_x(x, state)
+        return x_prime
+
     def adv(self, x: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        if state.get((self, x), "stepped", False):
-            self.optim.zero_grad()
-            set_model_grads(self.net, state[(self, x), 'grad'])
-            self.optim.step()
-            return True
-        return False
+        return self._grad_updater.update(x, state, self.net)
