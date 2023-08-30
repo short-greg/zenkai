@@ -6,18 +6,18 @@ from ..kaku import (
     IO,
     StepTheta,
     PostStepTheta,
-    State
+    State,
 )
 
 
 class StackPostStepTheta(PostStepTheta):
-    """Save the inputs and outputs to a 
-    Useful if you want to optimize after propagating backwards like when
-    you want to reuse a layer
-    """
 
     def __init__(self, base_step_theta: StepTheta):
-        """initializer
+        """Save the inputs and outputs to a network
+        Useful if you want to optimize after propagating backwards like when
+        you want to reuse a layer.
+
+        Warning: The StepX must not depend on StepTheta to use this
 
         Args:
             base_step_theta (StepTheta): The base step method to call after postponing
@@ -33,11 +33,13 @@ class StackPostStepTheta(PostStepTheta):
         state[self, 'stack_x'].append(x)
         state[self, 'stack_t'].append(t)
     
-    def adv(self, state: State):
+    def adv(self, x: IO, state: State):
         """complete the step by concatenating all ios and running
         the base step method
 
         Args:
+            x (IO): The last input - The input is not used as a key so anything
+              can be actually passed in
             state (State): The learning state
 
         Raises:

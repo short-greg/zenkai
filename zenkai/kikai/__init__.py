@@ -36,6 +36,7 @@ from .grad import (
     GradStepTheta,
     GradStepX,
     NullStepTheta,
+    GradUpdater,
     update_x,
 )
 from .least_squares import (
@@ -45,6 +46,7 @@ from .least_squares import (
     LeastSquaresStandardSolver,
     LeastSquaresStepTheta,
     LeastSquaresStepX,
+    GradLeastSquaresLearner
 )
 from .reversible import ReversibleMachine
 from .scikit import (
@@ -68,3 +70,4 @@ from .ensemble import EnsembleLearner, EnsembleLearnerVoter
 from .feedback_alignment import (
     BStepX, FALinearLearner, DFALearner, FALearner
 )
+from .post import StackPostStepTheta

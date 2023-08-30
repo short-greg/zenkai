@@ -17,6 +17,7 @@ from ..kaku import (
     StepTheta,
     StepX,
     ThLoss,
+    Loss,
     update_io,
     OptimFactory
 )
@@ -282,8 +283,7 @@ class GradLeastSquaresLearner(LearningMachine):
         bias: bool = True,
         optimize_dx: bool = True,
         optim_factory: OptimFactory=None,
-        loss: str='mse',
-        reduction: str='mean',
+        loss: Loss=None,
         lam_x: float=1e-4,
         auto_adv: bool=True
     ):
@@ -297,13 +297,13 @@ class GradLeastSquaresLearner(LearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = ThLoss(loss, reduction)
+        self._loss = loss or ThLoss("mse", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
         optim_factory = optim_factory or OptimFactory('adam', lr=1e-3)
         self._step_theta = GradStepTheta(
-            self, optim_factory, reduction, auto_adv=False
+            self, optim_factory, "mean", auto_adv=False
         )
         self.auto_adv = auto_adv
 
