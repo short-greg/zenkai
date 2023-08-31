@@ -35,6 +35,8 @@ from .io import (
     IO,
     Idx 
 )
+from functools import wraps
+
 
 class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
@@ -413,8 +415,6 @@ class NullLearner(LearningMachine):
 
 
 class StepLoop(object):
-    """
-    """
 
     def __init__(self, batch_size: int=None, shuffle: bool = True):
         """Loop over a connection by indexing
@@ -479,9 +479,16 @@ class InDepStepX(StepX):
 
 
 class StdLearningMachine(LearningMachine):
-    """Convenience class to easily create a learning machine that takes a StepX and StepTheta"""
+    """"""
 
     def __init__(self, loss: typing.Union[Loss, typing.Iterable[Loss]], step_theta: StepTheta=None, step_x: StepX=None):
+        """Convenience class to easily create a learning machine that takes a StepX and StepTheta
+
+        Args:
+            loss (typing.Union[Loss, typing.Iterable[Loss]]): The loss to optimize
+            step_theta (StepTheta, optional): The theta update functor. Defaults to None.
+            step_x (StepX, optional): The x update functor. Defaults to None.
+        """
         super().__init__()
         self.loss = loss
         self._step_x = step_x or NullStepX()
@@ -517,11 +524,9 @@ class PostStepTheta(StepTheta):
 
 
 class AdvHook(StepHook):
-    """Hook that executes the advance method
-    """
 
     def __init__(self, step: PostStepTheta):
-        """initializer
+        """Hook that executes the advance method
 
         Args:
             step (PostStepTheta): The step to automatically advance
@@ -555,11 +560,9 @@ class PostLearner(LearningMachine, PostStepTheta):
 
 
 class PostOptim(object):
-    """Convenience optimizer to wrap multiple PostStepTheta or PostLearners
-    """
 
     def __init__(self, step_thetas: typing.List[PostStepTheta]):
-        """initializer
+        """Convenience optimizer to wrap multiple PostStepTheta or PostLearners
 
         Args:
             step_thetas (typing.List[PostStepTheta]): The step thetas to optimize
@@ -571,3 +574,55 @@ class PostOptim(object):
 
         for step_theta in self.step_thetas:
             step_theta.adv(x, state)
+
+
+def step_dep(check_field: str, x_key: bool=True):
+    """Wrap step_x by requiring step to have been called. 
+    Will raise an error if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            if val is None:
+                raise RuntimeError('StepX depends on Step but step has not been called')
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
+
+
+def forward_dep(check_field: str, x_key: bool=True):
+    """Wrap step or step_x by automatically calling forward if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            if val is None:
+                self(x, state)
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
+
