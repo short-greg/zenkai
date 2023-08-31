@@ -194,6 +194,7 @@ class BatchIdxStepTheta(StepTheta):
         pass
 
 
+
 class FeatureIdxStepTheta(StepTheta):
     """Mixin for when only to train on a limited set of neurons
     """
@@ -514,69 +515,90 @@ class StdLearningMachine(LearningMachine):
         pass
 
 
-class PostStepTheta(StepTheta):
+class AccStepTheta(StepTheta):
     """StepTheta used to be able to Postpone stepping 
     """
     
     @abstractmethod
-    def adv(self, x: IO, state: State):
+    def accumulate(self, x: IO, t: IO, state: State):
         pass
 
 
-class AdvHook(StepHook):
-
-    def __init__(self, step: PostStepTheta):
-        """Hook that executes the advance method
-
-        Args:
-            step (PostStepTheta): The step to automatically advance
-        """
-
-        self.step = step
-
-    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
-
-        self.step.adv(x, state)
-        return x, t  
-
-
-class PostLearner(LearningMachine, PostStepTheta):
-    """Consider whether to use the auto advance hook
+class BatchIdxAccStepTheta(AccStepTheta):
+    """Mixin for when only to update based on a limited set of indexes in the minibatch
     """
-    pass
 
-    # def __init__(self, auto_adv: bool=False):
-    #     """initializer
+    @abstractmethod
+    def step(
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
+    ):
+        pass
 
-    #     Args:
-    #         auto_adv (bool, optional): _description_. Defaults to False.
-    #     """
-
-    #     super().__init__()
-    #     self._auto_adv = auto_adv
-    #     self._hook = AdvHook(self)
-    #     if auto_adv:
-    #         self.step_posthook(self._hook)
+    @abstractmethod
+    def accumulate(
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
+    ):
+        pass
 
 
-class PostOptim(object):
+# class AdvHook(StepHook):
 
-    def __init__(self, step_thetas: typing.List[PostStepTheta]):
-        """Convenience optimizer to wrap multiple PostStepTheta or PostLearners
+#     def __init__(self, step: AccStepTheta):
+#         """Hook that executes the advance method
 
-        Args:
-            step_thetas (typing.List[PostStepTheta]): The step thetas to optimize
-        """
-        super().__init__()
-        self.step_thetas = step_thetas
+#         Args:
+#             step (PostStepTheta): The step to automatically advance
+#         """
 
-    def adv(self, x: IO, state: State):
+#         self.step = step
 
-        for step_theta in self.step_thetas:
-            step_theta.adv(x, state)
+#     def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+
+#         self.step.accumulate(x, t, state)
+#         return x, t  
 
 
-def step_dep(check_field: str, x_key: bool=True):
+class AccLearner(LearningMachine, AccStepTheta):
+    """
+    """
+    
+    def backward(self, x: IO, t: IO, state: State) -> IO:
+        
+        self.accumulate(x, t, state)
+        self.step(x, t, state)
+        return self.step_x(x, t, state)
+
+
+
+def acc_dep(check_field: str, x_key: bool=True, exec: bool=False):
+    """Wrap step_x by requiring step to have been called. 
+    Will raise an error if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: AccLearner, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            if val is None and exec:
+                self.accumulate(x, t, state)
+            elif val is None:
+                raise RuntimeError('Method depends on Step but step has not been called')
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
+
+
+def step_dep(check_field: str, x_key: bool=True, exec: bool=False):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called
 
@@ -595,14 +617,16 @@ def step_dep(check_field: str, x_key: bool=True):
             else:
                 key = self
             val = state.get(key, check_field)
-            if val is None:
-                raise RuntimeError('StepX depends on Step but step has not been called')
+            if val is None and exec:
+                self.step(x, t, state)
+            elif val is None:
+                raise RuntimeError('Method depends on Step but step has not been called')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
 
 
-def forward_dep(check_field: str, x_key: bool=True, release: bool=False):
+def forward_dep(check_field: str, x_key: bool=True, exec: bool=False, release: bool=False):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
@@ -620,9 +644,10 @@ def forward_dep(check_field: str, x_key: bool=True, release: bool=False):
             else:
                 key = self
             val = state.get(key, check_field)
-            if val is None:
+            if val is None and exec:
                 self(x, state, release=release)
+            elif val is None:
+                raise RuntimeError('Method depends on forward but forward has not been executed')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
-

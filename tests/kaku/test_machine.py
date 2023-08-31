@@ -383,7 +383,6 @@ class TestMyState:
         assert mine.subs['sub'] is state.sub(x, 'sub')
 
 
-
 class DependentLearner(core.LearningMachine):
 
     def __init__(self, in_features: int, out_features: int):
@@ -403,7 +402,7 @@ class DependentLearner(core.LearningMachine):
             
         return IO(x.f - x.f.grad)
 
-    @core.forward_dep('y')
+    @core.forward_dep('y', exec=True)
     def step(self, x: IO, t: IO, state: core.State):
         y = state[(self, x), 'y']
         self.optim.zero_grad()

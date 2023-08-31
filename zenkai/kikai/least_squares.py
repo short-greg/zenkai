@@ -175,7 +175,7 @@ class LeastSquaresStepTheta(StepTheta):
             self.linear.bias.data = bias
 
     def step(self, x: IO, t: IO, state: State):
-        self._optimize(x[0], t[0])
+        self._optimize(x.f, t.f)
 
 
 class LeastSquaresStepX(StepX):

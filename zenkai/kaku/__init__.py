@@ -59,7 +59,9 @@ from .machine import (
     StepLoop,
     StdLearningMachine,
     NullStepTheta,
-    PostStepTheta,
+    AccLearner,
+    AccStepTheta,
+    BatchIdxAccStepTheta,
     NullStepX
 )
 from .optimize import (
