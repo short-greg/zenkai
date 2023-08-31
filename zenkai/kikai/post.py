@@ -5,12 +5,12 @@ from abc import abstractmethod
 from ..kaku import (
     IO,
     StepTheta,
-    PostStepTheta,
+    AccStepTheta,
     State,
 )
 
 
-class StackPostStepTheta(PostStepTheta):
+class StackPostStepTheta(AccStepTheta):
 
     def __init__(self, base_step_theta: StepTheta):
         """Save the inputs and outputs to a network
@@ -25,7 +25,7 @@ class StackPostStepTheta(PostStepTheta):
         super().__init__()
         self._base_step_theta = base_step_theta
     
-    def step(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO, state: State):
         
         if (self, 'stack') not in state:
             state[self, 'stack_x'] = []
@@ -33,7 +33,7 @@ class StackPostStepTheta(PostStepTheta):
         state[self, 'stack_x'].append(x)
         state[self, 'stack_t'].append(t)
     
-    def adv(self, x: IO, state: State):
+    def step(self, x: IO, t: IO, state: State):
         """complete the step by concatenating all ios and running
         the base step method
 

@@ -60,7 +60,9 @@ class TestFALearner:
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
-        learner.step(x, t, State())
+        state = State()
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
         assert (get_model_parameters(net) != before).any()
 
     def test_fa_learner_does_not_auto_adv_if_false(self):
@@ -68,12 +70,12 @@ class TestFALearner:
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
             net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', activation=nn.Sigmoid(), auto_adv=False
+            optim_factory=OptimFactory('sgd', lr=1e-2), loss='mse', activation=nn.Sigmoid()
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
-        learner.step(x, t, State())
+        learner.accumulate(x, t, State())
         assert (get_model_parameters(net) == before).all()
 
     def test_fa_learner_adv_when_adv_called(self):
@@ -81,14 +83,14 @@ class TestFALearner:
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
             net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse', auto_adv=False
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse'
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
         state = State()
+        learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        learner.adv(x, state)
         assert (get_model_parameters(net) != before).any()
 
     def test_fa_learner_updates_x_with_correct_size(self):
@@ -96,12 +98,12 @@ class TestFALearner:
         net = nn.Linear(3, 4)
         learner = feedback_alignment.FALearner(
             net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse', auto_adv=False
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse'
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
         state = State()
-        learner.step(x, t, state)
+        learner.accumulate(x, t, state)
         x_prime = learner.step_x(x, t, state)
         assert (x_prime.f != x.f).any()
 
@@ -118,7 +120,9 @@ class TestDFALearner:
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
-        learner.step(x, t, State())
+        state = State()
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
         assert (get_model_parameters(net) != before).any()
 
     def test_dfa_learner_does_not_auto_adv_if_false(self):
@@ -127,12 +131,11 @@ class TestDFALearner:
         learner = feedback_alignment.DFALearner(
             net, nn.Linear(3, 4), 4, 3,
             optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  loss='mse',
-            auto_adv=False
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
-        learner.step(x, t, State())
+        learner.accumulate(x, t, State())
         assert (get_model_parameters(net) == before).all()
 
     def test_dfa_learner_adv_when_adv_called(self):
@@ -141,14 +144,13 @@ class TestDFALearner:
         learner = feedback_alignment.DFALearner(
             net, nn.Linear(3, 4), 4, 3,
             optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), loss='mse',
-            auto_adv=False
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(net)
         state = State()
+        learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        learner.adv(x, state)
         assert (get_model_parameters(net) != before).any()
 
     def test_dfa_learner_updates_x_with_correct_size(self):
@@ -156,13 +158,12 @@ class TestDFALearner:
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
             net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  loss='mse',
-            auto_adv=False
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  loss='mse'
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
         state = State()
-        learner.step(x, t, state)
+        learner.accumulate(x, t, state)
         x_prime = learner.step_x(x, t, state)
         assert (x_prime.f != x.f).any()
 

@@ -16,8 +16,8 @@ class TestStackPostStepTheta:
         state = State()
         step_theta = post.StackPostStepTheta(learner)
         before = get_model_parameters(learner)
+        step_theta.accumulate(x1, t1, state)
         step_theta.step(x1, t1, state)
-        step_theta.adv(x1, state)
         assert (before != get_model_parameters(learner)).any()
         
     def test_adv_updates_the_values_after_two_steps(self):
@@ -30,9 +30,9 @@ class TestStackPostStepTheta:
         state = State()
         step_theta = post.StackPostStepTheta(learner)
         before = get_model_parameters(learner)
-        step_theta.step(x1, t1, state)
+        step_theta.accumulate(x1, t1, state)
+        step_theta.accumulate(x2, t2, state)
         step_theta.step(x2, t2, state)
-        step_theta.adv(x2, state)
         assert (before != get_model_parameters(learner)).any()
         
     def test_is_sampe_after_two_steps_but_no_advances(self):
@@ -45,7 +45,6 @@ class TestStackPostStepTheta:
         state = State()
         step_theta = post.StackPostStepTheta(learner)
         before = get_model_parameters(learner)
-        step_theta.step(x1, t1, state)
-        step_theta.step(x2, t2, state)
+        step_theta.accumulate(x1, t1, state)
+        step_theta.accumulate(x2, t2, state)
         assert (before == get_model_parameters(learner)).all()
-

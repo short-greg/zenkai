@@ -5,6 +5,9 @@ import typing
 import torch.nn as nn
 import torch
 
+from zenkai.kaku.io import IO
+from zenkai.kaku.state import State
+
 from .. import kaku
 from ..utils import module_factory
 
@@ -23,6 +26,9 @@ from ..kaku import (
     AssessmentDict,
     OptimFactory,
     itadaki,
+    AccLearner,
+    AccStepTheta,
+    BatchIdxAccStepTheta,
     ThLoss
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
@@ -93,7 +99,7 @@ class GradUpdater(object):
         return x, False
         
 
-class GradStepTheta(StepTheta):
+class GradStepTheta(AccStepTheta):
     """Update theta with the loss between y and t on the forward pass"""
 
     def __init__(
@@ -102,7 +108,6 @@ class GradStepTheta(StepTheta):
         optim_factory: OptimFactory,
         reduction: str = "mean",
         y_name: str='y',
-        auto_adv: bool=True
     ):
         """initializer
 
@@ -116,10 +121,9 @@ class GradStepTheta(StepTheta):
         self._optim = optim_factory(self.learner.parameters())
         self.reduction = reduction
         self.y_name = y_name
-        self.auto_adv = auto_adv
         self._grad_updater = GradUpdater(self.learner, self._optim, to_update_x=False)
 
-    def step(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO, state: State):
         y = state.get(self.learner, self.y_name)
         stepped = state.get(self, "stepped", False)
         
@@ -130,10 +134,8 @@ class GradStepTheta(StepTheta):
         assessment = self.learner.assess_y(y, t, self.reduction)
         assessment.backward("loss")
         self._grad_updater.accumulate(x, state)
-        if self.auto_adv:
-            self.adv(x, state)
     
-    def adv(self, x: IO, state: State) -> bool:
+    def step(self, x: IO, t: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
@@ -149,7 +151,7 @@ class NullStepTheta(StepTheta):
         pass
 
 
-class GradLoopStepTheta(BatchIdxStepTheta):
+class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
     """Update theta with the loss between y and t after passing forward again"""
 
     def __init__(
@@ -158,7 +160,6 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         optim_factory: OptimFactory,
         reduction: str = "mean",
         loss_name: str = "loss",
-        auto_adv: bool=True
     ):
         """initializer
 
@@ -173,10 +174,9 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         self._optim = optim_factory(learner.parameters())
         self.reduction = reduction
         self.loss_name = loss_name
-        self.auto_adv = auto_adv
         self._grad_updater = GradUpdater(self.learner, self._optim, to_update_x=False)
 
-    def step(
+    def accumulate(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
         """
@@ -198,10 +198,8 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         assessment = self.learner.assess_y(y_idx, t_idx, self.reduction)
         assessment[self.loss_name].backward()
         self._grad_updater.accumulate(x, state)
-        if self.auto_adv:
-            self.adv(x, state)
 
-    def adv(self, x: IO, state: State) -> bool:
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> bool:
         """Advance the optimizer
 
         Returns:
@@ -323,7 +321,7 @@ class ActivationLearner(LearningMachine):
         return IO(y[0] - y[0].grad, detach=True)
 
 
-class GradLearner(LearningMachine):
+class GradLearner(AccLearner):
     """Standard gradient learner"""
 
     Y_NAME = "y"
@@ -362,8 +360,8 @@ class GradLearner(LearningMachine):
         assessment = self._loss.assess_dict(y, t, reduction_override)
         return assessment
 
-    def step(self, x: IO, t: IO, state: State):
-        return self._theta_step.step(x, t, state)
+    def accumulate(self, x: IO, t: IO, state: State):
+        return self._theta_step.accumulate(x, t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._x_step.step_x(x, t, state)
@@ -372,9 +370,12 @@ class GradLearner(LearningMachine):
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
+    
+    def step(self, x: IO, t: IO, state: State):
+        return self._theta_step.step(x, t, state)
 
 
-class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
+class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
     """Gradient learner designed for multiple loops"""
 
     LOSS_NAME = "loss"
@@ -417,6 +418,9 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 
+    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+        return self._theta_step.accumulate(x, t, state, batch_idx)
+
     def step(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
@@ -429,7 +433,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX, BatchIdxStepTheta):
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
-
+    
 
 def update_x(
     x: IO, lr: float = 1.0, detach: bool = False, zero_grad: bool = False

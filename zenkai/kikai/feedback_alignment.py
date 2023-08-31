@@ -3,9 +3,12 @@ import torch
 
 import typing
 
+from zenkai.kaku.io import IO
+from zenkai.kaku.state import State
+
 from ..kaku import (
-    IO, State, LearningMachine, AssessmentDict, 
-    OptimFactory, StepX, Loss, ThLoss
+    IO, State, LearningMachine, AssessmentDict,
+    OptimFactory, StepX, Loss, ThLoss, AccLearner
 )
 from .grad import GradUpdater
 
@@ -118,11 +121,11 @@ class BStepX(StepX):
         return IO(x[0] - output_error, detach=True)
 
 
-class FALearner(LearningMachine):
+class FALearner(AccLearner):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse') -> None:
         """initializer
 
         Args:
@@ -131,7 +134,6 @@ class FALearner(LearningMachine):
             optim_factory (OptimFactory): The opimtizer
             activation (nn.Module): The activation
             loss (typing.Union[Loss, str], optional): The loss. Defaults to 'mse'.
-            auto_adv (bool, optional): Whether to automatically update the parameters after step. Defaults to True.
         """
         super().__init__()
         self.net = net
@@ -144,7 +146,6 @@ class FALearner(LearningMachine):
         if isinstance(loss, str):
             self.loss = ThLoss(loss)
         else: self.loss = loss
-        self.auto_adv = auto_adv
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
@@ -159,8 +160,8 @@ class FALearner(LearningMachine):
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
-    
-    def step(self, x: IO, t: IO, state: State):
+
+    def accumulate(self, x: IO, t: IO, state: State):
         """Update the 
 
         Args:
@@ -186,8 +187,6 @@ class FALearner(LearningMachine):
         y2.backward(y_det.grad)
         
         self._grad_updater.accumulate(x, state)
-        if self.auto_adv:
-            self.adv(x, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
@@ -203,7 +202,7 @@ class FALearner(LearningMachine):
         x_prime, _ = self._grad_updater.update_x(x, state)
         return x_prime
 
-    def adv(self, x: IO, state: State) -> bool:
+    def step(self, x: IO, t: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
@@ -212,11 +211,11 @@ class FALearner(LearningMachine):
         return self._grad_updater.update(x, state, self.net)
 
 
-class DFALearner(LearningMachine):
+class DFALearner(AccLearner):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse', auto_adv: bool=True) -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse') -> None:
         """initializer
 
         Args:
@@ -227,7 +226,6 @@ class DFALearner(LearningMachine):
             optim_factory (OptimFactory): The opimtizer
             activation (nn.Module): The activation
             loss (typing.Union[Loss, str], optional): The loss. Defaults to 'mse'.
-            auto_adv (bool, optional): Whether to automatically update the parameters after step. Defaults to True.
         """
         super().__init__()
         self.net = net
@@ -240,7 +238,6 @@ class DFALearner(LearningMachine):
             self.loss = ThLoss(loss)
         else: self.loss = loss
         self._grad_updater = GradUpdater(self.netB, self._optim)
-        self.auto_adv = auto_adv
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
@@ -256,7 +253,7 @@ class DFALearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
     
-    def step(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO, state: State):
         """Update the net parameters
 
         Args:
@@ -284,8 +281,6 @@ class DFALearner(LearningMachine):
 
         assert x[0].grad is not None
         self._grad_updater.accumulate(x, state)
-        if self.auto_adv:
-            self.adv(x, state)
         
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
@@ -300,8 +295,9 @@ class DFALearner(LearningMachine):
         """
         x_prime, _ = self._grad_updater.update_x(x, state)
         return x_prime
+    
 
-    def adv(self, x: IO, state: State) -> bool:
+    def step(self, x: IO, t: IO, state: State) -> bool:
         """Advance the optimizer
 
         Returns:
