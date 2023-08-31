@@ -602,7 +602,7 @@ def step_dep(check_field: str, x_key: bool=True):
     return inner
 
 
-def forward_dep(check_field: str, x_key: bool=True):
+def forward_dep(check_field: str, x_key: bool=True, release: bool=False):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
@@ -621,7 +621,7 @@ def forward_dep(check_field: str, x_key: bool=True):
                 key = self
             val = state.get(key, check_field)
             if val is None:
-                self(x, state)
+                self(x, state, release=release)
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner

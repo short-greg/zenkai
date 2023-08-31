@@ -381,3 +381,81 @@ class TestMyState:
         state.add_sub(x, "sub")
         mine = state.mine(x)
         assert mine.subs['sub'] is state.sub(x, 'sub')
+
+
+
+class DependentLearner(core.LearningMachine):
+
+    def __init__(self, in_features: int, out_features: int):
+        super().__init__()
+        self.linear = nn.Linear(in_features, out_features)
+        self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
+        self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
+
+    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.AssessmentDict:
+        return self.loss.assess_dict(y, t, reduction_override, 'loss')
+    
+    @core.step_dep('stepped')
+    def step_x(self, x: IO, t: IO, state: core.State) -> IO:
+        if ((self, x), 'y') not in state:
+            assessment = self.assess(x,  t.detach(), state=state, release=False)
+            assessment['loss'].backward()
+            
+        return IO(x.f - x.f.grad)
+
+    @core.forward_dep('y')
+    def step(self, x: IO, t: IO, state: core.State):
+        y = state[(self, x), 'y']
+        self.optim.zero_grad()
+        assessment = self.assess_y(y, t.detach())
+        assessment.backward('loss')
+        self.optim.step()
+        state[(self, x), 'stepped'] = True
+
+    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+        x.freshen(False)
+        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        return y.out(release)
+
+
+class TestDependencies:
+
+    def test_step_executes_forward(self):
+
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        state = core.State()
+        dependent = DependentLearner(2, 3)
+        dependent.step(x, t, state)
+        assert state[(dependent, x), 'y'] is not None
+
+    def test_step_does_not_execute_forward_if_already_called(self):
+
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        state = core.State()
+        dependent = DependentLearner(2, 3)
+        dependent(x, state)
+        prev = state[(dependent, x), 'y']
+        dependent.step(x, t, state)
+        assert state[(dependent, x), 'y'] is prev
+
+    def test_step_x_raises_error_if_not_stepped(self):
+
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        state = core.State()
+        dependent = DependentLearner(2, 3)
+        with pytest.raises(RuntimeError):
+            dependent.step_x(x, t, state)
+
+    def test_step_x_executes_if_stepped(self):
+
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        state = core.State()
+        dependent = DependentLearner(2, 3)
+        dependent.step(x, t, state)
+        x_prime = dependent.step_x(x, t, state)
+        assert x_prime is not None
+
