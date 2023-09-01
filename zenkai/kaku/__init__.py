@@ -62,7 +62,10 @@ from .machine import (
     AccLearner,
     AccStepTheta,
     BatchIdxAccStepTheta,
-    NullStepX
+    NullStepX,
+    acc_dep,
+    forward_dep,
+    step_dep
 )
 from .optimize import (
     OPTIM_MAP,

@@ -202,7 +202,7 @@ class FALearner(AccLearner):
         x_prime, _ = self._grad_updater.update_x(x, state)
         return x_prime
 
-    def step(self, x: IO, t: IO, state: State) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
         """Advance the optimizer
 
         Returns:
@@ -297,7 +297,7 @@ class DFALearner(AccLearner):
         return x_prime
     
 
-    def step(self, x: IO, t: IO, state: State) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
         """Advance the optimizer
 
         Returns:
