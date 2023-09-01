@@ -135,7 +135,7 @@ class GradStepTheta(AccStepTheta):
         assessment.backward("loss")
         self._grad_updater.accumulate(x, state)
     
-    def step(self, x: IO, t: IO, state: State) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
         """Advance the optimizer
 
         Returns:
@@ -199,7 +199,7 @@ class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
         assessment[self.loss_name].backward()
         self._grad_updater.accumulate(x, state)
 
-    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None], state: State, batch_idx: Idx = None) -> bool:
         """Advance the optimizer
 
         Returns:

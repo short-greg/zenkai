@@ -394,7 +394,7 @@ class DependentLearner(core.LearningMachine):
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override, 'loss')
     
-    @core.step_dep('stepped')
+    @core.step_dep('stepped', exec=False)
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         if ((self, x), 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
@@ -439,7 +439,7 @@ class TestDependencies:
         dependent.step(x, t, state)
         assert state[(dependent, x), 'y'] is prev
 
-    def test_step_x_raises_error_if_not_stepped(self):
+    def test_step_x_if_not_stepped(self):
 
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
@@ -457,4 +457,3 @@ class TestDependencies:
         dependent.step(x, t, state)
         x_prime = dependent.step_x(x, t, state)
         assert x_prime is not None
-

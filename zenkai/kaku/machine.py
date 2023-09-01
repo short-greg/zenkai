@@ -352,7 +352,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         return assessment
 
     def backward(
-        self, x: IO, t: IO, state: State
+        self, x: IO, t: IO, state: State, step: bool=False
     ) -> IO:
         """Convenience function to execute step and step_x
 
@@ -362,9 +362,10 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             state (State): The learning state
     
         Returns:
-            IO: _description_
+            IO: the result of step_x
         """
-        self.step(x, t, state)
+        if step:
+            self.step(x, t, state)
         return self.step_x(x, t, state)
 
     def test(self, x: IO, t: IO) -> AssessmentDict:
@@ -562,15 +563,26 @@ class AccLearner(LearningMachine, AccStepTheta):
     """
     """
     
-    def backward(self, x: IO, t: IO, state: State) -> IO:
+    def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
+        """
+
+        Args:
+            x (IO): the input
+            t (IO): the target
+            state (State): State
+            step (bool, optional): Whether to execute step or not. Defaults to True.
+
+        Returns:
+            IO: The result of step_x
+        """
         
         self.accumulate(x, t, state)
-        self.step(x, t, state)
+        if step:
+            self.step(x, t, state)
         return self.step_x(x, t, state)
 
 
-
-def acc_dep(check_field: str, x_key: bool=True, exec: bool=False):
+def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called
 
@@ -598,7 +610,7 @@ def acc_dep(check_field: str, x_key: bool=True, exec: bool=False):
     return inner
 
 
-def step_dep(check_field: str, x_key: bool=True, exec: bool=False):
+def step_dep(check_field: str, x_key: bool=True, exec: bool=True):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called
 
@@ -626,7 +638,7 @@ def step_dep(check_field: str, x_key: bool=True, exec: bool=False):
     return inner
 
 
-def forward_dep(check_field: str, x_key: bool=True, exec: bool=False, release: bool=False):
+def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bool=False):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
