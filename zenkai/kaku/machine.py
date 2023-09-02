@@ -27,7 +27,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # local
-from .assess import AssessmentDict, Loss, ThLoss
+from .assess import AssessmentDict, Objective, ThLoss
 from .component import Learner
 from .state import IDable, State
 from torch.utils import data as torch_data
@@ -390,7 +390,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
 
 
 class NullLearner(LearningMachine):
-    def __init__(self, loss: Loss = None):
+    def __init__(self, loss: Objective = None):
         """Machine that does not actually learn.
 
         usage: Use when an intermediary layer should not perform any operation on the backward
@@ -483,7 +483,7 @@ class InDepStepX(StepX):
 class StdLearningMachine(LearningMachine):
     """"""
 
-    def __init__(self, loss: typing.Union[Loss, typing.Iterable[Loss]], step_theta: StepTheta=None, step_x: StepX=None):
+    def __init__(self, loss: typing.Union[Objective, typing.Iterable[Objective]], step_theta: StepTheta=None, step_x: StepX=None):
         """Convenience class to easily create a learning machine that takes a StepX and StepTheta
 
         Args:
@@ -498,7 +498,7 @@ class StdLearningMachine(LearningMachine):
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         
-        if isinstance(self.loss, Loss):
+        if isinstance(self.loss, Objective):
             return self.loss.assess_dict(y, t, reduction_override)
         assessment_dict = AssessmentDict()
         for loss in self.loss:
@@ -540,23 +540,6 @@ class BatchIdxAccStepTheta(AccStepTheta):
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
         pass
-
-
-# class AdvHook(StepHook):
-
-#     def __init__(self, step: AccStepTheta):
-#         """Hook that executes the advance method
-
-#         Args:
-#             step (PostStepTheta): The step to automatically advance
-#         """
-
-#         self.step = step
-
-#     def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
-
-#         self.step.accumulate(x, t, state)
-#         return x, t  
 
 
 class AccLearner(LearningMachine, AccStepTheta):
@@ -663,3 +646,20 @@ def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bo
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
+
+
+# class AdvHook(StepHook):
+
+#     def __init__(self, step: AccStepTheta):
+#         """Hook that executes the advance method
+
+#         Args:
+#             step (PostStepTheta): The step to automatically advance
+#         """
+
+#         self.step = step
+
+#     def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+
+#         self.step.accumulate(x, t, state)
+#         return x, t  

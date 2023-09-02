@@ -25,17 +25,16 @@ class FeatureLimitGen(ABC):
 
 
 class RandomFeatureIdxGen(FeatureLimitGen):
-    """
+    """Limit the features that get updated
     """
 
     def __init__(self, n_features: int, choose_count: int):
-        """initializer
+        """Limit the features that get updated
 
         Args:
             n_features (int): The number of features to select from
             choose_count (int): The number of features to choose
         """
-
         assert choose_count <= n_features
         self._n_features = n_features
         self._choose_count = choose_count
@@ -74,13 +73,12 @@ class RandomFeatureIdxGen(FeatureLimitGen):
 
     @choose_count.setter
     def choose_count(self, choose_count: int):
-        """_summary_
-
+        """
         Args:
-            choose_count (int): _description_
+            choose_count (int): The number of features to choose
 
         Raises:
-            ValueError: _description_
+            ValueError: If teh number of choose is less than the number to select from
         """
         if choose_count > self._n_features:
             raise ValueError(

@@ -114,7 +114,7 @@ class Reduction(Enum):
 @dataclass
 class Assessment(object):
     """
-    Class used to wrap a tensor that stores an assessment of a machine
+    Wrap a tensor that stores an assessment of a machine
     """
 
     value: torch.Tensor
@@ -440,27 +440,33 @@ class Assessment(object):
 
 
 def reduce_assessment(
-    evaluation: torch.Tensor,
+    assessment: torch.Tensor,
     maximize: bool = False,
     reduction: str = "mean",
     dim: int = -1,
 ) -> Assessment:
-    """
+    """Use to reduce a tensor given a specified reduction
 
     Args:
-        evaluation (torch.Tensor): _description_
-        maximize (bool, optional): _description_. Defaults to False.
-        reduction (str, optional): _description_. Defaults to "mean".
-        dim (int, optional): _description_. Defaults to -1.
+        evaluation (torch.Tensor): The value to reduce
+        maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+        reduction (str, optional): The type of reduction. Defaults to "mean".
+        dim (int, optional): The dimension to reduce. Defaults to -1.
 
     Returns:
         Assessment: An assessment reduced
     """
-    return Assessment(evaluation, maximize).reduce(reduction, dim)
+    return Assessment(assessment, maximize).reduce(reduction, dim)
 
 
 class AssessmentDict(object):
+
     def __init__(self, **assessments: Assessment):
+        """Wrap multiple 
+
+        Args:
+            assessment (Assessment): The assessments in the AssessmentDict
+        """
         self._assessments: typing.Dict[str, Assessment] = assessments
 
     def as_dict(self, to_tensor: bool = True):
@@ -744,12 +750,12 @@ class AssessmentDict(object):
         return self
 
 
-class Loss(nn.Module):
-    """Base class for calculating losses
-    """
+class Objective(nn.Module):
+    """Base class for evaluating functions"""
 
     def __init__(self, reduction: str = "mean", maximize: bool = False):
-        """
+        """Evaluate the output of a learning machine
+
         Args:
             reduction (str, optional): Reduction to reduce by. Defaults to 'mean'.
             maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
@@ -767,9 +773,10 @@ class Loss(nn.Module):
         return self._maximize
 
     def reduce(
-        self, loss: torch.Tensor, reduction_override: str = None
+        self, value: torch.Tensor, reduction_override: str = None
     ) -> torch.Tensor:
-        """Reduce the loss that is passed in
+        """Reduce the value
+
         Args:
             loss (torch.Tensor): the loss to reduce
             reduction_override (str, optional): whether to override the dfault reduction. Defaults to None.
@@ -783,20 +790,20 @@ class Loss(nn.Module):
             else reduction_override
         )
         
-        return Reduction[reduction].reduce(loss)
+        return Reduction[reduction].reduce(value)
     
     def assess(
         self, x: IO, t: IO, reduction_override: str = None
     ) -> Assessment:
-        """Calculate the assessment of
+        """Calculate the assessment
 
         Args:
-            x (torch.Tensor):
-            t (torch.Tensor):
-            reduction_override (str, optional): _description_. Defaults to None.
+            x (torch.Tensor): The input
+            t (torch.Tensor): The target
+            reduction_override (str, optional): The . Defaults to None.
 
         Returns:
-            Assessment: _description_
+            Assessment: The assessment resulting from the objective
         """
         return Assessment(self.forward(x, t, reduction_override), self._maximize)
 
@@ -831,7 +838,7 @@ class Loss(nn.Module):
         pass
 
 
-def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Loss) -> AssessmentDict:
+def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Objective) -> AssessmentDict:
     """Convenience method to do an assessment for multiple losses
 
     Args:
@@ -868,8 +875,8 @@ LOSS_MAP = {
 }
 
 
-class ThLoss(Loss):
-    """ """
+class ThLoss(Objective):
+    """Class to wrap a Torch loss module"""
 
     def __init__(
         self,
@@ -878,16 +885,16 @@ class ThLoss(Loss):
         weight: float = None,
         loss_kwargs: typing.Dict = None,
     ):
-        """initializer
+        """Wrap a torch loss
 
         Args:
-            base_loss (typing.Union[typing.Callable[[str], nn.Module], str]): _description_
-            reduction (str, optional): _description_. Defaults to 'mean'.
-            weight (float, optional): _description_. Defaults to None.
-            loss_kwargs (typing.Dict, optional): _description_. Defaults to None.
+            base_loss (typing.Union[typing.Callable[[str], nn.Module], str]): The loss class to wrap
+            reduction (str, optional): The type of reduction to use. Defaults to 'mean'.
+            weight (float, optional): The weight on the loss. Defaults to None.
+            loss_kwargs (typing.Dict, optional): Args for instantiating the loss . Defaults to None.
 
         Raises:
-            KeyError: _description_
+            KeyError: if there is no loss named with the name passed in
         """
         super().__init__(reduction)
         if isinstance(base_loss, str):
@@ -929,65 +936,65 @@ class ThLoss(Loss):
         )
 
 
-class ModLoss(Loss):
-    """Wraps a module and a loss together so that more advanced backpropagation
-    can be implemented
-    """
+# class ModLoss(Loss):
+#     """Wraps a module and a loss together so that more advanced backpropagation
+#     can be implemented
+#     """
 
-    @abstractproperty
-    def module(self) -> nn.Module:
-        raise NotImplementedError
+#     @abstractproperty
+#     def module(self) -> nn.Module:
+#         raise NotImplementedError
 
-    @abstractmethod
-    def forward(
-        self, x: IO, y: IO, IO, reduction_override=None
-    ):
-        raise NotImplementedError
+#     @abstractmethod
+#     def forward(
+#         self, x: IO, y: IO, IO, reduction_override=None
+#     ):
+#         raise NotImplementedError
 
-    def assess(
-        self,
-        x: IO,
-        y: IO,
-        t: IO,
-        reduction_override: str = None,
-    ):
-        return Assessment(self(x, y, t, reduction_override), self._maximize)
+#     def assess(
+#         self,
+#         x: IO,
+#         y: IO,
+#         t: IO,
+#         reduction_override: str = None,
+#     ):
+#         return Assessment(self(x, y, t, reduction_override), self._maximize)
 
-    def assess_dict(
-        self,
-        x: IO,
-        y: IO,
-        t: IO,
-        reduction_override: str = None,
-        name: str = "loss",
-    ):
-        return AssessmentDict(
-            **{name: Assessment(self(x, y, t, reduction_override), self._maximize)}
-        )
+#     def assess_dict(
+#         self,
+#         x: IO,
+#         y: IO,
+#         t: IO,
+#         reduction_override: str = None,
+#         name: str = "loss",
+#     ):
+#         return AssessmentDict(
+#             **{name: Assessment(self(x, y, t, reduction_override), self._maximize)}
+#         )
 
 
-class ThModLoss(ModLoss):
-    """Use for losses that implement the x, y, t interface for forward, assess, assess dict"""
+# class ThModLoss(ModLoss):
+#     """Use for losses that implement the x, y, t interface for forward, assess, assess dict"""
 
-    def __init__(
-        self,
-        base_loss_factory: typing.Callable[[str], ModLoss],
-        reduction: str = "mean",
-        weight: float = None,
-        loss_kwargs: typing.Dict = None,
-    ):
-        """
+#     def __init__(
+#         self,
+#         base_loss_factory: typing.Callable[[str], ModLoss],
+#         reduction: str = "mean",
+#         weight: float = None,
+#         loss_kwargs: typing.Dict = None,
+#     ):
+#         """
 
-        Args:
-            base_loss (typing.Type[TModLoss]): s
-            base_reduction (str, optional): . Defaults to 'mean'.
-        """
-        super().__init__(reduction)
-        self.base_loss = base_loss_factory(reduction="none")
-        self._loss_kwargs = loss_kwargs or {}
-        self._weight = weight
+#         Args:
+#             base_loss (typing.Type[TModLoss]): s
+#             base_reduction (str, optional): . Defaults to 'mean'.
+#         """
+#         super().__init__(reduction)
+#         self.base_loss = base_loss_factory(reduction="none")
+#         self._loss_kwargs = loss_kwargs or {}
+#         self._weight = weight
 
-    def forward(
-        self, x: IO, y: IO, t: IO, reduction_override=None
-    ):
-        return self.reduce(self.base_loss(x, y, t), reduction_override)
+#     def forward(
+#         self, x: IO, y: IO, t: IO, reduction_override=None
+#     ):
+#         return self.reduce(self.base_loss(x, y, t), reduction_override)

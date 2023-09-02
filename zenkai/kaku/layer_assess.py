@@ -10,6 +10,8 @@ from .assess import AssessmentDict
 
 
 class LayerAssessor(ABC):
+    """Class to assess a layer 
+    """
 
     @abstractmethod
     def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
@@ -41,9 +43,11 @@ def union_pre_and_post(pre: typing.Union[AssessmentDict, None]=None, post: typin
 
 
 class StepAssessHook(StepXHook, StepHook):
+    """Class to assess before and after calling step
+    """
 
     def __init__(self, assessor: LayerAssessor, pre: bool=True):
-        """initializer
+        """Assess the learner before and after running step
 
         Args:
             assessor (LayerAssessor): 
@@ -72,9 +76,11 @@ class StepAssessHook(StepXHook, StepHook):
 
 
 class StepXLayerAssessor(LayerAssessor):
+    """Assess the learner before and after runnign step_x
+    """
 
     def __init__(self, learning_machine: LearningMachine, step_x: bool=True):
-        """initializer
+        """Assess the learner before and after runnign step_x
 
         Args:
             learning_machine (LearningMachine): The learning machien
@@ -121,7 +127,7 @@ class StepFullLayerAssessor(LayerAssessor):
     """
 
     def __init__(self, learning_machine: LearningMachine, outgoing: LearningMachine):
-        """initializer
+        """Do a full assessment on an input
 
         Args:
             learning_machine (LearningMachine): The learning machine to assess
@@ -156,4 +162,12 @@ class StepFullLayerAssessor(LayerAssessor):
         state[self, 'post'] = self._outgoing.assess(self._learning_machine(x), t).prepend('Post')
     
     def assessment(self, state: State) -> AssessmentDict:
+        """Retrieve the assessment
+
+        Args:
+            state (State): The state to retrieve the assessemnt from
+
+        Returns:
+            AssessmentDict: The assessment
+        """
         return union_pre_and_post(state.get(self, 'pre'), state.get(self, 'post'))

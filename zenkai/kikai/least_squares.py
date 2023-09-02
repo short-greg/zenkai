@@ -17,7 +17,7 @@ from ..kaku import (
     StepTheta,
     StepX,
     ThLoss,
-    Loss,
+    Objective,
     update_io,
     OptimFactory,
     AccLearner
@@ -284,7 +284,7 @@ class GradLeastSquaresLearner(AccLearner):
         bias: bool = True,
         optimize_dx: bool = True,
         optim_factory: OptimFactory=None,
-        loss: Loss=None,
+        loss: Objective=None,
         lam_x: float=1e-4,
     ):
         """initializer

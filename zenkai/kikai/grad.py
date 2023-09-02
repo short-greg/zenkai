@@ -19,7 +19,7 @@ from ..kaku import (
     Idx,
     LearningMachine,
     State,
-    Loss,
+    Objective,
     StepTheta,
     StepX,
     idx_io,
@@ -109,7 +109,7 @@ class GradStepTheta(AccStepTheta):
         reduction: str = "mean",
         y_name: str='y',
     ):
-        """initializer
+        """Update theta with the loss between y and t on the forward pass
 
         Args:
             learner (LearningMachine): Whether 
@@ -161,7 +161,7 @@ class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
         reduction: str = "mean",
         loss_name: str = "loss",
     ):
-        """initializer
+        """Update theta with the loss between y and t after passing forward again
 
         Args:
             learner (LearningMachine): Learner to update
@@ -295,7 +295,7 @@ class ActivationLearner(LearningMachine):
 
     def __init__(
         self, activation: typing.Union[str, nn.Module], 
-        loss: typing.Union[str, Loss]='mse'
+        loss: typing.Union[str, Objective]='mse'
     ):
         super().__init__()
         self.activation = module_factory(activation)
@@ -391,7 +391,10 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
         theta_reduction: str = "mean",
         x_reduction: str = "mean",
     ):
-        """iniitializer
+        """Use to define a GradLearner that works for loops. 
+        This module is inefficient because it will execute the forward
+        function for both accumulate and step_x. But can be used when 
+        looping is necessary
 
         Args:
             module (typing.Union[nn.Module, typing.List[nn.Module]]): 
@@ -434,7 +437,6 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
     
-
 def update_x(
     x: IO, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
 ) -> IO:
