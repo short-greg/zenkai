@@ -8,7 +8,7 @@ import torch
 from ..kaku import (
     IO,
     State,
-    Loss,
+    Objective,
     StepX,
 )
 
@@ -24,7 +24,7 @@ class TargetPropStepX(StepX):
         pass
 
 
-class TargetPropLoss(Loss):
+class TargetPropLoss(Objective):
 
     @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
@@ -33,7 +33,7 @@ class TargetPropLoss(Loss):
 
 class StandardTargetPropLoss(TargetPropLoss):
 
-    def __init__(self, base_loss: Loss):
+    def __init__(self, base_loss: Objective):
         """initializer
 
         Args:
@@ -60,7 +60,7 @@ class RegTargetPropLoss(TargetPropLoss):
     """Calculate the target prop loss while minimizing the difference between the predicted value 
     """
 
-    def __init__(self, base_loss: Loss, reg_loss: Loss):
+    def __init__(self, base_loss: Objective, reg_loss: Objective):
         """initializer
 
         Args:

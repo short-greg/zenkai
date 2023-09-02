@@ -36,7 +36,6 @@ class NullOptim(torch.optim.Optimizer):
     def zero_grad(self) -> None:
         pass
 
-
 OPTIM_MAP = {
     "sgd": torch.optim.SGD,
     "adam": torch.optim.Adam,
@@ -48,11 +47,8 @@ OPTIM_MAP = {
 }
 
 
-OptimFactoryX = typing.Callable[[typing.Iterable], optim.Optimizer]
-
-
 class OptimFactory(object):
-    """Use to create an optimizer 
+    """Factory used to create an optimizer
     """
 
     def __init__(
@@ -61,14 +57,14 @@ class OptimFactory(object):
         *args,
         **kwargs,
     ):
-        """initializer
+        """Create a factory that will output optimizers
+
         Args:
             optim (typing.Union[str, typing.Type[torch.optim.Optimizer]]): The base optim to create
 
         Raises:
             KeyError: If the string passed in for optim does not map to an optim in OPTIM_MAP
         """
-
         try:
             optim = OPTIM_MAP[optim] if isinstance(optim, str) else optim
         except KeyError:
@@ -77,7 +73,15 @@ class OptimFactory(object):
         self._args = args
         self._kwargs = kwargs
 
-    def __call__(self, params, **kwarg_overrides):
+    def __call__(self, params, **kwarg_overrides) -> torch.optim.Optimizer:
+        """Create an optimizer
+
+        Args:
+            params: The parameters for the optimizer
+
+        Returns:
+            torch.optim.Optimizer: The optimizer
+        """
 
         kwargs = {**self._kwargs, **kwarg_overrides}
         return self._optim(params, *self._args, **kwargs)

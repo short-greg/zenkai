@@ -3,12 +3,9 @@ import torch
 
 import typing
 
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
-
 from ..kaku import (
     IO, State, LearningMachine, AssessmentDict,
-    OptimFactory, StepX, Loss, ThLoss, AccLearner
+    OptimFactory, StepX, Objective, ThLoss, AccLearner
 )
 from .grad import GradUpdater
 
@@ -27,20 +24,20 @@ def fa_target(y: IO, y_prime: IO, detach: bool=True) -> IO:
         IO: the resulting target
     """
 
-    return IO(y[0], y_prime[0], detach=detach)
+    return IO(y.f, y_prime.f, detach=detach)
 
 
 class FALinearLearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, in_features: int, out_features: int, optim_factory: OptimFactory, loss: typing.Union[Loss, str]='mse') -> None:
-        """initializer
+    def __init__(self, in_features: int, out_features: int, optim_factory: OptimFactory, loss: typing.Union[Objective, str]='mse') -> None:
+        """Linear network for implementing feedback alignment
 
         Args:
-            in_features (int): 
-            out_features (int): 
-            optim_factory (OptimFactory): 
+            in_features (int): the number of features into the layer
+            out_features (int): the number of features out of the layer
+            optim_factory (OptimFactory): the optimizer to use for optimizing
             loss (typing.Union[Loss, str], optional): . Defaults to 'mse'.
         """
         super().__init__()
@@ -52,9 +49,9 @@ class FALinearLearner(LearningMachine):
         else: self.loss = loss
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-
-        x = state[self, 'y'] = IO(self.linear(x[0]))
-        return x
+    
+        x = state[self, 'y'] = IO(self.linear(x.f))
+        return x.out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         return self.loss.assess_dict(y, t, reduction_override)
@@ -96,7 +93,7 @@ class BStepX(StepX):
     """
 
     def __init__(self, out_features: int, t_features: int=None) -> None:
-        """initializer
+        """Propagate the error from the final target to the layer to oupdate
 
         Args:
             out_features (int): the output features of a layer
@@ -116,17 +113,18 @@ class BStepX(StepX):
         Returns:
             IO: the updated target
         """
-        output_error = t[0] - t[1]
+        output_error = t.f - t.u[1]
         output_error = output_error.mm(self.B.T)
-        return IO(x[0] - output_error, detach=True)
+        return IO(x.f - output_error, detach=True)
 
 
 class FALearner(AccLearner):
-    """Linear network for implementing feedback alignment
+    """Learner for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse') -> None:
-        """initializer
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Objective, str]='mse') -> None:
+        """Wraps a module to create an FALearner. 
+        It flexible but somewhat computationally wasteful because it executes forward on netB
 
         Args:
             net (nn.Module): the net to use for forward prop
@@ -150,7 +148,7 @@ class FALearner(AccLearner):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen()
-        y = self.net(x[0])
+        y = self.net(x.f)
         y = y.detach()
         state[(self, x), 'y_det'] = y
         y.requires_grad = True
@@ -212,15 +210,16 @@ class FALearner(AccLearner):
 
 
 class DFALearner(AccLearner):
-    """Linear network for implementing feedback alignment
+    """Learner for implementing feedback alignment.
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Loss, str]='mse') -> None:
-        """initializer
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, loss: typing.Union[Objective, str]='mse') -> None:
+        """Wraps a network to create a DFALearner. 
+        It flexible but somewhat computationally wasteful because it executes forward on netB
 
         Args:
-            net (nn.Module): the net to use for forward prop
-            netB (nn.Module): the net to use for backprop
+            net (nn.Module): the net to use for forward prop. The module must be a single paramterized module such as Linear, or Conv2d
+            netB (nn.Module): the net to use for backprop. Must be have the same architecture as net
             out_features (int): the number of out features
             t_features (int): the number of target features
             optim_factory (OptimFactory): The opimtizer

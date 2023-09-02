@@ -15,12 +15,11 @@ from .. import utils as base_utils
 
 
 class IO(object):
-    """Handles IO into and out of learning machines
-    to give a consistent system to handle it
+    """Handles IO into and out of learning machine to give a consistent system to handle it
     """
 
     def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
-        """initializer
+        """Wrap the inputs 
 
         Args:
             detach (bool, optional): The values making up the IO. Defaults to False.
@@ -140,7 +139,12 @@ class IO(object):
         return IO(*self._x, detach=True, names=self._names)
 
     def release(self) -> "IO":
-        return self.clone()
+        """
+
+        Returns:
+            IO: The 
+        """
+        return self.clone().detach()
 
     def out(self, release: bool = True) -> "IO":
         if release:
@@ -148,6 +152,10 @@ class IO(object):
         return self
 
     def is_empty(self) -> bool:
+        """
+        Returns:
+            bool: True if no elements in the IO
+        """
         return len(self) == 0
     
     def sub(self, idx, detach: bool=False) -> 'IO':
@@ -159,16 +167,28 @@ class IO(object):
     
     @property
     def f(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The first element in the IO
+        """
         if len(self) == 0: return None
         return self._x[0]
 
     @property
     def l(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The last element in the IO
+        """
         if len(self) == 0: return None
         return self._x[-1]
     
     @property
-    def u(self) -> typing.List:
+    def u(self) -> typing.Tuple:
+        """
+        Returns:
+            typing.Tuple: The elements of the IO
+        """
         return self._x
 
     @classmethod
@@ -445,12 +465,27 @@ def update_tensor(
 
 
 class ToIO(nn.Module):
+    """Class to output the elements of the IO
+    """
 
     def __init__(self, detach: bool=False):
+        """Convert inputs to an IO
+
+        Args:
+            detach (bool, optional): _description_. Defaults to False.
+        """
         super().__init__()
         self.detach = detach
 
     def forward(self, *x: torch.Tensor, detach_override: bool=None) -> IO:
+        """Convert tensors to an IO
+
+        Args:
+            detach_override (bool, optional): whether to detach the output. Defaults to None.
+
+        Returns:
+            IO: the input wrapped in an IO
+        """
         if detach_override is not None:
             detach = detach_override
         else:
@@ -459,16 +494,31 @@ class ToIO(nn.Module):
 
 
 class FromIO(nn.Module):
+    """Class to output the elements of the IO
+    """
 
     def __init__(self, detach: bool=False):
+        """Convert the IO to the elements of it. If only one element, will output a single value
+
+        Args:
+            detach (bool, optional): Whether to detach the outputs. Defaults to False.
+        """
         super().__init__()
         self.detach = detach
 
-    def forward(self, io: IO) -> IO:
+    def forward(self, io: IO) -> typing.Union[typing.Any, typing.Tuple]:
+        """Convert the IO to a tuple
+
+        Args:
+            io (IO): _description_
+
+        Returns:
+            typing.Union[typing.Any, typing.Tuple]: Returns tuple if multiple elements
+        """
 
         if self.detach:
             io = io.detach()
     
         if len(io) == 1:
-            return io[0]
-        return io.totuple()
+            return io.f
+        return io.u

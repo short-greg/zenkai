@@ -4,11 +4,9 @@ from .assess import (
     LOSS_MAP,
     Assessment,
     AssessmentDict,
-    Loss,
-    ModLoss,
+    Objective,
     Reduction,
     ThLoss,
-    ThModLoss,
     assess_dict,
     reduce_assessment
 )
@@ -72,7 +70,6 @@ from .optimize import (
     ParamFilter,
     NullOptim,
     OptimFactory,
-    OptimFactoryX,
     itadaki
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack

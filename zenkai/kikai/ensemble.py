@@ -82,5 +82,5 @@ class EnsembleLearnerVoter(nn.Module):
 
         y = self.ensemble_learner.vote(IO(*x))
         if len(y) > 1:
-            return y.totuple()
-        return y[0]
+            return y.u
+        return y.f
