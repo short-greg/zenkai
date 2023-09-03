@@ -397,7 +397,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self,
         module: ScikitEstimator,
         step_x: FeatureIdxStepX,
-        loss: Objective,
+        objective: Objective,
         preprocessor: nn.Module = None,
     ):
         """initializer
@@ -410,13 +410,13 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """
         super().__init__()
         self._module = module
-        self._loss = loss
+        self._objective = objective
         self._step_x = step_x
         self._step_theta = ScikitStepTheta(module)
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y, t, reduction_override)
+        return self._objective.assess_dict(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None
@@ -670,7 +670,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         base_estimator: ScikitEstimator,
         n_keep: int,
         step_x: FeatureIdxStepX,
-        loss: Objective,
+        objective: Objective,
         preprocessor: nn.Module = None,
     ):
         """initializer
@@ -684,7 +684,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         """
         super().__init__()
         self._module = VoterEnsemble(base_estimator, n_keep)
-        self._loss = loss
+        self._objective = objective
         self._step_x = step_x
         self._preprocessor = preprocessor
 
@@ -699,7 +699,7 @@ class VoterEnsembleMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta
         Returns:
             AssessmentDict: The assessment
         """
-        return self._loss.assess_dict(y, t, reduction_override)
+        return self._objective.assess_dict(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None

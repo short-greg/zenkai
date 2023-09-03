@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, ThLoss
+from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, Objective
 from ..utils import Reversible, SequenceReversible
 
 
@@ -12,7 +12,7 @@ class ReversibleMachine(LearningMachine):
     def __init__(
         self,
         reversible: typing.Union[Reversible, typing.List[Reversible]],
-        loss: ThLoss
+        objective: Objective
     ):
         """initializer
 
@@ -24,10 +24,10 @@ class ReversibleMachine(LearningMachine):
         if isinstance(reversible, typing.List):
             reversible = SequenceReversible(*reversible)
         self.reversible = reversible
-        self.loss = loss
+        self.objective = objective
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override)
+        return self.objective.assess_dict(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x

@@ -5,7 +5,7 @@ import torch
 from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
-from zenkai.kaku import IO, RandomFeatureIdxGen, State, StepX, ThLoss
+from zenkai.kaku import IO, RandomFeatureIdxGen, State, StepX, Objective
 from zenkai.kikai.scikit import (ScikitBinary, ScikitLimitGen,
                                       ScikitMachine, ScikitRegressor)
 from zenkai.kikai.scikit import VoterEnsemble
@@ -101,7 +101,7 @@ class TestSklearnMachine(object):
             SGDRegressor(), 3, 2, True, False
         )
         machine = ScikitMachine(
-            regressor, NullStepX(), ThLoss("mse")
+            regressor, NullStepX(), Objective("mse")
         )
         x1 = IO(torch.randn(8, 3))
         t1 = IO(torch.randn(8, 2))

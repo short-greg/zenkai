@@ -16,7 +16,7 @@ from ..kaku import (
     State,
     StepTheta,
     StepX,
-    ThLoss,
+    Objective,
     Objective,
     update_io,
     OptimFactory,
@@ -251,7 +251,7 @@ class LeastSquaresLearner(LearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = ThLoss("mse", "mean")
+        self._loss = Objective("mse", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
@@ -297,7 +297,7 @@ class GradLeastSquaresLearner(AccLearner):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = loss or ThLoss("mse", "mean")
+        self._loss = loss or Objective("mse", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )

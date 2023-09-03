@@ -29,7 +29,7 @@ from ..kaku import (
     AccLearner,
     AccStepTheta,
     BatchIdxAccStepTheta,
-    ThLoss
+    Objective
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
 
@@ -64,7 +64,7 @@ class GradUpdater(object):
             if self.to_update_x: my_state.x_grad = x.f.grad
         else:
             if self.to_update_theta: my_state.grad = get_model_grads(self.net) + grads
-            if self.to_update_x: my_state.x_grad = my_state['x_grad'] + x[0].grad
+            if self.to_update_x: my_state.x_grad = my_state['x_grad'] + x.f.grad
 
     def update(self, x: IO, state: State, net_override: nn.Module=None) -> bool:
         """Update the network 
@@ -109,7 +109,7 @@ class GradStepTheta(AccStepTheta):
         reduction: str = "mean",
         y_name: str='y',
     ):
-        """Update theta with the loss between y and t on the forward pass
+        """Update theta with the objective between y and t on the forward pass
 
         Args:
             learner (LearningMachine): Whether 
@@ -152,7 +152,7 @@ class NullStepTheta(StepTheta):
 
 
 class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
-    """Update theta with the loss between y and t after passing forward again"""
+    """Update theta with the objective between y and t after passing forward again"""
 
     def __init__(
         self,
@@ -295,13 +295,13 @@ class ActivationLearner(LearningMachine):
 
     def __init__(
         self, activation: typing.Union[str, nn.Module], 
-        loss: typing.Union[str, Objective]='mse'
+        objective: typing.Union[str, Objective]='mse'
     ):
         super().__init__()
         self.activation = module_factory(activation)
-        if isinstance(loss, str):
-            loss = ThLoss(loss)
-        self.loss = loss
+        if isinstance(objective, str):
+            objective = Objective(objective)
+        self.objective = objective
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
@@ -317,8 +317,8 @@ class ActivationLearner(LearningMachine):
         y = state.get(self, x, 'y')
         if y is None:
             y = self(y, state, release=False)
-        self.loss(y, t).backward()
-        return IO(y[0] - y[0].grad, detach=True)
+        self.objective(y, t).backward()
+        return IO(y.f - y.f.grad, detach=True)
 
 
 class GradLearner(AccLearner):
@@ -329,7 +329,7 @@ class GradLearner(AccLearner):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
-        loss: ThLoss,
+        objective: Objective,
         optim_factory: OptimFactory=None,
         theta_reduction: str = "mean",
         x_lr: float=None
@@ -349,7 +349,7 @@ class GradLearner(AccLearner):
             self._net = module
         else:
             self._net = nn.Sequential(*module)
-        self._loss = loss
+        self._objective = objective
         if optim_factory is None:
             optim_factory = itadaki.null()
         
@@ -357,7 +357,7 @@ class GradLearner(AccLearner):
         self._x_step = GradStepX(x_lr)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._loss.assess_dict(y, t, reduction_override)
+        assessment = self._objective.assess_dict(y, t, reduction_override)
         return assessment
 
     def accumulate(self, x: IO, t: IO, state: State):
@@ -385,7 +385,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
-        loss: ThLoss,
+        objective: Objective,
         theta_optim_factory: OptimFactory,
         x_optim_factory: OptimFactory,
         theta_reduction: str = "mean",
@@ -399,7 +399,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
         Args:
             module (typing.Union[nn.Module, typing.List[nn.Module]]): 
                 Either a single module or list of modules to execut
-            loss (ThLoss): The loss to evaluate with
+            objective (Objective): The objective to evaluate with
             theta_optim_factory (OptimFactory): The optimizer to use for optimizing theta
             x_optim_factory (OptimFactory): The optimizer to use for optimizing x
             theta_reduction (str, optional): The reduction to use for the loss to optimize theta. 
@@ -412,12 +412,12 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
             self._net = module
         else:
             self._net = nn.Sequential(*module)
-        self._loss = loss
+        self._objective = objective
         self._theta_step = GradLoopStepTheta(self, theta_optim_factory, theta_reduction)
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._loss.assess_dict(y, t, reduction_override)
+        assessment = self._objective.assess_dict(y, t, reduction_override)
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 

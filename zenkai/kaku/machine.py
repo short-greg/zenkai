@@ -400,7 +400,7 @@ class NullLearner(LearningMachine):
             loss (Loss, optional): The loss to evaluate by. Defaults to None.
         """
         super().__init__()
-        self.loss = loss or ThLoss(nn.MSELoss, reduction="none")
+        self.loss = loss or Objective(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
@@ -481,9 +481,17 @@ class InDepStepX(StepX):
 
 
 class StdLearningMachine(LearningMachine):
-    """"""
+    """
+    LearningMachine that uses a generic 
 
-    def __init__(self, loss: typing.Union[Objective, typing.Iterable[Objective]], step_theta: StepTheta=None, step_x: StepX=None):
+    Attributes
+    ---------
+    objective: The objective to use for updating the network
+    _step_x: The StepX to use for updating x
+    _step_theta: The StepTheta to use for updating the parameters
+    """
+
+    def __init__(self, objective: typing.Union[Objective, typing.Iterable[Objective]], step_theta: StepTheta=None, step_x: StepX=None):
         """Convenience class to easily create a learning machine that takes a StepX and StepTheta
 
         Args:
@@ -492,16 +500,16 @@ class StdLearningMachine(LearningMachine):
             step_x (StepX, optional): The x update functor. Defaults to None.
         """
         super().__init__()
-        self.loss = loss
+        self.objective = objective
         self._step_x = step_x or NullStepX()
         self._step_theta = step_theta or NullStepTheta()
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         
-        if isinstance(self.loss, Objective):
-            return self.loss.assess_dict(y, t, reduction_override)
+        if isinstance(self.objective, Objective):
+            return self.objective.assess_dict(y, t, reduction_override)
         assessment_dict = AssessmentDict()
-        for loss in self.loss:
+        for loss in self.objective:
             assessment_dict = assessment_dict.union(loss.assess_dict(y, t, reduction_override))
         return assessment_dict
 
@@ -517,7 +525,8 @@ class StdLearningMachine(LearningMachine):
 
 
 class AccStepTheta(StepTheta):
-    """StepTheta used to be able to Postpone stepping 
+    """
+    A StepTheta used for when you want to accumulate updates to the parameters before stepping
     """
     
     @abstractmethod
@@ -544,10 +553,12 @@ class BatchIdxAccStepTheta(AccStepTheta):
 
 class AccLearner(LearningMachine, AccStepTheta):
     """
+    LearningMachine that includes the accumulate method
     """
     
     def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
         """
+        Go backward through the network
 
         Args:
             x (IO): the input
@@ -646,20 +657,3 @@ def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bo
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
-
-
-# class AdvHook(StepHook):
-
-#     def __init__(self, step: AccStepTheta):
-#         """Hook that executes the advance method
-
-#         Args:
-#             step (PostStepTheta): The step to automatically advance
-#         """
-
-#         self.step = step
-
-#     def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
-
-#         self.step.accumulate(x, t, state)
-#         return x, t  
