@@ -28,7 +28,7 @@ class MaterialDecorator(Material):
         pass
 
     def __iter__(self) -> typing.Iterator:
-        """iterator
+        """Iterate over the elements in the material
 
         Returns:
             typing.Iterator

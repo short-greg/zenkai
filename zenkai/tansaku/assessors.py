@@ -56,7 +56,6 @@ class XPopulationAssessor(PopulationAssessor):
         x = population.flattened(self.names)
 
         x = IO(*x)
-
         assessment = self.learner.assess(
             IO(*x), t, reduction_override="none"
         )[self.loss_name]

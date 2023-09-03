@@ -10,7 +10,8 @@ from .assess import AssessmentDict
 
 
 class LayerAssessor(ABC):
-    """Class to assess a layer 
+    """
+    Class to use for performing an assessment before and after a step or step_x operation
     """
 
     @abstractmethod
@@ -27,7 +28,8 @@ class LayerAssessor(ABC):
 
 
 def union_pre_and_post(pre: typing.Union[AssessmentDict, None]=None, post: typing.Union[AssessmentDict, None]=None) -> AssessmentDict:
-    """combine pre and post assessments
+    """
+    Combine pre and post assessments
 
     Returns:
         AssessmentDict: the unified assessment dict
@@ -50,7 +52,7 @@ class StepAssessHook(StepXHook, StepHook):
         """Assess the learner before and after running step
 
         Args:
-            assessor (LayerAssessor): 
+            assessor (LayerAssessor): The assessor to use
             pre (bool, optional): whether to do assessment before (True) or after (False). Defaults to True.
         """
         self._assessor = assessor
@@ -123,11 +125,12 @@ class StepXLayerAssessor(LayerAssessor):
 
 
 class StepFullLayerAssessor(LayerAssessor):
-    """Do full assessment
+    """
+    Assessor that will assess the output before and 
     """
 
     def __init__(self, learning_machine: LearningMachine, outgoing: LearningMachine):
-        """Do a full assessment on an input
+        """Instantiate an Assessor that will assess the outgoing layer after calling step
 
         Args:
             learning_machine (LearningMachine): The learning machine to assess

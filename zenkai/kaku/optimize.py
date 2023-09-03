@@ -88,8 +88,9 @@ class OptimFactory(object):
 
 
 class ParamFilter(optim.Optimizer):
-    """Use to smooth the results of an optimization. Especially one that makes large
-    changes in the parameters such as a least squares optimizer
+    """
+    Optimizer used to smooth the results of an optimization. 
+    Especially one that makes large changes in the parameters such as a least squares optimizer
     """
 
     def __init__(
@@ -99,7 +100,7 @@ class ParamFilter(optim.Optimizer):
         active_optim: OptimFactory = None,
         copy_first: bool = False,
     ):
-        """initializer
+        """Instantiate a ParamFilter which is used to update
 
         Args:
             p (typing.Union[typing.Iterable, nn.Module]): The parameters to optimize
@@ -157,6 +158,11 @@ class ParamFilter(optim.Optimizer):
         self.filter_optim.add_param_group(param_group)
 
     def copy_filter_optim_to(self, p: typing.Iterable):
+        """Copy the stored parameters to the parameters of a module
+
+        Args:
+            p (typing.Iterable): The parameters to copy to
+        """
         for p_i, mp_i in zip(p, self.filter_params):
             if isinstance(p_i, nn.parameter.Parameter):
                 p_i.data = mp_i.data

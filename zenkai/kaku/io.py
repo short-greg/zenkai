@@ -15,7 +15,8 @@ from .. import utils as base_utils
 
 
 class IO(object):
-    """Handles IO into and out of learning machine to give a consistent system to handle it
+    """
+    Container for the inputs, outputs, and targets of a learning machine
     """
 
     def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
@@ -233,7 +234,8 @@ class IO(object):
 
 
 class Idx(object):
-    """Class used to index a tensor
+    """
+    An index for a tensor or IO
     """
 
     def __init__(self, idx=None, dim: int = 0):
@@ -465,7 +467,8 @@ def update_tensor(
 
 
 class ToIO(nn.Module):
-    """Class to output the elements of the IO
+    """
+    Module that converts a tensor or tuple of tensors to an IO
     """
 
     def __init__(self, detach: bool=False):
@@ -494,7 +497,8 @@ class ToIO(nn.Module):
 
 
 class FromIO(nn.Module):
-    """Class to output the elements of the IO
+    """
+    Module that converts an IO to a tensor or a tuple of tensors
     """
 
     def __init__(self, detach: bool=False):
@@ -510,7 +514,7 @@ class FromIO(nn.Module):
         """Convert the IO to a tuple
 
         Args:
-            io (IO): _description_
+            io (IO): The io to convert
 
         Returns:
             typing.Union[typing.Any, typing.Tuple]: Returns tuple if multiple elements

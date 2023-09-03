@@ -24,23 +24,23 @@ class TargetPropStepX(StepX):
         pass
 
 
-class TargetPropLoss(Objective):
+class TargetPropObjective(Objective):
 
     @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         pass
 
 
-class StandardTargetPropLoss(TargetPropLoss):
+class StandardTargetPropObjective(TargetPropObjective):
 
-    def __init__(self, base_loss: Objective):
+    def __init__(self, base_objective: Objective):
         """initializer
 
         Args:
             base_loss (ThLoss): The base loss to use in evaluation
         """
-        super().__init__(base_loss.reduction, base_loss.maximize)
-        self.base_loss = base_loss
+        super().__init__(base_objective, base_objective.maximize)
+        self.base_objective = base_objective
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
@@ -53,24 +53,24 @@ class StandardTargetPropLoss(TargetPropLoss):
             torch.Tensor: The resulting loss
         """
         
-        return self.base_loss(x.sub(1), t, reduction_override=reduction_override)
+        return self.base_objective(x.sub(1), t, reduction_override=reduction_override)
 
 
-class RegTargetPropLoss(TargetPropLoss):
+class RegTargetPropObjective(TargetPropObjective):
     """Calculate the target prop loss while minimizing the difference between the predicted value 
     """
 
-    def __init__(self, base_loss: Objective, reg_loss: Objective):
+    def __init__(self, base_objective: Objective, reg_objective: Objective):
         """initializer
 
         Args:
-            base_loss (ThLoss): The loss to learn the decoding (ability to predict )
-            reg_loss (ThLoss): The loss to minimize the difference between the x prediction
+            base_objective (Objective): The objective to learn the decoding (ability to predict )
+            reg_objective (Objective): The loss to minimize the difference between the x prediction
              based on the target and the x prediction based on y
         """
-        super().__init__(base_loss.reduction, base_loss.maximize)
-        self.base_loss = base_loss
-        self.reg_loss = reg_loss
+        super().__init__(base_objective, base_objective.maximize)
+        self.base_objective = base_objective
+        self.reg_objective = reg_objective
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
@@ -84,6 +84,6 @@ class RegTargetPropLoss(TargetPropLoss):
         """
         
         return (
-            self.base_loss(x.sub(1), t, reduction_override=reduction_override) +
-            self.reg_loss(x.sub(1), x.sub(0).detach(), reduction_override=reduction_override)
+            self.base_objective(x.sub(1), t, reduction_override=reduction_override) +
+            self.reg_objective(x.sub(1), x.sub(0).detach(), reduction_override=reduction_override)
         )

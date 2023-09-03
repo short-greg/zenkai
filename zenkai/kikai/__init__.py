@@ -63,8 +63,8 @@ from .iterable import (
     IterStepX
 )
 from .target_prop import (
-    TargetPropStepX, TargetPropLoss, RegTargetPropLoss,
-    StandardTargetPropLoss
+    TargetPropStepX, TargetPropObjective, RegTargetPropObjective,
+    StandardTargetPropObjective
 )
 from .ensemble import EnsembleLearner, EnsembleLearnerVoter
 from .feedback_alignment import (

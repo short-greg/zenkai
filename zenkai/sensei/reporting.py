@@ -13,7 +13,8 @@ from .base import Material
 
 
 class Entry(object):
-    """An entry in a log. Use to store epoch results
+    """
+    Class to store entry in a log. Primarily will use to store the results of an epoch
     """
 
     def __init__(

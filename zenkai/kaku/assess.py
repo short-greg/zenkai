@@ -19,13 +19,17 @@ from .io import IO
 
 
 class Reduction(Enum):
-    """Class to use for reducing a loss
+    """
+    Enum to reduce the output of an objective function.
+
     """
     mean = "mean"
     sum = "sum"
     none = "none"
     batchmean = "batchmean"
+    # calculate the mean of each sample
     samplemeans = "samplemeans"
+    # 
     samplesums = "samplesums"
     NA = "NA"
 
@@ -114,7 +118,14 @@ class Reduction(Enum):
 @dataclass
 class Assessment(object):
     """
-    Wrap a tensor that stores an assessment of a machine
+    An evaluation of the output of a learning machine
+
+    Attributes
+    ----------
+    value: torch.Tensor 
+        The value of the assessment
+    maximize: bool
+        Whether the machine should maximize or minimize the value
     """
 
     value: torch.Tensor
@@ -880,7 +891,7 @@ class ThLoss(Objective):
 
     def __init__(
         self,
-        base_loss: typing.Union[typing.Callable[[str], nn.Module], str],
+        base_objective: typing.Union[typing.Callable[[str], nn.Module], str],
         reduction: str = "mean",
         weight: float = None,
         loss_kwargs: typing.Dict = None,
@@ -897,13 +908,13 @@ class ThLoss(Objective):
             KeyError: if there is no loss named with the name passed in
         """
         super().__init__(reduction)
-        if isinstance(base_loss, str):
+        if isinstance(base_objective, str):
             try:
-                base_loss = LOSS_MAP[base_loss]
+                base_objective = LOSS_MAP[base_objective]
             except KeyError:
-                raise KeyError(f"No loss named {base_loss} in loss keys")
-        assert base_loss is not None
-        self.base_loss = base_loss
+                raise KeyError(f"No loss named {base_objective} in loss keys")
+        assert base_objective is not None
+        self.base_objective = base_objective
         self._loss_kwargs = loss_kwargs or {}
         self._weight = weight
 
@@ -920,17 +931,17 @@ class ThLoss(Objective):
         if Reduction.is_torch(reduction):
             # use built in reduction
             return self.add_weight(
-                self.base_loss(reduction=reduction, **self._loss_kwargs).forward(x[0], t[0])
+                self.base_objective(reduction=reduction, **self._loss_kwargs).forward(x[0], t[0])
             )
 
         if reduction == 'NA':
             return self.reduce(
-                self.base_loss(**self._loss_kwargs).forward(x.f, t.f)
+                self.base_objective(**self._loss_kwargs).forward(x.f, t.f)
             )
 
         return self.add_weight(
             self.reduce(
-                self.base_loss(reduction="none", **self._loss_kwargs).forward(x.f, t.f),
+                self.base_objective(reduction="none", **self._loss_kwargs).forward(x.f, t.f),
                 reduction,
             )
         )

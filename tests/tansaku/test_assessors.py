@@ -33,12 +33,14 @@ class SimpleLearner3(LearningMachine):
         pass
 
     def assess_y(self, x: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(x, t, reduction_override)
+        result = self.loss.assess_dict(x, t, reduction_override)
+        return result
 
     def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
         
         y = IO((x[0].transpose(1, 0) @ self.weight).transpose(1, 0).contiguous())
         return y
+
 
 class TestXPopulationAssessor:
 
