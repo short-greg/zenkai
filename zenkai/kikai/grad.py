@@ -334,7 +334,7 @@ class GradLearner(AccLearner):
         theta_reduction: str = "mean",
         x_lr: float=None
     ):
-        """iniitializer
+        """Standard gradient learner
 
         Args:
             module (typing.Union[nn.Module, typing.List[nn.Module]]): 
