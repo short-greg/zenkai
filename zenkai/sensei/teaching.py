@@ -24,7 +24,7 @@ class Trainer(Teacher):
         classroom: Classroom = None,
         window: int = 30,
     ):
-        """initializer
+        """Instantiate a Trainer for the learner
 
         Args:
             name (str): The name of the teacher
@@ -79,7 +79,9 @@ class Trainer(Teacher):
 
 
 class Validator(Teacher):
-    """A teacher that can test the learner"""
+    """
+    A teacher whose purpose is to test the learner. Can be used for both validation and testing
+    """
 
     def __init__(
         self,
@@ -159,7 +161,8 @@ def validation_train(
     validator_name: str='Validator',
     record: Record=None
 ) -> Record:
-    """Train the learner for validation
+
+    """Train a learner and then test it on the validation set after each epoch
 
     Args:
         learner (Learner): The learner to train
@@ -167,9 +170,15 @@ def validation_train(
         validation_material (Material): The material to use for validation
         n_epochs (int, optional): The number of epochs to run. Defaults to 1.
         use_io (bool, optional): Whehter to use io. Defaults to False.
+        window (int, optional): The size of the window for reporting results. Defaults to 30.
+        training_assistants (typing.List[Assistant], optional): List of assistants to the trainer. Defaults to None.
+        validation_assistants (typing.List[Assistant], optional): List of assistants to the vakudatir. Defaults to None.
+        trainer_name (str, optional): Name of the trainer. Defaults to 'Trainer'.
+        validator_name (str, optional): Name of the tester. Defaults to 'Validator'.
+        record (Record, optional): The record to use in recording results. Defaults to None.
 
     Returns:
-        Record: The results of teaching
+        Record: The record to use in recording results
     """
 
     record = record or Record()
@@ -201,17 +210,23 @@ def train(
     tester_name: str='Tester',
     record: Record=None
 ) -> Record:
-    """Train the learner for testing
+    """Train a learner and then test it on the test set
 
     Args:
         learner (Learner): The learner to train
         training_material (Material): The material to use for training
-        validation_material (Material): The material to use for validation
+        testing_material (Material): The material to use for testing
         n_epochs (int, optional): The number of epochs to run. Defaults to 1.
         use_io (bool, optional): Whehter to use io. Defaults to False.
+        window (int, optional): The size of the window for reporting results. Defaults to 30.
+        training_assistants (typing.List[Assistant], optional): List of assistants to the trainer. Defaults to None.
+        testing_assistants (typing.List[Assistant], optional): List of assistants to the tester. Defaults to None.
+        trainer_name (str, optional): Name of the trainer. Defaults to 'Trainer'.
+        tester_name (str, optional): Name of the tester. Defaults to 'Tester'.
+        record (Record, optional): The record to use in recording results. Defaults to None.
 
     Returns:
-        Record: The results of teaching
+        Record: The record to use in recording results
     """
     record = record or Record()
     print(training_material.batch_size, len(training_material))

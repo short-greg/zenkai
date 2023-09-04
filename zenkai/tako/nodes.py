@@ -33,7 +33,7 @@ class Process(ABC):
     """Base class for all network nodes"""
 
     def __init__(self, x=UNDEFINED, name: str = None, info: Info = None):
-        """initializer
+        """Instantiate a process making up a network
 
         Args:
             x (optional): The input to the node. Defaults to UNDEFINED.
@@ -291,7 +291,7 @@ class Joint(Process):
             by (typing.Dict) : The inputs if specified  
 
         Returns:
-            _type_: _description_
+            typing.List: The result of the probe
         """
         y = []
         for x_i in self._x:
@@ -303,9 +303,8 @@ class Joint(Process):
 
 
 class Index(Process):
-    """Index a process
-
-    TODO: Add usage
+    """
+    Process that indexes the output of another process
     """
 
     def __init__(
@@ -315,7 +314,7 @@ class Index(Process):
         name: str = None,
         info: Info = None,
     ):
-        """_summary_
+        """Instantiate a process that indexes another process
 
         Args:
             idx (typing.Union[int, slice]): The index to index the input by
@@ -393,7 +392,7 @@ class End(Process):
 
 class Layer(Process):
     """
-    The standard process which contains one or more nn.Modules
+    A process that contains an nn.Module. It executes the nn.Module
     """
 
     def __init__(
@@ -403,7 +402,8 @@ class Layer(Process):
         name: str = None,
         info: Info = None,
     ):
-        """initializer
+        """
+        Instantiate a Layer which executes a module
 
         Args:
             nn_module (typing.Union[typing.List[nn.Module], nn.Module]): Module for the layer

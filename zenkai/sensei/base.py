@@ -19,14 +19,23 @@ class Material(ABC):
 
 
 class Classroom:
-    """Stores the students in a class."""
+    """
+    Stores the students, the materials, and info.
+    """
 
     def __init__(self, 
         students: typing.Dict[str, Learner]=None,
         materials: typing.Dict[str, Material] = None,
         info: typing.Dict[str, typing.Any] = None
     ):
-        """initializer"""
+        """
+        Instantiate a classroom
+
+        Args:
+            students (typing.Dict[str, Learner], optional): Students in the classroom. Defaults to None.
+            materials (typing.Dict[str, Material], optional): Materials in the classroom. Defaults to None.
+            info (typing.Dict[str, typing.Any], optional): Info for the classroom. Defaults to None.
+        """
         super().__init__()
         self._students = students or {}
         self._materials = materials or {}
@@ -49,7 +58,8 @@ class Classroom:
         return None
 
     def choose_student(self, student: typing.Union[str, Learner, None], backup: typing.Union[str, Learner, None]=None) -> Learner:
-        """Convenience method to retrieve a student from the classroom.
+        """
+        Convenience method to retrieve a student from the classroom.
 
         Args:
             learner (typing.Union[str, Learner, None]): Learner to retrieve. If it is an
@@ -76,20 +86,26 @@ class Classroom:
     
     @property
     def info(self) -> typing.Dict:
-    
+        """
+
+        Returns:
+            typing.Dict: The dictionary for the info 
+        """
         return self._info
 
 
 class Assistant(ABC):
-    """Class used to assist a teacher. Implements a callback that the teacher
+    """
+    Class used to assist a teacher. Implements a callback that the teacher
     will execute
     """
 
     def __init__(self, name: str):
-        """initializer
+        """
+        Instantiate an assistant for the teacher
 
         Args:
-            name (str): _description_
+            name (str): The name for the teacher
         """
         self._name = name
 
@@ -100,9 +116,7 @@ class Assistant(ABC):
     @abstractmethod
     def assist(
         self,
-        teacher_name: str,
-        # assessment_dict: AssessmentDict = None,
-        # data: typing.Any = None,
+        teacher_name: str
     ):
         """Assist the teacher
 
@@ -115,9 +129,7 @@ class Assistant(ABC):
 
     def __call__(
         self,
-        teacher_name: str,
-        # assessment_dict: AssessmentDict = None,
-        # data: typing.Any = None,
+        teacher_name: str
     ):
         """Assist the teacher
 
@@ -128,7 +140,6 @@ class Assistant(ABC):
 
         """
         self.assist(teacher_name)
-        # self.assist(teacher_name, assessment_dict, data)
 
 
 class AssistantTeam(object):
@@ -136,7 +147,8 @@ class AssistantTeam(object):
     """
 
     def __init__(self, *assistants: Assistant):
-        """initializer
+        """
+        Instantiate a team of assistants
 
         Args:
             assistants: The assistants to the teacher
@@ -176,16 +188,12 @@ class AssistantTeam(object):
 
     def assist(
         self,
-        teacher_name: str,
-        # assessment_dict: AssessmentDict = None,
-        # data: typing.Any = None,
+        teacher_name: str
     ):
         """Call all of the assistants in the team
 
         Args:
             teacher_name (str): The name of the teacher being assisted
-            assessment_dict (AssessmentDict): The teachers assessment
-            data (typing.Any): _description_
         """
         for assistant in self._assistants.values():
             # assistant(teacher_name, assessment_dict, data)
@@ -193,11 +201,13 @@ class AssistantTeam(object):
 
 
 class Teacher(ABC):
-    """Use to process the learners or materiasl
+    """
+    Use to process the learners or materiasl
     """
 
     def __init__(self, name: str):
-        """initializer
+        """
+        Instantiate a teacher
 
         Args:
             name (str): The name of the teacher

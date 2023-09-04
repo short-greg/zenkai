@@ -15,7 +15,6 @@ from ..utils import get_model_parameters, update_model_parameters, expand_dim0, 
 # TODO: Move to utils
 
 
-
 def reduce_assessment_dim0(
     assessment: Assessment, k: int, reduction: str = "mean"
 ) -> Assessment:
@@ -73,7 +72,7 @@ def expand_t(t: IO, k: int) -> IO:
     return IO(*ts)
 
 def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
-    """generate a 
+    """generate a tensor like another
 
     Args:
         f (_type_): _description_
@@ -215,14 +214,19 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
 
 
 class Individual(object):
-    """An individual in a population"""
+    """An individual in a population. An individual consists of fields for one element of a population"""
 
     def __init__(
         self,
         assessment: Assessment = None,
         **values: typing.Union[nn.Module, torch.Tensor, Parameter],
     ):
-        """initializer"""
+        """
+        Instantiate an individual with the fields comprising it
+
+        Args:
+            assessment (Assessment, optional): The assessment for the individual. Defaults to None.
+        """
 
         self._assessment = assessment
         self._population = None
@@ -349,10 +353,12 @@ class Individual(object):
 
 
 class Population(object):
-    """Collection of individuals"""
+    """
+    A population is a collection of individuals
+    """
 
     def __init__(self, **kwargs: typing.Union[torch.Tensor, Parameter]):
-        """initializer
+        """Instantiate a population with the fields in the population. Each field must have the same population size
 
         name<str>: Value<Tensor>
 
