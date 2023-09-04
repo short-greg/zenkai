@@ -250,7 +250,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         if device is None:
             return io if len(io) > 1 else io[0]
         if len(io) == 1:
-            return io[0].to(device)
+            return io.f.to(device)
         return tuple(io_i.to(device) for io_i in io)
 
     @abstractmethod
@@ -442,7 +442,7 @@ class StepLoop(object):
         )
 
         # TODO: Change so 0 is not indexed
-        indices = torch_data.TensorDataset(torch.arange(0, len(io[0])).long())
+        indices = torch_data.TensorDataset(torch.arange(0, len(io.f)).long())
         return torch_data.DataLoader(indices, batch_size, self.shuffle)
 
     def loop(self, io: IO) -> typing.Iterator[Idx]:
@@ -461,7 +461,7 @@ class StepLoop(object):
             yield Idx(dim=0)
         else:
             for (idx,) in self.create_dataloader(io):
-                yield Idx(idx.to(io[0].device), dim=0)
+                yield Idx(idx.to(io.f.device), dim=0)
 
 
 class OutDepStepTheta(StepTheta):

@@ -222,7 +222,7 @@ class GradStepX(StepX):
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x = x[0]
+        x = x.f
         if x.grad is None:
             raise RuntimeError(f"Grad has not been set. Must backpropagate first")
         grad = x.grad if self.x_lr is None else self.x_lr * x.grad
@@ -315,7 +315,7 @@ class ActivationLearner(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
         x.freshen() 
-        y = state[self, x, 'y'] = IO(self.activation(x[0]))
+        y = state[self, x, 'y'] = IO(self.activation(x.f))
         return y.out(release)
     
     def step(self, x: IO, t: IO, state: State):
