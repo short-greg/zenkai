@@ -68,8 +68,8 @@ class FALinearLearner(LearningMachine):
             IO: the updated target
         """
         self.optim.zero_grad()
-        output_error = t[0] - t[1]
-        self.linear.weight.grad = output_error.T.mm(x[0])
+        output_error = t.f - t.u[1]
+        self.linear.weight.grad = output_error.T.mm(x.f)
         self.optim.step()        
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
@@ -83,9 +83,9 @@ class FALinearLearner(LearningMachine):
         Returns:
             IO: the updated target
         """
-        output_error = t[0] - t[1]
+        output_error = t.f - t.u[1]
         output_error = output_error.mm(self.B.T)
-        return IO(x[0] - output_error, detach=True)
+        return IO(x.f - output_error, detach=True)
 
 
 class BStepX(StepX):
@@ -278,7 +278,7 @@ class DFALearner(AccLearner):
         self.objective(IO(y), t).backward()
         y2.backward(y_det.grad)
 
-        assert x[0].grad is not None
+        assert x.f.grad is not None
         self._grad_updater.accumulate(x, state)
         
     def step_x(self, x: IO, t: IO, state: State) -> IO:

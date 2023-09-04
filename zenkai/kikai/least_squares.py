@@ -223,7 +223,7 @@ class LeastSquaresStepX(StepX):
         Returns:
             Conn: The connection with x updated
         """
-        x_prime = self._optimize(x[0], t[0])
+        x_prime = self._optimize(x.f, t.f)
         update_io(IO(x_prime), x)
         return x
 

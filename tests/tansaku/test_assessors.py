@@ -13,7 +13,7 @@ class SimpleLearner2(SimpleLearner):
 
     def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
         y = super().forward(x, state, False)
-        y = IO(torch.mean(x[0], dim=1))
+        y = IO(torch.mean(x.f, dim=1))
         return y.out(release)
 
 
@@ -38,7 +38,7 @@ class SimpleLearner3(LearningMachine):
 
     def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
         
-        y = IO((x[0].transpose(1, 0) @ self.weight).transpose(1, 0).contiguous())
+        y = IO((x.f.transpose(1, 0) @ self.weight).transpose(1, 0).contiguous())
         return y
 
 
