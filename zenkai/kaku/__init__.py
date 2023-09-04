@@ -72,4 +72,4 @@ from .optimize import (
     OptimFactory,
     itadaki
 )
-from .state import IDable, MyState, State, StateKeyError, EmissionStack
+from .state import IDable, MyState, State, StateKeyError

@@ -104,15 +104,15 @@ class RandSelector(ExplorerSelector):
 
 class Explorer(nn.Module):
     """
-    Use to explore different inputs
+    Explorer is used to explore different inputs to feed into a Module
     """
 
     def __init__(self, noiser: ExplorerNoiser, selector: ExplorerSelector):
-        """initializer
+        """Instantiate the explorer with a noiser and selector
 
         Args:
-            noiser (ExplorerNoiser): The noiser to use
-            selector (ExplorerSelector): The selector to use
+            noiser (ExplorerNoiser): The noiser to use to add exploration to the input space
+            selector (ExplorerSelector): The selector to use for selecting from the noise
         """
         super().__init__()
         self._noiser = noiser
@@ -342,7 +342,8 @@ class ModuleNoise(nn.Module):
 
 
 class AssessmentDist(ABC):
-    """Calculate a distribution from the assessment
+    """
+    Class that is used to calculate a distribution based on the input and assessment
     """
 
     @abstractmethod
@@ -435,7 +436,6 @@ class EqualsAssessmentDist(AssessmentDist):
         """
         mean, _ = self(assessment, x)
         return mean
-
 
 
 class NoiseReplace2(torch.autograd.Function):

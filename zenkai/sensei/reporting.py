@@ -118,7 +118,8 @@ class Log(object):
         info: typing.Dict = None,
         iteration_index_name: str = "iteration",
     ):
-        """initializer
+        """
+        Instantiate a Log to store the results
 
         Args:
             teacher (str): The name of the teacher for the log
@@ -202,7 +203,8 @@ class Record(object):
     """Container for logs"""
 
     def __init__(self):
-        """initializer"""
+        """Instantiate a record for organizing all results in training
+        """
         self._logs: typing.Dict[str, Log] = {}
         self._data = {}
 
@@ -266,7 +268,6 @@ class Record(object):
         Returns:
             Entry: The current entry for the teacher
         """
-
         return self._logs[teacher_name].current
 
     def df(self, teacher_names: typing.Iterable[str] = None) -> pd.DataFrame:

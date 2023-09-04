@@ -34,7 +34,8 @@ class MSpawner(ProcessSpawner):
     def __init__(
         self, module: nn.Module, name: str = None, info: Info = None
     ) -> Process:
-        """initializer
+        """
+        Instantiate a spawner that creates a layer
 
         Args:
             module (nn.Module): Module to spawn
@@ -59,7 +60,7 @@ class MSpawner(ProcessSpawner):
 
 
 class FSpawner(ProcessSpawner):
-    """Process spawner for a function"""
+    """Spawner for a function"""
 
     def __init__(
         self, f: typing.Callable, name: str = None, info: Info = None

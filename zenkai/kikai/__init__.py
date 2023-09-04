@@ -53,7 +53,7 @@ from .scikit import (
     ScikitLimitGen,
     ScikitEstimator, ScikitRegressor,
     ScikitMulticlass, ScikitBinary,
-    ScikitMachine, VoterEnsembleMachine,
+    ScikitMachine,
     ScikitStepTheta, SciClone
 
 )

@@ -37,7 +37,6 @@ class HillClimbStepX(FeatureIdxStepX):
             momentum (float, optional): The momentum for updating x. Defaults to 0.5.
             maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
         """
-
         super().__init__()
         self.learner = learner
         self.limiter = PopulationLimiter()

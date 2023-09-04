@@ -118,6 +118,13 @@ class DLMaterial(Material):
         shuffle: bool = True,
         **kwargs
     ):
+        """
+        Update the dataloader factory in the material
+
+        Args:
+            dataset (typing.Union[Dataset, typing.List[Dataset]]): The dataset to update
+            shuffle (bool, optional): Whether to shuffle the dataset. Defaults to True.
+        """
         if isinstance(dataset, typing.Iterable):
             dataset = ConcatDataset(dataset)
         self.dataloader_factory = partial(DataLoader, dataset, shuffle=shuffle, **kwargs)
@@ -149,6 +156,13 @@ class DLMaterial(Material):
         shuffle: bool = True,
         **kwargs
     ):
+        """
+        Update the dataloader factory with a TensorDataset
+
+        Args:
+            tensors (typing.Tuple[torch.Tensor]): Tensors to update with
+            shuffle (bool, optional): Whether to shuffle. Defaults to True.
+        """
         dataset = TensorDataset(*tensors)
         self.dataloader_factory = partial(DataLoader, dataset, shuffle=shuffle, **kwargs)
 

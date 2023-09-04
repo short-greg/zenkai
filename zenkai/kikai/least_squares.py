@@ -287,13 +287,16 @@ class GradLeastSquaresLearner(AccLearner):
         loss: Objective=None,
         lam_x: float=1e-4,
     ):
-        """initializer
+        """_summary_
 
         Args:
             in_features (int): The number of features into the linear model
             out_features (int): The number of features out of the model
             bias (bool, optional): Whether to use the bias. Defaults to True.
             optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
+            optim_factory (OptimFactory, optional): The optimizer to use. Defaults to None.
+            loss (Objective, optional): The loss to minimize. Since this is grad descent it must be a minimization function. Defaults to None.
+            lam_x (float, optional): The regularization parameter. Defaults to 1e-4.
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)

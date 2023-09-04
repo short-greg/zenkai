@@ -292,11 +292,20 @@ class GradLoopStepX(BatchIdxStepX):
 
 
 class ActivationLearner(LearningMachine):
+    """
+    "learner" to use for activations (or machines without tunable parameters)
+    """
 
     def __init__(
         self, activation: typing.Union[str, nn.Module], 
         objective: typing.Union[str, Objective]='mse'
     ):
+        """Instantiate the ActivationLearner. Will use the gradient on the backward pass
+
+        Args:
+            activation (typing.Union[str, nn.Module]): The activation to use
+            objective (typing.Union[str, Objective], optional): The objective to optimize for step_x. Defaults to 'mse'.
+        """
         super().__init__()
         self.activation = module_factory(activation)
         if isinstance(objective, str):
@@ -436,7 +445,8 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
-    
+
+
 def update_x(
     x: IO, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
 ) -> IO:
