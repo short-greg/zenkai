@@ -213,8 +213,8 @@ class AssistantTeam(object):
             teacher_name (str): The name of the teacher being assisted
         """
         for assistant in self._assistants.values():
-            # assistant(teacher_name, assessment_dict, data)
-            assistant(teacher_name, pre)
+            if (pre and assistant.pre) or (not pre and assistant.post):
+                assistant(teacher_name, pre)
 
 
 class Teacher(ABC):
@@ -229,8 +229,7 @@ class Teacher(ABC):
         Args:
             name (str): The name of the teacher
         """
-        self._pre_assistants = AssistantTeam()
-        self._post_assistants = AssistantTeam()
+        self._assistants = AssistantTeam()
         self._name = name
         self._teach = self.teach
         self.teach = self._teach_with_assistance
@@ -245,9 +244,9 @@ class Teacher(ABC):
     
     def _teach_with_assistance(self, *args, **kwargs):
         
-        self._pre_assistants.assist(self.name, True)
+        self._assistants.assist(self.name, True)
         self._teach(*args, **kwargs)
-        self._post_assistants.assist(self.name, False)
+        self._assistants.assist(self.name, False)
 
     @abstractmethod
     def teach(self):
@@ -267,15 +266,9 @@ class Teacher(ABC):
         if isinstance(assistant, Assistant):
             assistant = [assistant]
         for assistant_i in assistant:
-            if assistant_i.pre:
-                self._pre_assistants.add(
-                    assistant_i, True
-                )
-        for assistant_i in assistant:
-            if assistant_i.post:
-                self._post_assistants.add(
-                    assistant_i, True
-                )
+            self._assistants.add(
+                assistant_i, True
+            )
 
     def deregister(self, assistant: typing.Union[typing.Iterable[str], str]):
         """Remove an assistant from the registry
@@ -287,10 +280,7 @@ class Teacher(ABC):
             assistant = [assistant]
         
         for assistant_i in assistant:
-            self._pre_assistants.remove(assistant_i, True)
-
-        for assistant_i in assistant:
-            self._post_assistants.remove(assistant_i, True)
+            self._assistants.remove(assistant_i, True)
 
     def __call__(self, *args, **kwargs):
         """Execute the teaching process
