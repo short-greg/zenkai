@@ -7,7 +7,7 @@ from torch import nn
 from zenkai import utils
 
 # local
-from zenkai.kaku import IO, IDable
+from zenkai.kaku import IO, IDable, AssessmentDict, Assessment
 from zenkai.kaku import machine as core
 
 
@@ -62,6 +62,16 @@ class TestState:
         state = core.State()
         state[(self, io), 'x'] = 2
         assert ((self, io), 'x') in state
+        
+    def test_assessment_log_logs_assessment(self):
+
+        obj = 'x'
+        state = core.State()
+        assessment = AssessmentDict(k=Assessment(torch.tensor(1.0)))
+        state.log_assessment_dict(obj, 'x', assessment)
+        result = state.logs.as_assessment_dict()
+        assert (result['x_k'] == assessment['k'])
+
 
 class Base:
 
