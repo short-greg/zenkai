@@ -1,7 +1,8 @@
 import pytest
 import torch
+import torch.nn as nn
 
-from zenkai.kaku import assess as _evaluation
+from zenkai.kaku import assess as _evaluation, ThLoss, IO
 
 
 class TestAssessment:
@@ -100,29 +101,28 @@ class TestAssessmentDict:
         assert result['t2'].value == assessment2.value.mean()
 
 
-# from .. import ThLoss
-# class TestThLoss:
+class TestThLoss:
 
-#     def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):
+    def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'none')
-#         evaluation = loss.forward(x, t)
-#         assert (evaluation == nn.MSELoss(reduction='none')(x, t)).all()
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("mse", 'none')
+        evaluation = loss(IO(x), IO(t))
+        assert (evaluation == nn.MSELoss(reduction='none')(x, t)).all()
 
-#     def test_th_loss_outputs_correct_loss_with_mse_and_mean_reduction(self):
+    def test_th_loss_outputs_correct_loss_with_mse_and_mean_reduction(self):
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'mean')
-#         evaluation = loss.forward(x, t)
-#         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("mse", 'mean')
+        evaluation = loss(IO(x), IO(t))
+        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
     
-#     def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
+    def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
 
-#         x = torch.rand(4, 2)
-#         t = torch.rand(4, 2)
-#         loss = ThLoss(nn.MSELoss, 'none')
-#         evaluation = loss.forward(x, t, 'mean')
-#         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("mse", 'none')
+        evaluation = loss(IO(x), IO(t), 'mean')
+        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()

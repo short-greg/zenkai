@@ -138,25 +138,6 @@ class TestLogger:
         logger({'x': torch.tensor([4,3])})
         assert len(logger.log) == 2
 
-    # def test_update_entry_twice_creates_two_entries(self):
-
-    #     record = reporting.Record()
-    #     id = record.add_entry("Trainer", 4)
-    #     record.update_entry("Trainer", id, {'x': torch.tensor([2,3])})
-    #     record.update_entry("Trainer", id, {'x': torch.tensor([4,3])})
-    #     assert len(record.current("Trainer")) == 2
-    
-    # def test_update_entry_twice_creates_two_entries(self):
-
-    #     record = reporting.Record()
-    #     id = record.add_entry("Trainer", 4)
-    #     record.update_entry("Trainer", id, {'x': torch.tensor([2,3])})
-    #     record.update_entry("Trainer", id, {'x': torch.tensor([4,3])})
-    #     id2 = record.add_entry("TrainerX", 4)
-    #     record.update_entry("TrainerX", id2, {'x': torch.tensor([1,3])})
-    #     assert len(record.df()) == 3
-
-
 
 class TestResults:
 
@@ -189,4 +170,33 @@ class TestResults:
             {"loss" :torch.tensor(0.4)}
         )
         assert round(results.aggregate('loss')['loss'], 2) == 0.35
+
+
+class TestTeachingProgress:
+
+    def test_training_progress_starts_with_epoch_none(self):
+        results = reporting.TeachingProgress(2, 4)
+        assert results.cur_epoch is None
+
+    def test_training_progress_goes_to_epoch_zero_after_one_adv(self):
+
+        results = reporting.TeachingProgress(2, 4)
+        results.adv_epoch()
+        assert results.cur_epoch == 0
+    
+    def test_training_updates_iteration_after_adv(self):
+
+        results = reporting.TeachingProgress(2, 4)
+        results.adv()
+        assert results.cur_iteration == 1
+        
+    
+    def test_training_status_is_in_progress_after_updating(self):
+
+        results = reporting.TeachingProgress(2, 4)
+        results.status = reporting.TeachingStatus.IN_PROGRESS
+        assert results.status == reporting.TeachingStatus.IN_PROGRESS
+
+
+
 
