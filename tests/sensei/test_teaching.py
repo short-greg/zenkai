@@ -5,7 +5,7 @@ import torch.optim as optim
 from zenkai.kaku import AssessmentDict, Learner
 from zenkai.sensei.materials import DLMaterial
 from zenkai.sensei.reporting import Record
-from zenkai.sensei.teaching import Trainer, Validator, train, validation_train
+from zenkai.sensei.teaching import Trainer, Validator, train, validation_train, Assistant
 from zenkai.utils import get_model_parameters
 
 
@@ -50,6 +50,17 @@ class TestTrainer(object):
         assert (get_model_parameters(learner) != before).any()
 
 
+class ValidatorAssistant(Assistant):
+
+    def __init__(self, pre: bool=False, post: bool=True):
+        super().__init__("Validator Assistant", pre, post)
+        self.executed = False
+
+    def assist(self, teacher_name: str, pre: bool):
+        self.executed = True
+        self.executed_pre = pre
+
+
 class TestValidator:
 
     def test_validation_trainer_fully_trains(self):
@@ -63,6 +74,36 @@ class TestValidator:
         trainer.teach()
         # iterates twice
         assert len(record.df(['Validator'])) == 2
+
+    def test_assistant_to_validation_trainer_executes(self):
+
+        learner = SimpleLearner()
+        material = DLMaterial.load_tensor(
+            [torch.rand(4, 2), torch.rand(4, 2)], 2
+        )
+        record = Record()
+        trainer = Validator("Validator", learner, material, record=record)
+        assistant = ValidatorAssistant()
+        trainer.register(assistant)
+        trainer.teach()
+        # iterates twice
+        assert assistant.executed is True
+        assert assistant.executed_pre is False
+
+    def test_assistant_to_validation_trainer_executes_when_pre(self):
+
+        learner = SimpleLearner()
+        material = DLMaterial.load_tensor(
+            [torch.rand(4, 2), torch.rand(4, 2)], 2
+        )
+        record = Record()
+        trainer = Validator("Validator", learner, material, record=record)
+        assistant = ValidatorAssistant(pre=True, post=False)
+        trainer.register(assistant)
+        trainer.teach()
+        # iterates twice
+        assert assistant.executed is True
+        assert assistant.executed_pre is True
 
 
 class TestTrain:

@@ -126,7 +126,8 @@ class Assistant(ABC):
     @abstractmethod
     def assist(
         self,
-        teacher_name: str
+        teacher_name: str,
+        pre: bool
     ):
         """Assist the teacher
 
@@ -139,7 +140,8 @@ class Assistant(ABC):
 
     def __call__(
         self,
-        teacher_name: str
+        teacher_name: str,
+        pre: bool
     ):
         """Assist the teacher
 
@@ -149,7 +151,7 @@ class Assistant(ABC):
             data (typing.Any, optional): _description_. Defaults to None.
 
         """
-        self.assist(teacher_name)
+        self.assist(teacher_name, pre)
 
 
 class AssistantTeam(object):
@@ -202,7 +204,8 @@ class AssistantTeam(object):
 
     def assist(
         self,
-        teacher_name: str
+        teacher_name: str,
+        pre: bool
     ):
         """Call all of the assistants in the team
 
@@ -211,7 +214,7 @@ class AssistantTeam(object):
         """
         for assistant in self._assistants.values():
             # assistant(teacher_name, assessment_dict, data)
-            assistant(teacher_name)
+            assistant(teacher_name, pre)
 
 
 class Teacher(ABC):
@@ -242,9 +245,9 @@ class Teacher(ABC):
     
     def _teach_with_assistance(self, *args, **kwargs):
         
-        self._pre_assistants.assist(self.name)
+        self._pre_assistants.assist(self.name, True)
         self._teach(*args, **kwargs)
-        self._post_assistants.assist(self.name)
+        self._post_assistants.assist(self.name, False)
 
     @abstractmethod
     def teach(self):
