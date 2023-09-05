@@ -100,7 +100,7 @@ class Assistant(ABC):
     will execute
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, pre: bool=False, post: bool=True):
         """
         Instantiate an assistant for the teacher
 
@@ -108,10 +108,20 @@ class Assistant(ABC):
             name (str): The name for the teacher
         """
         self._name = name
+        self._pre = pre
+        self._post = post
 
     @property
     def name(self) -> str:
         return self._name
+
+    @property
+    def pre(self) -> bool:
+        return self._pre
+
+    @property
+    def post(self) -> bool:
+        return self._post
 
     @abstractmethod
     def assist(
@@ -174,17 +184,21 @@ class AssistantTeam(object):
             del self._assistants[assistant.name]
         self._assistants[assistant.name] = assistant
 
-    def remove(self, assistant: str, ignore_lack: bool=True):
+    def remove(self, assistant: str, ignore_lack: bool=True) -> bool:
         """Remove an assistant from the team
 
         Args:
             assistant (str): the name of the assistant to remove
+
+        Returns:
+            bool : True if successfully removed
         """
         if assistant not in self._assistants:
             if ignore_lack:
-                return
+                return False
             raise ValueError(f'No assistant named {assistant} to remove in team')
         del self._assistants[assistant]
+        return True
 
     def assist(
         self,
@@ -212,8 +226,11 @@ class Teacher(ABC):
         Args:
             name (str): The name of the teacher
         """
-        self._assistants = AssistantTeam()
+        self._pre_assistants = AssistantTeam()
+        self._post_assistants = AssistantTeam()
         self._name = name
+        self._teach = self.teach
+        self.teach = self._teach_with_assistance
 
     @property
     def name(self) -> str:
@@ -222,6 +239,12 @@ class Teacher(ABC):
             str: The name of the teacher
         """
         return self._name
+    
+    def _teach_with_assistance(self, *args, **kwargs):
+        
+        self._pre_assistants.assist(self.name)
+        self._teach(*args, **kwargs)
+        self._post_assistants.assist(self.name)
 
     @abstractmethod
     def teach(self):
@@ -235,16 +258,21 @@ class Teacher(ABC):
         Args:
             assistant (Assistant): The assistant to add
         """
+        # TODO: Consider whether I want different assistants of the same name ot be in pre and post
+        # Right now, that's the case but it can cause problems
 
-        if not hasattr(self, "_assistants"):
-            self._assistants = {}
-
-        if isinstance(assistant, str):
+        if isinstance(assistant, Assistant):
             assistant = [assistant]
         for assistant_i in assistant:
-            self._assistants.add(
-                assistant_i, True
-            )
+            if assistant_i.pre:
+                self._pre_assistants.add(
+                    assistant_i, True
+                )
+        for assistant_i in assistant:
+            if assistant_i.post:
+                self._post_assistants.add(
+                    assistant_i, True
+                )
 
     def deregister(self, assistant: typing.Union[typing.Iterable[str], str]):
         """Remove an assistant from the registry
@@ -256,7 +284,10 @@ class Teacher(ABC):
             assistant = [assistant]
         
         for assistant_i in assistant:
-            self._assistants.remove(assistant_i)
+            self._pre_assistants.remove(assistant_i, True)
+
+        for assistant_i in assistant:
+            self._post_assistants.remove(assistant_i, True)
 
     def __call__(self, *args, **kwargs):
         """Execute the teaching process

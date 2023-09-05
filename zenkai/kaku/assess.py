@@ -449,6 +449,12 @@ class Assessment(object):
         """
         return Assessment(self.value.reshape(size), self.maximize)
 
+    def __str__(self) -> str:
+
+        return f"""
+        Assessment(maximize: {self.maximize}, value: {self.value})
+        """
+
 
 def reduce_assessment(
     assessment: torch.Tensor,
@@ -759,6 +765,14 @@ class AssessmentDict(object):
         if remove_source:
             del self._assessments[source]
         return self
+    
+    def __str__(self) -> str:
+
+        return f"""
+        AssessmentDict(
+            {self._assessments}
+        )
+        """
 
 
 class Objective(nn.Module):
