@@ -1,6 +1,7 @@
 # 1st party
 import typing
 from uuid import uuid4
+from enum import Enum
 
 import numpy as np
 
@@ -483,16 +484,27 @@ class Results(object):
         return aggregated
 
 
-class TrainingProgress(object):
+class TeachingStatus(Enum):
+
+    FINISHED = "finished"
+    START_EPOCH = "start_epoch"
+    FINISH_EPOCH = "finish_epoch"
+    IN_PROGRESS = "in_progress"
+    STARTED = "started"
+    READY = "ready"
+
+
+class TeachingProgress(object):
     """Data structure for training progress
     """
 
     def __init__(self, n_epochs: int, n_iterations: int):
 
-        self.cur_epoch = 0
+        self.cur_epoch = None
         self.n_epochs = n_epochs
         self.cur_iteration = 0
         self.n_iterations = n_iterations
+        self._status = TeachingStatus.READY
 
     def adv_epoch(self, n_iterations: int=None):
         """Move the progress forward one epoch
@@ -503,4 +515,20 @@ class TrainingProgress(object):
         self.cur_iteration = 0
         if self.n_iterations is not None:
             self.n_iterations = n_iterations
-        self.cur_epoch += 1
+        if self.cur_epoch is None:
+            self.cur_epoch = 0
+        else:
+            self.cur_epoch += 1
+
+    def adv(self):
+        self.cur_iteration += 1
+
+    @property
+    def status(self) -> TeachingStatus:
+        return self._status
+    
+    @status.setter
+    def status(self, status: TeachingStatus) -> TeachingStatus:
+
+        self._status = status
+        return status

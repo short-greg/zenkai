@@ -9,7 +9,7 @@ from tqdm import tqdm
 from ..kaku import Learner
 from .base import Classroom, Teacher, Assistant
 from .materials import IODecorator, Material
-from .reporting import Record, Results
+from .reporting import Record, Results, TeachingProgress, TeachingStatus
 
 
 class Trainer(Teacher):
@@ -23,6 +23,7 @@ class Trainer(Teacher):
         record: Record = None,
         classroom: Classroom = None,
         window: int = 30,
+        n_epochs: int=1
     ):
         """Instantiate a Trainer for the learner
 
@@ -42,13 +43,15 @@ class Trainer(Teacher):
         self.learner = default_learner
         self.material = default_material
         self.window = window
+        self.n_epochs = n_epochs
+        self.progress = TeachingProgress(n_epochs, len(self.material))
+        self.record.store_data(self.name, "progress", self.progress)
 
     def teach(
         self,
         override_learner: typing.Union[Learner, str] = None,
         override_material: typing.Union[Dataset, str] = None,
         epoch: int = None,
-        n_epochs: int = None,
     ):
         """Teach the learner
 
@@ -58,13 +61,16 @@ class Trainer(Teacher):
             epoch (int, optional): The current epoch. Defaults to None.
             n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
+        self.progress.status = TeachingStatus.START_EPOCH
         learner = self._classroom.choose_student(override_learner, self.learner)
         material = self._classroom.choose_material(
             override_material, self.material
         )
         results = Results(self.window)
+        self.progress.adv_epoch(len(self.material))
         logger = self.record.create_logger(self.name, material)
         with tqdm(total=len(material)) as pbar:
+            self.progress.status = TeachingStatus.IN_PROGRESS
             for i, (x, t) in enumerate(material):
                 self._assistants.assist(self.name, True)
                 assessment_dict = logger(learner.learn(x, t))
@@ -74,9 +80,11 @@ class Trainer(Teacher):
                 if epoch is not None:
                     aggregation[
                         "Epoch"
-                    ] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
+                    ] = f'{epoch}/{"?" if self.n_epochs is None else self.n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
+                self.progress.adv()
+        self.progress.status = TeachingStatus.FINISH_EPOCH
 
 
 class Validator(Teacher):
@@ -92,6 +100,7 @@ class Validator(Teacher):
         record: Record = None,
         classroom: Classroom = None,
         show_progress: bool = True,
+        n_epochs: int=1
     ):
         """initializer
 
@@ -111,13 +120,15 @@ class Validator(Teacher):
         self.learner = default_learner
         self.material = default_material
         self.show_progress = show_progress
+        self.n_epochs = n_epochs
+        self.progress = TeachingProgress(n_epochs, len(self.material))
+        self.record.store_data(self.name, "progress", self.progress)
 
     def teach(
         self,
         override_learner: typing.Union[Learner, str] = None,
         override_material: typing.Union[Dataset, str] = None,
-        epoch: int = None,
-        n_epochs: int = None,
+        epoch: int = None
     ):
         """Teach the learner
 
@@ -127,6 +138,7 @@ class Validator(Teacher):
             epoch (int, optional): The current epoch. Defaults to None.
             n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
+        self.progress.status = TeachingStatus.START_EPOCH
         learner = self._classroom.choose_student(
             override_learner, self.learner
         )
@@ -136,7 +148,9 @@ class Validator(Teacher):
 
         results = Results(None)
         logger = self.record.create_logger(self._name, material)
+        self.progress.adv_epoch(len(self.material))
         with tqdm(total=len(material)) as pbar:
+            self.progress.status = TeachingStatus.IN_PROGRESS
             for i, (x, t) in enumerate(material):
                 self._assistants.assist(self.name, True)
                 assessment_dict = logger(learner.test(x, t))
@@ -146,9 +160,12 @@ class Validator(Teacher):
                 if epoch is not None:
                     aggregation[
                         "Epoch"
-                    ] = f'{epoch}/{"?" if n_epochs is None else n_epochs}'
+                    ] = f'{epoch}/{"?" if self.n_epochs is None else self.n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
+                self.progress.adv()
+        
+        self.progress.status = TeachingStatus.FINISH_EPOCH
 
 
 def validation_train(
@@ -187,15 +204,15 @@ def validation_train(
     if use_io:
         training_material = IODecorator(training_material)
         validation_material = IODecorator(validation_material)
-    trainer = Trainer(trainer_name, learner, training_material, record=record)
+    trainer = Trainer(trainer_name, learner, training_material, record=record, n_epochs=n_epochs)
     if training_assistants is not None:
         trainer.register(training_assistants)
-    validator = Validator(validator_name, learner, validation_material, record=record)
+    validator = Validator(validator_name, learner, validation_material, record=record, n_epochs=n_epochs)
     if validation_assistants is not None:
         validator.register(validation_assistants)
     for i in range(n_epochs):
-        trainer.teach(epoch=i, n_epochs=n_epochs)
-        validator.teach(epoch=i, n_epochs=n_epochs)
+        trainer.teach(epoch=i)
+        validator.teach(epoch=i)
     return record
 
 
@@ -233,20 +250,20 @@ def train(
     record = record or Record()
     if use_io:
         training_material = IODecorator(training_material)
-    trainer = Trainer(trainer_name, learner, training_material, record=record, window=window)
+    trainer = Trainer(trainer_name, learner, training_material, record=record, window=window, n_epochs=n_epochs)
     if training_assistants is not None:
         trainer.register(training_assistants)
     if testing_material:
         if use_io:
             testing_material = IODecorator(testing_material)
-        tester = Validator(tester_name, learner, testing_material, record=record)
+        tester = Validator(tester_name, learner, testing_material, record=record, n_epochs=1)
         if testing_assistants is not None:
             tester.register(testing_assistants)
     else:
         tester = None
 
     for i in range(n_epochs):
-        trainer.teach(epoch=i, n_epochs=n_epochs)
+        trainer.teach(epoch=i)
     if tester is not None:
-        tester.teach(epoch=i, n_epochs=n_epochs)
+        tester.teach(epoch=0)
     return record
