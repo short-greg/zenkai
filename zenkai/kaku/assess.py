@@ -711,7 +711,7 @@ class AssessmentDict(object):
             AssessmentDict: AssessmentDict with all names prepended
         """
         return AssessmentDict(
-            {with_str + key: value for key, value in self._assessments}
+            **{with_str + key: value for key, value in self._assessments.items()}
         )
 
     def append(self, with_str: str) -> "AssessmentDict":
@@ -723,7 +723,7 @@ class AssessmentDict(object):
             AssessmentDict:  AssessmentDict with all names appended
         """
         return AssessmentDict(
-            {key + with_str: value for key, value in self._assessments}
+            **{key + with_str: value for key, value in self._assessments.items()}
         )
 
     @classmethod

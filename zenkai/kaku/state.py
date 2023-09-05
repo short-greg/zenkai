@@ -1,7 +1,7 @@
 # 1st party
 import typing
 from abc import abstractproperty
-from collections import deque
+from dataclasses import dataclass
 
 # local
 from .io import IO
@@ -19,6 +19,53 @@ class StateKeyError(KeyError):
     pass
 
 
+class AssessmentLog(object):
+    """Class to log assessments during training. Especially ones that may occur inside the network
+    """
+
+    def __init__(self):
+        """Instantiate the AssessmentLog
+        """
+
+        self._log: typing.Dict[typing.Any, typing.Dict[str, AssessmentDict]] = {}
+
+    def update(self, key, name: str, assessemnt_dict: AssessmentDict, replace: bool=False, to_cpu: bool=True):
+        """Update the AssessmentLog with a new AssessmentDict. detach() will automatically be called to prevent storing grads
+
+        Args:
+            key : The unique identifier for the layer
+            name (str): The name of the layer/operation. Can also include time step info etc
+            assessemnt_dict (AssessmentDict): The assessment dict to update with
+            replace (bool, optional): Whether to replace the current assessment dict for the key/name. Defaults to False.
+            to_cpu (bool): Whether to convert to cpu or not
+        """
+        assessemnt_dict = assessemnt_dict.detach()
+        if to_cpu:
+            assessemnt_dict = assessemnt_dict.cpu()
+
+        if key not in self._log:
+            self._log[key] = {}
+        
+        if name not in self._log[key] or replace:
+            self._log[key][name] = assessemnt_dict
+        else:
+            self._log[key][name].union(assessemnt_dict)
+    
+    def as_assessment_dict(self) -> AssessmentDict:
+        """
+
+        Returns:
+            AssessmentDict: The assessment log converted to an assessmentdict
+        """
+
+        result = AssessmentDict()
+        for key, val in self._log.items():
+
+            for key2, val2 in val.items():
+                result = result.union(val2.prepend(key2 + "_"))
+        return result
+
+
 class State(object):
     """Class to store the learning state for one learning iteration
     """
@@ -29,7 +76,7 @@ class State(object):
         super().__init__()
         self._data = {}
         self._subs = {}
-        self._logs = {}
+        self._logs = AssessmentLog()
 
     def id(self, obj) -> str:
         """Get the key for an object
@@ -233,7 +280,6 @@ class State(object):
         """
         obj, key = key
         id = self.id(obj)
-        print(key)
         return id in self._data and key in self._data[id]
     
     def log_assessment_dict(self, obj: IDable, obj_name: str, assessment_dict: AssessmentDict):
@@ -241,25 +287,27 @@ class State(object):
 
         Args:
             obj: The object to log for
+            obj_name: The name of the object to log for (So it is clear who it is coming from)
             assessment_dict (AssessmentDict): the values to log
         """
         key = self.id(obj)
         
-        self._logs[key][obj_name] = assessment_dict
+        self._logs.update(key, obj_name, assessment_dict)
 
-    def log_assessment(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, log_name: str, assessment: Assessment):
+    def log_assessment(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, log_name: str, assessment: Assessment, update: bool=True):
         """Log an assessment
 
         Args:
             obj: The object to log for
+            obj_name: The name of the object to log for (So it is clear who it is coming from)
             assessment_dict (AssessmentDict): the values to log
         """
 
         key = self.id(obj)
-        self._logs[key][obj_name] = AssessmentDict(**{log_name: assessment})
+        self._logs.update(key, obj_name, AssessmentDict(**{log_name: assessment}))
 
     @property
-    def logs(self) -> typing.Dict:
+    def logs(self) -> AssessmentLog:
         return self._logs
 
 

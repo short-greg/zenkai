@@ -130,7 +130,7 @@ class TestDFALearner:
         net = nn.Linear(3, 4)
         learner = feedback_alignment.DFALearner(
             net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(),  objective='mse',
+            optim_factory=OptimFactory('sgd', lr=1e-2), activation=nn.Sigmoid(), objective='mse',
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))

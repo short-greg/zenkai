@@ -55,10 +55,12 @@ class ValidatorAssistant(Assistant):
     def __init__(self, pre: bool=False, post: bool=True):
         super().__init__("Validator Assistant", pre, post)
         self.executed = False
+        self.executed_pre = False
 
     def assist(self, teacher_name: str, pre: bool):
         self.executed = True
-        self.executed_pre = pre
+        if pre:
+            self.executed_pre = True
 
 
 class TestValidator:
