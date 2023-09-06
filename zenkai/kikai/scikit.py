@@ -22,7 +22,7 @@ from ..kaku import (
     FeatureLimitGen,
     Idx,
     LearningMachine,
-    Objective,
+    Criterion,
     State,
 )
 from ..utils import Argmax, Sign
@@ -397,7 +397,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self,
         module: ScikitEstimator,
         step_x: FeatureIdxStepX,
-        objective: Objective,
+        criterion: Criterion,
         preprocessor: nn.Module = None,
     ):
         """initializer
@@ -410,13 +410,13 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """
         super().__init__()
         self._module = module
-        self._objective = objective
+        self._criterion = criterion
         self._step_x = step_x
         self._step_theta = ScikitStepTheta(module)
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._objective.assess_dict(y, t, reduction_override)
+        return self._criterion.assess_dict(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None

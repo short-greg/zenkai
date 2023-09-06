@@ -19,7 +19,7 @@ from ..kaku import (
     Idx,
     LearningMachine,
     State,
-    Objective,
+    Criterion,
     StepTheta,
     StepX,
     idx_io,
@@ -29,7 +29,7 @@ from ..kaku import (
     AccLearner,
     AccStepTheta,
     BatchIdxAccStepTheta,
-    Objective
+    Criterion
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
 
@@ -298,19 +298,19 @@ class ActivationLearner(LearningMachine):
 
     def __init__(
         self, activation: typing.Union[str, nn.Module], 
-        objective: typing.Union[str, Objective]='mse'
+        criterion: typing.Union[str, Criterion]='mse'
     ):
         """Instantiate the ActivationLearner. Will use the gradient on the backward pass
 
         Args:
             activation (typing.Union[str, nn.Module]): The activation to use
-            objective (typing.Union[str, Objective], optional): The objective to optimize for step_x. Defaults to 'mse'.
+            criterion (typing.Union[str, Criterion], optional): The objective to optimize for step_x. Defaults to 'mse'.
         """
         super().__init__()
         self.activation = module_factory(activation)
-        if isinstance(objective, str):
-            objective = Objective(objective)
-        self.objective = objective
+        if isinstance(criterion, str):
+            criterion = Criterion(criterion)
+        self.criterion = criterion
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
@@ -326,7 +326,7 @@ class ActivationLearner(LearningMachine):
         y = state.get(self, x, 'y')
         if y is None:
             y = self(y, state, release=False)
-        self.objective(y, t).backward()
+        self.criterion(y, t).backward()
         return IO(y.f - y.f.grad, detach=True)
 
 
@@ -338,7 +338,7 @@ class GradLearner(AccLearner):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
-        objective: Objective,
+        criterion: Criterion,
         optim_factory: OptimFactory=None,
         theta_reduction: str = "mean",
         x_lr: float=None
@@ -358,7 +358,7 @@ class GradLearner(AccLearner):
             self._net = module
         else:
             self._net = nn.Sequential(*module)
-        self._objective = objective
+        self._criterion = criterion
         if optim_factory is None:
             optim_factory = itadaki.null()
         
@@ -366,7 +366,7 @@ class GradLearner(AccLearner):
         self._x_step = GradStepX(x_lr)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._objective.assess_dict(y, t, reduction_override)
+        assessment = self._criterion.assess_dict(y, t, reduction_override)
         return assessment
 
     def accumulate(self, x: IO, t: IO, state: State):
@@ -394,7 +394,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
-        objective: Objective,
+        criterion: Criterion,
         theta_optim_factory: OptimFactory,
         x_optim_factory: OptimFactory,
         theta_reduction: str = "mean",
@@ -408,7 +408,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
         Args:
             module (typing.Union[nn.Module, typing.List[nn.Module]]): 
                 Either a single module or list of modules to execut
-            objective (Objective): The objective to evaluate with
+            criterion (Criterion): The objective to evaluate with
             theta_optim_factory (OptimFactory): The optimizer to use for optimizing theta
             x_optim_factory (OptimFactory): The optimizer to use for optimizing x
             theta_reduction (str, optional): The reduction to use for the loss to optimize theta. 
@@ -421,7 +421,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
             self._net = module
         else:
             self._net = nn.Sequential(*module)
-        self._objective = objective
+        self._objective = criterion
         self._theta_step = GradLoopStepTheta(self, theta_optim_factory, theta_reduction)
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
 

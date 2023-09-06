@@ -5,7 +5,7 @@ import typing
 
 from ..kaku import (
     IO, State, LearningMachine, AssessmentDict,
-    OptimFactory, StepX, Objective, ThLoss, AccLearner
+    OptimFactory, StepX, Criterion, ThLoss, AccLearner
 )
 from .grad import GradUpdater
 
@@ -31,22 +31,22 @@ class FALinearLearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, in_features: int, out_features: int, optim_factory: OptimFactory, objective: typing.Union[Objective, str]='mse') -> None:
+    def __init__(self, in_features: int, out_features: int, optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='mse') -> None:
         """Linear network for implementing feedback alignment
 
         Args:
             in_features (int): the number of features into the layer
             out_features (int): the number of features out of the layer
             optim_factory (OptimFactory): the optimizer to use for optimizing
-            objective (typing.Union[Objective, str], optional): . Defaults to 'mse'.
+            criterion (typing.Union[Criterion, str], optional): . Defaults to 'mse'.
         """
         super().__init__()
         self.linear = nn.Linear(in_features, out_features, bias=False)
         self.B = torch.randn(in_features, out_features)
         self.optim = optim_factory(self.linear.parameters())
-        if isinstance(objective, str):
-            self.objective = ThLoss(objective)
-        else: self.objective = objective
+        if isinstance(criterion, str):
+            self.criterion = ThLoss(criterion)
+        else: self.criterion = criterion
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
     
@@ -54,7 +54,7 @@ class FALinearLearner(LearningMachine):
         return x.out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.objective.assess_dict(y, t, reduction_override)
+        return self.criterion.assess_dict(y, t, reduction_override)
     
     def step(self, x: IO, t: IO, state: State):
         """Update the base parameters
@@ -122,7 +122,7 @@ class FALearner(AccLearner):
     """Learner for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, objective: typing.Union[Objective, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
         """Wraps a module to create an FALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 
@@ -131,7 +131,7 @@ class FALearner(AccLearner):
             netB (nn.Module): the net to use for backprop
             optim_factory (OptimFactory): The opimtizer
             activation (nn.Module): The activation
-            objective (typing.Union[Objective, str], optional): The objective. Defaults to 'mse'.
+            criterion (typing.Union[Criterion, str], optional): The criterion. Defaults to 'mse'.
         """
         super().__init__()
         self.net = net
@@ -141,9 +141,9 @@ class FALearner(AccLearner):
         self._optim = optim_factory(self.net.parameters())
         
         self._grad_updater = GradUpdater(self.netB, self._optim)
-        if isinstance(objective, str):
-            self.objective = ThLoss(objective)
-        else: self.objective = objective
+        if isinstance(criterion, str):
+            self.criterion = ThLoss(criterion)
+        else: self.criterion = criterion
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
 
@@ -157,7 +157,7 @@ class FALearner(AccLearner):
         return IO(y).out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.objective.assess_dict(y, t, reduction_override)
+        return self.criterion.assess_dict(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: State):
         """Update the 
@@ -180,7 +180,7 @@ class FALearner(AccLearner):
         y = state[(self, x), 'y']
         y2 = self.netB(x.f)
         
-        self.objective(IO(y), t).backward()
+        self.criterion(IO(y), t).backward()
         y_det = state[(self, x), 'y_det']
         y2.backward(y_det.grad)
         
@@ -213,7 +213,7 @@ class DFALearner(AccLearner):
     """Learner for implementing feedback alignment.
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, objective: typing.Union[Objective, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
         """Wraps a network to create a DFALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 
@@ -224,7 +224,7 @@ class DFALearner(AccLearner):
             t_features (int): the number of target features
             optim_factory (OptimFactory): The opimtizer
             activation (nn.Module): The activation
-            objective (typing.Union[Objective, str], optional): The objective. Defaults to 'mse'.
+            criterion (typing.Union[Criterion, str], optional): The criterion. Defaults to 'mse'.
         """
         super().__init__()
         self.net = net
@@ -233,9 +233,9 @@ class DFALearner(AccLearner):
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
         self._optim = optim_factory(self.net.parameters())
-        if isinstance(objective, str):
-            self.objective = ThLoss(objective)
-        else: self.objective = objective
+        if isinstance(criterion, str):
+            self.criterion = ThLoss(criterion)
+        else: self.criterion = criterion
         self._grad_updater = GradUpdater(self.netB, self._optim)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
@@ -250,7 +250,7 @@ class DFALearner(AccLearner):
         return IO(y).out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.objective.assess_dict(y, t, reduction_override)
+        return self.criterion.assess_dict(y, t, reduction_override)
     
     def accumulate(self, x: IO, t: IO, state: State):
         """Update the net parameters
@@ -275,7 +275,7 @@ class DFALearner(AccLearner):
         y_det = state[(self, x), 'y_det']
         y = state[(self, x), 'y']
         y = self.B(y)
-        self.objective(IO(y), t).backward()
+        self.criterion(IO(y), t).backward()
         y2.backward(y_det.grad)
 
         assert x.f.grad is not None

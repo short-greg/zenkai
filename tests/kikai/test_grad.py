@@ -16,7 +16,7 @@ class THGradLearnerT1(grad.GradLearner):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             [linear],
-            objective=ThLoss(nn.MSELoss), 
+            criterion=ThLoss(nn.MSELoss), 
             optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2)
         )
         self.linear = linear
@@ -28,7 +28,7 @@ class THGradLearnerT2(grad.GradLoopLearner):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             linear,
-            objective=ThLoss(nn.MSELoss), 
+            criterion=ThLoss(nn.MSELoss), 
             theta_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
             x_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2)
         )

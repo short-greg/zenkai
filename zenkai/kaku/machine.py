@@ -27,7 +27,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # local
-from .assess import AssessmentDict, Objective, ThLoss
+from .assess import AssessmentDict, Criterion, ThLoss
 from .component import Learner
 from .state import IDable, State
 from torch.utils import data as torch_data
@@ -250,7 +250,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         if device is None:
             return io if len(io) > 1 else io[0]
         if len(io) == 1:
-            return io.f.to(device)
+            return io[0].to(device)
         return tuple(io_i.to(device) for io_i in io)
 
     @abstractmethod
@@ -390,7 +390,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
 
 
 class NullLearner(LearningMachine):
-    def __init__(self, loss: Objective = None):
+    def __init__(self, loss: Criterion = None):
         """Machine that does not actually learn.
 
         usage: Use when an intermediary layer should not perform any operation on the backward
@@ -400,7 +400,7 @@ class NullLearner(LearningMachine):
             loss (Loss, optional): The loss to evaluate by. Defaults to None.
         """
         super().__init__()
-        self.loss = loss or Objective(nn.MSELoss, reduction="none")
+        self.loss = loss or Criterion(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
@@ -491,7 +491,7 @@ class StdLearningMachine(LearningMachine):
     _step_theta: The StepTheta to use for updating the parameters
     """
 
-    def __init__(self, objective: typing.Union[Objective, typing.Iterable[Objective]], step_theta: StepTheta=None, step_x: StepX=None):
+    def __init__(self, criterion: typing.Union[Criterion, typing.Iterable[Criterion]], step_theta: StepTheta=None, step_x: StepX=None):
         """Convenience class to easily create a learning machine that takes a StepX and StepTheta
 
         Args:
@@ -500,16 +500,16 @@ class StdLearningMachine(LearningMachine):
             step_x (StepX, optional): The x update functor. Defaults to None.
         """
         super().__init__()
-        self.objective = objective
+        self.criterion = criterion
         self._step_x = step_x or NullStepX()
         self._step_theta = step_theta or NullStepTheta()
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
         
-        if isinstance(self.objective, Objective):
-            return self.objective.assess_dict(y, t, reduction_override)
+        if isinstance(self.criterion, Criterion):
+            return self.criterion.assess_dict(y, t, reduction_override)
         assessment_dict = AssessmentDict()
-        for loss in self.objective:
+        for loss in self.criterion:
             assessment_dict = assessment_dict.union(loss.assess_dict(y, t, reduction_override))
         return assessment_dict
 
