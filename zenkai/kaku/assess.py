@@ -775,7 +775,7 @@ class AssessmentDict(object):
         """
 
 
-class Objective(nn.Module):
+class Criterion(nn.Module):
     """Base class for evaluating functions"""
 
     def __init__(self, reduction: str = "mean", maximize: bool = False):
@@ -863,7 +863,7 @@ class Objective(nn.Module):
         pass
 
 
-def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Objective) -> AssessmentDict:
+def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Criterion) -> AssessmentDict:
     """Convenience method to do an assessment for multiple losses
 
     Args:
@@ -900,12 +900,12 @@ LOSS_MAP = {
 }
 
 
-class ThLoss(Objective):
+class ThLoss(Criterion):
     """Class to wrap a Torch loss module"""
 
     def __init__(
         self,
-        base_objective: typing.Union[typing.Callable[[str], nn.Module], str],
+        base_criterion: typing.Union[typing.Callable[[str], nn.Module], str],
         reduction: str = "mean",
         weight: float = None,
         loss_kwargs: typing.Dict = None,
@@ -922,13 +922,13 @@ class ThLoss(Objective):
             KeyError: if there is no loss named with the name passed in
         """
         super().__init__(reduction)
-        if isinstance(base_objective, str):
+        if isinstance(base_criterion, str):
             try:
-                base_objective = LOSS_MAP[base_objective]
+                base_criterion = LOSS_MAP[base_criterion]
             except KeyError:
-                raise KeyError(f"No loss named {base_objective} in loss keys")
-        assert base_objective is not None
-        self.base_objective = base_objective
+                raise KeyError(f"No loss named {base_criterion} in loss keys")
+        assert base_criterion is not None
+        self.base_criterion = base_criterion
         self._loss_kwargs = loss_kwargs or {}
         self._weight = weight
 
@@ -945,17 +945,17 @@ class ThLoss(Objective):
         if Reduction.is_torch(reduction):
             # use built in reduction
             return self.add_weight(
-                self.base_objective(reduction=reduction, **self._loss_kwargs).forward(x[0], t[0])
+                self.base_criterion(reduction=reduction, **self._loss_kwargs).forward(x.f, t.f)
             )
 
         if reduction == 'NA':
             return self.reduce(
-                self.base_objective(**self._loss_kwargs).forward(x.f, t.f)
+                self.base_criterion(**self._loss_kwargs).forward(x.f, t.f)
             )
 
         return self.add_weight(
             self.reduce(
-                self.base_objective(reduction="none", **self._loss_kwargs).forward(x.f, t.f),
+                self.base_criterion(reduction="none", **self._loss_kwargs).forward(x.f, t.f),
                 reduction,
             )
         )

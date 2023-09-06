@@ -4,7 +4,7 @@ from .assess import (
     LOSS_MAP,
     Assessment,
     AssessmentDict,
-    Objective,
+    Criterion,
     Reduction,
     ThLoss,
     assess_dict,

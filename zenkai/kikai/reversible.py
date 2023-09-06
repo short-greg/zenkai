@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, Objective
+from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, Criterion
 from ..utils import Reversible, SequenceReversible
 
 
@@ -12,7 +12,7 @@ class ReversibleMachine(LearningMachine):
     def __init__(
         self,
         reversible: typing.Union[Reversible, typing.List[Reversible]],
-        objective: Objective
+        objective: Criterion
     ):
         """initializer
 
