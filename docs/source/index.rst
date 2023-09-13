@@ -15,6 +15,7 @@ Get Developing With Zenkai
 ===========
 
 .. toctree::
+   :hidden:
    :caption: Intro:
 
    intro/overview
@@ -44,6 +45,7 @@ Get Developing With Zenkai
 ===========
 
 .. toctree::
+   :hidden:
    :caption: Modules:
 
    modules/kaku
