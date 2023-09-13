@@ -10,11 +10,11 @@ Main Contents
 ========
 Kaku:
 
-- :mod:`LearningMachine` - The core class that 
-- :mod:`IO` - 
-- :mod:`StepTheta` - 
-- :mod:`StepX` - 
-- :mod:`Assessment` - 
+- :mod:`LearningMachine` - The core class for training . This inherits from nn.Module
+- :mod:`IO` - Class used for input and output
+- :mod:`StepTheta` - Use to update the parameters of a model. LearningMachine inherits this.
+- :mod:`StepX` - Use to get t the next t. LearningMachine inherits this.
+- :mod:`Assessment` - Use to evaluate the network.
 - ... and so on.
 
 Key Features and Functions
@@ -48,14 +48,6 @@ The main
             y = state[(self, x), 'y'] = IO(x.f + 1)
             return y.out(release)
 
-     # Basic usage of Function1
-
-- **LearningMachine 2**: Detailed description and perhaps a small example.
-
-  .. code-block:: python
-  
-
-
 - ... and so on.
 
 How to Use
@@ -79,8 +71,22 @@ IO:
    print(x.u[0]) # torch.tensor([[2, 3], [3, 4]]) 
    x.freshen() # detach and retain the gradients. Retaining the gradients is essential for implementing backprop with zenkai
 
+State: State allows one to store values for the current learning step
+.. code-block:: python
 
+   from zenkai import State, IO
 
+   x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
+   learning_machine = SimpleLearner()
+   # set the number of iterations for the key (learning_machine, x) to 1
+   state[(learning_machine, x), 'iterations'] = 1
+   my_state = state.mind((learning_machine, x))
+   print(my_state.iterations) # "1"
+   # add a sub_state
+   sub_state = my_state.sub("sub")
+   sub_state.t = 2
+
+LearningMachine: Show how to implement with gradient descent
 .. code-block:: python
 
    from zenkai import LearningMachine, IO, State
@@ -121,23 +127,20 @@ IO:
          return y.out(release)
 
 
-Integration with Other Packages
+Advanced Topics
 ==============================
-If this package is often used in conjunction with other packages or modules in your library, provide guidance here.
+Beyond these core features. Zenkai offer a wide array of other features
 
-- **Other Package/Module**: Describe how `your_package_name` integrates or works alongside this package/module.
-
-Advanced Topics (if applicable)
-==============================
-Dive into any advanced features, configurations, or nuances that users should be aware of when working with this package.
-
-- **Advanced Feature 1**: Detailed description and usage.
+- **StepXHook**: Use to call before of after step\_x is called.
+- **StepHook**: Use to call before of after step is called.
+- **LayerAssessor**: Use to evaluate the layer before or after.
 - ... and so on.
 
-See Also
-=========
-Provide links or references to:
 
-- Related modules or packages in your library.
-- Documentation for deeper dives into certain topics.
-- External resources, tutorials, or articles about this package
+.. See Also
+.. =========
+.. Provide links or references to:
+
+.. - Related modules or packages in your library.
+.. - Documentation for deeper dives into certain topics.
+.. - External resources, tutorials, or articles about this package
