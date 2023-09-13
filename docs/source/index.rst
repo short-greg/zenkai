@@ -40,9 +40,41 @@ Get Developing With Zenkai
     Get in touch to find out more
 
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+===========
+
+.. toctree::
+   :caption: Modules:
+
+   modules/kaku
+   modules/kikai
+   modules/tansaku
+   modules/tako
+   modules/sensei
+   modules/utils
+
+
+:doc:`modules/kaku`
+    Develop a LearningMachine and implement all its components
+
+:doc:`modules/kikai`
+    Modules implementing various types of LearningMachines in Zenkai
+
+:doc:`modules/tansaku`
+    Implement classes for adding exploration in learning
+
+:doc:`modules/tako`
+    Add flexibility to your models by accessing the internals or querying the output
+
+:doc:`modules/sensei`
+    Tools to control how training is done
+
+:doc:`modules/utils`
+    Global utilities in Zenkai
+
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
