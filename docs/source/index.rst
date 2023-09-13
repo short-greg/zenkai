@@ -11,14 +11,33 @@ Zenkai is a framework to extend the internal mechanics and training mechanics fo
 
    This project is under active development.
 
+Get Developing With Zenkai
+===========
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   overview.rst
-   getting_started.rst
-   examples.rst
-   troubleshooting.rst
-   feedback_and_support.rst
+   :caption: Intro:
+
+   intro/overview
+   intro/getting_started
+   intro/examples
+   intro/troubleshooting
+   intro/feedback_and_support
+
+
+:doc:`intro/overview`
+    Understand what Zenkai is and how it can help you
+
+:doc:`intro/getting_started`
+    Get started using Zenkai
+
+:doc:`intro/examples`
+    Several examples of using Zenkai
+
+:doc:`intro/troubleshooting`
+    Solve some common problems
+
+:doc:`intro/feedback_and_support`
+    Get in touch to find out more
 
 
 Indices and tables
