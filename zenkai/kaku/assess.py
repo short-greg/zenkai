@@ -559,7 +559,7 @@ class AssessmentDict(object):
         """Add another assessment to the dict
 
         Args:
-            other (AssessmentDict): _description_
+            other (AssessmentDict)
 
         Returns:
             AssessmentDict: the two assessment dicts added

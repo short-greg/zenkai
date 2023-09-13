@@ -29,7 +29,9 @@ from ..kaku import (
     AccLearner,
     AccStepTheta,
     BatchIdxAccStepTheta,
-    Criterion
+    Criterion,
+    acc_dep,
+    step_dep
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
 
@@ -198,7 +200,9 @@ class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
         assessment = self.learner.assess_y(y_idx, t_idx, self.reduction)
         assessment[self.loss_name].backward()
         self._grad_updater.accumulate(x, state)
+        state[self, 'accumulated'] = True
 
+    @acc_dep('accumulated', False, True)
     def step(self, x: IO, t: typing.Union[IO, None], state: State, batch_idx: Idx = None) -> bool:
         """Advance the optimizer
 
@@ -421,16 +425,17 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
             self._net = module
         else:
             self._net = nn.Sequential(*module)
-        self._objective = criterion
+        self._criterion = criterion
         self._theta_step = GradLoopStepTheta(self, theta_optim_factory, theta_reduction)
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._objective.assess_dict(y, t, reduction_override)
+        assessment = self._criterion.assess_dict(y, t, reduction_override)
         assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
         return assessment
 
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+        state[self, 'accumulated'] = True
         return self._theta_step.accumulate(x, t, state, batch_idx)
 
     def step(
@@ -438,6 +443,7 @@ class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
     ):
         return self._theta_step.step(x, t, state, batch_idx)
 
+    @acc_dep('accumulated', False, True)
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return self._x_step.step_x(x, t, state, batch_idx)
 

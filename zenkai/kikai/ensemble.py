@@ -1,7 +1,6 @@
 # TODO: Add modules for ensemble
 # 1st party
 from abc import abstractmethod
-import typing
 
 # 3rd party
 from torch.nn.functional import one_hot
@@ -15,11 +14,10 @@ from ..kaku import (
     LearningMachine,
     State,
 )
-from ..utils.modules import sign_ste, binary_ste
 
 
 class EnsembleLearner(LearningMachine):
-    """
+    """Base class for A LearningMachine that optimizes over an ensemble of otehr machines
     """
 
     @abstractmethod
@@ -69,7 +67,7 @@ class EnsembleLearnerVoter(nn.Module):
     """
 
     def __init__(self, ensemble_learner: EnsembleLearner):
-        """initializer
+        """Wrap an ensemble_learner within a module
 
         Args:
             ensemble_learner (EnsembleLearner): The learner to wrap
