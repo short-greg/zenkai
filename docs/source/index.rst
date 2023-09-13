@@ -5,11 +5,7 @@
 
 Zenkai - A framework to beyond backpropagation
 ==================================
-Zenkai is a framework to extend the internal mechanics and training mechanics for deep learning machines. It is largely built on top of PyTorch.
-
-.. note::
-
-   This project is under active development.
+Zenkai is a framework to help researchers to test techniques beyond simple backpropagation for deep learning machines and also define more flexible architectures and training mechanics.
 
 Get Developing With Zenkai
 ===========
@@ -41,7 +37,7 @@ Get Developing With Zenkai
     Get in touch to find out more
 
 
-
+Modules
 ===========
 
 .. toctree::
@@ -73,6 +69,22 @@ Get Developing With Zenkai
 
 :doc:`modules/utils`
     Global utilities in Zenkai
+
+Other
+===========
+
+.. toctree::
+   :hidden:
+   :caption: Contribute:
+
+   other/contribute
+
+:doc:`other/contribute`
+    Contribute to Zenkai
+
+.. note::
+
+   This project is under active development.
 
 .. Indices and tables
 .. ==================
