@@ -1,5 +1,5 @@
 ==============
-Package: `your_package_name`
+Package: `Kaku`
 ==============
 
 Introduction
