@@ -1,3 +1,3 @@
 ==============
-Package: `Tansaku`
+Tansaku
 ==============
