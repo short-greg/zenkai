@@ -40,7 +40,7 @@ In addition, some LearningMachines have an accumulate method. This is similar to
 What does it have to offer?
 --------------
 
-Zenkai offers a variety of modules to help you get started in doing . Several “biologically plausible” algorithms have been implemented such as feedback alignment, direct feedback alignment, and target propagation. 
+Zenkai offers a variety of packages with modules to help researchers expand beyond using backpropagation and manipulate the nuts and bolts. Several “biologically plausible” algorithms have been implemented such as feedback alignment, direct feedback alignment, and target propagation. 
 
 Zenkai also gives you the tools you need to develop metaheuristic algorithms for optimization. These tools aim to make it easy to freely implement a variety of such algorithms like particle swarm optimization, genetic algorithms, and more. These are implemented in Pytorch so you can easily use them in tandem with gradient descent.
 

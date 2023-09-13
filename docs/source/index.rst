@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Zenkai - A framework to extend deep learning
+Zenkai - A framework to beyond backpropagation
 ==================================
 Zenkai is a framework to extend the internal mechanics and training mechanics for deep learning machines. It is largely built on top of PyTorch.
 

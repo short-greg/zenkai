@@ -19,6 +19,8 @@ Zenkai consists of several packages to more flexibly define and train deep learn
 **zenkai.sensei**: Package for training a learning machine. Contains modules to flexibly define the training algorithm
 **zenkai.tako**: Tako contains features to more flexibly access the internals of a module. 
 
+Further documentation is available at https://zenkai.readthedocs.io
+
 ## Usage
 
 Zenkai's primary feature is the "LearningMachine" which aims to make defining learning machines flexible. The design is similar to Torch, in that there is a forward method, a parameter update method similar to accGradParameters(), and a backpropagation method similar to updateGradInputs(). So the primary usage will be to implement them.
