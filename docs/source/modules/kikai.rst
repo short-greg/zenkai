@@ -24,7 +24,7 @@ Kikai:
 
 Key Features and Functions
 ==========================
-Kikai offers implements LearningMachines.
+Kikai implements  LearningMachines.
 
 - **LearningMachine 1**: A learner that does not update
   

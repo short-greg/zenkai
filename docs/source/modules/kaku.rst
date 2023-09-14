@@ -7,7 +7,7 @@ Introduction
 Kaku defines the core classes for the framework, essentially everything to get started using learning machines.
 
 Main Contents
-========
+==========================
 Kaku:
 
 - :mod:`LearningMachine` - The core class for training . This inherits from nn.Module
@@ -109,8 +109,7 @@ LearningMachine: Show how to implement with gradient descent
       # forward will be called if it hasn't already
       @forward_dep('y', exec=True)
       def step(self, x: IO, t: IO, state: State):
-         # implement a method to update the parameters
-         self.optim.zero_grad()
+         self.optim.zero_grad() # implement a method to update the parameters
          self.assess_y(state[(self, x), 'y'], t)['loss'].backward()
          self.optim.step()
 

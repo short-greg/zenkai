@@ -387,12 +387,12 @@ class Network(nn.Module):
         in_: typing.Union[ID, typing.List[str]],
         by,
     ):
-        """_summary_
+        """Instantiate a wrapper for a probe
 
         Args:
             out (typing.Union[Process, ProcessSet]): _description_
             in_ (typing.Union[ID, typing.List[str]]): _description_
-            by (_type_): _description_
+            by (typing.Dict[str, ]): Define the input
         """
         self._out = out
         self._in = in_
