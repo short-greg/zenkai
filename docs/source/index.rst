@@ -27,14 +27,14 @@ Get Developing With Zenkai
 :doc:`intro/getting_started`
     Get started using Zenkai
 
-:doc:`intro/examples`
-    Several examples of using Zenkai
+.. :doc:`intro/examples`
+..     Several examples of using Zenkai
 
-:doc:`intro/troubleshooting`
-    Solve some common problems
+.. :doc:`intro/troubleshooting`
+..     Solve some common problems
 
-:doc:`intro/feedback_and_support`
-    Get in touch to find out more
+.. :doc:`intro/feedback_and_support`
+..     Get in touch to find out more
 
 
 Modules

@@ -108,22 +108,24 @@ class Clamp(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, x, lower: float=0, upper: float=1):
+    def forward(ctx, x, lower: float=0, upper: float=1, backward_lower: float=-1, backward_upper: float=1):
         """
         Forward pass of the Binary Step function.
         """
         ctx.save_for_backward(x)
         ctx.lower = lower
         ctx.upper = upper
+        cx.backward_lower = backward_lower
+        ctx.backward_upper = backward_upper
         return torch.clamp(x, lower, upper)
 
-    @staticmethod
+    @staticmethodt
     def backward(ctx, grad_output):
         """
         Backward pass of the Binary Step function using the Straight-Through Estimator.
         """
         grad_input = grad_output.clone()
-        return grad_input.clamp(-1, 1), None, None
+        return grad_input.clamp(ctx.backward_lower, ctx.backward_upper), None, None, None, None
 
 
 class FreezeDropout(nn.Module):
@@ -160,32 +162,3 @@ def binary_ste(x: torch.Tensor) -> torch.Tensor:
 
 def sign_ste(x: torch.Tensor) -> torch.Tensor:
     return SignSTE.apply(x)
-
-
-# class BatchNorm1DS(nn.BatchNorm1d):
-
-#     def forward(self, x: torch.Tensor, update_stats: bool=True):
-
-#         if update_stats or not self.training:
-#             normalized = super().forward(x)
-#             print(normalized.mean(dim=0), normalized.std(dim=0))
-#             return normalized
-
-#         normalized = (x - x.mean(dim=0, keepdim=True)) / torch.sqrt(x.var(dim=0, keepdim=True) + self.eps)
-#         if self.affine:
-#             return normalized  * self.weight[None] + self.bias[None]
-#         return normalized
-
-
-# Rename
-# class KLDivLossWithLogits(nn.Module):
-
-#     def __init__(self, reduction: str='batchmean', class_target: bool=True):
-#         super().__init__()
-#         self._kl_div = nn.KLDivLoss(reduction=reduction)
-#         self._class_target = class_target
-
-#     def forward(self, x: torch.Tensor, t: torch.Tensor):
-#         if self._class_target:
-#             t = torch.nn.functional.one_hot(t)
-#         return self._kl_div(nn_func.log_softmax(x, dim=1), t)
