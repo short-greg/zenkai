@@ -23,7 +23,7 @@ class Trainer(Teacher):
         record: Record = None,
         classroom: Classroom = None,
         window: int = 30,
-        n_epochs: int=1
+        n_epochs: int=None
     ):
         """Instantiate a Trainer for the learner
 
@@ -50,16 +50,13 @@ class Trainer(Teacher):
     def teach(
         self,
         override_learner: typing.Union[Learner, str] = None,
-        override_material: typing.Union[Dataset, str] = None,
-        epoch: int = None,
+        override_material: typing.Union[Dataset, str] = None
     ):
         """Teach the learner
 
         Args:
             override_learner (typing.Union[Learner, str], optional): The learner if you want to override it. Defaults to None.
             override_material (typing.Union[Dataset, str], optional): The material if you want to override it. Defaults to None.
-            epoch (int, optional): The current epoch. Defaults to None.
-            n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
         self.progress.status = TeachingStatus.START_EPOCH
         learner = self._classroom.choose_student(override_learner, self.learner)
@@ -77,10 +74,11 @@ class Trainer(Teacher):
                 self._assistants.assist(self.name, False)
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
-                if epoch is not None:
+                n_epochs = self.progress.n_epochs
+                if self.progress.cur_epoch is not None:
                     aggregation[
                         "Epoch"
-                    ] = f'{epoch}/{"?" if self.n_epochs is None else self.n_epochs}'
+                    ] = f'{self.progress.cur_epoch}/{"?" if n_epochs is None else n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
                 self.progress.adv()
@@ -128,15 +126,12 @@ class Validator(Teacher):
         self,
         override_learner: typing.Union[Learner, str] = None,
         override_material: typing.Union[Dataset, str] = None,
-        epoch: int = None
     ):
         """Teach the learner
 
         Args:
             override_learner (typing.Union[Learner, str], optional): The learner if you want to override it. Defaults to None.
             override_material (typing.Union[Dataset, str], optional): The material if you want to override it. Defaults to None.
-            epoch (int, optional): The current epoch. Defaults to None.
-            n_epochs (int, optional): The number of epochs to run. Defaults to None.
         """
         self.progress.status = TeachingStatus.START_EPOCH
         learner = self._classroom.choose_student(
@@ -157,10 +152,11 @@ class Validator(Teacher):
                 self._assistants.assist(self.name, False)
                 results.add(assessment_dict.numpy())
                 aggregation = results.aggregate()
-                if epoch is not None:
+                n_epochs = self.progress.n_epochs
+                if self.progress.cur_epoch is not None:
                     aggregation[
                         "Epoch"
-                    ] = f'{epoch}/{"?" if self.n_epochs is None else self.n_epochs}'
+                    ] = f'{self.progress.cur_epoch}/{"?" if n_epochs is None else n_epochs}'
                 pbar.set_postfix(aggregation)
                 pbar.update(1)
                 self.progress.adv()
@@ -210,9 +206,9 @@ def validation_train(
     validator = Validator(validator_name, learner, validation_material, record=record, n_epochs=n_epochs)
     if validation_assistants is not None:
         validator.register(validation_assistants)
-    for i in range(n_epochs):
-        trainer.teach(epoch=i)
-        validator.teach(epoch=i)
+    for i in range(trainer.n_epochs):
+        trainer.teach()
+        validator.teach()
     return record
 
 
@@ -256,14 +252,14 @@ def train(
     if testing_material:
         if use_io:
             testing_material = IODecorator(testing_material)
-        tester = Validator(tester_name, learner, testing_material, record=record, n_epochs=1)
+        tester = Validator(tester_name, learner, testing_material, record=record)
         if testing_assistants is not None:
             tester.register(testing_assistants)
     else:
         tester = None
 
-    for i in range(n_epochs):
-        trainer.teach(epoch=i)
+    for _ in range(trainer.n_epochs):
+        trainer.teach()
     if tester is not None:
-        tester.teach(epoch=0)
+        tester.teach()
     return record

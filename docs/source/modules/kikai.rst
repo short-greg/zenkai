@@ -10,16 +10,16 @@ Modules
 ========
 Kikai:
 
-- :mod:`grad` - LearningMachines based on gradient descent
-- :mod:`feedback_alignment` - LearningMachines based on feedback alignment
-- :mod:`ensemble` - LearningMachines using ensemble
-- :mod:`hill` - LearningMachines using hill climbing
-- :mod:`iterable` - LearningMachine wrappers that implement iteration
-- :mod:`least_squares` - LearningMachines using least squares for parameter or x updates
-- :mod:`post` - LearningMachines wrappers that postpone step() and add the accumulate() method
-- :mod:`reversible` - LearningMachines that can be reversed
-- :mod:`scikit` - LearningMachines for wrapping Scikit-Learn estimators
-- :mod:`target_prop` - A base class for implementing TargetPropagation
+- :mod:`GradLearner` - LearningMachines based on gradient descent
+- :mod:`FALearner/DFALearner` - LearningMachines based on feedback alignment
+- :mod:`EnsembleLearner` - Base class for an ensemble module
+- :mod:`HillClimbStepX` - Implements StepX using a hill-climbing algorithm
+- :mod:`IterStepX/IterStepTheta` - Wrap learning machines so that they will be iterated over 
+- :mod:`LeastSquaresLearner` - Uses least squares for parameter or x updates
+- :mod:`StackPostStepTheta` - Wraps learning machine so it postpones step() and adds accumulate(). step_x must not depend on step
+- :mod:`ReversibleMachine` - Wraps a reversible module
+- :mod:`ScikitLearner` - Wraps a Scikit-Learn estimator
+- :mod:`TagetPropLearner` - A base class for implementing TargetPropagation
 - ... and so on.
 
 Key Features and Functions
