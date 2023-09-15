@@ -6,7 +6,7 @@ Introduction
 ============
 Tako makes it possible to access the internals of a network as well as the intermediate outputs.
 
-Key Features and Functions
+Examples of Tako
 ==========================
 Takos loops through each layer of a neural network. Each layer is wrapped in a "Layer" and returned.
 
@@ -64,4 +64,3 @@ Takos loops through each layer of a neural network. Each layer is wrapped in a "
      filter_ = NameFilter(["Linear1", "Linear2"])
      # contains layer1 and layer2
      result = [filter_filter(linear_net)]
-
