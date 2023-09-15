@@ -41,5 +41,4 @@ The utilities are used by the core modules, Tansaku, Kikai to make it easier to 
      # this will detach it and set x to retain grads
      # this is necessary in the LearningMachine framework to prevent
      # grads from being backpropagated
-     
      freshen(x)
