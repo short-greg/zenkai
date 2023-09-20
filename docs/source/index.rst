@@ -16,9 +16,9 @@ Get Developing With Zenkai
 
    intro/overview
    intro/getting_started
-   intro/examples
-   intro/troubleshooting
-   intro/feedback_and_support
+..    intro/examples
+..    intro/troubleshooting
+..    intro/feedback_and_support
 
 
 :doc:`intro/overview`
@@ -48,8 +48,9 @@ Modules
    modules/kikai
    modules/tansaku
    modules/tako
-   modules/sensei
    modules/utils
+..    modules/sensei
+
 
 
 :doc:`modules/kaku`
@@ -64,8 +65,8 @@ Modules
 :doc:`modules/tako`
     Add flexibility to your models by accessing the internals or querying the output
 
-:doc:`modules/sensei`
-    Tools to control how training is done
+.. :doc:`modules/sensei`
+..     Tools to control how training is done
 
 :doc:`modules/utils`
     Global utilities in Zenkai

@@ -16,7 +16,6 @@ packages = [
     {include="zenkai"},
     {include="zenkai/tako"},
     {include="zenkai/tansaku"},
-    {include="zenkai/sensei"},
     {include="zenkai/utils"},
     {include="zenkai/kikai"}
 ]

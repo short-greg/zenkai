@@ -115,11 +115,11 @@ class Clamp(torch.autograd.Function):
         ctx.save_for_backward(x)
         ctx.lower = lower
         ctx.upper = upper
-        cx.backward_lower = backward_lower
+        ctx.backward_lower = backward_lower
         ctx.backward_upper = backward_upper
         return torch.clamp(x, lower, upper)
 
-    @staticmethodt
+    @staticmethod
     def backward(ctx, grad_output):
         """
         Backward pass of the Binary Step function using the Straight-Through Estimator.
