@@ -63,6 +63,39 @@ class TestState:
         state[(self, io), 'x'] = 2
         assert ((self, io), 'x') in state
         
+    def test_data_is_in_state_after_storing_and_keeping(self):
+
+        io = IO()
+        state = core.State()
+        state.store((self, io), 'x', 2, keep=True)
+        assert ((self, io), 'x') in state
+
+    def test_data_is_in_state_after_storing_and_spawning(self):
+
+        io = IO()
+        state = core.State()
+        state.store((self, io), 'x', 2, keep=True)
+        state2 = state.spawn()
+        assert ((self, io), 'x') in state2
+
+    def test_data_is_in_state_after_storing_with_idx_and_spawning(self):
+
+        io = IO()
+        state = core.State()
+        state[(self, io), 'x'] = 2
+        state.keep((self, io), 'x', True)
+        state2 = state.spawn()
+        assert ((self, io), 'x') in state2
+
+    def test_data_is_not_in_state_after_storing_with_idx_and_spawning(self):
+
+        io = IO()
+        state = core.State()
+        state[(self, io), 'x'] = 2
+        state.keep((self, io), 'x', False)
+        state2 = state.spawn()
+        assert ((self, io), 'x') not in state2
+
     def test_assessment_log_logs_assessment(self):
 
         obj = 'x'

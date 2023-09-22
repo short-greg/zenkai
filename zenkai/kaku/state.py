@@ -76,6 +76,7 @@ class State(object):
         """
         super().__init__()
         self._data = {}
+        self._keep = {}
         self._subs = {}
         self._logs = AssessmentLog()
 
@@ -92,7 +93,7 @@ class State(object):
             return tuple(id(el) for el in obj)
         return id(obj)
 
-    def store(self, obj: IDable, key: typing.Hashable, value):
+    def store(self, obj: IDable, key: typing.Hashable, value, keep: bool=False) -> typing.Any:
         """Store data in the state
 
         Args:
@@ -103,8 +104,10 @@ class State(object):
         Returns:
             The value that was stored
         """
-        obj_data, _ = self._get_obj(obj)
+        obj_data, keep, _ = self._get_obj(obj)
+        
         obj_data[key] = value
+        keep[key] = keep
         return value
 
     def get(self, obj: IDable, key: typing.Hashable, default=None) -> typing.Any:
@@ -119,15 +122,16 @@ class State(object):
             typing.Any: The value stored in the object
         """
 
-        obj_id = self.id(obj)
+        # obj_id = self.id(obj)
+        obj_data, _, _ = self._get_obj(obj)
         try:
             if isinstance(key, typing.List):
                 result = []
                 for key_i in key:
-                    result.append(self._data[obj_id][key_i])
+                    result.append(obj_data[key_i])
                 return result
             else:
-                return self._data[obj_id][key]
+                return obj_data[key]
         except KeyError:
             return default
 
@@ -169,16 +173,20 @@ class State(object):
         """
         obj, key = index
 
-        obj_data, _ = self._get_obj(obj)
+        obj_data, _, _ = self._get_obj(obj)
         obj_data[key] = value
         return value
 
     def _get_obj(self, obj, to_add: bool = True):
         id = self.id(obj)
+
         if to_add and id not in self._data:
             self._data[id] = {}
             self._subs[id] = {}
-        return self._data[id], self._subs[id]
+            self._keep[id] = {}
+        else:
+            print('Not adding')
+        return self._data[id], self._keep[id], self._subs[id]
 
     def add_sub(self, obj: IDable, key: str, ignore_exists: bool = True) -> "State":
         """Add a 'sub state' specified by key
@@ -193,7 +201,7 @@ class State(object):
         Returns:
             State: The substate created
         """
-        _, sub_data = self._get_obj(obj)
+        _, _, sub_data = self._get_obj(obj)
 
         if key in sub_data:
             raise StateKeyError(
@@ -229,13 +237,18 @@ class State(object):
         Returns:
             State: The substate
         """
-        _, sub_data = self._get_obj(obj, to_add)
+        _, _, sub_data = self._get_obj(obj, to_add)
         if to_add and key not in sub_data:
             state = sub_data[key] = State()
             return state
         return sub_data[key]
+    
+    def keep(self, obj: IDable, key: str, keep: bool=True):
+        
+        id = self.id(obj)
+        self._keep[id][key] = keep
 
-    def clear(self, obj: IDable):
+    def clear(self, obj: IDable, clear_keep: bool=False):
         """Remove values in the state for an object
 
         Args:
@@ -245,9 +258,23 @@ class State(object):
         id = self.id(obj)
             
         if id in self._data:
-            self._data[id].clear()
+            self._data[id] = {
+                k: v
+                for k, v in self._data[id].items() if (not clear_keep and not self._keep[id])
+            }
         if id in self._subs:
-            self._subs[id].clear()
+            if clear_keep:
+                self._subs[id].clear()
+            else:
+                self._subs[id] = {
+                    k: v.spawn()
+                    for k, v in self._subs[id].items() if (not clear_keep and not self._keep[id])
+                }
+        if id in self._keep and clear_keep:
+            self._keep[id] = {
+                k: v
+                for k, v in self._keep[id].items() if (not clear_keep and not v)
+            }
 
     def sub_iter(self, obj) -> typing.Iterator[typing.Tuple[str, "State"]]:
         """Iterator over all sub states
@@ -310,6 +337,45 @@ class State(object):
     @property
     def logs(self) -> AssessmentLog:
         return self._logs
+    
+    def spawn(self, spawn_logs: bool=False) -> 'State':
+        """_summary_
+
+        Args:
+            spawn_logs (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            State: _description_
+        """
+
+        subs = {}
+        data = {}
+        keep = {}
+
+        # Loop over all objects
+        for k, v in self._data.items():
+            # loop over all keys
+            for k2, v2 in v.items():
+                # add the data if it is supposed to be kept
+                if self._keep[k][k2]:
+                    if k not in data:
+                        data[k] = {}
+                        keep[k] = {}
+                    data[k][k2] = self._data[k][k2]
+                    keep[k][k2] = k
+        for k, v in self._subs.items():
+            cur_sub = {}
+            for k2, v2 in v.items():
+                cur_sub[k2] = v2.spawn()
+            subs[k] = cur_sub
+        
+        state = State()
+        state._subs = subs
+        state._data = {**data}
+        state._keep = keep
+        if spawn_logs:
+            state._logs = self._logs
+        return state
 
 
 class MyState(object):
@@ -321,7 +387,7 @@ class MyState(object):
     my_state.t = 1
     """
 
-    def __init__(self, obj, data: typing.Dict, subs: typing.Dict):
+    def __init__(self, obj, data: typing.Dict, keep: typing.Dict, subs: typing.Dict):
         """initializer
 
         Args:
@@ -330,6 +396,7 @@ class MyState(object):
         """
         object.__setattr__(self, "_obj", obj)
         object.__setattr__(self, "_data", data)
+        object.__setattr__(self, "_keep", keep)
         object.__setattr__(self, "_subs", subs)
 
     @property
@@ -371,7 +438,7 @@ class MyState(object):
             self._subs[key] = State()
         return self._subs[key].mine(self._obj)
 
-    def get(self, key: str, default=None) -> typing.Any:
+    def get(self, key: str, default=None, keep: bool=False) -> typing.Any:
         """Get the value at a key
 
         Args:
@@ -381,7 +448,24 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
+        if keep:
+            return self._keep.get(key, default)
         return self._data.get(key, default)
+
+    def store(self, key: str, value, keep: bool=False) -> typing.Any:
+        """Get the value at a key
+
+        Args:
+            key (str): The key to retrieve for
+            default (optional): The default value if the key does not have a value. Defaults to None.
+
+        Returns:
+            typing.Any: The value at the key or the default
+        """
+        if keep:
+            self._keep[key] = value
+        else:
+            self._data[key] = value
 
     def __getitem__(self, key: str) -> typing.Any:
         """Get the value at a key
