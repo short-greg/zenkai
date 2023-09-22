@@ -339,13 +339,14 @@ class State(object):
         return self._logs
     
     def spawn(self, spawn_logs: bool=False) -> 'State':
-        """_summary_
+        """Spawn the state to be used for another time step or another instance of the machine
+        All data that is not to be kept will be cleared
 
         Args:
-            spawn_logs (bool, optional): _description_. Defaults to False.
+            spawn_logs (bool, optional): Whether to pass on the logs as well. Defaults to False.
 
         Returns:
-            State: _description_
+            State: The spawned state
         """
 
         subs = {}
