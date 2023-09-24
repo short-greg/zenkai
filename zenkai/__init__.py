@@ -3,5 +3,5 @@
 __version__ = "0.0.0"
 
 # from .perceptron import perceptron
-from . import kikai, tako, tansaku, utils
+from . import kikai, tansaku, utils
 from .kaku import *
