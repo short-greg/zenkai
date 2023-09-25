@@ -47,9 +47,9 @@ Modules
    modules/kaku
    modules/kikai
    modules/tansaku
-   modules/tako
    modules/utils
 ..    modules/sensei
+..    modules/tako
 
 
 

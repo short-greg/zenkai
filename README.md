@@ -16,8 +16,8 @@ Zenkai consists of several packages to more flexibly define and train deep learn
 **zenkai.utils**: Utils contains a variety of utility functions that are . For example, utilities for ensemble learning and getting retrieving model parameters.
 **zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
 **zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
-**zenkai.sensei**: Package for training a learning machine. Contains modules to flexibly define the training algorithm
-**zenkai.tako**: Tako contains features to more flexibly access the internals of a module. 
+<!-- **zenkai.sensei**: Package for training a learning machine. Contains modules to flexibly define the training algorithm
+**zenkai.tako**: Tako contains features to more flexibly access the internals of a module.  -->
 
 Further documentation is available at https://zenkai.readthedocs.io
 
