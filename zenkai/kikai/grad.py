@@ -26,7 +26,7 @@ from ..kaku import (
     AssessmentDict,
     OptimFactory,
     itadaki,
-    AccLearner,
+    AccLearningMachine,
     AccStepTheta,
     BatchIdxAccStepTheta,
     Criterion,
@@ -334,7 +334,7 @@ class ActivationLearner(LearningMachine):
         return IO(y.f - y.f.grad, detach=True)
 
 
-class GradLearner(AccLearner):
+class GradLearner(AccLearningMachine):
     """Standard gradient learner"""
 
     Y_NAME = "y"
@@ -388,7 +388,7 @@ class GradLearner(AccLearner):
         return self._theta_step.step(x, t, state)
 
 
-class GradLoopLearner(AccLearner, BatchIdxStepX, BatchIdxAccStepTheta):
+class GradLoopLearner(AccLearningMachine, BatchIdxStepX, BatchIdxAccStepTheta):
     """Gradient learner designed for multiple loops"""
 
     LOSS_NAME = "loss"

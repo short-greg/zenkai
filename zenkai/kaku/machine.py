@@ -551,7 +551,7 @@ class BatchIdxAccStepTheta(AccStepTheta):
         pass
 
 
-class AccLearner(LearningMachine, AccStepTheta):
+class AccLearningMachine(LearningMachine, AccStepTheta):
     """
     LearningMachine that includes the accumulate method
     """
@@ -588,7 +588,7 @@ def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
     def inner(func):
 
         @wraps(func)
-        def _(self: AccLearner, x: IO, t: IO, state: State, *args, **kwargs):
+        def _(self: AccLearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
             if x_key:
                 key = (self, x)

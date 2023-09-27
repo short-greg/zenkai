@@ -5,7 +5,7 @@ import typing
 
 from ..kaku import (
     IO, State, LearningMachine, AssessmentDict,
-    OptimFactory, StepX, Criterion, ThLoss, AccLearner
+    OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine
 )
 from .grad import GradUpdater
 
@@ -118,7 +118,7 @@ class BStepX(StepX):
         return IO(x.f - output_error, detach=True)
 
 
-class FALearner(AccLearner):
+class FALearner(AccLearningMachine):
     """Learner for implementing feedback alignment
     """
 
@@ -209,7 +209,7 @@ class FALearner(AccLearner):
         return self._grad_updater.update(x, state, self.net)
 
 
-class DFALearner(AccLearner):
+class DFALearner(AccLearningMachine):
     """Learner for implementing feedback alignment.
     """
 

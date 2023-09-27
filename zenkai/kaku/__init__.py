@@ -57,7 +57,7 @@ from .machine import (
     StepLoop,
     StdLearningMachine,
     NullStepTheta,
-    AccLearner,
+    AccLearningMachine,
     AccStepTheta,
     BatchIdxAccStepTheta,
     NullStepX,
