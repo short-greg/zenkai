@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from .machine import IO, State, StepXHook, StepHook, LearningMachine
 from .state import State
 from .io import IO
-from .assess import AssessmentDict
+from .assess import Assessment
 
 
 class LayerAssessor(ABC):
@@ -23,25 +23,25 @@ class LayerAssessor(ABC):
         pass
 
     @abstractmethod
-    def assessment(self, state: State) -> AssessmentDict:
+    def assessment(self, state: State) -> Assessment:
         pass
 
 
-def union_pre_and_post(pre: typing.Union[AssessmentDict, None]=None, post: typing.Union[AssessmentDict, None]=None) -> AssessmentDict:
-    """
-    Combine pre and post assessments
+# def union_pre_and_post(pre: typing.Union[Assessment, None]=None, post: typing.Union[Assessment, None]=None) -> Assessment:
+#     """
+#     Combine pre and post assessments
 
-    Returns:
-        AssessmentDict: the unified assessment dict
-    """
-    if pre is None:
-        return post
-    if post is None:
-        return pre
-    if pre is None and post is None:
-        return AssessmentDict()
+#     Returns:
+#         AssessmentDict: the unified assessment dict
+#     """
+#     if pre is None:
+#         return post
+#     if post is None:
+#         return pre
+#     if pre is None and post is None:
+#         return Assessment()
     
-    return pre.union(post)
+#     return {'pre': pre, 'post': post}
 
 
 class StepAssessHook(StepXHook, StepHook):
@@ -120,8 +120,8 @@ class StepXLayerAssessor(LayerAssessor):
         """
         state[self, 'post'] = self._learning_machine.assess(x, t).prepend('Post')
     
-    def assessment(self, state: State) -> AssessmentDict:
-        return union_pre_and_post(state.get(self, 'pre'), state.get(self, 'post'))
+    def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
+        return state.get(self, 'pre'), state.get(self, 'post')
 
 
 class StepFullLayerAssessor(LayerAssessor):
@@ -164,13 +164,13 @@ class StepFullLayerAssessor(LayerAssessor):
         """
         state[self, 'post'] = self._outgoing.assess(self._learning_machine(x), t).prepend('Post')
     
-    def assessment(self, state: State) -> AssessmentDict:
+    def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
         """Retrieve the assessment
 
         Args:
             state (State): The state to retrieve the assessemnt from
 
         Returns:
-            AssessmentDict: The assessment
+            typing.Tuple[Assessment, Assessment]: The pre and post assessments
         """
-        return union_pre_and_post(state.get(self, 'pre'), state.get(self, 'post'))
+        return state.get(self, 'pre'), state.get(self, 'post')

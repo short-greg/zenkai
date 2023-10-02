@@ -6,7 +6,7 @@ from collections import deque
 
 # local
 from .io import IO
-from .assess import Assessment, AssessmentDict
+from .assess import Assessment
 
 
 class IDable:
@@ -28,42 +28,46 @@ class AssessmentLog(object):
         """Instantiate the AssessmentLog
         """
 
-        self._log: typing.Dict[typing.Any, typing.Dict[str, AssessmentDict]] = {}
+        self._log: typing.Dict[typing.Any, typing.Dict[str, typing.Dict[str, Assessment]]] = {}
 
-    def update(self, key, name: str, assessemnt_dict: AssessmentDict, replace: bool=False, to_cpu: bool=True):
-        """Update the AssessmentLog with a new AssessmentDict. detach() will automatically be called to prevent storing grads
+    def update(self, key, obj_name: str, assessment_name: str, assessment: Assessment, replace: bool=False, to_cpu: bool=True):
+        """Update the AssessmentLog with a new Assessment. detach() will automatically be called to prevent storing grads
 
         Args:
             key : The unique identifier for the layer
             name (str): The name of the layer/operation. Can also include time step info etc
-            assessemnt_dict (AssessmentDict): The assessment dict to update with
+            assessment (Assessment): The assessment dict to update with
             replace (bool, optional): Whether to replace the current assessment dict for the key/name. Defaults to False.
             to_cpu (bool): Whether to convert to cpu or not
         """
-        assessemnt_dict = assessemnt_dict.detach()
+        assessment = assessment.detach()
         if to_cpu:
-            assessemnt_dict = assessemnt_dict.cpu()
+            assessment = assessment.cpu()
 
         if key not in self._log:
             self._log[key] = {}
-        
-        if name not in self._log[key] or replace:
-            self._log[key][name] = assessemnt_dict
+        if isinstance(assessment, typing.Dict):
+            cur = assessment
+        else:        
+            cur = {assessment_name: assessment}
+        if obj_name not in self._log[key] or replace:
+            self._log[key][obj_name] = cur
         else:
-            self._log[key][name].union(assessemnt_dict)
+            self._log[key][obj_name].update(cur)
     
-    def as_assessment_dict(self) -> AssessmentDict:
+    def as_assessment_dict(self) -> typing.Dict[str, Assessment]:
         """
 
         Returns:
-            AssessmentDict: The assessment log converted to an assessmentdict
+            typing.Dict[str, Assessment]: The assessment log converted to a dictionary of assessments
         """
 
-        result = AssessmentDict()
+        result = {}
         for key, val in self._log.items():
 
             for key2, val2 in val.items():
-                result = result.union(val2.prepend(key2 + "_"))
+                cur = {f'{key2}_{name}': assessment for name, assessment in val2.items()}
+                result.update(cur)
         return result
 
 
@@ -310,17 +314,17 @@ class State(object):
         id = self.id(obj)
         return id in self._data and key in self._data[id]
     
-    def log_assessment_dict(self, obj: IDable, obj_name: str, assessment_dict: AssessmentDict):
-        """Log an assessment
+    # def log_assessment_dict(self, obj: IDable, obj_name: str, assessment_dict: Assessement):
+    #     """Log an assessment
 
-        Args:
-            obj: The object to log for
-            obj_name: The name of the object to log for (So it is clear who it is coming from)
-            assessment_dict (AssessmentDict): the values to log
-        """
-        key = self.id(obj)
+    #     Args:
+    #         obj: The object to log for
+    #         obj_name: The name of the object to log for (So it is clear who it is coming from)
+    #         assessment_dict (Assessment): the values to log
+    #     """
+    #     key = self.id(obj)
         
-        self._logs.update(key, obj_name, assessment_dict)
+    #     self._logs.update(key, obj_name, assessment_dict)
 
     def log_assessment(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, log_name: str, assessment: Assessment, update: bool=True):
         """Log an assessment
@@ -328,11 +332,11 @@ class State(object):
         Args:
             obj: The object to log for
             obj_name: The name of the object to log for (So it is clear who it is coming from)
-            assessment_dict (AssessmentDict): the values to log
+            assessment (Assessment): the values to log
         """
 
         key = self.id(obj)
-        self._logs.update(key, obj_name, AssessmentDict(**{log_name: assessment}))
+        self._logs.update(key, obj_name, log_name, assessment)
 
     @property
     def logs(self) -> AssessmentLog:

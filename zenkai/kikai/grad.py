@@ -23,7 +23,7 @@ from ..kaku import (
     StepTheta,
     StepX,
     idx_io,
-    AssessmentDict,
+    Assessment,
     OptimFactory,
     itadaki,
     AccLearningMachine,
@@ -33,7 +33,7 @@ from ..kaku import (
     acc_dep,
     step_dep
 )
-from ..utils import get_model_grads, set_model_grads, get_model_parameters
+from ..utils import get_model_grads, set_model_grads, get_model_parameters, Null
 
 
 class GradUpdater(object):
@@ -134,7 +134,7 @@ class GradStepTheta(AccStepTheta):
             y = self.learner(x, release=False)
         self.learner.zero_grad()
         assessment = self.learner.assess_y(y, t, self.reduction)
-        assessment.backward("loss")
+        assessment.backward()
         self._grad_updater.accumulate(x, state)
     
     def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
@@ -198,7 +198,7 @@ class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
         y_idx = self.learner(x_idx, state.sub(self, "step"), release=False)
 
         assessment = self.learner.assess_y(y_idx, t_idx, self.reduction)
-        assessment[self.loss_name].backward()
+        assessment.backward()
         self._grad_updater.accumulate(x, state)
         state[self, 'accumulated'] = True
 
@@ -229,6 +229,8 @@ class GradStepX(StepX):
         x = x.f
         if x.grad is None:
             raise RuntimeError(f"Grad has not been set. Must backpropagate first")
+        
+
         grad = x.grad if self.x_lr is None else self.x_lr * x.grad
         x = x - grad
         x.grad = None
@@ -260,7 +262,8 @@ class GradLoopStepX(BatchIdxStepX):
             loss_name (str, optional): Name of the loss. Defaults to 'loss'.
         """
         super().__init__()
-        self.learner = learner
+        
+        self._learner = learner
         self.optim_factory = optim_factory
         self.reduction = reduction
         self.loss_name = loss_name
@@ -288,50 +291,12 @@ class GradLoopStepX(BatchIdxStepX):
         x = idx_io(x, batch_idx)
         t = idx_io(t, batch_idx)
         x_state.optim.zero_grad()
-        y = self.learner(x, release=False)
-        assessment = self.learner.assess_y(y, t, self.reduction)
-        assessment.backward(self.loss_name)
+
+        y = self._learner(x, release=False)
+        assessment = self._learner.assess_y(y, t, self.reduction)
+        assessment.backward()
         x_state.optim.step()
         return x
-
-
-class ActivationLearner(LearningMachine):
-    """
-    "learner" to use for activations (or machines without tunable parameters)
-    """
-
-    def __init__(
-        self, activation: typing.Union[str, nn.Module], 
-        criterion: typing.Union[str, Criterion]='mse'
-    ):
-        """Instantiate the ActivationLearner. Will use the gradient on the backward pass
-
-        Args:
-            activation (typing.Union[str, nn.Module]): The activation to use
-            criterion (typing.Union[str, Criterion], optional): The objective to optimize for step_x. Defaults to 'mse'.
-        """
-        super().__init__()
-        self.activation = module_factory(activation)
-        if isinstance(criterion, str):
-            criterion = Criterion(criterion)
-        self.criterion = criterion
-
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-
-        x.freshen() 
-        y = state[self, x, 'y'] = IO(self.activation(x.f))
-        return y.out(release)
-    
-    def step(self, x: IO, t: IO, state: State):
-        pass
-
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        
-        y = state.get(self, x, 'y')
-        if y is None:
-            y = self(y, state, release=False)
-        self.criterion(y, t).backward()
-        return IO(y.f - y.f.grad, detach=True)
 
 
 class GradLearner(AccLearningMachine):
@@ -341,11 +306,14 @@ class GradLearner(AccLearningMachine):
 
     def __init__(
         self,
-        module: typing.Union[nn.Module, typing.List[nn.Module]],
+        module: typing.Union[nn.Module, typing.List[nn.Module], None],
         criterion: Criterion,
         optim_factory: OptimFactory=None,
-        theta_reduction: str = "mean",
-        x_lr: float=None
+        learn_theta: bool=True,
+        reduction: str = "mean",
+        x_lr: float=None,
+        step_dep: bool=True,
+
     ):
         """Standard gradient learner
 
@@ -354,26 +322,44 @@ class GradLearner(AccLearningMachine):
                 Either a single module or list of modules to execut
             loss (ThLoss): The loss to evaluate with
             optim_factory (OptimFactory): The optimizer to use
-            theta_reduction (str, optional): The reduction to use for the loss to optimize theta. 
+            learn_theta (bool): Whether to update the parameters of theta
+            reduction (str, optional): The reduction to use for the loss to optimize theta. 
               Defaults to "mean".
+            step_dep (bool, optional): Whether step_x is dependent on step. If False, GradLoopStepX will
+             be used otherwise
+
         """
         super().__init__()
         if isinstance(module, nn.Module):
             self._net = module
+        elif module is None:
+            self._net = Null()
         else:
             self._net = nn.Sequential(*module)
+
+        if module is None and learn_theta is True:
+            raise ValueError('Argument learn_theta cannot be true if module is set to None')
+        if learn_theta is False and step_dep is True:
+            raise ValueError('Arument learn_theta cannot be false if step_dep is true')
         self._criterion = criterion
         if optim_factory is None:
             optim_factory = itadaki.null()
-        
-        self._theta_step = GradStepTheta(self, optim_factory, theta_reduction)
-        self._x_step = GradStepX(x_lr)
+        if learn_theta:
+            self._theta_step = GradStepTheta(self, optim_factory, reduction)
+        else:
+            self._theta_step = NullStepTheta()
+        if step_dep:
+            self._x_step = GradStepX(x_lr)
+        else:
+            self._x_step = GradLoopStepX(self, optim_factory, reduction)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._criterion.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        assessment = self._criterion.assess(y, t, reduction_override)
         return assessment
 
     def accumulate(self, x: IO, t: IO, state: State):
+        if self._net is None:
+            return
         return self._theta_step.accumulate(x, t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
@@ -429,10 +415,8 @@ class GradLoopLearner(AccLearningMachine, BatchIdxStepX, BatchIdxAccStepTheta):
         self._theta_step = GradLoopStepTheta(self, theta_optim_factory, theta_reduction)
         self._x_step = GradLoopStepX(self, x_optim_factory, x_reduction)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        assessment = self._criterion.assess_dict(y, t, reduction_override)
-        assessment[self.VALIDATION_NAME] = assessment[self.LOSS_NAME]
-        return assessment
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         state[self, 'accumulated'] = True

@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 import torch
 
 from ..utils import to_signed_neg, to_zero_neg
-from .core import Individual, Population
+from .core import Individual, Population, expand_dim0
+from .populators import RepeatPopulator
 
 # local
 from .reducers import SlopeReducer
@@ -33,6 +34,31 @@ class PopulationInfluencer(ABC):
     @abstractmethod
     def spawn(self) -> "PopulationInfluencer":
         pass
+
+
+class JoinIndividual(PopulationInfluencer):
+    """"""
+
+    def __call__(self, population: Population, individual: Individual) -> Population:
+        
+        new_population = {**population}
+
+        for k, v in individual:
+            new_population[k] = expand_dim0(v, population.n_individuals)
+        
+        return Population(**new_population)
+
+    def spawn(self) -> "PopulationInfluencer":
+        return JoinIndividual()
+    
+    def join_t(self, population: Population, t: torch.Tensor):
+
+        return self(population, Individual(t=t))
+
+    def join_tensor(self, population: Population, key: str, val: torch.Tensor):
+
+        return self(population, Individual(**{key: val}))
+
 
 
 class SlopeInfluencer(IndividualInfluencer):

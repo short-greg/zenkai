@@ -7,7 +7,7 @@ from torch import nn
 from zenkai import utils
 
 # local
-from zenkai.kaku import IO, IDable, AssessmentDict, Assessment
+from zenkai.kaku import IO, IDable, Assessment
 from zenkai.kaku import machine as core
 
 
@@ -100,10 +100,10 @@ class TestState:
 
         obj = 'x'
         state = core.State()
-        assessment = AssessmentDict(k=Assessment(torch.tensor(1.0)))
-        state.log_assessment_dict(obj, 'x', assessment)
+        assessment = Assessment(torch.tensor(1.0))
+        state.log_assessment(obj, 'x', 'k', assessment)
         result = state.logs.as_assessment_dict()
-        assert (result['x_k'] == assessment['k'])
+        assert (result['x_k'] == assessment)
 
 
 class Base:
@@ -246,13 +246,13 @@ class SimpleLearner(core.LearningMachine):
         self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override, 'loss')
+    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+        return self.loss.assess(y, t, reduction_override)
     
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         if ((self, x), 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
-            assessment['loss'].backward()
+            assessment.backward()
             
         return IO(x.f - x.f.grad)
 
@@ -262,7 +262,7 @@ class SimpleLearner(core.LearningMachine):
         else: y = state[(self, x), 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
-        assessment.backward('loss')
+        assessment.backward()
         self.optim.step()
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
@@ -282,7 +282,7 @@ class TestLearningMachineWithSimpleLearner:
         learner = SimpleLearner(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')['loss']
+        result = learner.assess_y(y, t, 'sum')
         target = nn.MSELoss(reduction='sum')(*y, *t)
         assert result.item() == target.item()
 
@@ -333,7 +333,7 @@ class LayeredLearner(core.LearningMachine):
         self.m1 = m1
         self.m2 = m2
     
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
         return self.m2.assess_y(
             y, t, reduction_override=reduction_override)
     
@@ -360,7 +360,7 @@ class TestLearningMachineWithComplexLearner:
         learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')['loss']
+        result = learner.assess_y(y, t, 'sum')
         target = nn.MSELoss(reduction='sum')(*y, *t)
         assert result.item() == target.item()
 
@@ -434,14 +434,14 @@ class DependentLearner(core.LearningMachine):
         self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override, 'loss')
+    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+        return self.loss.assess(y, t, reduction_override)
     
     @core.step_dep('stepped', exec=False)
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         if ((self, x), 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
-            assessment['loss'].backward()
+            assessment.backward()
             
         return IO(x.f - x.f.grad)
 
@@ -450,7 +450,7 @@ class DependentLearner(core.LearningMachine):
         y = state[(self, x), 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
-        assessment.backward('loss')
+        assessment.backward()
         self.optim.step()
         state[(self, x), 'stepped'] = True
 

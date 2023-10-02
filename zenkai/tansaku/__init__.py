@@ -13,7 +13,8 @@ from .core import (
     reduce_assessment_dim1,
     select_best_sample,
     select_best_individual,
-    gen_like
+    gen_like,
+    Fitter
 )
 from .exploration import (
     AssessmentDist,
@@ -30,6 +31,11 @@ from .exploration import (
     collapse_k,
     expand_k,
     remove_noise,
+)
+from .dividers import (
+    FitnessProportionateDivider,
+    Divider,
+    EqualDivider
 )
 from .mixers import (
     KeepMixer,

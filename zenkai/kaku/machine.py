@@ -27,8 +27,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # local
-from .assess import AssessmentDict, Criterion, ThLoss
-from .component import Learner
+from .assess import Assessment, Criterion, ThLoss
 from .state import IDable, State
 from torch.utils import data as torch_data
 from .io import (
@@ -50,6 +49,14 @@ class StepHook(ABC):
 
     @abstractmethod
     def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+        pass
+
+
+class LearnerPostHook(ABC):
+    """Use to add additional processing after test has been called"""
+
+    @abstractmethod
+    def __call__(self, x: IO, t: IO, state: State, y: IO, assessment: Assessment) -> typing.Tuple[IO, IO]:
         pass
 
 
@@ -224,8 +231,17 @@ class FeatureIdxStepX(StepX):
         pass
 
 
-class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
+class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
     
+    def __init__(self) -> None:
+        super().__init__()
+        self._test_posthooks = []
+        self._learn_posthooks = []
+        self._base_learn = self.learn
+        self._base_test = self.test
+        self.learn = self._learn_hook_runner
+        self.test = self._test_hook_runner
+
     def device(self) -> torch.device:
         """Convenience method to get the device for the machine
         Chooses the first parameter. Assumes all sub machines have the same device
@@ -254,7 +270,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         return tuple(io_i.to(device) for io_i in io)
 
     @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         """Assess the learning machine
 
         Args:
@@ -264,7 +280,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
               the reduction by. If None will not override. Defaults to None.
 
         Returns:
-            AssessmentDict: The assessment of the machine
+            Assessment: The assessment of the machine
         """
         pass
 
@@ -275,7 +291,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         reduction_override: str = None,
         state: State = None,
         release: bool = False,
-    ) -> AssessmentDict:
+    ) -> Assessment:
         """Assess the learning machine
 
         Args:
@@ -288,7 +304,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
               Defaults to False.
 
         Returns:
-            AssessmentDict: The assessment of the machine
+            Assessment: The assessment of the machine
         """
         y = self(x, state=state, release=release)
         return self.assess_y(y, t, reduction_override=reduction_override)
@@ -318,6 +334,59 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         """
         return super().__call__(x, state or State(), release, *args, **kwargs)
 
+    def learner_posthook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True):
+        """Add hook to call after learn
+
+        Args:
+            hook (StepXHook): The hook to add
+        """
+        if not hasattr(self, "_step_x_hook_initialized"):
+            self.__init__()
+        if learn:
+            self._learn_posthooks.append(hook)
+        if test:
+            self._test_posthooks.append(hook)
+
+    def _learn_hook_runner(
+        self, x: IO, t: IO, state: State, 
+        clear_state: bool=False, reduction_override: str=None, 
+        get_y: bool=False,
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+            state (State): The current state
+        """
+        assessment, y = self._base_learn(x, t, state, clear_state, reduction_override, True)
+
+        for posthook in self._learn_posthooks:
+            posthook(x, t, state, y)
+        if get_y:
+            return assessment, y
+        return assessment
+
+    def _test_hook_runner(
+        self, x: IO, t: IO, state: State, 
+        reduction_override: str=None, 
+        get_y: bool=False,
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+            state (State): The current state
+        """
+        assessment, y = self._base_test(x, t, state, reduction_override, True)
+
+        for posthook in self._test_posthooks:
+            posthook(x, t, state, y)
+        if get_y:
+            return assessment, y
+        return assessment
+
     def learn(
         self,
         x: IO,
@@ -325,7 +394,8 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         state: State = None,
         clear_state: bool = False,
         reduction_override: str = None,
-    ) -> AssessmentDict:
+        get_y: bool=False
+    ) -> Assessment:
         """Learn method . This includes cleanup and initialization so it is easier to use in practice
         than step
 
@@ -337,7 +407,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             clear_state (bool, optional): Whether to clear teh state for the machine. Defaults to False.
 
         Returns:
-            AssessmentDict: _description_
+            Assessment: _description_
         """
         if not self.training:
             self.train()
@@ -349,6 +419,8 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
         self.step(x, t, state)
         if clear_state:
             state.clear(self)
+        if get_y:
+            return assessment, y
         return assessment
 
     def backward(
@@ -368,7 +440,7 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             self.step(x, t, state)
         return self.step_x(x, t, state)
 
-    def test(self, x: IO, t: IO) -> AssessmentDict:
+    def test(self, x: IO, t: IO, state: State=None, reduction_override: str=None, get_y: bool=False) -> Assessment:
         """Assess the machine in "testing" mode
 
         Args:
@@ -376,13 +448,17 @@ class LearningMachine(nn.Module, Learner, StepTheta, StepX, IDable, ABC):
             t (IO): the output to the machine
 
         Returns:
-            AssessmentDict: The assessment
+            Assessment: The assessment
         """
         if self.training:
             self.eval()
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
-            return self.assess_y(self(x), t).cpu().detach()
+            y = self(x, state=state)
+            result = self.assess_y(y, t, reduction_override=reduction_override).cpu().detach()
+            if get_y:
+                return result, y
+            return result
 
     @property
     def id(self) -> str:
@@ -403,8 +479,8 @@ class NullLearner(LearningMachine):
         self.loss = loss or Criterion(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.loss.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.loss.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, state: State) -> IO:
         pass
@@ -504,11 +580,11 @@ class StdLearningMachine(LearningMachine):
         self._step_x = step_x or NullStepX()
         self._step_theta = step_theta or NullStepTheta()
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         
         if isinstance(self.criterion, Criterion):
-            return self.criterion.assess_dict(y, t, reduction_override)
-        assessment_dict = AssessmentDict()
+            return self.criterion.assess(y, t, reduction_override)
+        assessment_dict = Assessment()
         for loss in self.criterion:
             assessment_dict = assessment_dict.union(loss.assess_dict(y, t, reduction_override))
         return assessment_dict

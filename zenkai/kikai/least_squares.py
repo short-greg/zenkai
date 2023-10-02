@@ -11,7 +11,7 @@ import scipy.linalg
 # local
 from ..kaku import (
     IO,
-    AssessmentDict,
+    Assessment,
     LearningMachine,
     State,
     StepTheta,
@@ -259,8 +259,8 @@ class LeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y, t, reduction_override=reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._loss.assess(y, t, reduction_override=reduction_override)
 
     def step(self, x: IO, t: IO, state: State):
         self._step_theta.step(x, t, state)
@@ -309,8 +309,8 @@ class GradLeastSquaresLearner(AccLearningMachine):
             self, optim_factory, "mean"
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._loss.assess_dict(y, t, reduction_override=reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._loss.assess(y, t, reduction_override=reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: State):
         self._step_theta.accumulate(x, t, state)

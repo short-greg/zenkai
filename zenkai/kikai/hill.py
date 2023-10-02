@@ -10,7 +10,7 @@ from ..kaku import (
 from ..tansaku.assessors import XPopulationAssessor
 from ..tansaku.core import Individual
 from ..tansaku.influencers import SlopeInfluencer, PopulationLimiter
-from ..tansaku.populators import BinaryPopulator, GaussianPopulator
+from ..tansaku.populators import BinaryPopulator, GaussianPopulator, populate_t
 from ..tansaku.reducers import BestSampleReducer
 
 
@@ -42,7 +42,7 @@ class HillClimbStepX(FeatureIdxStepX):
         self.limiter = PopulationLimiter()
         self.populator = GaussianPopulator(k, std=std)
         self.modifier = SlopeInfluencer(momentum, lr, maximize=maximize)
-        self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean")
+        self.assessor = XPopulationAssessor(self.learner, ["x"], "mean")
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update x
@@ -63,7 +63,9 @@ class HillClimbStepX(FeatureIdxStepX):
             self.populator(individual),
             individual,
         )
-        population = self.assessor(population, t)
+        
+        population = population.union(populate_t(t.f, len(population)))
+        population = self.assessor(population)
         selected = self.modifier(individual, population)
         update_io(IO(selected["x"], detach=True), x)
         return x
@@ -81,7 +83,7 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         self.populator = BinaryPopulator(k, keep_p)
         self.selector = BestSampleReducer()  # to_sample=False)
         self.limiter = PopulationLimiter()
-        self.assessor = XPopulationAssessor(self.learner, ["x"], "loss", "mean", k)
+        self.assessor = XPopulationAssessor(self.learner, ["x"], "mean", k)
 
     @property
     def update_populator(self, k: int, keep_p: float):
@@ -111,7 +113,8 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
             individual,
             feature_idx.tolist() if feature_idx is not None else None,
         )
-        population = self.assessor(population, t)
+        population = population.union(populate_t(t.f, len(population)))
+        population = self.assessor(population)
         selected = self.selector(population)
         update_io(IO(selected["x"], detach=True), x)
         return x

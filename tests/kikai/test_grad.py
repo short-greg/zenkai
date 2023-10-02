@@ -41,7 +41,7 @@ class TestTHGradMachine1:
         learner = THGradLearnerT1(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')['loss']
+        result = learner.assess_y(y, t, 'sum')
         target = nn.MSELoss(reduction='sum')(y.f, t.f)
         assert result.item() == target.item()
 
@@ -86,7 +86,7 @@ class TestTHGradMachine2:
         learner = THGradLearnerT2(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')['loss']
+        result = learner.assess_y(y, t, 'sum')
         target = nn.MSELoss(reduction='sum')(y.f, t.f)
         assert result.item() == target.item()
 

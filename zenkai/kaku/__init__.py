@@ -3,28 +3,27 @@
 from .assess import (
     LOSS_MAP,
     Assessment,
-    AssessmentDict,
     Criterion,
     Reduction,
     ThLoss,
-    assess_dict,
+    # assess_dict,
     reduce_assessment
 )
-from .component import (
-    Assessor,
-    Autoencoder,
-    Classifier,
-    Decoder,
-    Encoder,
-    Learner,
-    NNComponent,
-    Regressor,
-    SelfLearner,
-)
+# from .component import (
+#     Assessor,
+#     Autoencoder,
+#     Classifier,
+#     Decoder,
+#     Encoder,
+#     Learner,
+#     NNComponent,
+#     Regressor,
+#     SelfLearner,
+# )
 from .layer_assess import (
     LayerAssessor, 
     StepAssessHook, 
-    union_pre_and_post, 
+    # union_pre_and_post, 
     StepHook, 
     StepXHook, 
     StepXLayerAssessor,

@@ -4,7 +4,7 @@ import torch
 import typing
 
 from ..kaku import (
-    IO, State, LearningMachine, AssessmentDict,
+    IO, State, LearningMachine, Assessment,
     OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine
 )
 from .grad import GradUpdater
@@ -53,7 +53,7 @@ class FALinearLearner(LearningMachine):
         x = state[self, 'y'] = IO(self.linear(x.f))
         return x.out(release)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess_dict(y, t, reduction_override)
     
     def step(self, x: IO, t: IO, state: State):
@@ -156,8 +156,8 @@ class FALearner(AccLearningMachine):
         y = state[(self, x), 'y'] = self.activation(y)
         return IO(y).out(release)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.criterion.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: State):
         """Update the 
@@ -249,8 +249,8 @@ class DFALearner(AccLearningMachine):
         y = state[(self, x), 'y'] = self.activation(y)
         return IO(y).out(release)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.criterion.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.criterion.assess(y, t, reduction_override)
     
     def accumulate(self, x: IO, t: IO, state: State):
         """Update the net parameters

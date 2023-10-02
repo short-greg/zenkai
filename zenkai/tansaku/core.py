@@ -1,18 +1,25 @@
 # 1st party
 import typing
+from abc import ABC, abstractmethod
 
 # 3rd party
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 
-from ..kaku import IO, Assessment
-from ..kaku import Reduction
 
 # local
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0
 
+from ..kaku import IO, Assessment
+from ..kaku import Reduction, Criterion
 # TODO: Move to utils
+
+
+class Objective(object):
+
+    def __call__(self, *args, **kwargs) -> Assessment:
+        pass
 
 
 def reduce_assessment_dim0(
@@ -351,6 +358,15 @@ class Individual(object):
                 results[key] = torch.clone(v)
         return Individual(**results)
 
+    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
+        """Convert population to a dict of tensors
+
+        Returns:
+            typing.Dict[str, torch.Tensor]: dictionary of tensors
+        """
+
+        return {k: v for k, v in self._parameters.items()}
+
 
 class Population(object):
     """
@@ -384,10 +400,10 @@ class Population(object):
         self._assessment_size = None
 
     @property
-    def k(self) -> int:
+    def k(self) -> typing.Union[None, int]:
         """
         Returns:
-            int: Number of members in the population
+            int: Batch size for the population if batch population else None
         """
         return self._k
 
@@ -614,6 +630,22 @@ class Population(object):
         
         return self._parameters[key]
 
+    def __setitem__(
+        self, key: str, value: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Args:
+            key (Union[str, typing.Tuple[str, int]]): _description_
+
+        Returns:
+            torch.Tensor: The value at key
+        """
+        if self.k != value.shape:
+            raise ValueError(f'Batch size of k does not equal population batch size {self.k}')
+        self._parameters[key] = value
+        
+        return value
+
     def __iter__(self) -> typing.Iterator[torch.Tensor]:
         """
 
@@ -640,6 +672,22 @@ class Population(object):
             else:
                 results[key] = torch.clone(v)
         return Population(**results)
+    
+    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
+        """Convert population to a dict of tensors
+
+        Returns:
+            typing.Dict[str, torch.Tensor]: dictionary of tensors
+        """
+
+        return {k: v for k, v in self._parameters.items()}
+    
+    def union(self, other: 'Population') -> 'Population':
+
+        return Population(
+            **self._parameters,
+            **other._parameters
+        )
 
 
 class _popSub(object):
@@ -651,6 +699,14 @@ class _popSub(object):
     def __getitem__(self, idx) -> Population:
 
         return Population(**{k: v[idx] for k, v in self._population})
+
+
+class Fitter(ABC):
+
+    @abstractmethod
+    def fit(self, objective: Criterion, args: Individual):
+        pass
+
 
 # TODO:
 # add functional

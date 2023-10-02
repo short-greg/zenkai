@@ -8,6 +8,7 @@ from abc import abstractmethod, abstractproperty
 from dataclasses import dataclass
 from enum import Enum
 
+from abc import ABC
 import numpy as np
 
 # 3rd Party
@@ -113,6 +114,164 @@ class Reduction(Enum):
         if self == self.none:
             return loss
         raise ValueError(f"{self.value} cannot be reduced.")
+
+# assessment.
+
+# class AssessmentB(object):
+
+#     def __init__(self, value: torch.Tensor, maximize: bool):
+
+#         self.value = value
+#         self.maximize = maximize
+
+#     def expand_population(self, population_size: int) -> "Assessment":
+#         """Convert the assessment so that the first dimension is the population dimension
+
+#         Args:
+#             population_size (int): The number of elements in the population
+
+#         Returns:
+#             Assessment: The assessment with the first dimension expanded
+#         """
+        
+#         return Assessment(
+#             self.value.view(
+#                 population_size, self.shape[0] // population_size, *self.shape[1:]
+#             ),
+#             maximize=self.maximize
+#         )
+
+#     def _extract_dim_greater_than_2(self, x: torch.Tensor, best_idx: torch.LongTensor) -> typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]:
+#         """
+
+#         Args:
+#             x (torch.Tensor): The tensor to extract from
+#             best_idx (torch.LongTensor): _description_
+
+#         Returns:
+#             typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]: 
+#         """
+    
+#         x_reshaped = x.view(x.size(0), x.size(1), -1)
+#         x_reshaped_index = best_idx[:, :, None].repeat(1, 1, x_reshaped.size(2))
+
+#         best_x = x_reshaped.gather(dim=0, index=x_reshaped_index)
+#         best_x = best_x.view(*x.shape[1:])
+
+#         # TODO: Possible to improve performance by not doing gather when creating batch assessment
+#         batch_assessment = FloatAssessment(
+#             self.gather(dim=0, index=best_idx).flatten(), maximize=self.maximize
+#         )
+#         return best_x, batch_assessment, best_idx.flatten()
+
+#     def _extract_dim_is_2(self, x: torch.Tensor, best_idx: torch.LongTensor):
+#         assert best_idx.dim() == 1
+#         best_idx = best_idx[0]
+#         return (
+#             x[best_idx],
+#             Assessment(self[best_idx].flatten(), maximize=self.maximize),
+#             best_idx,
+#         )
+
+#     def extract_best(
+#         self, x: torch.Tensor
+#     ) -> typing.Tuple[torch.Tensor, "Assessment", torch.Tensor]:
+#         """Extract the best in each group value indices of the best in each batch of the population"""
+#         best_value, best_idx = (
+#             self.max(dim=0, keepdim=True)
+#             if self.maximize
+#             else self.min(dim=0, keepdim=True)
+#         )
+#         if x.dim() > 2:
+#             return self._extract_dim_greater_than_2(x, best_idx)
+
+#         return self._extract_dim_is_2(x, best_idx)
+
+#     def best(
+#         self, dim: int = 0, keepdim: bool = False
+#     ) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+#         """Get the best value in the assessment for a dimension
+
+#         Args:
+#             dim (int, optional): The dimension to get the best for. Defaults to 0.
+#             keepdim (bool, optional): Whether to keepdim. Defaults to False.
+
+#         Returns:
+#             typing.Tuple[torch.Tensor, torch.LongTensor]: 
+#         """
+#         if self.maximize:
+#             return self.max(dim=dim, keepdim=keepdim)
+#         return self.min(dim=dim, keepdim=keepdim)
+
+#     def reduce(self, reduction: str = "mean", dim: int = None, keepdim: bool = False):
+#         """
+
+#         Args:
+#             reduction (str, optional): The reduction to apply. Defaults to 'mean'.
+#             dim (int, optional): The dim to apply the reduction on - only for mean and sum. Defaults to None.
+
+#         Returns:
+#             Assessment: The reduced assessment
+#         """
+#         return FloatAssessment(
+#             Reduction[reduction].reduce(self, dim, keepdim=keepdim),
+#             self.maximize,
+#         )
+
+#     @classmethod
+#     def stack_up(self, assessments: typing.Iterable["Assessment"]) -> 'Assessment':
+#         """Stack multiple assessments
+
+#         Args:
+#             assessments (typing.Iterable[Assessment]): Assessments to stack
+
+#         Raises:
+#             ValueError: if the assessments being stacked are not all optimized in the same direction
+
+#         Returns:
+#             Assessment: The stacked assessment
+#         """
+#         maximize = None
+#         values = []
+#         for assessment in assessments:
+#             if maximize is None:
+#                 maximize = assessment.maximize
+#             if maximize != assessment.maximize:
+#                 raise ValueError(
+#                     f"In order to stack optimizations must be in same direction. "
+#                     f"Current is {maximize} previous was {assessment.maximize}"
+#                 )
+#             values.append(assessment)
+#         return Assessment(torch.stack(values), maximize)
+
+
+# class AssessmentMixin(torch.Tensor, ABC):
+
+#     @abstractproperty
+#     def maximize(self) -> bool:
+#         pass
+
+#     @maximize.setter
+#     def maximize(self, maximize: bool) -> bool:
+#         pass
+
+
+
+
+# class FloatAssessment(torch.FloatTensor, AssessmentMixin):
+
+#     def __init__(self, *args, maximize: bool=False, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self._maximize = maximize
+
+#     @abstractproperty
+#     def maximize(self) -> bool:
+#         return self._maximize
+
+#     @maximize.setter
+#     def maximize(self, maximize: bool) -> bool:
+#         self._maximize = maximize
+#         return self._maximize 
 
 
 @dataclass
@@ -832,57 +991,57 @@ class Criterion(nn.Module):
         """
         return Assessment(self.forward(x, t, reduction_override), self._maximize)
 
-    def assess_dict(
-        self,
-        x: IO,
-        t: IO,
-        reduction_override: str = None,
-        name: str = "loss",
-    ) -> AssessmentDict:
-        """Assess and return the result in an AssessDict
+    # def assess_dict(
+    #     self,
+    #     x: IO,
+    #     t: IO,
+    #     reduction_override: str = None,
+    #     name: str = "loss",
+    # ) -> AssessmentDict:
+    #     """Assess and return the result in an AssessDict
 
-        Args:
-            x (IO): The input
-            t (IO): The target
-            reduction_override (str, optional): the . Defaults to None.
-            name (str, optional): The name of the loss. Defaults to "loss".
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The target
+    #         reduction_override (str, optional): the . Defaults to None.
+    #         name (str, optional): The name of the loss. Defaults to "loss".
 
-        Returns:
-            AssessmentDict: The resulting assessment dict
-        """
-        return AssessmentDict(
-            **{
-                name: Assessment(
-                    self(x, t, reduction_override=reduction_override), self._maximize
-                )
-            }
-        )
+    #     Returns:
+    #         AssessmentDict: The resulting assessment dict
+    #     """
+    #     return AssessmentDict(
+    #         **{
+    #             name: Assessment(
+    #                 self(x, t, reduction_override=reduction_override), self._maximize
+    #             )
+    #         }
+    #     )
 
     @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str = None):
         pass
 
 
-def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Criterion) -> AssessmentDict:
-    """Convenience method to do an assessment for multiple losses
+# def assess_dict(x: IO, t: IO, reduction_override: str=None, **kwargs: Criterion) -> AssessmentDict:
+#     """Convenience method to do an assessment for multiple losses
 
-    Args:
-        x (IO): Input
-        t (IO): Target
-        reduction_override (str, optional): the reduction override if any. Defaults to None.
+#     Args:
+#         x (IO): Input
+#         t (IO): Target
+#         reduction_override (str, optional): the reduction override if any. Defaults to None.
 
-    Returns:
-        AssessmentDict: the unioned assessment dict
-    """
+#     Returns:
+#         AssessmentDict: the unioned assessment dict
+#     """
 
-    result = None
-    for k, loss in kwargs.items():
-        cur = loss.assess_dict(x, t, reduction_override, name=k)
-        if result is None:
-            result = cur
-        else:
-            result = result.union(cur)
-    return result
+#     result = None
+#     for k, loss in kwargs.items():
+#         cur = loss.assess_dict(x, t, reduction_override, name=k)
+#         if result is None:
+#             result = cur
+#         else:
+#             result = result.union(cur)
+#     return result
 
 
 LOSS_MAP = {

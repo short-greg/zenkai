@@ -16,7 +16,7 @@ import sklearn.base
 from .. import utils
 from ..kaku import (
     IO,
-    AssessmentDict,
+    Assessment,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     FeatureLimitGen,
@@ -415,8 +415,8 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._step_theta = ScikitStepTheta(module)
         self._preprocessor = preprocessor
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self._criterion.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._criterion.assess(y, t, reduction_override)
 
     def step(
         self, x: IO, t: IO, state: State, feature_idx: Idx = None

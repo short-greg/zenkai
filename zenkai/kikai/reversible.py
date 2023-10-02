@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ..kaku import IO, AssessmentDict, IO, LearningMachine, State, Criterion
+from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
 from ..utils import Reversible, SequenceReversible
 
 
@@ -26,8 +26,8 @@ class ReversibleMachine(LearningMachine):
         self.reversible = reversible
         self.objective = objective
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        return self.objective.assess_dict(y, t, reduction_override)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.objective.assess(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x

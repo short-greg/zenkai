@@ -1,6 +1,6 @@
 import torch
 import pytest
-from zenkai.kaku.assess import AssessmentDict
+from zenkai.kaku.assess import Assessment
 from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
@@ -32,8 +32,8 @@ class SimpleLearner3(LearningMachine):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         pass
 
-    def assess_y(self, x: IO, t: IO, reduction_override: str = None) -> AssessmentDict:
-        result = self.loss.assess_dict(x, t, reduction_override)
+    def assess_y(self, x: IO, t: IO, reduction_override: str = None) -> Assessment:
+        result = self.loss.assess(x, t, reduction_override)
         return result
 
     def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
@@ -47,21 +47,19 @@ class TestXPopulationAssessor:
     def test_assess_outputs_correct_size(self):
         learner = SimpleLearner(3, 4)
 
-        population = Population(x=torch.rand(8, 3, 3))
-        t = torch.rand(3, 4)
+        population = Population(x=torch.rand(8, 3, 3), t=torch.rand(8, 3, 4))
         assessor = assessors.XPopulationAssessor(
-            learner, ['x'], 'loss', 'mean'
+            learner, ['x'], 'mean'
         )
-        assessor.assess(population, IO(t))
+        assessor.assess(population)
         assert len(population.stack_assessments()) == 8
     
     def test_assess_outputs_correct_size_with_3_dims(self):
         learner = SimpleLearner3(3, 3, 4)
 
-        population = Population(x=torch.rand(8, 4, 3, 3))
-        t = torch.rand(4, 3, 4)
+        population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
         assessor = assessors.XPopulationAssessor(
-            learner, ['x'], 'loss', 'mean'
+            learner, ['x'], 'mean'
         )
-        assessor.assess(population, IO(t))
+        assessor.assess(population)
         assert len(population.stack_assessments()) == 8
