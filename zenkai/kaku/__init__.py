@@ -6,7 +6,8 @@ from .assess import (
     Criterion,
     Reduction,
     ThLoss,
-    # assess_dict,
+    AssessmentDict,
+    #assess_dict,
     reduce_assessment
 )
 # from .component import (

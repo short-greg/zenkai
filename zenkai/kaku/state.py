@@ -188,8 +188,6 @@ class State(object):
             self._data[id] = {}
             self._subs[id] = {}
             self._keep[id] = {}
-        else:
-            print('Not adding')
         return self._data[id], self._keep[id], self._subs[id]
 
     def add_sub(self, obj: IDable, key: str, ignore_exists: bool = True) -> "State":
