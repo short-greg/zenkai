@@ -1,4 +1,5 @@
 # 3rd party
+import typing
 import pytest
 import torch
 import torch.optim
@@ -7,7 +8,7 @@ from torch import nn
 from zenkai import utils
 
 # local
-from zenkai.kaku import IO, IDable, Assessment
+from zenkai.kaku import IO, IDable, Assessment, State
 from zenkai.kaku import machine as core
 
 
@@ -275,6 +276,13 @@ class SimpleLearner(core.LearningMachine):
 # # # # # # # TODO: Update tests
 # # # # # # # TODO: write tests for LayeredLearner
 
+
+class DummyHook(core.LearnerPostHook):
+
+    def __call__(self, x: IO, t: IO, state: State, y: IO, assessment: Assessment) -> typing.Tuple[IO, IO]:
+        state[self, 'hi'] = 'hi'
+
+
 class TestLearningMachineWithSimpleLearner:
 
     def test_assess_y_uses_correct_reduction(self):
@@ -324,6 +332,36 @@ class TestLearningMachineWithSimpleLearner:
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
+
+    def test_learn_hook_called_after_learning_and_sets_state_to_hi(self):
+        learner = SimpleLearner(2, 3)
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        hook = DummyHook()
+        learner.learner_posthook(hook, True, False)
+        state = State()
+        learner.learn(x, t, state)
+        assert state[hook, 'hi'] == 'hi'
+
+    def test_learn_hook_not_called_after_testing_and_state_not_set_to_hi(self):
+        learner = SimpleLearner(2, 3)
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        hook = DummyHook()
+        learner.learner_posthook(hook, True, False)
+        state = State()
+        learner.test(x, t, state)
+        assert (hook, 'hi') not in state
+
+    def test_learn_hook_called_after_testing_and_state_set_to_hi(self):
+        learner = SimpleLearner(2, 3)
+        x = IO(torch.rand(2, 2))
+        t = IO(torch.rand(2, 3))
+        hook = DummyHook()
+        learner.learner_posthook(hook, True, True)
+        state = State()
+        learner.test(x, t, state)
+        assert state[hook, 'hi'] == 'hi'
 
 
 class LayeredLearner(core.LearningMachine):

@@ -340,8 +340,6 @@ class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
         Args:
             hook (StepXHook): The hook to add
         """
-        if not hasattr(self, "_step_x_hook_initialized"):
-            self.__init__()
         if learn:
             self._learn_posthooks.append(hook)
         if test:
@@ -362,7 +360,7 @@ class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
         assessment, y = self._base_learn(x, t, state, clear_state, reduction_override, True)
 
         for posthook in self._learn_posthooks:
-            posthook(x, t, state, y)
+            posthook(x, t, state, y, assessment)
         if get_y:
             return assessment, y
         return assessment
@@ -382,7 +380,7 @@ class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
         assessment, y = self._base_test(x, t, state, reduction_override, True)
 
         for posthook in self._test_posthooks:
-            posthook(x, t, state, y)
+            posthook(x, t, state, y, assessment)
         if get_y:
             return assessment, y
         return assessment
