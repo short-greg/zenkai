@@ -669,15 +669,21 @@ def _f_assess_dict(assessment_dict: 'AssessmentDict', f):
             key: (f(value.value, *args, **kwargs), value.maximize, value.name)
             for key, value in assessment_dict.items()
         }
+        assessment_result = True
         for key, (value, maximize, name) in result.items():
             if isinstance(value, torch.Tensor):
                 value = Assessment(value, maximize, name)
             else:
                 value = value[0]
+                assessment_result = False
             if value is not None:
                 updated[key] = value
+            
         if len(updated) == 0:
             return None
+
+        if assessment_result is False:
+            return updated
 
         return AssessmentDict(
             **updated
