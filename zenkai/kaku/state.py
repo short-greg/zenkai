@@ -6,7 +6,7 @@ from collections import deque
 
 # local
 from .io import IO
-from .assess import Assessment
+from .assess import Assessment, AssessmentDict
 
 
 class IDable:
@@ -55,7 +55,7 @@ class AssessmentLog(object):
         else:
             self._log[key][obj_name].update(cur)
     
-    def as_assessment_dict(self) -> typing.Dict[str, Assessment]:
+    def as_assessment_dict(self) -> AssessmentDict:
         """
 
         Returns:
@@ -68,7 +68,7 @@ class AssessmentLog(object):
             for key2, val2 in val.items():
                 cur = {f'{key2}_{name}': assessment for name, assessment in val2.items()}
                 result.update(cur)
-        return result
+        return AssessmentDict(**result)
 
 
 class State(object):

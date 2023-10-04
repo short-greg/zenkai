@@ -674,7 +674,6 @@ def _f_assess_dict(assessment_dict: 'AssessmentDict', f):
             if isinstance(value, torch.Tensor):
                 value = Assessment(value, maximize, name)
             else:
-                value = value[0]
                 assessment_result = False
             if value is not None:
                 updated[key] = value
