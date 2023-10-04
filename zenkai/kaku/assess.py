@@ -274,7 +274,21 @@ class Reduction(Enum):
 #         return self._maximize 
 
 
-@dataclass
+def _f_assess(assessment: 'Assessment', f):
+    
+    def _(*args, **kwargs):
+
+        result = f(assessment.value, *args, **kwargs)
+        if isinstance(result, torch.Tensor):
+
+            return Assessment(
+                result, assessment.maximize
+            )
+        return result
+
+    return _
+
+
 class Assessment(object):
     """
     An evaluation of the output of a learning machine
@@ -286,9 +300,11 @@ class Assessment(object):
     maximize: bool
         Whether the machine should maximize or minimize the value
     """
+    def __init__(self, value: torch.Tensor, maximize: bool=False, name: str=None):
 
-    value: torch.Tensor
-    maximize: bool = False
+        self.value = value
+        self.maximize = maximize
+        self.name = name
 
     def __getitem__(self, key) -> 'Assessment':
         """
@@ -351,31 +367,31 @@ class Assessment(object):
         """
         return Assessment(self.value * val, self.maximize)
 
-    def mean(self, dim: int=None) -> "Assessment":
-        """Calculate the mean of the assessment
+    # def mean(self, dim: int=None) -> "Assessment":
+    #     """Calculate the mean of the assessment
 
-        Args:
-            dim (int, optional): The dimension to calculate the mean for. Defaults to None.
+    #     Args:
+    #         dim (int, optional): The dimension to calculate the mean for. Defaults to None.
 
-        Returns:
-            Assessment: The resulting assessment
-        """
-        if dim is None:
-            return Assessment(self.value.mean(), self.maximize)
-        return Assessment(self.value.mean(dim=dim), self.maximize)
+    #     Returns:
+    #         Assessment: The resulting assessment
+    #     """
+    #     if dim is None:
+    #         return Assessment(self.value.mean(), self.maximize)
+    #     return Assessment(self.value.mean(dim=dim), self.maximize)
 
-    def sum(self, dim=None) -> "Assessment":
-        """Calculate the sum of the assessment
+    # def sum(self, dim=None) -> "Assessment":
+    #     """Calculate the sum of the assessment
 
-        Args:
-            dim (int, optional): The dimension to calculate the sum for. Defaults to None.
+    #     Args:
+    #         dim (int, optional): The dimension to calculate the sum for. Defaults to None.
 
-        Returns:
-            Assessment: The resulting assessment
-        """
-        if dim is None:
-            return Assessment(self.value.sum(), self.maximize)
-        return Assessment(self.value.sum(dim=dim), self.maximize)
+    #     Returns:
+    #         Assessment: The resulting assessment
+    #     """
+    #     if dim is None:
+    #         return Assessment(self.value.sum(), self.maximize)
+    #     return Assessment(self.value.sum(dim=dim), self.maximize)
 
     def batch_mean(self) -> "Assessment":
         """Calculate the mean of the assessment for each sample
@@ -393,45 +409,55 @@ class Assessment(object):
         """
         return Assessment(self.value.view(self.shape[0], -1).sum(dim=-1))
 
-    def detach(self) -> "Assessment":
-        """Detach the tensor
+    # def detach(self) -> "Assessment":
+    #     """Detach the tensor
 
-        Returns:
-            Assessment: Assessment with detached tensor
-        """
-        return Assessment(self.value.detach(), self.maximize)
+    #     Returns:
+    #         Assessment: Assessment with detached tensor
+    #     """
+    #     return Assessment(self.value.detach(), self.maximize)
 
-    def cpu(self) -> "Assessment":
-        """Convert the tensor to CPU
+    # def cpu(self) -> "Assessment":
+    #     """Convert the tensor to CPU
 
-        Returns:
-            Assessment: Assessment with tensor converted
-        """
-        return Assessment(self.value.cpu(), self.maximize)
+    #     Returns:
+    #         Assessment: Assessment with tensor converted
+    #     """
+    #     return Assessment(self.value.cpu(), self.maximize)
 
-    def numpy(self) -> np.ndarray:
-        """Convert the assessment to numpy
+    # def numpy(self) -> np.ndarray:
+    #     """Convert the assessment to numpy
 
-        Returns:
-            np.ndarray: The assessment as a numpy array
-        """
-        return self.value.detach().cpu().numpy()
+    #     Returns:
+    #         np.ndarray: The assessment as a numpy array
+    #     """
+    #     return self.value.detach().cpu().numpy()
 
-    def item(self) -> typing.Any:
-        """Get the item of the tensor
+    def __getattr__(self, key: str):
 
-        Raises:
-            ValueError: If the tensor is not a scalar
+        try:
+            f = getattr(torch.Tensor, key)
+            if isinstance(f, typing.Callable):
+                return _f_assess(self, f)
+            return getattr(self.value, key)
+        except KeyError:
+            raise KeyError(f'No key named {key} in AssessmentDict')
+    
+    # def item(self) -> typing.Any:
+    #     """Get the item of the tensor
 
-        Returns:
-            typing.Any: The item for the tensor
-        """
-        if self.value.dim() != 0:
-            raise ValueError(
-                "Only one element tensors can be converted to Python scalars."
-            )
+    #     Raises:
+    #         ValueError: If the tensor is not a scalar
 
-        return self.value.item()
+    #     Returns:
+    #         typing.Any: The item for the tensor
+    #     """
+    #     if self.value.dim() != 0:
+    #         raise ValueError(
+    #             "Only one element tensors can be converted to Python scalars."
+    #         )
+
+    #     return self.value.item()
 
     def expand_population(self, population_size: int) -> "Assessment":
         """Convert the assessment so that the first dimension is the population dimension
@@ -511,23 +537,23 @@ class Assessment(object):
             return self.value.max(dim=dim, keepdim=keepdim)
         return self.value.min(dim=dim, keepdim=keepdim)
 
-    @property
-    def shape(self) -> torch.Size:
-        """
-        Returns:
-            torch.Size: The shape of the assessment
-        """
-        return self.value.shape
+    # @property
+    # def shape(self) -> torch.Size:
+    #     """
+    #     Returns:
+    #         torch.Size: The shape of the assessment
+    #     """
+    #     return self.value.shape
 
-    def backward(self):
-        """
-        Raises:
-            ValueError: If the assessment is not a scalar
-        """
-        if self.value.dim() != 0:
-            raise ValueError("Backward can only be computed for one element tensors .")
+    # def backward(self):
+    #     """
+    #     Raises:
+    #         ValueError: If the assessment is not a scalar
+    #     """
+    #     if self.value.dim() != 0:
+    #         raise ValueError("Backward can only be computed for one element tensors .")
 
-        return self.value.backward()
+    #     return self.value.backward()
 
     def reduce(self, reduction: str = "mean", dim: int = None, keepdim: bool = False):
         """
@@ -594,19 +620,19 @@ class Assessment(object):
             for element in self.value:
                 yield Assessment(element, self.maximize)
 
-    def view(self, *size: int) -> 'Assessment':
-        """
-        Returns:
-            Assessment: The assessment with its view changed
-        """
-        return Assessment(self.value.view(size), self.maximize)
+    # def view(self, *size: int) -> 'Assessment':
+    #     """
+    #     Returns:
+    #         Assessment: The assessment with its view changed
+    #     """
+    #     return Assessment(self.value.view(size), self.maximize)
 
-    def reshape(self, *size: int):
-        """
-        Returns:
-            Assessment: The assessment reshaped 
-        """
-        return Assessment(self.value.reshape(size), self.maximize)
+    # def reshape(self, *size: int):
+    #     """
+    #     Returns:
+    #         Assessment: The assessment reshaped 
+    #     """
+    #     return Assessment(self.value.reshape(size), self.maximize)
 
     def __str__(self) -> str:
 
@@ -635,303 +661,362 @@ def reduce_assessment(
     return Assessment(assessment, maximize).reduce(reduction, dim)
 
 
-class AssessmentDict(object):
+def _f_assess_dict(assessment_dict: 'AssessmentDict', f):
+    
+    def _(*args, **kwargs):
+        updated = {}
+        result = {
+            key: (f(value.value, *args, **kwargs), value.maximize, value.name)
+            for key, value in assessment_dict.items()
+        }
+        for key, (value, maximize, name) in result.items():
+            if isinstance(value, torch.Tensor):
+                value = Assessment(value, maximize, name)
+            else:
+                value = value[0]
+            if value is not None:
+                updated[key] = value
+        if len(updated) == 0:
+            return None
+
+        return AssessmentDict(
+            **updated
+        )
+    return _
+
+
+class AssessmentDict(dict):
 
     def __init__(self, **assessments: Assessment):
-        """Wrap multiple 
+        super().__init__(**assessments)
 
-        Args:
-            assessment (Assessment): The assessments in the AssessmentDict
-        """
-        self._assessments: typing.Dict[str, Assessment] = assessments
+    def __getattr__(self, key: str):
+
+        if key in self:
+            return self[key]
+
+        try:
+            f = getattr(torch.Tensor, key)
+            return _f_assess_dict(self, f)
+        except KeyError:
+            raise KeyError(f'No key named {key} in AssessmentDict')
+    
+    def sub(self, keys: typing.List[str]) -> 'AssessmentDict':
+
+        return {
+            key: self[key] for key in keys
+        }
+
+    def apply(self, f: typing.Callable):
+
+        return {
+            key: f(value) for key, value in self.items()
+        }
 
     def as_dict(self, to_tensor: bool = True):
         return {
             key: assessment.value if to_tensor else assessment
-            for key, assessment in self._assessments.items()
+            for key, assessment in self.items()
         }
 
-    def items(self) -> typing.Iterator[typing.Tuple[str, Assessment]]:
 
-        for key, value in self._assessments.items():
-            yield key, value
+# class AssessmentDict(object):
 
-    def keys(self) -> typing.Iterator[str]:
+#     def __init__(self, **assessments: Assessment):
+#         """Wrap multiple 
 
-        for key in self._assessments.keys():
-            yield key
+#         Args:
+#             assessment (Assessment): The assessments in the AssessmentDict
+#         """
+#         self._assessments: typing.Dict[str, Assessment] = assessments
 
-    def values(self) -> typing.Iterator[torch.Tensor]:
-        """
-        Returns:
-            typing.Iterator[torch.Tensor]: Iterator for all of the values
+#     def as_dict(self, to_tensor: bool = True):
+#         return {
+#             key: assessment.value if to_tensor else assessment
+#             for key, assessment in self._assessments.items()
+#         }
 
-        Yields:
-            Iterator[typing.Iterator[torch.Tensor]]: A value
-        """
+#     def items(self) -> typing.Iterator[typing.Tuple[str, Assessment]]:
 
-        for value in self._assessments.values():
-            yield value
+#         for key, value in self._assessments.items():
+#             yield key, value
 
-    def __setitem__(self, key: str, value: Assessment):
-        self._assessments[key] = value
+#     def keys(self) -> typing.Iterator[str]:
 
-    def __getitem__(
-        self, key: typing.Union[typing.List[str], str]
-    ) -> typing.Union[Assessment, "AssessmentDict"]:
-        """
-        Returns:
-            Union[Assessment, 'AssessmentDict']: If input is a list, returns an AssessmentDict. Otherwise a string
-        """
+#         for key in self._assessments.keys():
+#             yield key
 
-        if isinstance(key, typing.List):
-            return AssessmentDict(
-                **{
-                    k: assessment
-                    for k, assessment in self._assessments.items()
-                    if k in key
-                }
-            )
+#     def values(self) -> typing.Iterator[torch.Tensor]:
+#         """
+#         Returns:
+#             typing.Iterator[torch.Tensor]: Iterator for all of the values
 
-        return self._assessments[key]
+#         Yields:
+#             Iterator[typing.Iterator[torch.Tensor]]: A value
+#         """
 
-    def __len__(self) -> int:
-        """
-        Returns:
-            int: The number of assessments
-        """
-        return len(self._assessments)
+#         for value in self._assessments.values():
+#             yield value
 
-    def __contains__(self, key: str) -> bool:
-        """
-        Returns:
-            bool: True if key is in the assessments
-        """
-        return key in self._assessments
+#     def __setitem__(self, key: str, value: Assessment):
+#         self._assessments[key] = value
 
-    def _loop_pair(self, other: "AssessmentDict"):
-        keys = set(self.keys()).union(set(other.keys()))
-        for k in keys:
-            yield k, self._assessments.get(k), other._assessments.get(k)
+#     def __getitem__(
+#         self, key: typing.Union[typing.List[str], str]
+#     ) -> typing.Union[Assessment, "AssessmentDict"]:
+#         """
+#         Returns:
+#             Union[Assessment, 'AssessmentDict']: If input is a list, returns an AssessmentDict. Otherwise a string
+#         """
 
-    def __add__(self, other: "AssessmentDict") -> 'AssessmentDict':
-        """Add another assessment to the dict
+#         if isinstance(key, typing.List):
+#             return AssessmentDict(
+#                 **{
+#                     k: assessment
+#                     for k, assessment in self._assessments.items()
+#                     if k in key
+#                 }
+#             )
 
-        Args:
-            other (AssessmentDict)
+#         return self._assessments[key]
 
-        Returns:
-            AssessmentDict: the two assessment dicts added
-        """
-        result = AssessmentDict()
-        for key, s1, o1 in self._loop_pair(other):
-            if s1 is not None and o1 is not None:
-                result[key] = s1 + o1
-            elif s1 is not None:
-                result[key] = s1
-            else:
-                result[key] = o1
+#     def __len__(self) -> int:
+#         """
+#         Returns:
+#             int: The number of assessments
+#         """
+#         return len(self._assessments)
 
-        return result
+#     def __contains__(self, key: str) -> bool:
+#         """
+#         Returns:
+#             bool: True if key is in the assessments
+#         """
+#         return key in self._assessments
 
-    def __sub__(self, other: "AssessmentDict") -> "AssessmentDict":
-        """Take the difference in keys between the two assessment dicts
+#     def _loop_pair(self, other: "AssessmentDict"):
+#         keys = set(self.keys()).union(set(other.keys()))
+#         for k in keys:
+#             yield k, self._assessments.get(k), other._assessments.get(k)
 
-        Args:
-            other (AssessmentDict)
+#     def __add__(self, other: "AssessmentDict") -> 'AssessmentDict':
+#         """Add another assessment to the dict
 
-        Returns:
-            AssessmentDict: The resulting assessment dict
-        """
-        result = AssessmentDict()
-        for key, s1, o1 in self._loop_pair(other):
-            if s1 is not None and o1 is not None:
-                result[key] = s1 - o1
-            elif s1 is not None:
-                result[key] = s1
+#         Args:
+#             other (AssessmentDict)
 
-        return result
+#         Returns:
+#             AssessmentDict: the two assessment dicts added
+#         """
+#         result = AssessmentDict()
+#         for key, s1, o1 in self._loop_pair(other):
+#             if s1 is not None and o1 is not None:
+#                 result[key] = s1 + o1
+#             elif s1 is not None:
+#                 result[key] = s1
+#             else:
+#                 result[key] = o1
 
-    def __mul__(self, val: float) -> 'AssessmentDict':
-        """Multiply the AssessmentDict by a value
+#         return result
 
-        Args:
-            val (float): The value to multiply
+#     def __sub__(self, other: "AssessmentDict") -> "AssessmentDict":
+#         """Take the difference in keys between the two assessment dicts
 
-        Returns:
-            AssessmentDict: the assessment dict multiplied by the value
-        """
-        return AssessmentDict(**{k: v * val for k, v in self._assessments.items()})
+#         Args:
+#             other (AssessmentDict)
 
-    def union(
-        self, assessment_dict: "AssessmentDict", override: bool = False
-    ) -> "AssessmentDict":
-        """Combine two assessment dicts together
+#         Returns:
+#             AssessmentDict: The resulting assessment dict
+#         """
+#         result = AssessmentDict()
+#         for key, s1, o1 in self._loop_pair(other):
+#             if s1 is not None and o1 is not None:
+#                 result[key] = s1 - o1
+#             elif s1 is not None:
+#                 result[key] = s1
 
-        Args:
-            assessment_dict (AssessmentDict): The assessment dict to union
-            override (bool, optional): Wher to override repeating values. Defaults to False.
+#         return result
 
-        Returns:
-            AssessmentDict: The unioned AssessmentDict
-        """
+#     def __mul__(self, val: float) -> 'AssessmentDict':
+#         """Multiply the AssessmentDict by a value
 
-        if not override:
-            return AssessmentDict(**self._assessments, **assessment_dict._assessments)
-        else:
-            assessments = {**self._assessments}
-            assessments.update(assessment_dict._assessments)
-            return AssessmentDict(**assessments)
+#         Args:
+#             val (float): The value to multiply
 
-    def sum(self, *fields: str, dim: int = None) -> "AssessmentDict":
-        """Sum the mean over specified fields
+#         Returns:
+#             AssessmentDict: the assessment dict multiplied by the value
+#         """
+#         return AssessmentDict(**{k: v * val for k, v in self._assessments.items()})
 
-        Args:
-            dim (int, optional): The dim to sum. Defaults to None.
+#     def union(
+#         self, assessment_dict: "AssessmentDict", override: bool = False
+#     ) -> "AssessmentDict":
+#         """Combine two assessment dicts together
 
-        Returns:
-            AssessmentDict
-        """
-        result = {}
-        fields = set(fields)
+#         Args:
+#             assessment_dict (AssessmentDict): The assessment dict to union
+#             override (bool, optional): Wher to override repeating values. Defaults to False.
 
-        for key, value in self._assessments.items():
-            if key in fields:
-                result[key] = value.sum(dim)
-            elif key in fields:
-                result[key] = Assessment(value.value.sum(dim=dim), value.maximize)
-            else:
-                result[key] = self._assessments[key]
-        return AssessmentDict(**result)
+#         Returns:
+#             AssessmentDict: The unioned AssessmentDict
+#         """
 
-    def mean(self, *fields: str, dim: int = None) -> "AssessmentDict":
-        """Take the mean over specified fields
+#         if not override:
+#             return AssessmentDict(**self._assessments, **assessment_dict._assessments)
+#         else:
+#             assessments = {**self._assessments}
+#             assessments.update(assessment_dict._assessments)
+#             return AssessmentDict(**assessments)
 
-        Args:
-            dim (int, optional): The dimension to take the mean on. Defaults to None.
+#     def sum(self, *fields: str, dim: int = None) -> "AssessmentDict":
+#         """Sum the mean over specified fields
 
-        Returns:
-            AssessmentDict
-        """
-        result = {}
-        fields = set(fields)
+#         Args:
+#             dim (int, optional): The dim to sum. Defaults to None.
 
-        for key, value in self._assessments.items():
-            if key in fields:
-                result[key] = value.mean(dim)
-            else:
-                result[key] = self._assessments[key]
-        return AssessmentDict(**result)
+#         Returns:
+#             AssessmentDict
+#         """
+#         result = {}
+#         fields = set(fields)
 
-    def detach(self) -> "AssessmentDict":
-        """
-        Returns:
-            AssessmentDict: assessment dict with all values detached
-        """
+#         for key, value in self._assessments.items():
+#             if key in fields:
+#                 result[key] = value.sum(dim)
+#             elif key in fields:
+#                 result[key] = Assessment(value.value.sum(dim=dim), value.maximize)
+#             else:
+#                 result[key] = self._assessments[key]
+#         return AssessmentDict(**result)
 
-        return AssessmentDict(**{key: value.detach() for key, value in self.items()})
+#     def mean(self, *fields: str, dim: int = None) -> "AssessmentDict":
+#         """Take the mean over specified fields
 
-    def cpu(self) -> "AssessmentDict":
-        """
-        Returns:
-            AssessmentDict: assessment dict that has been converted to cpu
-        """
+#         Args:
+#             dim (int, optional): The dimension to take the mean on. Defaults to None.
 
-        return AssessmentDict(**{key: value.cpu() for key, value in self.items()})
+#         Returns:
+#             AssessmentDict
+#         """
+#         result = {}
+#         fields = set(fields)
 
-    def numpy(self) -> typing.Dict[str, np.ndarray]:
-        """
-        Returns:
-            typing.Dict[str, np.ndarray]: dictionary with all values converted to numpy
-        """
-        return {key: value.numpy() for key, value in self.items()}
+#         for key, value in self._assessments.items():
+#             if key in fields:
+#                 result[key] = value.mean(dim)
+#             else:
+#                 result[key] = self._assessments[key]
+#         return AssessmentDict(**result)
 
-    def item(self) -> typing.Dict[str, typing.Any]:
-        return {key: value.item() for key, value in self.items()}
+#     def detach(self) -> "AssessmentDict":
+#         """
+#         Returns:
+#             AssessmentDict: assessment dict with all values detached
+#         """
 
-    def backward(self, key: str):
-        """
-        Args:
-            key (str): assessment to go backward on
+#         return AssessmentDict(**{key: value.detach() for key, value in self.items()})
 
-        Raises:
-            KeyError: if key is not in the assessments
-        """
-        if key not in self._assessments:
-            raise KeyError(f"Key {key} is not in assessments.")
-        return self._assessments[key].backward()
+#     def cpu(self) -> "AssessmentDict":
+#         """
+#         Returns:
+#             AssessmentDict: assessment dict that has been converted to cpu
+#         """
 
-    def prepend(self, with_str: str) -> "AssessmentDict":
-        """
-        Args:
-            with_str (str): string to prepend each value by
+#         return AssessmentDict(**{key: value.cpu() for key, value in self.items()})
 
-        Returns:
-            AssessmentDict: AssessmentDict with all names prepended
-        """
-        return AssessmentDict(
-            **{with_str + key: value for key, value in self._assessments.items()}
-        )
+#     def numpy(self) -> typing.Dict[str, np.ndarray]:
+#         """
+#         Returns:
+#             typing.Dict[str, np.ndarray]: dictionary with all values converted to numpy
+#         """
+#         return {key: value.numpy() for key, value in self.items()}
 
-    def append(self, with_str: str) -> "AssessmentDict":
-        """
-        Args:
-            with_str (str): string to append each name with
+#     def item(self) -> typing.Dict[str, typing.Any]:
+#         return {key: value.item() for key, value in self.items()}
 
-        Returns:
-            AssessmentDict:  AssessmentDict with all names appended
-        """
-        return AssessmentDict(
-            **{key + with_str: value for key, value in self._assessments.items()}
-        )
+#     def backward(self, key: str):
+#         """
+#         Args:
+#             key (str): assessment to go backward on
 
-    @classmethod
-    def stack(
-        self, assessment_dicts: typing.Iterable["AssessmentDict"]
-    ) -> "AssessmentDict":
-        """Stack all of the assessments in the assessment dicts
+#         Raises:
+#             KeyError: if key is not in the assessments
+#         """
+#         if key not in self._assessments:
+#             raise KeyError(f"Key {key} is not in assessments.")
+#         return self._assessments[key].backward()
 
-        Args:
-            assessment_dicts (typing.Iterable[AssessmentDict]): List of assessment dicts containing
-            assessments to stack
+#     def prepend(self, with_str: str) -> "AssessmentDict":
+#         """
+#         Args:
+#             with_str (str): string to prepend each value by
 
-        Returns:
-            AssessmentDict: The assessment dict with stacked assessments
-        """
-        values = {}
-        for assessment in assessment_dicts:
+#         Returns:
+#             AssessmentDict: AssessmentDict with all names prepended
+#         """
+#         return AssessmentDict(
+#             **{with_str + key: value for key, value in self._assessments.items()}
+#         )
 
-            for k, v in assessment.items():
-                if k in values:
-                    values[k].append(v)
-                else:
-                    values[k] = [v]
-        return AssessmentDict(**{k: Assessment.stack(v) for k, v in values.items()})
+#     def append(self, with_str: str) -> "AssessmentDict":
+#         """
+#         Args:
+#             with_str (str): string to append each name with
 
-    def transfer(
-        self, source: str, destination: str, remove_source: bool = False
-    ) -> "AssessmentDict":
-        """Copy a reference to an assessment loss to another key in the AssessmentDict
-        Args:
-            source (str): name of loss to transfer
-            destination (str): name of loss to transfer to
+#         Returns:
+#             AssessmentDict:  AssessmentDict with all names appended
+#         """
+#         return AssessmentDict(
+#             **{key + with_str: value for key, value in self._assessments.items()}
+#         )
 
-        Returns:
-            AssessmentDict: self
-        """
+#     @classmethod
+#     def stack(
+#         self, assessment_dicts: typing.Iterable["AssessmentDict"]
+#     ) -> "AssessmentDict":
+#         """Stack all of the assessments in the assessment dicts
 
-        self[destination] = self[source]
-        if remove_source:
-            del self._assessments[source]
-        return self
+#         Args:
+#             assessment_dicts (typing.Iterable[AssessmentDict]): List of assessment dicts containing
+#             assessments to stack
+
+#         Returns:
+#             AssessmentDict: The assessment dict with stacked assessments
+#         """
+#         values = {}
+#         for assessment in assessment_dicts:
+
+#             for k, v in assessment.items():
+#                 if k in values:
+#                     values[k].append(v)
+#                 else:
+#                     values[k] = [v]
+#         return AssessmentDict(**{k: Assessment.stack(v) for k, v in values.items()})
+
+#     def transfer(
+#         self, source: str, destination: str, remove_source: bool = False
+#     ) -> "AssessmentDict":
+#         """Copy a reference to an assessment loss to another key in the AssessmentDict
+#         Args:
+#             source (str): name of loss to transfer
+#             destination (str): name of loss to transfer to
+
+#         Returns:
+#             AssessmentDict: self
+#         """
+
+#         self[destination] = self[source]
+#         if remove_source:
+#             del self._assessments[source]
+#         return self
     
-    def __str__(self) -> str:
+#     def __str__(self) -> str:
 
-        return f"""
-        AssessmentDict(
-            {self._assessments}
-        )
-        """
+#         return f"""
+#         AssessmentDict(
+#             {self._assessments}
+#         )
+#         """
 
 
 class Criterion(nn.Module):

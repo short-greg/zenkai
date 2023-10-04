@@ -104,7 +104,7 @@ class TestState:
         assessment = Assessment(torch.tensor(1.0))
         state.log_assessment(obj, 'x', 'k', assessment)
         result = state.logs.as_assessment_dict()
-        assert (result['x_k'] == assessment)
+        assert (result['x_k'].value == assessment.value).all()
 
 
 class Base:

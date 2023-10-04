@@ -64,41 +64,49 @@ class TestAssessment:
 
         x = torch.tensor([2, 1])
         assessment = _evaluation.Assessment(x)
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError):
             assessment.backward()
 
 
-# class TestAssessmentDict:
+class TestAssessmentDict:
     
-#     def test_getitem_retrieves_all_items(self):
-#         assessment = _evaluation.Assessment(torch.rand(2))
-#         assessment_dict = _evaluation.AssessmentDict(
-#             t=assessment
-#         )
-#         assert assessment_dict['t'] == assessment
+    def test_getitem_retrieves_all_items(self):
+        assessment = _evaluation.Assessment(torch.rand(2))
+        assessment_dict = _evaluation.AssessmentDict(
+            t=assessment
+        )
+        assert assessment_dict['t'] == assessment
     
-#     def test_items_retrieves_all_items(self):
-#         assessment = _evaluation.Assessment(torch.rand(2))
-#         d_ = dict(_evaluation.AssessmentDict(
-#             t=assessment
-#         ).items())
-#         assert d_['t'] == assessment
+    def test_items_retrieves_all_items(self):
+        assessment = _evaluation.Assessment(torch.rand(2))
+        d_ = dict(_evaluation.AssessmentDict(
+            t=assessment
+        ).items())
+        assert d_['t'] == assessment
 
-#     def test_values_retrieves_all_values(self):
-#         assessment = _evaluation.Assessment(torch.rand(2))
-#         d_ = list(_evaluation.AssessmentDict(
-#             t=assessment
-#         ).values())
-#         assert d_[0] == assessment
+    def test_values_retrieves_all_values(self):
+        assessment = _evaluation.Assessment(torch.rand(2))
+        d_ = list(_evaluation.AssessmentDict(
+            t=assessment
+        ).values())
+        assert d_[0] == assessment
 
-#     def test_mean_computes_all_means(self):
-#         assessment = _evaluation.Assessment(torch.rand(2))
-#         assessment2 = _evaluation.Assessment(torch.rand(2))
-#         result = _evaluation.AssessmentDict(
-#             t=assessment, t2=assessment2
-#         ).mean('t', 't2')
-#         assert result['t'].value == assessment.value.mean()
-#         assert result['t2'].value == assessment2.value.mean()
+    def test_mean_computes_all_means(self):
+        assessment = _evaluation.Assessment(torch.rand(2))
+        assessment2 = _evaluation.Assessment(torch.rand(2))
+        result = _evaluation.AssessmentDict(
+            t=assessment, t2=assessment2
+        ).mean().sub(['t', 't2'])
+        assert result['t'].value == assessment.value.mean()
+        assert result['t2'].value == assessment2.value.mean()
+
+    def test_values_retrieves_all_values(self):
+        assessment = _evaluation.Assessment(torch.rand(2))
+        d_ = list(_evaluation.AssessmentDict(
+            t=assessment
+        ).values())
+        assert d_[0] == assessment
+
 
 
 class TestThLoss:

@@ -313,18 +313,6 @@ class State(object):
         obj, key = key
         id = self.id(obj)
         return id in self._data and key in self._data[id]
-    
-    # def log_assessment_dict(self, obj: IDable, obj_name: str, assessment_dict: Assessement):
-    #     """Log an assessment
-
-    #     Args:
-    #         obj: The object to log for
-    #         obj_name: The name of the object to log for (So it is clear who it is coming from)
-    #         assessment_dict (Assessment): the values to log
-    #     """
-    #     key = self.id(obj)
-        
-    #     self._logs.update(key, obj_name, assessment_dict)
 
     def log_assessment(self, obj: typing.Union[typing.Tuple[IDable, IDable], IDable], obj_name: str, log_name: str, assessment: Assessment, update: bool=True):
         """Log an assessment
