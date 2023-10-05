@@ -3,7 +3,7 @@ import typing
 from abc import ABC, abstractmethod
 
 # local
-from ..kaku import IO, LearningMachine, Criterion, State
+from ..kaku import IO, LearningMachine, Criterion
 from .core import Population, expand_t, reduce_assessment_dim1, Objective
 
 
@@ -11,12 +11,11 @@ class PopulationAssessor(ABC):
     """Modules to asseess the population"""
 
     @abstractmethod
-    def assess(self, population: Population, state: State) -> Population:
+    def assess(self, population: Population) -> Population:
         pass
 
-    def __call__(self, population: Population, state: State=None) -> Population:
-        state = state or State()
-        return self.assess(population, state)
+    def __call__(self, population: Population) -> Population:
+        return self.assess(population)
 
 
 class ObjectivePopulationAssessor(PopulationAssessor):
@@ -40,7 +39,7 @@ class ObjectivePopulationAssessor(PopulationAssessor):
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population, state: State) -> Population:
+    def assess(self, population: Population) -> Population:
         """Assess a population
 
         Args:
@@ -86,7 +85,7 @@ class CriterionPopulationAssessor(PopulationAssessor):
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population, state: State) -> Population:
+    def assess(self, population: Population) -> Population:
         """Assess a population
 
         Args:
@@ -134,7 +133,7 @@ class XPopulationAssessor(PopulationAssessor):
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population, state: State) -> Population:
+    def assess(self, population: Population) -> Population:
         """Assess a population
 
         Args:

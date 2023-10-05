@@ -640,8 +640,8 @@ class Population(object):
         Returns:
             torch.Tensor: The value at key
         """
-        if self.k != value.shape:
-            raise ValueError(f'Batch size of k does not equal population batch size {self.k}')
+        if self.k != value.shape[0]:
+            raise ValueError(f'Batch size of {value.shape[0]} does not equal population batch size {self.k}')
         self._parameters[key] = value
         
         return value

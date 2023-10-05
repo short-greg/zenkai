@@ -6,18 +6,17 @@ import torch
 
 # local
 from .core import Population, Individual
-from ..kaku import State
 
 
 class IndividualMixer(ABC):
     """Mixes two individuals together"""
 
     @abstractmethod
-    def mix(self, individual1: Individual, individual2: Individual, state: State=None) -> Individual:
+    def mix(self, individual1: Individual, individual2: Individual) -> Individual:
         pass
 
-    def __call__(self, individual1: Individual, individual2: Individual, state: State=None) -> Individual:
-        return self.mix(individual1, individual2, state or State())
+    def __call__(self, individual1: Individual, individual2: Individual) -> Individual:
+        return self.mix(individual1, individual2)
 
     @abstractmethod
     def spawn(self) -> "IndividualMixer":
@@ -28,12 +27,12 @@ class PopulationMixer(ABC):
     """Mixes two populations together"""
 
     @abstractmethod
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
+    def mix(self, population1: Population, population2: Population) -> Population:
         pass
 
-    def __call__(self, population1: Population, population2: Population, state: State=None) -> Population:
+    def __call__(self, population1: Population, population2: Population) -> Population:
         return self.mix(
-            population1, population2, state or State()
+            population1, population2
         )
 
     @abstractmethod
@@ -58,7 +57,7 @@ class KeepMixer(IndividualMixer):
             raise ValueError(f"{keep_p} must be between 0 and 1.")
         self.keep_p = keep_p
 
-    def mix(self, individual1: Individual, individual2: Individual, state: State) -> Individual:
+    def mix(self, individual1: Individual, individual2: Individual) -> Individual:
         """Randomly choose whether to select original or selection for each value
 
         Args:
@@ -83,14 +82,14 @@ class KeepMixer(IndividualMixer):
 class StandardPopulationMixer(PopulationMixer):
 
     @abstractmethod
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
+    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
         pass
 
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
+    def mix(self, population1: Population, population2: Population) -> Population:
 
         results = {}
         for k, v in population1:
-            results[k] = self.mix_field(k, v, population2[k], state)
+            results[k] = self.mix_field(k, v, population2[k])
 
         return Population(**results)
 
@@ -109,7 +108,7 @@ class KBestElitism(PopulationMixer):
             raise ValueError(f'Argument k must be greater than 0 not {self.k}')
         self.k = k
 
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
+    def mix(self, population1: Population, population2: Population) -> Population:
         """
 
         Args:
@@ -144,7 +143,7 @@ class BinaryRandCrossOverBreeder(StandardPopulationMixer):
         super().__init__()
         self.p = p
 
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
+    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
         """Mix two tensors together by choosing one gene for each
 
         Args:
@@ -166,7 +165,7 @@ class SmoothCrossOverBreeder(StandardPopulationMixer):
     """Do a smooth interpolation between the values to breed
     """
 
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
+    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor) -> torch.Tensor:
         """Mix two tensors together with smooth interpolation
 
         Args:
