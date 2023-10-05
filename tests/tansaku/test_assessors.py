@@ -51,7 +51,7 @@ class TestXPopulationAssessor:
         assessor = assessors.XPopulationAssessor(
             learner, ['x'], 'mean'
         )
-        assessor.assess(population)
+        assessor(population)
         assert len(population.stack_assessments()) == 8
     
     def test_assess_outputs_correct_size_with_3_dims(self):
@@ -61,5 +61,5 @@ class TestXPopulationAssessor:
         assessor = assessors.XPopulationAssessor(
             learner, ['x'], 'mean'
         )
-        assessor.assess(population)
+        assessor(population)
         assert len(population.stack_assessments()) == 8

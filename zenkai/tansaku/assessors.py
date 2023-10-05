@@ -3,7 +3,7 @@ import typing
 from abc import ABC, abstractmethod
 
 # local
-from ..kaku import IO, LearningMachine, Criterion
+from ..kaku import IO, LearningMachine, Criterion, State
 from .core import Population, expand_t, reduce_assessment_dim1, Objective
 
 
@@ -11,11 +11,12 @@ class PopulationAssessor(ABC):
     """Modules to asseess the population"""
 
     @abstractmethod
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         pass
 
-    def __call__(self, population: Population) -> Population:
-        return self.assess(population)
+    def __call__(self, population: Population, state: State=None) -> Population:
+        state = state or State()
+        return self.assess(population, state)
 
 
 class ObjectivePopulationAssessor(PopulationAssessor):
@@ -34,11 +35,12 @@ class ObjectivePopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
+        super().__init__()
         self.objective = objective
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:
@@ -48,6 +50,7 @@ class ObjectivePopulationAssessor(PopulationAssessor):
         Returns:
             Population: The assessed population
         """
+        super().__init__()
 
         x = population.flattened(self.names)
 
@@ -78,11 +81,12 @@ class CriterionPopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
+        super().__init__()
         self.criterion = criterion
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:
@@ -109,7 +113,6 @@ class CriterionPopulationAssessor(PopulationAssessor):
         return population
 
 
-
 class XPopulationAssessor(PopulationAssessor):
     """Assess the inputs to the population"""
 
@@ -131,7 +134,7 @@ class XPopulationAssessor(PopulationAssessor):
         self.names = names
         self.reduction = reduction
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:

@@ -8,6 +8,7 @@ import torch
 from torch.nn.parameter import Parameter
 
 # local
+from ..kaku import State
 from .core import (
     Individual,
     Population,
@@ -20,8 +21,9 @@ from ..utils import Voter, expand_dim0
 class Populator(ABC):
     """Base class for creating a population from an individual"""
 
+
     @abstractmethod
-    def __call__(self, individual: Individual) -> Population:
+    def populate(self, individual: Individual, state: State) -> Population:
         """Spawn a population from an individual
 
         Args:
@@ -31,6 +33,19 @@ class Populator(ABC):
             Population: The resulting population
         """
         pass
+
+    def __call__(self, individual: Individual, state: State=None) -> Population:
+        """Spawn a population from an individual
+
+        Args:
+            individual (Individual): The individual to populate based on
+
+        Returns:
+            Population: The resulting population
+        """
+        return self.populate(
+            individual, state or State()
+        )
 
     @abstractmethod
     def spawn(self) -> "Populator":
@@ -46,12 +61,12 @@ class StandardPopulator(Populator):
     """Populator that uses a standard populator method for all values in the individual"""
 
     @abstractmethod
-    def populate(
-        self, key: str, val: typing.Union[torch.Tensor, Parameter]
+    def populate_field(
+        self, key: str, val: typing.Union[torch.Tensor, Parameter], state: State
     ) -> typing.Union[torch.Tensor, Parameter]:
         pass
 
-    def __call__(self, individual: Individual) -> Population:
+    def populate(self, individual: Individual, state: State) -> Population:
         """Call the populate method for each value and spawn the population
 
         Args:
@@ -62,7 +77,7 @@ class StandardPopulator(Populator):
         """
         expanded = {}
         for key, val in individual:
-            cur = self.populate(key, val)
+            cur = self.populate_field(key, val, state)
             if cur is not None:
                 expanded[key] = cur
         return Population(**expanded)
@@ -81,7 +96,7 @@ class PopulatorDecorator(Populator):
 
     @abstractmethod
     def decorate(
-        self, key: str, base_val, val: typing.Union[torch.Tensor, Parameter]
+        self, key: str, base_val, val: typing.Union[torch.Tensor, Parameter], state: State
     ) -> typing.Union[torch.Tensor, Parameter]:
         """Decorate each value in the population
 
@@ -95,7 +110,7 @@ class PopulatorDecorator(Populator):
         """
         pass
 
-    def __call__(self, individual: Individual) -> Population:
+    def populate(self, individual: Individual, state: State) -> Population:
         """Spawn a population from an individual
 
         Args:
@@ -108,7 +123,7 @@ class PopulatorDecorator(Populator):
         expanded = {}
         for key, val in populated:
             if key in individual:
-                expanded[key] = self.decorate(key, individual[key], val)
+                expanded[key] = self.decorate(key, individual[key], val, state)
 
         return Population(**expanded)
 
@@ -128,8 +143,8 @@ class RepeatPopulator(StandardPopulator):
         """
         self.k = k
 
-    def populate(
-        self, key: str, val: typing.Union[torch.Tensor, Parameter]
+    def populate_field(
+        self, key: str, val: typing.Union[torch.Tensor, Parameter], state: State
     ) -> typing.Union[torch.Tensor, Parameter]:
         """Expands each of the values by repeating along the population dimension
 
@@ -177,7 +192,7 @@ class VoterPopulator(Populator):
         self.voter = voter
         self.x_name = x_name
 
-    def __call__(self, individual: Individual) -> Population:
+    def populate(self, individual: Individual, state: State) -> Population:
         """Populator function
 
         Args:
@@ -209,8 +224,8 @@ class SimpleGaussianPopulator(StandardPopulator):
         """
         self.k = k
 
-    def populate(
-        self, key: str, val: typing.Union[torch.Tensor, Parameter]
+    def populate_field(
+        self, key: str, val: typing.Union[torch.Tensor, Parameter], state: State
     ) -> typing.Union[torch.Tensor, Parameter]:
         """
 
@@ -240,7 +255,7 @@ class GaussianPopulator(StandardPopulator):
         self.std = std
         self.equal_change_dim = equal_change_dim
 
-    def populate(self, key: str, val: torch.Tensor):
+    def populate_field(self, key: str, val: torch.Tensor, state: State):
 
         shape = [self.k - 1, *val.shape]
         if self.equal_change_dim:
@@ -285,6 +300,7 @@ class ConservativePopulator(PopulatorDecorator):
         key: str,
         base_val: torch.Tensor,
         val: typing.Union[torch.Tensor, Parameter],
+        state: State
     ) -> typing.Union[torch.Tensor, Parameter]:
         """Decorate the population
 
@@ -385,7 +401,7 @@ class BinaryPopulator(StandardPopulator):
 
         return torch.max(keep, ignore_change)
 
-    def populate(self, key: str, val: torch.Tensor):
+    def populate_field(self, key: str, val: torch.Tensor, state: State):
 
         keep = self._generate_keep(val)
 

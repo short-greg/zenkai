@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from zenkai.tansaku.core import Population
 
 from .core import Individual, Population, gen_like
+from ..kaku import State
 import torch
 import typing
 
@@ -11,8 +12,11 @@ class IndividualMapper(ABC):
     """Mixes two individuals together"""
 
     @abstractmethod
-    def __call__(self, individual: Individual) -> Individual:
+    def map(self, individual: Individual, state: State) -> Individual:
         pass
+
+    def __call__(self, individual: Individual, state: State=None) -> Individual:
+        return self.map(individual, state or State())
 
     @abstractmethod
     def spawn(self) -> "IndividualMapper":
@@ -23,8 +27,11 @@ class PopulationMapper(ABC):
     """Mixes two populations together"""
 
     @abstractmethod
-    def __call__(self, population: Population) -> Population:
+    def map(self, population: Population, state: State) -> Population:
         pass
+
+    def __call__(self, population: Population, state: State=None) -> Population:
+        return self.map(population, state or State())
 
     @abstractmethod
     def spawn(self) -> "PopulationMapper":
@@ -67,7 +74,7 @@ class GaussianSampleMapper(PopulationMapper):
         self._mean = {}
         self._std = {}
 
-    def __call__(self, population: Population) -> Population:
+    def map(self, population: Population, state: State) -> Population:
         """Calculate the Gaussian parameters and sample a population using them 
 
         Args:
@@ -113,7 +120,7 @@ class BinarySampleMapper(PopulationMapper):
         self._sign_neg = sign_neg
         self._p = {}
 
-    def __call__(self, population: Population) -> Population:
+    def map(self, population: Population, state: State) -> Population:
         """Calculate the bernoulli paramter and sample a population using them 
 
         Args:
@@ -122,6 +129,7 @@ class BinarySampleMapper(PopulationMapper):
         Returns:
             Population: The population of samples
         """
+        my_state = state.mine(self)
         samples = {}
 
         for k, v in population:
@@ -160,7 +168,7 @@ class GaussianMutator(PopulationMapper):
             raise ValueError(f'Argument std must be >= 0 not {std}')
         self.std = std
 
-    def __call__(self, population: Population) -> Population:
+    def map(self, population: Population, state: State) -> Population:
         """Mutate all fields in the population
 
         Args:
@@ -194,7 +202,7 @@ class BinaryMutator(PopulationMapper):
         self.flip_p = flip_p
         self.signed_neg = signed_neg
 
-    def __call__(self, population: Population) -> Population:
+    def map(self, population: Population, state: State) -> Population:
         """Mutate all fields in the population
 
         Args:

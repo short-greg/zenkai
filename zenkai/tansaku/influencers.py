@@ -4,19 +4,25 @@ from abc import ABC, abstractmethod
 # 3rd party
 import torch
 
-from ..utils import to_signed_neg, to_zero_neg
-from .core import Individual, Population, expand_dim0
-from .populators import RepeatPopulator
 
 # local
 from .reducers import SlopeReducer
+from ..kaku import State
+from ..utils import to_signed_neg, to_zero_neg
+from .core import Individual, Population, expand_dim0
+from .populators import RepeatPopulator
 
 
 class IndividualInfluencer(ABC):
     """Modifies an Individual based on the Population"""
 
+    def __call__(self, individual: Individual, population: Population, state: State=None) -> Individual:
+        return self.influence(
+            individual, population, state or State()
+        )
+
     @abstractmethod
-    def __call__(self, individual: Individual, population: Population) -> Individual:
+    def influence(self, individual: Individual, population: Population, state: State=None) -> Individual:
         pass
 
     @abstractmethod
@@ -28,8 +34,13 @@ class PopulationInfluencer(ABC):
     """"""
 
     @abstractmethod
-    def __call__(self, population: Population, individual: Population) -> Population:
+    def influence(self, population: Population, individual: Population, state: State=None) -> Population:
         pass
+
+    def __call__(self, population: Population, individual: Population, state: State=None) -> Population:
+        return self.influence(
+            population, individual, state or State()
+        )
 
     @abstractmethod
     def spawn(self) -> "PopulationInfluencer":
@@ -39,7 +50,7 @@ class PopulationInfluencer(ABC):
 class JoinIndividual(PopulationInfluencer):
     """"""
 
-    def __call__(self, population: Population, individual: Individual) -> Population:
+    def influence(self, population: Population, individual: Individual, state: State) -> Population:
         
         new_population = {**population}
 
@@ -98,7 +109,7 @@ class SlopeInfluencer(IndividualInfluencer):
     def maximize(self, maximize):
         self._multiplier = 1 if maximize else -1
 
-    def __call__(self, original: Individual, population: Population) -> Individual:
+    def influence(self, original: Individual, population: Population, state: State) -> Individual:
         x = original[self.x]
         slope = self._slope_selector(population)[self.x]
         return Individual(**{self.x: x + self.lr * slope})
@@ -112,10 +123,11 @@ class JoinInfluencer(PopulationInfluencer):
     Add the individual to the front of the pouplation
     """
 
-    def __call__(
+    def influence(
         self,
         population: Population,
-        individual: Individual
+        individual: Individual,
+        state: State
     ) -> Population:
         """
 
@@ -154,10 +166,11 @@ class PopulationLimiter(PopulationInfluencer):
 
         self.limit = limit
 
-    def __call__(
+    def influence(
         self,
         population: Population,
-        individual: Individual
+        individual: Individual,
+        state: State
     ) -> Population:
         """
 

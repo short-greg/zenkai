@@ -8,13 +8,19 @@ import torch
 
 # local
 from .core import Population
+from ..kaku import State
 
 
 class Divider(ABC):
 
     @abstractmethod
-    def __call__(self, population: Population) -> typing.Tuple[Population]:
+    def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
         pass
+
+    def __call__(self, population: Population, state: State=None) -> typing.Tuple[Population]:
+        return self.divide(
+            population, state
+        )
 
     @abstractmethod
     def spawn(self) -> 'Divider':
@@ -31,10 +37,10 @@ class FitnessProportionateDivider(Divider):
         Args:
             n_divisions (int): number of pairs to generate
         """
-
+        super().__init__()
         self.n_divisions = n_divisions
 
-    def __call__(self, population: Population) -> typing.Tuple[Population]:
+    def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
 
         Args:
@@ -67,7 +73,7 @@ class FitnessProportionateDivider(Divider):
 
 class EqualDivider(Divider):
 
-    def __call__(self, population: Population) -> typing.Tuple[Population]:
+    def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
 
         Args:
