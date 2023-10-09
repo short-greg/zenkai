@@ -272,6 +272,40 @@ class SimpleLearner(core.LearningMachine):
         return y.out(release)
 
 
+class SimpleAccLearner(core.AccLearningMachine):
+
+    def __init__(self, in_features: int, out_features: int):
+        super().__init__()
+        self.linear = nn.Linear(in_features, out_features)
+        self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
+        self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
+
+    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+        return self.loss.assess(y, t, reduction_override)
+    
+    def accumulate(self, x: IO, t: IO, state: core.State) -> IO:
+        if ((self, x), 'y') not in state:
+            y = self(x, state, release=False)
+        else: y = state[(self, x), 'y']
+        self.optim.zero_grad()
+        assessment = self.assess_y(y, t.detach())
+        assessment.backward()
+
+    def step_x(self, x: IO, t: IO, state: core.State) -> IO:
+        if ((self, x), 'y') not in state:
+            assessment = self.assess(x,  t.detach(), state=state, release=False)
+            assessment.backward()
+            
+        return IO(x.f - x.f.grad)
+
+    def step(self, x: IO, t: IO, state: core.State):
+        self.optim.step()
+
+    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+        x.freshen(False)
+        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        return y.out(release)
+
 # # # # # # # TODO: UPdate simplelearner
 # # # # # # # TODO: Update tests
 # # # # # # # TODO: write tests for LayeredLearner

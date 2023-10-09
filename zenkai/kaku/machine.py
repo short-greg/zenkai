@@ -202,7 +202,6 @@ class BatchIdxStepTheta(StepTheta):
         pass
 
 
-
 class FeatureIdxStepTheta(StepTheta):
     """Mixin for when only to train on a limited set of neurons
     """

@@ -199,10 +199,8 @@ class Builder(BuilderFunctor):
 
     def __getattr__(self, name: str) -> None:
         
-        if name in self._arg_names:
-            
+        if name in self._arg_names:            
             return self[name]
-            # self._builder_kwargs.update(name, value)
         return super().__getattr__(name)
     
     def get(self, name: str):

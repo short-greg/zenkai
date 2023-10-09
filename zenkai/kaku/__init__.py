@@ -10,17 +10,6 @@ from .assess import (
     #assess_dict,
     reduce_assessment
 )
-# from .component import (
-#     Assessor,
-#     Autoencoder,
-#     Classifier,
-#     Decoder,
-#     Encoder,
-#     Learner,
-#     NNComponent,
-#     Regressor,
-#     SelfLearner,
-# )
 from .layer_assess import (
     LayerAssessor, 
     StepAssessHook, 
@@ -73,3 +62,4 @@ from .optimize import (
     itadaki
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack
+from . import build
