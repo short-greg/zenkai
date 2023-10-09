@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import typing
 
 from .machine import LearningMachine
+from typing import TypeVar, Generic
 
 
 class BuilderFunctor(ABC):
@@ -146,21 +147,23 @@ class BuilderArgs(BuilderFunctor):
         )
 
 
-class Builder(BuilderFunctor):
+T = TypeVar('T')
 
-    class Updater(object):
+class Builder(BuilderFunctor, Generic[T]):
 
-        def __init__(self, builder: 'Builder', name: str):
+    class Updater(Generic[T]):
+
+        def __init__(self, builder: 'Builder[T]', name: str):
             self.builder = builder
             self.name = name
 
-        def __call__(self, value):
+        def __call__(self, value) -> 'Builder[T]':
 
             clone = self.builder.clone()
             clone[self.name] = value
             return clone
 
-    def __init__(self, learning_machine_cls: typing.Type[LearningMachine], arg_names: typing.List[str], **kwargs):
+    def __init__(self, factory: typing.Type[T], arg_names: typing.List[str], **kwargs):
         """
         Args:
             learning_machine_cls (typing.Type[LearningMachine]): _description_
@@ -169,10 +172,8 @@ class Builder(BuilderFunctor):
         Raises:
             ValueError: _description_
         """
-        
-
         super().__init__()
-        super().__setattr__('_learning_machine_cls', learning_machine_cls)
+        super().__setattr__('_factory', factory)
         super().__setattr__('_arg_names', arg_names)
         difference = set(kwargs.keys()).difference(arg_names)
         if len(difference) != 0:
@@ -194,10 +195,10 @@ class Builder(BuilderFunctor):
         else:
             object.__setattr__(self, name, value)
 
-    def __getitem__(self, name: str) -> None:
-        return self.Updater(self, name)
+    def __getitem__(self, name: str) -> Updater[T]:
+        return self.Updater[T](self, name)
 
-    def __getattr__(self, name: str) -> None:
+    def __getattr__(self, name: str) -> Updater[T]:
         
         if name in self._arg_names:            
             return self[name]
@@ -209,10 +210,10 @@ class Builder(BuilderFunctor):
             return self._builder_kwargs.get(name)
         return super().__getattr__(name)
 
-    def clone(self):
+    def clone(self) -> 'Builder[T]':
         kwargs = self._builder_kwargs.clone()
         builder = Builder(
-            self._learning_machine_cls, [*self._arg_names], 
+            self._factory, [*self._arg_names], 
         )
         builder._builder_kwargs = kwargs
         return builder
@@ -220,9 +221,9 @@ class Builder(BuilderFunctor):
     def vars(self) -> typing.List[Var]:
         return self._builder_kwargs.vars()
 
-    def __call__(self, **kwargs) -> LearningMachine:
+    def __call__(self, **kwargs) -> T:
         
         args, kwargs = self._builder_kwargs(**kwargs)
-        return self._learning_machine_cls(
+        return self._factory(
             *args, **kwargs
         )

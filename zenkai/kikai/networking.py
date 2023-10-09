@@ -1,12 +1,14 @@
 import typing
 from dataclasses import dataclass
 
+import  torch
 from torch import nn
-from zenkai.kaku.assess import Assessment
 
-from zenkai.kaku.io import IO
-
-from ..kaku import State, LearningMachine, acc_dep, StepX, AccStepTheta, AccLearningMachine
+from ..kaku import (
+    State, IO, LearningMachine, Assessment, 
+    ThLoss, acc_dep, step_dep, StepX, 
+    AccStepTheta, AccLearningMachine
+)
 from abc import abstractmethod, ABC
 
 
@@ -55,6 +57,7 @@ class ZenNode(AccLearningMachine):
     def __repr__(self):
         return f'Node({type(self.network), {self._learning_machine}}'
 
+
 class Container(ABC):
 
     @abstractmethod
@@ -81,8 +84,16 @@ class Container(ABC):
     # def forward(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
     #     pass
 
+    @abstractmethod
+    def contains_y(self, y: IO) -> bool:
+        pass
+
     def spawn(self) -> 'Container':
         return self.__class__()
+
+    @abstractmethod
+    def first(self) -> typing.Tuple[IO, IO, IO, ZenNode]:
+        pass
 
 
 @dataclass
@@ -100,7 +111,8 @@ class Connection:
 class Pipeline(Container):
 
     def __init__(self):
-
+        
+        super().__init__()
         self._nodes: typing.List[Connection] = []
         self._indices = {}
         self._out = None
@@ -140,17 +152,25 @@ class Pipeline(Container):
 
         for connection in reversed(nodes):
             yield connection.vals()
+    
+    def contains_y(self, y: IO) -> bool:
+
+        return y in self._indices
+    
+    def first(self) -> typing.Tuple[IO, IO, IO, ZenNode]:
+
+        return self._nodes[0].vals()
 
 
 class NetworkLearner(Network):
 
-    def __init__(self, container_prototype):
+    def __init__(self, container_prototype: Container):
         super().__init__()
         self.container_prototype = container_prototype
 
     def step(self, x: IO, t: IO, state: State):
 
-        container = state[self, 'container']
+        container: Container = state[self, 'container']
         container.out_target(t)
         for x, y, node, t in container.reverse():
             if node.step_priority:
@@ -160,13 +180,17 @@ class NetworkLearner(Network):
             else: 
                 x_prime = node.step_x(x, t, state)
                 node.step(x, t, state)
-            container.target(x, x_prime)
 
+            if container.contains_y(x):
+                container.target(x, x_prime)
+
+        state[(self, x), 'stepped'] = True
         return x_prime
     
+    @step_dep('stepped', False, True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, y, t, node = state[self, 'container'].first
+        x, y, node, t = state[self, 'container'].first()
         return node.step_x(x, t, state)
 
     def add_node(self, learning_machine: LearningMachine, priority_step: bool=False) -> 'ZenNode':
@@ -185,7 +209,7 @@ class NetworkLearner(Network):
 
 class AccNetworkLearner(Network, AccLearningMachine):
 
-    def __init__(self, container_prototype):
+    def __init__(self, container_prototype: Container):
         super().__init__()
         self.container_prototype = container_prototype
 
@@ -196,22 +220,22 @@ class AccNetworkLearner(Network, AccLearningMachine):
         for x, y, node, t in container.reverse():
             node.accumulate(x, t, state)
             x_prime = node.step_x(x, t, state)
-            container.target(x, x_prime)
+
+            if container.contains_y(x):
+                container.target(x, x_prime)
         
         state[self, 'accumulated'] = True
-        return x_prime
     
     @acc_dep('accumulated', False)
     def step(self, x: IO, t: IO, state: State) -> IO:
 
-        for x, y, t, node in state[self, 'container'].reverse():
+        for x, y, node, t  in state[self, 'container'].reverse():
             node.step(x, t, state)
-        
-        return node.step_x(x, t, state)
 
+    @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, y, t, node = state[self, 'container'].first
+        x, y, node, t = state[self, 'container'].first()
         return node.step_x(x, t, state)
 
     def add_node(self, learning_machine: LearningMachine) -> 'ZenNode':

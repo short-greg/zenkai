@@ -1,4 +1,4 @@
-from zenkai.kaku import build
+from zenkai.kaku import build, LearningMachine
 from .test_machine import SimpleLearner
 from torch import nn
 import pytest
@@ -154,13 +154,16 @@ class TestBuilder:
 
     def test_builder_returns_simple_learner_after_updating_value_with_chained_updates(self):
 
-        SimpleLearnerBuilder = build.Builder(
+        SimpleLearnerBuilder = build.Builder[LearningMachine](
             SimpleLearner, ['in_features', 'out_features'],
         )
+        
         SimpleLearnerBuilder = (
             SimpleLearnerBuilder.out_features(build.Var('out_features'))
                                 .in_features(build.Var('in_features'))
         )
+        
+        
         simple_learner = SimpleLearnerBuilder(
             in_features=2, out_features=3
         )
