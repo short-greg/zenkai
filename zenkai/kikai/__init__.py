@@ -70,4 +70,11 @@ from .ensemble import EnsembleLearner, EnsembleLearnerVoter
 from .feedback_alignment import (
     BStepX, FALinearLearner, DFALearner, FALearner
 )
+from .pipelining import (
+    Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
+)
 from .post import StackPostStepTheta
+from .back import (
+    BackTarget
+)
+

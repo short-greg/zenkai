@@ -12,20 +12,7 @@ from ..kaku import (
 from abc import abstractmethod, ABC
 
 
-class Network(LearningMachine):
-
-    def __init__(self, container_prototype: 'Container'):
-
-        super().__init__()
-        self.container_prototype = container_prototype
-
-    def spawn_container(self, x: IO, state: State) -> 'Container':
-        container = self.container_prototype.spawn()
-        state[(self, x), 'container'] = container
-        return container
-
-
-class ZenNode(AccLearningMachine):
+class PipeStep(AccLearningMachine):
 
     def __init__(self, learning_machine: typing.Union[LearningMachine, AccLearningMachine], step_priority: bool=False):
 
@@ -38,11 +25,11 @@ class ZenNode(AccLearningMachine):
     def accumulate(self) -> bool:
         return self._accumulate
 
-    def forward(self, x: IO, state: State, release: bool = True, container: 'Container'=None) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True, pipeline: 'Pipeline'=None) -> IO:
         
         y = self._learning_machine(x, state, release)
-        if container is not None:
-            container.add(Connection(x, y, self))
+        if pipeline is not None:
+            pipeline.add(self, x, y)
         return y
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -64,94 +51,44 @@ class ZenNode(AccLearningMachine):
         return f'Node({self._learning_machine})'
 
 
-class Container(ABC):
-
-    @abstractmethod
-    def add(self, connection: 'Connection'):
-        pass
-
-    @abstractmethod
-    def set_out(self, y: IO):
-        pass
-
-    @abstractmethod
-    def set_out_target(self, t: IO):
-        pass
-
-    @abstractmethod
-    def get_target(self, y: IO) -> IO:
-        pass
-
-    @abstractmethod
-    def set_t(self, *key_targs):
-        pass
-
-    @abstractmethod
-    def detach_t(self, *keys):
-        pass
-
-    @abstractmethod
-    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
-        pass
-
-    @abstractmethod
-    def contains_y(self, y: IO) -> bool:
-        pass
-
-    @abstractmethod
-    def set_x_prime(self, y: IO, x_prime: IO):
-        pass
-
-    def spawn(self) -> 'Container':
-        return self.__class__()
-
-    @abstractmethod
-    def first(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
-        pass
-
-
 @dataclass
-class Connection:
+class PipeConn:
 
-    # can be more than one input incoming (use with cat)
+    machine: LearningMachine
     x: IO
     y: IO
-    # node can be defined by a string
-    node: typing.Union[ZenNode, str]
-    multi: bool=False
-    t: IO=None
-    x_prime: IO=None
-
-    def vals(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
-        return self.x, self.y, self.node, self.t
+    
+    def vals(self) -> typing.Tuple[LearningMachine, IO, IO]:
+        return self.machine, self.x, self.y
 
 
-class Pipeline(Container):
+class Pipeline(object):
 
     def __init__(self):
         
         super().__init__()
-        self._nodes: typing.List[Connection] = []
+        self._machines: typing.List[PipeConn] = []
         self._indices: typing.Dict[IO, int] = {}
+        self._x_primes: typing.Dict[IO, IO] = {}
         self._out = None
         self._out_set = False
         self._t = None
         self._ts: typing.Dict[IO, IO] = {}
     
-    def add(self, connection: Connection):
+    def add(self, machine: LearningMachine, x: IO, y: IO):
         
-        if len(self._nodes) > 0 and connection.x != self._nodes[-1].y:
-            raise ValueError(f'The connections in a pipeline must be added in sequence')
-        self._nodes.append(connection)
-        self._indices[connection.y] = len(self._nodes) - 1
+        # if len(self._machines) > 0 and connection.x != self._machines[-1].y:
+        #    raise ValueError(f'The connections in a pipeline must be added in sequence')
+        self._machines.append(PipeConn(machine, x, y))
+        self._indices[y] = len(self._machines) - 1
         if not self._out_set:
-            self._out = connection.y
+            self._out = y
 
     def set_out(self, y: IO):
         
         if y not in self._indices:
             raise KeyError(f'IO y has not been added to the Pipeline')
-        self._out = self._indices[Connection.y]
+        self._out = y
         self._out_set = True
 
     def set_out_target(self, t: IO):
@@ -164,14 +101,15 @@ class Pipeline(Container):
             t = self._ts[y]
             if t == "t":
                 return self._t
-            return self._nodes[self._indices[t]].x_prime
+            return t
         if y == self._out:
             return self._t
-        if y == self._nodes[-1].y and self._out_set is False:
+        if self._indices[y] == (len(self._indices) - 1) and self._out_set is False:
             return self._t
         index = self._indices[y] + 1
-        if index < len(self._nodes):
-            return self._nodes[self._indices[y] + 1].x_prime
+        if index < len(self._machines):
+            conn = self._machines[index]
+            return self._x_primes.get(conn.y)
         return None
     
     def set_t(self, *key_targs):
@@ -188,37 +126,58 @@ class Pipeline(Container):
             del self._ts[x]
 
     def set_x_prime(self, y: IO, x_prime: IO):
-        
-        connection = self._nodes[self._indices[y]]
-        connection.x_prime = x_prime
 
-    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
+        if y not in self._indices:
+            raise ValueError(f'Y has not been added to the pipeline')
+        
+        self._x_primes[y] = x_prime
+    
+    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, PipeStep, IO]]:
         
         if self._out_set:
-            nodes = self._nodes[:self._out+1]
+            conns = self._machines[:self._out+1]
         else:
-            nodes = self._nodes
+            conns = self._machines
 
-        for connection in reversed(nodes):
-            connection.t = self.get_target(connection.y)
-            yield connection.vals()
+        i = len(conns) - 1
+        for conn in reversed(conns):
+            t = self.get_target(conn.y)
+            print('Machine: ', conn.machine)
+            print('X: ', conn.x)
+            print('Y', conn.y)
+            yield conn.x, conn.y, conn.machine, t
+            i -= 1
     
     def contains_y(self, y: IO) -> bool:
 
         return y in self._indices
     
-    def first(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
+    def first(self) -> typing.Tuple[IO, IO, PipeStep, IO]:
 
-        return self._nodes[0].vals()
+        conn = self._machines[0]
+        t = self.get_target(conn.y)
+        return conn.x, conn.y, conn.machine, t
 
 
-class NetworkLearner(Network):
+class PipelineLearner(LearningMachine):
+
+    def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
+
+        pipeline = Pipeline()
+        state[(self, x), 'pipeline'] = pipeline
+        return pipeline
+    
+    def validate_pipeline_set(self, x: IO, state: State) -> bool:
+        if ((self, x), 'pipeline') not in state:
+            raise RuntimeError('The pipeline has not been set in the forward method')
 
     def step(self, x: IO, t: IO, state: State):
 
-        container: Container = state[(self, x), 'container']
-        container.set_out_target(t)
-        for x, y, node, t in container.reverse():
+        self.validate_pipeline_set(x, state)
+
+        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline.set_out_target(t)
+        for x, y, node, t in pipeline.reverse():
             if node.step_priority:
                 
                 node.step(x, t, state)
@@ -226,7 +185,7 @@ class NetworkLearner(Network):
             else: 
                 x_prime = node.step_x(x, t, state)
                 node.step(x, t, state)
-            container.set_x_prime(y, x_prime)
+            pipeline.set_x_prime(y, x_prime)
 
         state[(self, x), 'stepped'] = True
         return x_prime
@@ -234,7 +193,8 @@ class NetworkLearner(Network):
     @step_dep('stepped', False, True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, y, node, t = state[(self, x), 'container'].first()
+        self.validate_pipeline_set(x, state)
+        x, y, node, t = state[(self, x), 'pipeline'].first()
         return node.step_x(x, t, state)
 
     @abstractmethod
@@ -242,16 +202,27 @@ class NetworkLearner(Network):
         raise NotImplementedError
 
 
-class AccNetworkLearner(Network, AccLearningMachine):
+class AccPipelineLearner(AccLearningMachine):
+
+    def validate_pipeline_set(self, x: IO, state: State) -> bool:
+        if ((self, x), 'pipeline') not in state:
+            raise RuntimeError('The pipeline has not been set in the forward method')
+
+    def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
+
+        pipeline = Pipeline()
+        state[(self, x), 'pipeline'] = pipeline
+        return pipeline
 
     def accumulate(self, x: IO, t: IO, state: State):
         
-        container: Container = state[(self, x), 'container']
-        container.set_out_target(t)
-        for x, y, node, t in container.reverse():
+        self.validate_pipeline_set(x, state)
+        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline.set_out_target(t)
+        for x, y, node, t in pipeline.reverse():
             node.accumulate(x, t, state)
             x_prime = node.step_x(x, t, state)
-            container.set_x_prime(y, x_prime)
+            pipeline.set_x_prime(y, x_prime)
             # if container.contains_y(x):
             #    container.target(x, x_prime)
         
@@ -260,19 +231,20 @@ class AccNetworkLearner(Network, AccLearningMachine):
     @acc_dep('accumulated', False)
     def step(self, x: IO, t: IO, state: State) -> IO:
 
-        for x, _, node, t  in state[(self, x), 'container'].reverse():
+        self.validate_pipeline_set(x, state)
+        for x, _, node, t  in state[(self, x), 'pipeline'].reverse():
             node.step(x, t, state)
 
     @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, _, node, t = state[(self, x), 'container'].first()
+        self.validate_pipeline_set(x, state)
+        x, _, node, t = state[(self, x), 'pipeline'].first()
         return node.step_x(x, t, state)
 
-    def add_node(self, learning_machine: LearningMachine) -> 'ZenNode':
-        return ZenNode(self, learning_machine, priority_step=False)
+    def add_node(self, learning_machine: LearningMachine) -> 'PipeStep':
+        return PipeStep(self, learning_machine, priority_step=False)
 
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         raise NotImplementedError
-

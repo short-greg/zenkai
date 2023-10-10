@@ -1,7 +1,7 @@
 import zenkai
 import torch.nn as nn
 from zenkai import Assessment, State, IO, AccLearningMachine, ThLoss, acc_dep
-from zenkai.kikai import networking
+from zenkai.kikai import pipelining
 from ..kaku.test_machine import SimpleLearner
 import torch
 from zenkai.utils import get_model_parameters, get_model_grads
@@ -86,11 +86,11 @@ class AccSimpleLearner3(AccLearningMachine):
         return y.out(release)
 
 
-class SampleNetwork(networking.NetworkLearner):
+class SamplePipeline(pipelining.PipelineLearner):
 
     def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Pipeline())
-        self._node = networking.ZenNode(
+        super().__init__()
+        self._node = pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
 
@@ -98,18 +98,18 @@ class SampleNetwork(networking.NetworkLearner):
         return self._node.assess_y(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        container = self.spawn_container(x, state)
-        return self._node(x, state, release, container)
+        pipeline = self.set_pipeline(x, state)
+        return self._node(x, state, release, pipeline)
 
 
-class SampleNetwork2(networking.NetworkLearner):
+class SamplePipeline2(pipelining.PipelineLearner):
 
     def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Pipeline())
-        self._node = networking.ZenNode(
+        super().__init__()
+        self._node = pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
-        self._node2 = networking.ZenNode(
+        self._node2 = pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
 
@@ -117,73 +117,73 @@ class SampleNetwork2(networking.NetworkLearner):
         return self._node.assess_y(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        pipeline = self.set_pipeline(x, state)
 
-        container = self.spawn_container(x, state)
-        y = self._node(x, state, release, container)
-        y2 = self._node2(y, state, release, container)
+        y = self._node(x, state, release, pipeline)
+        y2 = self._node2(y, state, release, pipeline)
         return y2.out(release)
 
 
-class SampleNetwork3(networking.NetworkLearner):
+# class SamplePipeline3(networking.PipelineLearner):
+
+#     def __init__(self, step_priority: bool=True):
+#         super().__init__(networking.Graph())
+#         self._node = networking.Step(
+#             AccSimpleLearner(3, 3), step_priority
+#         )
+#         self._node2 = networking.Step(
+#             AccSimpleLearner(3, 3), step_priority
+#         )
+
+#         self._node3 = networking.Step(
+#             AccSimpleLearner3(3, 3), step_priority
+#         )
+
+#     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+#         return self._node.assess_y(y, t, reduction_override)
+    
+#     def forward(self, x: IO, state: State, release: bool = True) -> IO:
+
+#         pipeline = self.set_pipeline(x, state)
+#         y = self._node(x, state, release, pipeline)
+#         y2 = self._node2(y, state, release, pipeline)
+#         y3 = container.cat([y, y2])
+#         y4 = self._node3(y3, state, release, container)
+#         return y4.out(release)
+
+
+class AccSamplePipeline(pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Graph())
-        self._node = networking.ZenNode(
+        super().__init__()
+        self._node = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = networking.ZenNode(
+        self._node2 = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
-        )
-
-        self._node3 = networking.ZenNode(
-            AccSimpleLearner3(3, 3), step_priority
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._node.assess_y(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-
-        container = self.spawn_container(x, state)
-        y = self._node(x, state, release, container)
-        y2 = self._node2(y, state, release, container)
-        y3 = container.cat([y, y2])
-        y4 = self._node3(y3, state, release, container)
-        return y4.out(release)
-
-
-class AccSampleNetwork(networking.AccNetworkLearner):
-
-    def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Pipeline())
-        self._node = networking.ZenNode(
-            AccSimpleLearner(3, 3), step_priority
-        )
-        self._node2 = networking.ZenNode(
-            AccSimpleLearner(3, 3), step_priority
-        )
-
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return self._node.assess_y(y, t, reduction_override)
-    
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        container = self.spawn_container(x, state)
-        y = self._node(x, state, release, container)
-        y2 = self._node2(y, state, release, container)
+        pipeline = self.set_pipeline(x, state)
+        y = self._node(x, state, release, pipeline)
+        y2 = self._node2(y, state, release, pipeline)
         return y2.out(release)
 
 
-class AccSampleNetworkT(networking.AccNetworkLearner):
+class AccSamplePipelineT(pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Pipeline())
-        self._node = networking.ZenNode(
+        super().__init__()
+        self._node = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = networking.ZenNode(
+        self._node2 = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node3 = networking.ZenNode(
+        self._node3 = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
 
@@ -191,25 +191,25 @@ class AccSampleNetworkT(networking.AccNetworkLearner):
         return self._node.assess_y(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        container = self.spawn_container(x, state)
-        y = self._node(x, state, release, container)
-        y2 = self._node2(y, state, release, container)
-        y3 = self._node2(y2, state, release, container)
-        container.set_t((y, "t"), (y2, "t"))
+        pipeline = self.set_pipeline(x, state)
+        y = self._node(x, state, release, pipeline)
+        y2 = self._node2(y, state, release, pipeline)
+        y3 = self._node2(y2, state, release, pipeline)
+        pipeline.set_t((y, "t"), (y2, "t"))
         return y3.out(release)
 
 
-class AccSampleNetworkT2(networking.AccNetworkLearner):
+class AccSamplePipelineT2(pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
-        super().__init__(networking.Pipeline())
-        self._node = networking.ZenNode(
+        super().__init__()
+        self._node = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = networking.ZenNode(
+        self._node2 = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node3 = networking.ZenNode(
+        self._node3 = pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
 
@@ -217,28 +217,28 @@ class AccSampleNetworkT2(networking.AccNetworkLearner):
         return self._node.assess_y(y, t, reduction_override)
     
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        container = self.spawn_container(x, state)
-        y = self._node(x, state, release, container)
-        y2 = self._node2(y, state, release, container)
-        y3 = self._node2(y2, state, release, container)
-        container.set_t((y, y3), (y2, "t"))
+        pipeline = self.set_pipeline(x, state)
+        y = self._node(x, state, release, pipeline)
+        y2 = self._node2(y, state, release, pipeline)
+        y3 = self._node2(y2, state, release, pipeline)
+        pipeline.set_t((y, y3), (y2, "t"))
         return y3.out(release)
 
 
-class TestNetwork:
+class TestPipeline:
 
     def test_zen_node_has_container_after_update(self):
 
-        network = SampleNetwork()
+        network = SamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
-        assert ((network, x), 'container') in state
+        assert ((network, x), 'pipeline') in state
 
     def test_zen_forward_outputs_correct_value(self):
 
-        network = SampleNetwork()
+        network = SamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
@@ -249,7 +249,7 @@ class TestNetwork:
 
     def test_zen_forward_outputs_correct_value_with_two_layers(self):
 
-        network = SampleNetwork2()
+        network = SamplePipeline2()
         
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
@@ -260,7 +260,7 @@ class TestNetwork:
 
     def test_zen_forward_step_updates_parameters(self):
 
-        network = SampleNetwork2()
+        network = SamplePipeline2()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -272,7 +272,7 @@ class TestNetwork:
 
     def test_zen_forward_step_updates_parameters(self):
 
-        network = SampleNetwork2()
+        network = SamplePipeline2()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -284,7 +284,7 @@ class TestNetwork:
 
     def test_zen_step_x_updates_x(self):
 
-        network = SampleNetwork2()
+        network = SamplePipeline2()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -294,20 +294,20 @@ class TestNetwork:
         assert (x.f != x_prime.f).any()
 
 
-class TestAccNetworkLearner:
+class TestAccPipelineLearner:
 
     def test_zen_node_has_container_after_update(self):
 
-        network = AccSampleNetwork()
+        network = AccSamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
-        assert ((network, x), 'container') in state
+        assert ((network, x), 'pipeline') in state
 
     def test_zen_forward_outputs_correct_value(self):
 
-        network = AccSampleNetwork()
+        network = AccSamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
@@ -318,7 +318,7 @@ class TestAccNetworkLearner:
 
     def test_zen_accumulate_accumulates_grads(self):
 
-        network = AccSampleNetwork()
+        network = AccSamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -329,7 +329,7 @@ class TestAccNetworkLearner:
 
     def test_zen_forward_step_updates_parameters(self):
 
-        network = AccSampleNetwork()
+        network = AccSamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -341,7 +341,7 @@ class TestAccNetworkLearner:
 
     def test_zen_step_x_updates_x(self):
 
-        network = AccSampleNetwork()
+        network = AccSamplePipeline()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -352,7 +352,7 @@ class TestAccNetworkLearner:
 
     def test_zen_step_updates_theta_for_networkt(self):
 
-        network = AccSampleNetworkT()
+        network = AccSamplePipelineT()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
@@ -362,10 +362,9 @@ class TestAccNetworkLearner:
         x_prime = network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
-
     def test_zen_step_updates_for_networkt2(self):
 
-        network = AccSampleNetworkT2()
+        network = AccSamplePipelineT2()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
