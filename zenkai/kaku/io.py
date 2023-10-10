@@ -9,6 +9,7 @@ import typing
 import torch
 import numpy as np
 from torch import nn
+import statistics
 
 # local
 from .. import utils as base_utils
@@ -202,6 +203,7 @@ class IO(object):
         Returns:
             IO: the concatenated IO
         """
+        # TODO: Seems there is a bug here so fix
         results = []
         for elements in zip(*ios):
             if isinstance(elements[0], torch.Tensor):
@@ -213,7 +215,17 @@ class IO(object):
                 results.append(elements)
         return IO(*results, ios[0].names)
     
-    def agg(cls, ios: typing.Iterable['IO'], f=sum) -> typing.List:
+
+    @classmethod
+    def join(cls, ios: typing.Iterable['IO'], detach: bool=True) -> 'IO':
+
+        results = []
+        for io in ios:
+            results.extend(io.u)
+        return IO(*results, detach=detach)
+
+    @classmethod
+    def agg(cls, ios: typing.Iterable['IO'], f=statistics.mean) -> typing.List:
 
         length = None
         for io in ios:

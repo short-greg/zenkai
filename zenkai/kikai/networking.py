@@ -18,10 +18,6 @@ class Network(LearningMachine):
 
         super().__init__()
         self.container_prototype = container_prototype
-    
-    # @abstractmethod
-    # def connect(self, x: IO, y: IO, node: 'ZenNode', state: State):
-    #     pass
 
     def spawn_container(self, x: IO, state: State) -> 'Container':
         container = self.container_prototype.spawn()
@@ -114,8 +110,17 @@ class Connection:
     y: IO
     # node can be defined by a string
     node: typing.Union[ZenNode, str]
+    multi: bool=False
     t: IO=None
     x_prime: IO=None
+
+    def get_x_prime(self, in_y: IO):
+        if self.multi:
+            idx = self.x.u.index(in_y)
+            return self.x_prime[idx]
+        if self.x != in_y:
+            raise ValueError('The input does not match the connection')
+        return self.x_prime
 
     def vals(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
         return self.x, self.y, self.node, self.t
@@ -160,7 +165,7 @@ class Pipeline(Container):
             return self._t
         index = self._indices[y] + 1
         if index < len(self._nodes):
-            return self._nodes[self._indices[y] + 1].x_prime
+            return self._nodes[self._indices[y] + 1].get_x_prime(y)
         return None
 
     def set_x_prime(self, y: IO, x_prime: IO):
@@ -285,13 +290,13 @@ class Graph(Container):
 
     def cat(self, xs: typing.List[IO]) -> IO:
 
-        y = IO.cat(xs)
+        y = IO.join(xs)
         
         self._targets = {}
         # manage the dependencies of the input on other nodes
         connection = Connection(
             IO(*xs), y,  
-            node="merge"
+            node="merge", multi=True
         )
         self._conns[connection.y] = connection
         
@@ -303,6 +308,7 @@ class Graph(Container):
         self._out_map[y] = []
         self._cur = y
         
+        self._t_fixed[connection.y] = False
         if not self._out_set:
             self._out = connection.y
         return y
@@ -323,20 +329,21 @@ class Graph(Container):
         if y in self._targets:
             return self._targets[y]
 
+        out_y = self._out_map.get(y)
         if y == self._out:
-            return self._t
-        t = self._out_map[y]
-        if isinstance(t, typing.List):
+            target = self._t
+        elif isinstance(out_y, typing.List):
+            
             x_primes = []
-            for t in self._out_map:
-                x_prime = self._conns[t].x_prime
+            for out_y_i in out_y:
+                x_prime = self._conns[out_y_i].get_x_prime(y)
                 if x_prime is None:
                     return None
                 x_primes.append(x_prime)
             target = IO.agg(x_primes, sum)
-        if t == 't':
+        elif out_y == 't':
             target = self._t
-        else: target = self._conns[t].x_prime
+        else: target = self._conns[out_y].get_x_prime(y)
         self._targets[y] = target
         return target
 
@@ -353,12 +360,12 @@ class Graph(Container):
         t = self._out_map[y]
         if isinstance(t, typing.List):
             for t in self._out_map:
-                if self._conns[t].x_prime is None:
+                if self._conns[t].get_x_prime(y) is None:
                     return False
             return True
         if t == 't':
             return True
-        return self._conns[t].x_prime is not None
+        return self._conns[t].get_x_prime(y) is not None
     
     def _traversed_dependencies(self, conn: Connection, traversed: typing.Set):
 
@@ -379,13 +386,19 @@ class Graph(Container):
         if conn.node == "merge":
             start = 0
             upto = None
+            in_ys = []
+            in_ts = []
             for x in conn.x:
-                upto = len(x)
+                upto = len(x) + start
 
                 if x not in self._conns:
                     next
                 in_y = x
-                in_t = IO(cur_t[start: upto]) if cur_t is not None else None
+                in_t = IO(*cur_t[start: upto]) if cur_t is not None else None
+                in_ys.append(in_y)
+                in_ts.append(in_t)
+            conn.x_prime = IO(*in_ts)
+            for in_y, in_t in zip(in_ys, in_ts):
                 for vals in self._reverse_helper(in_y, in_t, traversed):
                     yield vals
                 start = upto 
@@ -394,7 +407,6 @@ class Graph(Container):
             if conn.x not in self._conns:
                 return
             in_y = self._conns[conn.x].y
-            
             in_t = self.get_target(in_y)
             for vals in self._reverse_helper(in_y, in_t, traversed):
                 yield vals
@@ -413,30 +425,3 @@ class Graph(Container):
     def first(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
 
         return self._conns[0].vals()
-
-
-    # def target(self, y: IO, t: IO):
-    #     node = self._nodes[self._indices[y]]
-    #     if node.t is None:
-    #         node.t = y
-    #     else:
-    #         assert len(node.t) == len(t)
-    #         t = [t_cur + t_new for t_cur, t_new in zip(node.t, t)]
-    #         node.t = t
-
-    # def _traversed(self, cur: IO, traversed: typing.Dict[IO, bool]) -> bool:
-
-    #     connections = self._t_dependencies[cur]
-    #     xs = []
-    #     for connection in connections:
-    #         if connection.y not in traversed:
-    #             return False, None
-    #         xs.append(connection.t)
-    #     return True
-
-
-# # 'I'd need to add this in
-# def merge(self, ios):
-#    
-#  ... 
-    
