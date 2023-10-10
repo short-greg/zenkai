@@ -142,9 +142,6 @@ class Pipeline(object):
         i = len(conns) - 1
         for conn in reversed(conns):
             t = self.get_target(conn.y)
-            print('Machine: ', conn.machine)
-            print('X: ', conn.x)
-            print('Y', conn.y)
             yield conn.x, conn.y, conn.machine, t
             i -= 1
     

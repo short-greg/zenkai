@@ -81,7 +81,6 @@ class AccSimpleLearner3(AccLearningMachine):
 
     def forward(self, x: IO, state: State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        print(len(x.u), x.u[1])
         y = state[(self, x), 'y'] = IO(self.linear(x.u[0] + x.u[1])) 
         return y.out(release)
 
