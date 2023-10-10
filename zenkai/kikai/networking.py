@@ -6,25 +6,34 @@ from torch import nn
 
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
-    ThLoss, acc_dep, step_dep, StepX, 
-    AccStepTheta, AccLearningMachine
+    acc_dep, step_dep, 
+    AccLearningMachine
 )
 from abc import abstractmethod, ABC
 
 
 class Network(LearningMachine):
+
+    def __init__(self, container_prototype: 'Container'):
+
+        super().__init__()
+        self.container_prototype = container_prototype
     
-    @abstractmethod
-    def connect(self, x: IO, y: IO, node: 'ZenNode', state: State):
-        pass
+    # @abstractmethod
+    # def connect(self, x: IO, y: IO, node: 'ZenNode', state: State):
+    #     pass
+
+    def spawn_container(self, x: IO, state: State) -> 'Container':
+        container = self.container_prototype.spawn()
+        state[(self, x), 'container'] = container
+        return container
 
 
 class ZenNode(AccLearningMachine):
 
-    def __init__(self, network: Network, learning_machine: typing.Union[LearningMachine, AccLearningMachine], step_priority: bool=False):
+    def __init__(self, learning_machine: typing.Union[LearningMachine, AccLearningMachine], step_priority: bool=False):
 
         super().__init__()
-        self.network = network
         self._learning_machine = learning_machine
         self.step_priority = step_priority
         self._accumulate = isinstance(self._learning_machine, AccLearningMachine)
@@ -33,10 +42,11 @@ class ZenNode(AccLearningMachine):
     def accumulate(self) -> bool:
         return self._accumulate
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True, container: 'Container'=None) -> IO:
         
         y = self._learning_machine(x, state, release)
-        self.network.connect(x, y, self, state)
+        if container is not None:
+            container.add(Connection(x, y, self))
         return y
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -55,54 +65,57 @@ class ZenNode(AccLearningMachine):
             self._learning_machine.accumulate(x, t, state)
 
     def __repr__(self):
-        return f'Node({type(self.network), {self._learning_machine}}'
+        return f'Node({self._learning_machine})'
 
 
 class Container(ABC):
 
     @abstractmethod
-    def add(self, x: IO, y: IO, node: ZenNode, t: IO=None):
+    def add(self, connection: 'Connection'):
         pass
 
     @abstractmethod
-    def out(self, y: IO):
+    def set_out(self, y: IO):
         pass
 
     @abstractmethod
-    def out_target(self, t: IO):
+    def set_out_target(self, t: IO):
         pass
 
     @abstractmethod
-    def target(self, y: IO, t: IO):
+    def get_target(self, y: IO) -> IO:
         pass
 
     @abstractmethod
-    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
         pass
-
-    # @abstractmethod
-    # def forward(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
-    #     pass
 
     @abstractmethod
     def contains_y(self, y: IO) -> bool:
+        pass
+
+    @abstractmethod
+    def set_x_prime(self, y: IO, x_prime: IO):
         pass
 
     def spawn(self) -> 'Container':
         return self.__class__()
 
     @abstractmethod
-    def first(self) -> typing.Tuple[IO, IO, IO, ZenNode]:
+    def first(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
         pass
 
 
 @dataclass
 class Connection:
 
+    # can be more than one input incoming (use with cat)
     x: IO
     y: IO
-    node: ZenNode
+    # node can be defined by a string
+    node: typing.Union[ZenNode, str]
     t: IO=None
+    x_prime: IO=None
 
     def vals(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
         return self.x, self.y, self.node, self.t
@@ -114,9 +127,10 @@ class Pipeline(Container):
         
         super().__init__()
         self._nodes: typing.List[Connection] = []
-        self._indices = {}
+        self._indices: typing.Dict[IO, int] = {}
         self._out = None
         self._out_set = False
+        self._t = None
     
     def add(self, connection: Connection):
         
@@ -124,26 +138,37 @@ class Pipeline(Container):
             raise ValueError(f'The connections in a pipeline must be added in sequence')
         self._nodes.append(connection)
         self._indices[connection.y] = len(self._nodes) - 1
+        if not self._out_set:
+            self._out = connection.y
 
-    def out(self, y: IO):
+    def set_out(self, y: IO):
         
         if y not in self._indices:
             raise KeyError(f'IO y has not been added to the Pipeline')
         self._out = self._indices[Connection.y]
         self._out_set = True
 
-    def out_target(self, t: IO):
+    def set_out_target(self, t: IO):
         
-        if self._out_set:
-            self._nodes[self._out].t = t
-        else:
-            self._nodes[-1].t = t
+        self._t = t
+    
+    def get_target(self, y: IO) -> IO:
 
-    def target(self, y: IO, t: IO):
+        if y == self._out:
+            return self._t
+        if y == self._nodes[-1].y and self._out_set is False:
+            return self._t
+        index = self._indices[y] + 1
+        if index < len(self._nodes):
+            return self._nodes[self._indices[y] + 1].x_prime
+        return None
+
+    def set_x_prime(self, y: IO, x_prime: IO):
         
-        self._nodes[self._indices[y]].t = t
+        connection = self._nodes[self._indices[y]]
+        connection.x_prime = x_prime
 
-    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, ZenNode, IO]]:
         
         if self._out_set:
             nodes = self._nodes[:self._out+1]
@@ -151,27 +176,24 @@ class Pipeline(Container):
             nodes = self._nodes
 
         for connection in reversed(nodes):
+            connection.t = self.get_target(connection.y)
             yield connection.vals()
     
     def contains_y(self, y: IO) -> bool:
 
         return y in self._indices
     
-    def first(self) -> typing.Tuple[IO, IO, IO, ZenNode]:
+    def first(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
 
         return self._nodes[0].vals()
 
 
 class NetworkLearner(Network):
 
-    def __init__(self, container_prototype: Container):
-        super().__init__()
-        self.container_prototype = container_prototype
-
     def step(self, x: IO, t: IO, state: State):
 
-        container: Container = state[self, 'container']
-        container.out_target(t)
+        container: Container = state[(self, x), 'container']
+        container.set_out_target(t)
         for x, y, node, t in container.reverse():
             if node.step_priority:
                 
@@ -180,9 +202,7 @@ class NetworkLearner(Network):
             else: 
                 x_prime = node.step_x(x, t, state)
                 node.step(x, t, state)
-
-            if container.contains_y(x):
-                container.target(x, x_prime)
+            container.set_x_prime(y, x_prime)
 
         state[(self, x), 'stepped'] = True
         return x_prime
@@ -190,17 +210,8 @@ class NetworkLearner(Network):
     @step_dep('stepped', False, True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, y, node, t = state[self, 'container'].first()
+        x, y, node, t = state[(self, x), 'container'].first()
         return node.step_x(x, t, state)
-
-    def add_node(self, learning_machine: LearningMachine, priority_step: bool=False) -> 'ZenNode':
-        return ZenNode(self, learning_machine, priority_step)
-
-    def connect(self, x: IO, y: IO, node: 'ZenNode', state: State):
-        my_state = state.mine(self)
-        if 'container' not in my_state:
-            my_state.container = self.container_prototype.spawn()
-        my_state.container.add(Connection(x, y, node))
 
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
@@ -209,126 +220,220 @@ class NetworkLearner(Network):
 
 class AccNetworkLearner(Network, AccLearningMachine):
 
-    def __init__(self, container_prototype: Container):
-        super().__init__()
-        self.container_prototype = container_prototype
-
     def accumulate(self, x: IO, t: IO, state: State):
         
-        container = state[self, 'container']
-        container.out_target(t)
+        container: Container = state[(self, x), 'container']
+        container.set_out_target(t)
         for x, y, node, t in container.reverse():
             node.accumulate(x, t, state)
             x_prime = node.step_x(x, t, state)
-
-            if container.contains_y(x):
-                container.target(x, x_prime)
+            container.set_x_prime(y, x_prime)
+            # if container.contains_y(x):
+            #    container.target(x, x_prime)
         
         state[self, 'accumulated'] = True
     
     @acc_dep('accumulated', False)
     def step(self, x: IO, t: IO, state: State) -> IO:
 
-        for x, y, node, t  in state[self, 'container'].reverse():
+        for x, _, node, t  in state[(self, x), 'container'].reverse():
             node.step(x, t, state)
 
     @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x, y, node, t = state[self, 'container'].first()
+        x, _, node, t = state[(self, x), 'container'].first()
         return node.step_x(x, t, state)
 
     def add_node(self, learning_machine: LearningMachine) -> 'ZenNode':
         return ZenNode(self, learning_machine, priority_step=False)
 
-    def connect(self, x: IO, y: IO, node: 'ZenNode', state: State):
-        my_state = state.mine(self)
-        if 'container' not in my_state:
-            my_state.container = self.container_prototype.spawn()
-        my_state.container.add(Connection(x, y, node))
-
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         raise NotImplementedError
 
-# class Graph(object):
 
-#     def __init__(self):
+class Graph(Container):
 
-#         self._nodes: typing.Dict[IO, Connection] = []
+    def __init__(self):
+        super().__init__()
 
-#         # handle "merges"
-#         self._x_connections: typing.Dict[IO, typing.List[Connection]] = {}
-#         self._out = None
-#         self._out_set = False
-#         self._cur = None
+        self._conns: typing.Dict[IO, Connection] = {}
+
+        self._out = None
+        self._out_set = False
+        self._cur = None
+        self._out_map: typing.Dict[IO, typing.List[IO]] = {}
+        self._t_fixed: typing.Dict[IO, bool] = {}
+        self._t = None
+        self._targets = {}
     
-#     def add(self, connection: Connection):
+    def add(self, connection: Connection):
         
-#         self._nodes[connection.y] = connection
+        self._targets = {}
+        self._conns[connection.y] = connection
+
+        x = connection.x
         
-#         if connection.x not in self._x_connections:
-#             self._x_connections[connection.x] = []
-#         self._x_connections[connection.x].append(connection)
-#         self._cur = connection.y
+        if x in self._conns and self._t_fixed[connection.x] is False:
+            self._out_map[connection.x].append(connection.y)
+        self._cur = connection.y
+        self._out_map[connection.y] = []
+        self._t_fixed[connection.y] = False
+        if not self._out_set:
+            self._out = connection.y
 
-#     def merge(self, ios):
+    def cat(self, xs: typing.List[IO]) -> IO:
 
-#         result = []
-#         for io in ios:
-#             for x, indices
-
-#         connection = Connection(
-#             IO(*ios),
-
-#             node="merge"
-#         )
-
-#     def out(self, y: IO):
+        y = IO.cat(xs)
         
-#         if y not in self._nodes:
-#             raise KeyError(f'IO y has not been added to the Graph')
-#         self._out = y
-#         self._out_set = True
-
-#     def out_target(self, t: IO):
-#         # Add error checking
-#         self.target(self._out or self._cur.y, t)
-
-#     def target(self, y: IO, t: IO):
-#         node = self._nodes[self._indices[y]]
-#         if node.t is None:
-#             node.t = y
-#         else:
-#             assert len(node.t) == len(t)
-#             t = [t_cur + t_new for t_cur, t_new in zip(node.t, t)]
-#             node.t = t
-
-#     def _reverse_helper(self, cur: IO, traversed: typing.Dict[str, Connection]) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+        self._targets = {}
+        # manage the dependencies of the input on other nodes
+        connection = Connection(
+            IO(*xs), y,  
+            node="merge"
+        )
+        self._conns[connection.y] = connection
         
-#         conn = self._nodes[cur]
-#         yield conn.vals
-#         for x_conn in self._x_connections[conn.x]:
-#             pass
+        for x in xs:
+            if self._t_fixed[x] is False:
 
-#         while True:
-#             connection = self._nodes[cur]
-#             yield connection.vals
-#             traversed[cur] = True
-#             cur = self._nodes[connection.x]
-#             if cur in traversed:
-#                 break
+                self._out_map[x].append(connection.y)
 
-#     def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+        self._out_map[y] = []
+        self._cur = y
         
-#         traversed = {}
-#         if self._out_set:
-#             cur = self._out
-#         else:
-#             cur = self._cur
-#         for x, y, node, t in self._reverse_helper(cur):
-#             yield x, y, node, t
-             
+        if not self._out_set:
+            self._out = connection.y
+        return y
+
+    def set_out(self, y: IO):
+        
+        if y not in self._conns:
+            raise KeyError(f'IO y has not been added to the Graph')
+        self._out = y
+        self._out_set = True
+
+    def set_out_target(self, t: IO):
+        # Add error checking
+        self._t = t
+
+    def get_target(self, y: IO) -> IO:
+
+        if y in self._targets:
+            return self._targets[y]
+
+        if y == self._out:
+            return self._t
+        t = self._out_map[y]
+        if isinstance(t, typing.List):
+            x_primes = []
+            for t in self._out_map:
+                x_prime = self._conns[t].x_prime
+                if x_prime is None:
+                    return None
+                x_primes.append(x_prime)
+            target = IO.agg(x_primes, sum)
+        if t == 't':
+            target = self._t
+        else: target = self._conns[t].x_prime
+        self._targets[y] = target
+        return target
+
+    def set_x_prime(self, y: IO, x_prime: IO):
+        
+        self._conns[y].x_prime = x_prime
+
+    def _target_available(self, y: IO):
+
+        if y in self._targets:
+            return True
+        if y == self._out:
+            return True
+        t = self._out_map[y]
+        if isinstance(t, typing.List):
+            for t in self._out_map:
+                if self._conns[t].x_prime is None:
+                    return False
+            return True
+        if t == 't':
+            return True
+        return self._conns[t].x_prime is not None
+    
+    def _traversed_dependencies(self, conn: Connection, traversed: typing.Set):
+
+        for y in self._out_map[conn.y]:
+            if self._conns[y].node not in traversed:
+                return False
+        return True
+
+    def _reverse_helper(self, cur: IO, cur_t: IO=None, traversed: typing.Set[ZenNode]=None) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+        
+        traversed = traversed or set()
+        conn = self._conns[cur]
+
+        if not self._traversed_dependencies(conn, traversed):
+            return
+        
+        traversed.add(self._conns[cur].node)
+        if conn.node == "merge":
+            start = 0
+            upto = None
+            for x in conn.x:
+                upto = len(x)
+
+                if x not in self._conns:
+                    next
+                in_y = x
+                in_t = IO(cur_t[start: upto]) if cur_t is not None else None
+                for vals in self._reverse_helper(in_y, in_t, traversed):
+                    yield vals
+                start = upto 
+        else:
+            yield conn.x, conn.y, conn.node, cur_t
+            if conn.x not in self._conns:
+                return
+            in_y = self._conns[conn.x].y
+            
+            in_t = self.get_target(in_y)
+            for vals in self._reverse_helper(in_y, in_t, traversed):
+                yield vals
+
+    def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, IO, ZenNode]]:
+        
+        cur = self._out
+        cur_t = self.get_target(cur)
+        for x, y, node, t in self._reverse_helper(cur, cur_t):
+            yield x, y, node, t
+
+    def contains_y(self, y: IO) -> bool:
+
+        return y in self._conns
+
+    def first(self) -> typing.Tuple[IO, IO, ZenNode, IO]:
+
+        return self._conns[0].vals()
+
+
+    # def target(self, y: IO, t: IO):
+    #     node = self._nodes[self._indices[y]]
+    #     if node.t is None:
+    #         node.t = y
+    #     else:
+    #         assert len(node.t) == len(t)
+    #         t = [t_cur + t_new for t_cur, t_new in zip(node.t, t)]
+    #         node.t = t
+
+    # def _traversed(self, cur: IO, traversed: typing.Dict[IO, bool]) -> bool:
+
+    #     connections = self._t_dependencies[cur]
+    #     xs = []
+    #     for connection in connections:
+    #         if connection.y not in traversed:
+    #             return False, None
+    #         xs.append(connection.t)
+    #     return True
+
 
 # # 'I'd need to add this in
 # def merge(self, ios):

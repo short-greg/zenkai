@@ -212,6 +212,16 @@ class IO(object):
                 # TODO: revisit if i want to do it like this
                 results.append(elements)
         return IO(*results, ios[0].names)
+    
+    def agg(cls, ios: typing.Iterable['IO'], f=sum) -> typing.List:
+
+        length = None
+        for io in ios:
+            if length is None:
+                length = len(io)
+            if length != len(io):
+                raise ValueError('All ios must be the same length to aggregate')
+        return IO(*[f(xs) for xs in zip(*ios)], detach=True) 
 
     def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
         return IO(*self._x[low:high], detach=detach)
