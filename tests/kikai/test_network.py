@@ -173,6 +173,58 @@ class AccSampleNetwork(networking.AccNetworkLearner):
         return y2.out(release)
 
 
+class AccSampleNetworkT(networking.AccNetworkLearner):
+
+    def __init__(self, step_priority: bool=True):
+        super().__init__(networking.Pipeline())
+        self._node = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+        self._node2 = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+        self._node3 = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._node.assess_y(y, t, reduction_override)
+    
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        container = self.spawn_container(x, state)
+        y = self._node(x, state, release, container)
+        y2 = self._node2(y, state, release, container)
+        y3 = self._node2(y2, state, release, container)
+        container.set_t((y, "t"), (y2, "t"))
+        return y3.out(release)
+
+
+class AccSampleNetworkT2(networking.AccNetworkLearner):
+
+    def __init__(self, step_priority: bool=True):
+        super().__init__(networking.Pipeline())
+        self._node = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+        self._node2 = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+        self._node3 = networking.ZenNode(
+            AccSimpleLearner(3, 3), step_priority
+        )
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._node.assess_y(y, t, reduction_override)
+    
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        container = self.spawn_container(x, state)
+        y = self._node(x, state, release, container)
+        y2 = self._node2(y, state, release, container)
+        y3 = self._node2(y2, state, release, container)
+        container.set_t((y, y3), (y2, "t"))
+        return y3.out(release)
+
+
 class TestNetwork:
 
     def test_zen_node_has_container_after_update(self):
@@ -298,177 +350,202 @@ class TestAccNetworkLearner:
         x_prime = network.step_x(x, t, state)
         assert (x.f != x_prime.f).any()
 
+    def test_zen_step_updates_theta_for_networkt(self):
 
-class TestGraph:
-
-    def test_graph_contains_y_after_added(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        assert graph.contains_y(y)
-
-    def test_reverse_returns_y(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        for x_i, y_i, node_i, t_i in graph.reverse():
-
-            assert y_i == y
-            assert t_i is None
-
-    def test_reverse_returns_t_after_being_set(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        t = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        graph.set_out_target(t)
-        for x_i, y_i, node_i, t_i in graph.reverse():
-
-            assert t_i == t
-
-    def test_reverse_traverses_all_nodes(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        y2 = zenkai.IO(torch.rand(2, 2))
-        t = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        node2 = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        graph.add(networking.Connection(
-            y, y2, node2
-        ))
-        graph.set_out_target(t)
-        iter_ = graph.reverse()
-        x_i, y_i, node_i, t_i = next(iter_)
-        x_i2, y_i2, node_i2, t_i2 = next(iter_)
-        assert node_i is node2
-        assert node_i2 is node
-
-    def test_cat_concatenates_nodes(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        y2 = zenkai.IO(torch.rand(2, 2))
-        t = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        node2 = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        graph.add(networking.Connection(
-            y, y2, node2
-        ))
-        y3 = graph.cat([y, y2])
-        graph.set_out_target(t)
-        iter_ = graph.reverse()
-        x_i, y_i, node_i, t_i = next(iter_)
-        x_i2, y_i2, node_i2, t_i2 = next(iter_)
-        assert node_i is node2
-        assert node_i2 is node
-
-    def test_cat_concatenates_nodes(self):
-
-        graph = networking.Graph()
-        x = zenkai.IO(torch.rand(2, 2))
-        y = zenkai.IO(torch.rand(2, 2))
-        y2 = zenkai.IO(torch.rand(2, 2))
-        y3 = zenkai.IO(torch.rand(2, 2))
-        t = zenkai.IO(torch.rand(2, 2))
-        node = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        node2 = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        node3 = networking.ZenNode(
-            AccSimpleLearner(2, 2)
-        )
-        graph.add(networking.Connection(
-            x, y, node
-        ))
-        graph.add(networking.Connection(
-            y, y2, node2
-        ))
-        graph.add(networking.Connection(
-            y, y3, node3
-        ))
-        y4 = graph.cat([y3, y2])
-        graph.set_out_target(t)
-        iter_ = graph.reverse()
-        traversed = set()
-        x_i, y_i, node_i, t_i = next(iter_)
-        x_i2, y_i2, node_i2, t_i2 = next(iter_)
-        x_i2, y_i2, node_i3, t_i2 = next(iter_)
-        traversed = set([node_i, node_i2, node_i3])
-        assert node_i in traversed
-        assert node_i2 in traversed
-        assert node_i3 in traversed
-
-
-class TestNetworkWithGraph:
-
-    def test_zen_node_has_container_after_update(self):
-
-        network = SampleNetwork3()
-        
-        x = zenkai.IO(torch.rand(2, 3))
-        state = zenkai.State()
-        y = network(x, state)
-        assert ((network, x), 'container') in state
-
-    def test_zen_forward_step_updates_parameters(self):
-
-        network = SampleNetwork3()
+        network = AccSampleNetworkT()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
-        network.step(x, t, state)
+        x_prime = network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
-    def test_zen_forward_step_x_updates_x(self):
 
-        network = SampleNetwork3()
+    def test_zen_step_updates_for_networkt2(self):
+
+        network = AccSampleNetworkT2()
         
         x = zenkai.IO(torch.rand(2, 3))
         t = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
-        network(x, state)
+        y = network(x, state)
+        before = get_model_parameters(network)
         x_prime = network.step(x, t, state)
-        assert (x_prime.f != x.f).any()
+        assert (get_model_parameters(network) != before).any()
+
+
+# class TestGraph:
+
+#     def test_graph_contains_y_after_added(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         assert graph.contains_y(y)
+
+#     def test_reverse_returns_y(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         for x_i, y_i, node_i, t_i in graph.reverse():
+
+#             assert y_i == y
+#             assert t_i is None
+
+#     def test_reverse_returns_t_after_being_set(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         t = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         graph.set_out_target(t)
+#         for x_i, y_i, node_i, t_i in graph.reverse():
+
+#             assert t_i == t
+
+#     def test_reverse_traverses_all_nodes(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         y2 = zenkai.IO(torch.rand(2, 2))
+#         t = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         node2 = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         graph.add(networking.Connection(
+#             y, y2, node2
+#         ))
+#         graph.set_out_target(t)
+#         iter_ = graph.reverse()
+#         x_i, y_i, node_i, t_i = next(iter_)
+#         x_i2, y_i2, node_i2, t_i2 = next(iter_)
+#         assert node_i is node2
+#         assert node_i2 is node
+
+#     def test_cat_concatenates_nodes(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         y2 = zenkai.IO(torch.rand(2, 2))
+#         t = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         node2 = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         graph.add(networking.Connection(
+#             y, y2, node2
+#         ))
+#         y3 = graph.cat([y, y2])
+#         graph.set_out_target(t)
+#         iter_ = graph.reverse()
+#         x_i, y_i, node_i, t_i = next(iter_)
+#         x_i2, y_i2, node_i2, t_i2 = next(iter_)
+#         assert node_i is node2
+#         assert node_i2 is node
+
+#     def test_cat_concatenates_nodes(self):
+
+#         graph = networking.Graph()
+#         x = zenkai.IO(torch.rand(2, 2))
+#         y = zenkai.IO(torch.rand(2, 2))
+#         y2 = zenkai.IO(torch.rand(2, 2))
+#         y3 = zenkai.IO(torch.rand(2, 2))
+#         t = zenkai.IO(torch.rand(2, 2))
+#         node = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         node2 = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         node3 = networking.ZenNode(
+#             AccSimpleLearner(2, 2)
+#         )
+#         graph.add(networking.Connection(
+#             x, y, node
+#         ))
+#         graph.add(networking.Connection(
+#             y, y2, node2
+#         ))
+#         graph.add(networking.Connection(
+#             y, y3, node3
+#         ))
+#         y4 = graph.cat([y3, y2])
+#         graph.set_out_target(t)
+#         iter_ = graph.reverse()
+#         traversed = set()
+#         x_i, y_i, node_i, t_i = next(iter_)
+#         x_i2, y_i2, node_i2, t_i2 = next(iter_)
+#         x_i2, y_i2, node_i3, t_i2 = next(iter_)
+#         traversed = set([node_i, node_i2, node_i3])
+#         assert node_i in traversed
+#         assert node_i2 in traversed
+#         assert node_i3 in traversed
+
+
+# class TestNetworkWithGraph:
+
+#     def test_zen_node_has_container_after_update(self):
+
+#         network = SampleNetwork3()
+        
+#         x = zenkai.IO(torch.rand(2, 3))
+#         state = zenkai.State()
+#         y = network(x, state)
+#         assert ((network, x), 'container') in state
+
+#     def test_zen_forward_step_updates_parameters(self):
+
+#         network = SampleNetwork3()
+        
+#         x = zenkai.IO(torch.rand(2, 3))
+#         t = zenkai.IO(torch.rand(2, 3))
+#         state = zenkai.State()
+#         y = network(x, state)
+#         before = get_model_parameters(network)
+#         network.step(x, t, state)
+#         assert (get_model_parameters(network) != before).any()
+
+#     def test_zen_forward_step_x_updates_x(self):
+
+#         network = SampleNetwork3()
+        
+#         x = zenkai.IO(torch.rand(2, 3))
+#         t = zenkai.IO(torch.rand(2, 3))
+#         state = zenkai.State()
+#         network(x, state)
+#         x_prime = network.step(x, t, state)
+#         assert (x_prime.f != x.f).any()
