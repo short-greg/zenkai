@@ -46,7 +46,6 @@ class AccSimpleLearner(AccLearningMachine):
         return y.out(release)
 
 
-
 class AccSimpleLearner3(AccLearningMachine):
 
     def __init__(self, in_features: int, out_features: int):

@@ -341,8 +341,6 @@ class Graph(Container):
                     return None
                 x_primes.append(x_prime)
             target = IO.agg(x_primes, sum)
-        elif out_y == 't':
-            target = self._t
         else: target = self._conns[out_y].get_x_prime(y)
         self._targets[y] = target
         return target
