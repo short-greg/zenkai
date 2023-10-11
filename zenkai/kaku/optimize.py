@@ -211,39 +211,17 @@ class ParamFilter(optim.Optimizer):
         self.transfer(clear_active_state)
 
 
-class itadaki:
-    """Static class to make it easy to create Optimfactories
+class _OptimF:
+    """Class to make it easy to create Optimfactories
     """
+    
+    def __getattr__(self, key) -> typing.Callable[[typing.Any], OptimFactory]:
 
-    def __init__(self) -> None:
-        raise RuntimeError("Cannot create instance of class itadaki")
+        
+        def _(*args, **kwargs) -> OptimFactory:
 
-    @staticmethod
-    def adam(*args, **kwargs):
-        return OptimFactory("adam", *args, **kwargs)
+            return OptimFactory(key, *args, **kwargs)
+        return _
 
-    @staticmethod
-    def sgd(*args, **kwargs):
-        return OptimFactory("sgd", *args, **kwargs)
-
-    @staticmethod
-    def null():
-        return OptimFactory("null")
-
-    @classmethod
-    def adadelta(cls, *args, **kwargs):
-        """Create adadelta OptimFactory
-        """
-        return OptimFactory("adadelta", *args, **kwargs)
-
-    @classmethod
-    def asgd(cls, *args, **kwargs):
-        """Create asgd OptimFactory
-        """
-        return OptimFactory("asgd", *args, **kwargs)
-
-    @classmethod
-    def rmsprop(cls, *args, **kwargs):
-        """Create rmsprop OptimFactory
-        """
-        return OptimFactory("rmsprop", *args, **kwargs)
+# Convenience object for creating optim factories
+optimf = _OptimF()

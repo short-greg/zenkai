@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import IO, LearningMachine, State, ThLoss, itadaki
+from zenkai.kaku import IO, LearningMachine, State, ThLoss, optimf
 from zenkai.kikai.grad import GradLearner
 from zenkai.kikai.hill import HillClimbStepX
 
@@ -13,7 +13,7 @@ from zenkai.kikai.hill import HillClimbStepX
 def learner():
     return GradLearner(
         [nn.Linear(3, 3)], ThLoss("mse"), 
-        itadaki.sgd(lr=1e-2)
+        optimf.sgd(lr=1e-2)
     )
     
 

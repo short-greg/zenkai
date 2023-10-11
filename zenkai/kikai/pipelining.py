@@ -220,8 +220,6 @@ class AccPipelineLearner(AccLearningMachine):
             node.accumulate(x, t, state)
             x_prime = node.step_x(x, t, state)
             pipeline.set_x_prime(y, x_prime)
-            # if container.contains_y(x):
-            #    container.target(x, x_prime)
         
         state[self, 'accumulated'] = True
     

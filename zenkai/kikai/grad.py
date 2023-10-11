@@ -25,7 +25,7 @@ from ..kaku import (
     idx_io,
     Assessment,
     OptimFactory,
-    itadaki,
+    optimf,
     AccLearningMachine,
     AccStepTheta,
     BatchIdxAccStepTheta,
@@ -343,7 +343,7 @@ class GradLearner(AccLearningMachine):
             raise ValueError('Arument learn_theta cannot be false if step_dep is true')
         self._criterion = criterion
         if optim_factory is None:
-            optim_factory = itadaki.null()
+            optim_factory = optimf.null()
         if learn_theta:
             self._theta_step = GradStepTheta(self, optim_factory, reduction)
         else:

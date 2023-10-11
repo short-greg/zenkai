@@ -123,34 +123,6 @@ class SamplePipeline2(pipelining.PipelineLearner):
         return y2.out(release)
 
 
-# class SamplePipeline3(networking.PipelineLearner):
-
-#     def __init__(self, step_priority: bool=True):
-#         super().__init__(networking.Graph())
-#         self._node = networking.Step(
-#             AccSimpleLearner(3, 3), step_priority
-#         )
-#         self._node2 = networking.Step(
-#             AccSimpleLearner(3, 3), step_priority
-#         )
-
-#         self._node3 = networking.Step(
-#             AccSimpleLearner3(3, 3), step_priority
-#         )
-
-#     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-#         return self._node.assess_y(y, t, reduction_override)
-    
-#     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-
-#         pipeline = self.set_pipeline(x, state)
-#         y = self._node(x, state, release, pipeline)
-#         y2 = self._node2(y, state, release, pipeline)
-#         y3 = container.cat([y, y2])
-#         y4 = self._node3(y3, state, release, container)
-#         return y4.out(release)
-
-
 class AccSamplePipeline(pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):

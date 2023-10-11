@@ -59,7 +59,7 @@ from .optimize import (
     ParamFilter,
     NullOptim,
     OptimFactory,
-    itadaki
+    optimf
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack
 from . import build
