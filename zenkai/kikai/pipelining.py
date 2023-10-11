@@ -68,8 +68,11 @@ class Pipeline(object):
         
         super().__init__()
         self._machines: typing.List[PipeConn] = []
-        self._indices: typing.Dict[IO, int] = {}
-        self._x_primes: typing.Dict[IO, IO] = {}
+        self._indices: typing.Dict[LearningMachine, int] = {}
+        self._x_primes: typing.Dict[LearningMachine, IO] = {}
+        self._out_indices: typing.Dict[IO, int] = {}
+        self._step_kwargs: typing.Dict[LearningMachine, typing.Dict] = {}
+        self._step_x_kwargs: typing.Dict[LearningMachine, typing.Dict] = {}
         self._out = None
         self._out_set = False
         self._t = None
@@ -80,57 +83,58 @@ class Pipeline(object):
         # if len(self._machines) > 0 and connection.x != self._machines[-1].y:
         #    raise ValueError(f'The connections in a pipeline must be added in sequence')
         self._machines.append(PipeConn(machine, x, y))
-        self._indices[y] = len(self._machines) - 1
+        self._indices[machine] = len(self._machines) - 1
+        self._out_indices[y] = len(self._machines) - 1
         if not self._out_set:
-            self._out = y
+            self._out = machine
 
-    def set_out(self, y: IO):
+    def set_out(self, machine: LearningMachine):
         
-        if y not in self._indices:
+        if machine not in self._indices:
             raise KeyError(f'IO y has not been added to the Pipeline')
-        self._out = y
+        self._out = machine
         self._out_set = True
 
     def set_out_target(self, t: IO):
         
         self._t = t
     
-    def get_target(self, y: IO) -> IO:
+    def get_target(self, machine: LearningMachine) -> IO:
 
-        if y in self._ts:
-            t = self._ts[y]
+        if machine in self._ts:
+            t = self._ts[machine]
             if t == "t":
                 return self._t
             return t
-        if y == self._out:
+        if machine == self._out:
             return self._t
-        if self._indices[y] == (len(self._indices) - 1) and self._out_set is False:
+        if self._indices[machine] == (len(self._indices) - 1) and self._out_set is False:
             return self._t
-        index = self._indices[y] + 1
+        index = self._indices[machine] + 1
         if index < len(self._machines):
             conn = self._machines[index]
-            return self._x_primes.get(conn.y)
+            return self._x_primes.get(conn.machine)
         return None
     
-    def set_t(self, *key_targs):
+    def set_target(self, *key_targs):
 
-        for x, t in key_targs:
-            if t != "t" and self._indices[t] <= self._indices[x]:
+        for machine, t in key_targs:
+            if t != "t" and self._out_indices[t] <= self._indices[machine]:
                 raise ValueError(f"Cannot set t to a previous value in the pipeline")
 
-            self._ts[x] = t
+            self._ts[machine] = t
 
-    def detach_t(self, *keys):
+    def detach_target(self, *keys):
 
         for x in keys:
             del self._ts[x]
 
-    def set_x_prime(self, y: IO, x_prime: IO):
+    def set_x_prime(self, machine: LearningMachine, x_prime: IO):
 
-        if y not in self._indices:
+        if machine not in self._indices:
             raise ValueError(f'Y has not been added to the pipeline')
         
-        self._x_primes[y] = x_prime
+        self._x_primes[machine] = x_prime
     
     def reverse(self) -> typing.Iterator[typing.Tuple[IO, IO, PipeStep, IO]]:
         
@@ -141,18 +145,30 @@ class Pipeline(object):
 
         i = len(conns) - 1
         for conn in reversed(conns):
-            t = self.get_target(conn.y)
+            t = self.get_target(conn.machine)
             yield conn.x, conn.y, conn.machine, t
             i -= 1
     
-    def contains_y(self, y: IO) -> bool:
+    def set_step_kwargs(self, node: LearningMachine, **kwargs):
 
-        return y in self._indices
+        self._step_kwargs[node] = kwargs
+
+    def set_step_x_kwargs(self, node: LearningMachine, **kwargs):
+
+        self._step_x_kwargs[node] = kwargs
+
+    def get_step_kwargs(self, node: LearningMachine) -> typing.Dict:
+
+        return self._step_kwargs.get(node, {})
+
+    def get_step_x_kwargs(self, node: LearningMachine) -> typing.Dict:
+
+        return self._step_x_kwargs.get(node, {})
     
     def first(self) -> typing.Tuple[IO, IO, PipeStep, IO]:
 
         conn = self._machines[0]
-        t = self.get_target(conn.y)
+        t = self.get_target(conn.machine)
         return conn.x, conn.y, conn.machine, t
 
 
@@ -177,22 +193,29 @@ class PipelineLearner(LearningMachine):
         for x, y, node, t in pipeline.reverse():
             if node.step_priority:
                 
-                node.step(x, t, state)
-                x_prime = node.step_x(x, t, state)
+                node.step(x, t, state, **pipeline.get_step_kwargs(node))
+                x_prime = node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
             else: 
-                x_prime = node.step_x(x, t, state)
-                node.step(x, t, state)
-            pipeline.set_x_prime(y, x_prime)
+                x_prime = node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
+                node.step(x, t, state, **pipeline.get_step_kwargs(node))
+            pipeline.set_x_prime(node, x_prime)
 
         state[(self, x), 'stepped'] = True
         return x_prime
+    
+    def node(self, machine: LearningMachine, step_priority: bool=False) -> PipeStep:
+
+        return PipeStep(
+            machine, step_priority
+        )
     
     @step_dep('stepped', False, True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         self.validate_pipeline_set(x, state)
-        x, y, node, t = state[(self, x), 'pipeline'].first()
-        return node.step_x(x, t, state)
+        pipeline: Pipeline = state[(self, x), 'pipeline']
+        x, _, node, t = pipeline.first()
+        return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
 
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
@@ -218,24 +241,32 @@ class AccPipelineLearner(AccLearningMachine):
         pipeline.set_out_target(t)
         for x, y, node, t in pipeline.reverse():
             node.accumulate(x, t, state)
-            x_prime = node.step_x(x, t, state)
-            pipeline.set_x_prime(y, x_prime)
+            x_prime = node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
+            pipeline.set_x_prime(node, x_prime)
         
         state[self, 'accumulated'] = True
+
+    def node(self, machine: LearningMachine, step_priority: bool=False) -> PipeStep:
+
+        return PipeStep(
+            machine, step_priority
+        )
     
     @acc_dep('accumulated', False)
     def step(self, x: IO, t: IO, state: State) -> IO:
 
         self.validate_pipeline_set(x, state)
-        for x, _, node, t  in state[(self, x), 'pipeline'].reverse():
-            node.step(x, t, state)
+        pipeline: Pipeline = state[(self, x), 'pipeline']
+        for x, _, node, t  in pipeline.reverse():
+            node.step(x, t, state, **pipeline.get_step_kwargs(node))
 
     @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         self.validate_pipeline_set(x, state)
-        x, _, node, t = state[(self, x), 'pipeline'].first()
-        return node.step_x(x, t, state)
+        pipeline: Pipeline = state[(self, x), 'pipeline']
+        x, _, node, t = pipeline.first()
+        return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
 
     def add_node(self, learning_machine: LearningMachine) -> 'PipeStep':
         return PipeStep(self, learning_machine, priority_step=False)

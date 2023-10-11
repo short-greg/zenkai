@@ -5,7 +5,8 @@ import typing
 
 from ..kaku import (
     IO, State, LearningMachine, Assessment,
-    OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine
+    OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
+    Builder, UNDEFINED, Var, Factory
 )
 from .grad import GradUpdater
 
@@ -31,7 +32,10 @@ class FALinearLearner(LearningMachine):
     """Linear network for implementing feedback alignment
     """
 
-    def __init__(self, in_features: int, out_features: int, optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='mse') -> None:
+    def __init__(
+        self, in_features: int, out_features: int, 
+        optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='mse'
+    ) -> None:
         """Linear network for implementing feedback alignment
 
         Args:
@@ -207,6 +211,24 @@ class FALearner(AccLearningMachine):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         return self._grad_updater.update(x, state, self.net)
+    
+    @classmethod
+    def builder(cls, net=UNDEFINED, netB=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['DFALearner']:
+
+        """
+        
+        
+        """
+        kwargs = Builder.kwargs(
+            net=net, netB=netB, activation=activation,
+            criterion=criterion, optim_factory=optim_factory
+        )
+
+        return Builder[DFALearner](
+            DFALearner, ['net', 'netB', 'optim_factory', 'activation', 'criterion'], 
+            **kwargs
+        )
+
 
 
 class DFALearner(AccLearningMachine):
@@ -303,3 +325,39 @@ class DFALearner(AccLearningMachine):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         return self._grad_updater.update(x, state, self.net)
+
+    @classmethod
+    def builder(cls, net=UNDEFINED, netB=UNDEFINED, out_features=UNDEFINED, t_features=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['DFALearner']:
+
+        """
+        
+        
+        """
+        kwargs = Builder.kwargs(
+            net=net, netB=netB,
+            out_features=out_features, t_features=t_features, activation=activation,
+            criterion=criterion, optim_factory=optim_factory
+        )
+
+        return Builder[DFALearner](
+            DFALearner, ['net', 'netB', 'out_features', 't_features', 'optim_factory', 'activation', 'criterion'], 
+            **kwargs
+        )
+
+
+LinearFABuilder = DFALearner.builder(
+    net=Factory(nn.Linear, Var('in_features'), Var('out_features')),
+    netB=Factory(nn.Linear, Var('in_features'), Var('out_features')),
+    optim_factory=Var('optim_factory'),
+    activation=Factory(Var('activation')), criterion=Var('criterion')
+)
+
+
+LinearDFABuilder = DFALearner.builder(
+    net=Factory(nn.Linear, Var('in_features'), Var('out_features')),
+    netB=Factory(nn.Linear, Var('in_features'), Var('out_features')),
+    optim_factory=Var('optim_factory'),
+    out_features=Var('out_features'),
+    activation=Factory(Var('activation')),
+    t_features=Var('t_features'), criterion=Var('criterion')
+)

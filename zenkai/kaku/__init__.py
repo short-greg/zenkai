@@ -30,6 +30,10 @@ from .io import (
     ToIO,
     FromIO
 )
+from .build import (
+    Builder, Factory, BuilderArgs, BuilderFunctor,
+    Var, UNDEFINED
+)
 from .machine import (
     BatchIdxStepTheta,
     BatchIdxStepX,
@@ -62,4 +66,3 @@ from .optimize import (
     optimf
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack
-from . import build

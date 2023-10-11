@@ -68,7 +68,8 @@ from .target_prop import (
 )
 from .ensemble import EnsembleLearner, EnsembleLearnerVoter
 from .feedback_alignment import (
-    BStepX, FALinearLearner, DFALearner, FALearner
+    BStepX, FALinearLearner, DFALearner, FALearner,
+    LinearDFABuilder, LinearFABuilder
 )
 from .pipelining import (
     Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn

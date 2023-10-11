@@ -31,7 +31,8 @@ from ..kaku import (
     BatchIdxAccStepTheta,
     Criterion,
     acc_dep,
-    step_dep
+    step_dep,
+    ThLoss
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters, Null
 
@@ -240,6 +241,36 @@ class GradStepX(StepX):
         # update_io(IO(x), conn.step_x.x)
         x_prime = IO(x, detach=True)
         return x_prime
+
+
+class CriterionGrad(StepX, Criterion):
+    """Use to calculate x_prime for a criterion
+    """
+
+    def __init__(self, criterion: typing.Union[Criterion, str], x_lr: float=None, reduction: str=None):
+
+        super().__init__()
+        if isinstance(criterion, nn.Module):
+            criterion = ThLoss(criterion)
+        self.reduction = reduction
+            
+        self.criterion = criterion
+        self.x_lr = x_lr
+    
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        return self.criterion(x, t, reduction_override)
+
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        
+        x.freshen()
+        result = self.assess_y(x, t, self.reduction)
+        result.value.backward()
+
+        x_prime = []
+        for x_i in x:
+            grad = x_i.grad if self.x_lr is None else x_i.grad * self.x_lr
+            x_prime.append(x - grad)
+        return IO(*x_prime, detach=True)
 
 
 class GradLoopStepX(BatchIdxStepX):

@@ -685,7 +685,7 @@ class Criterion(nn.Module):
         return Assessment(self.forward(x, t, reduction_override), self._maximize)
 
     @abstractmethod
-    def forward(self, x: IO, t: IO, reduction_override: str = None):
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
 
 

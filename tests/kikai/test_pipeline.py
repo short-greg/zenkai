@@ -166,7 +166,7 @@ class AccSamplePipelineT(pipelining.AccPipelineLearner):
         y = self._node(x, state, release, pipeline)
         y2 = self._node2(y, state, release, pipeline)
         y3 = self._node2(y2, state, release, pipeline)
-        pipeline.set_t((y, "t"), (y2, "t"))
+        pipeline.set_target((self._node, "t"), (self._node2, "t"))
         return y3.out(release)
 
 
@@ -192,7 +192,7 @@ class AccSamplePipelineT2(pipelining.AccPipelineLearner):
         y = self._node(x, state, release, pipeline)
         y2 = self._node2(y, state, release, pipeline)
         y3 = self._node2(y2, state, release, pipeline)
-        pipeline.set_t((y, y3), (y2, "t"))
+        pipeline.set_target((self._node, y3), (self._node2, "t"))
         return y3.out(release)
 
 

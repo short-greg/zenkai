@@ -3,7 +3,17 @@ import typing
 
 from .machine import LearningMachine
 from typing import TypeVar, Generic
+import random
+import uuid
 
+
+def _undefined():
+    rd = random.Random()
+    rd.seed(0)
+    return str(uuid.UUID(int=rd.getrandbits(128)))
+
+
+UNDEFINED = _undefined()
 
 class BuilderFunctor(ABC):
     """Base class for functors used in building a learning machine
@@ -187,8 +197,8 @@ class Builder(BuilderFunctor, Generic[T]):
         """Update or 
 
         Args:
-            name (str): _description_
-            value (typing.Any): _description_
+            name (str): 
+            value (typing.Any): 
         """
         if name in self._arg_names:
             self[name] = value
@@ -227,3 +237,14 @@ class Builder(BuilderFunctor, Generic[T]):
         return self._factory(
             *args, **kwargs
         )
+    
+    @classmethod
+    def kwargs(self, **kwargs) -> typing.Dict[str, typing.Any]:
+        """Use to filter out kwarg arguments to the Builder that are UNDEFINED
+
+        Returns:
+            typing.Dict[str, typing.Any]: the resulting dictionary
+        """
+
+        return {key: arg for key, arg in kwargs.items() if arg != UNDEFINED}
+
