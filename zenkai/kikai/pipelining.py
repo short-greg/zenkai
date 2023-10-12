@@ -7,8 +7,10 @@ from torch import nn
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
     acc_dep, step_dep, 
-    AccLearningMachine, Criterion
+    AccLearningMachine, Criterion, OptimFactory
 )
+from .grad import grad
+from .reversible import reverse
 from abc import abstractmethod, ABC
 
 
@@ -89,6 +91,7 @@ class Pipeline(object):
         self._out_indices[y] = len(self._machines) - 1
         if not self._out_set:
             self._out = machine
+        return machine
 
     def set_out(self, machine: LearningMachine):
         
@@ -143,6 +146,22 @@ class Pipeline(object):
 
         for x in keys:
             del self._ts[x]
+
+    def add_grad(self, f, x: IO, y: IO, optim: OptimFactory=None, criterion: Criterion=None) -> PipeStep:
+
+        pipe_step = PipeStep(grad(
+            f, optim, criterion
+        ))
+        self.add(pipe_step, x, y)
+        return pipe_step
+
+    def add_reverse(self, f, x: IO, y: IO, criterion: Criterion=None) -> PipeStep:
+
+        pipe_step = PipeStep(reverse(
+            f, criterion
+        ))
+        self.add(pipe_step, x, y)
+        return pipe_step
 
     def set_x_prime(self, machine: LearningMachine, x_prime: IO):
 

@@ -48,7 +48,7 @@ from .least_squares import (
     LeastSquaresStepX,
     GradLeastSquaresLearner
 )
-from .reversible import ReversibleMachine
+from .reversible import ReversibleMachine, BackTarget, reverse
 from .scikit import (
     ScikitLimitGen,
     ScikitEstimator, ScikitRegressor,
@@ -75,7 +75,3 @@ from .pipelining import (
     Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
 )
 from .post import StackPostStepTheta
-from .back import (
-    BackTarget
-)
-

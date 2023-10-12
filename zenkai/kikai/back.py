@@ -38,3 +38,26 @@ class BackTarget(LearningMachine):
             xs.append(x_i.grad)
             x_i.grad = None
         return IO(*xs, True)
+
+
+def back(f, criterion: Criterion=None) -> BackTarget:
+    """Convenicence function to create a back target for cases where
+    not much customization is needed. Especially for operations with no parameters
+    that are in the middle of the network
+
+    Args:
+        f : The Function or NNModule to create a Grad Learner for
+        optim (OptimFactory, optional): The optim to use. Defaults to None.
+        criterion (Criterion, optional): The criterion. Defaults to None.
+
+    Returns:
+        GradLearner: The grad learner to optimize
+    """
+    if criterion is None:
+        criterion = ThLoss('MSELoss', 'mean', weight=0.5)
+    if not isinstance(f, nn.Module):
+        f = Lambda(f)
+    return GradLearner(
+        f, criterion, optim, reduction='sum'
+    )
+

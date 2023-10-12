@@ -9,7 +9,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 from .. import kaku
-from ..utils import module_factory
+from ..utils import module_factory, Lambda
 
 # Local
 from ..kaku import (
@@ -373,13 +373,11 @@ class GradLearner(AccLearningMachine):
         if learn_theta is False and step_dep is True:
             raise ValueError('Arument learn_theta cannot be false if step_dep is true')
         self._criterion = criterion
-        if optim_factory is None:
-            optim_factory = optimf.null()
-        if learn_theta:
+        if optim_factory is not None:
             self._theta_step = GradStepTheta(self, optim_factory, reduction)
         else:
             self._theta_step = NullStepTheta()
-        if step_dep:
+        if step_dep or optim_factory is None:
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(self, optim_factory, reduction)
@@ -490,3 +488,25 @@ def update_x(
                 x_i.grad = None
         updated.append(x_i)
     return IO(*updated, detach=detach)
+
+
+def grad(f, optim: OptimFactory=None, criterion: Criterion=None) -> GradLearner:
+    """Convenicence function to create a grad learner for cases where
+    not much customization is needed. Especially for operations with no parameters
+    that are in the middle of the network
+
+    Args:
+        f : The Function or NNModule to create a Grad Learner for
+        optim (OptimFactory, optional): The optim to use. Defaults to None.
+        criterion (Criterion, optional): The criterion. Defaults to None.
+
+    Returns:
+        GradLearner: The grad learner to optimize
+    """
+    if criterion is None:
+        criterion = ThLoss('MSELoss', 'mean', weight=0.5)
+    if not isinstance(f, nn.Module):
+        f = Lambda(f)
+    return GradLearner(
+        f, criterion, optim, reduction='sum'
+    )
