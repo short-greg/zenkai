@@ -703,6 +703,12 @@ LOSS_MAP = {
     "cosine_embedding": nn.CosineEmbeddingLoss
 }
 
+def lookup_loss(loss_name: str):
+
+    if hasattr(nn, loss_name):
+        return getattr(nn, loss_name)
+    return LOSS_MAP[loss_name]
+
 
 class ThLoss(Criterion):
     """Class to wrap a Torch loss module"""
@@ -728,7 +734,7 @@ class ThLoss(Criterion):
         super().__init__(reduction)
         if isinstance(base_criterion, str):
             try:
-                base_criterion = LOSS_MAP[base_criterion]
+                base_criterion = lookup_loss(base_criterion)
             except KeyError:
                 raise KeyError(f"No loss named {base_criterion} in loss keys")
         assert base_criterion is not None

@@ -213,7 +213,7 @@ class FALearner(AccLearningMachine):
         return self._grad_updater.update(x, state, self.net)
     
     @classmethod
-    def builder(cls, net=UNDEFINED, netB=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['DFALearner']:
+    def builder(cls, net=UNDEFINED, netB=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['FALearner']:
 
         """
         
@@ -224,8 +224,8 @@ class FALearner(AccLearningMachine):
             criterion=criterion, optim_factory=optim_factory
         )
 
-        return Builder[DFALearner](
-            DFALearner, ['net', 'netB', 'optim_factory', 'activation', 'criterion'], 
+        return Builder[FALearner](
+            FALearner, ['net', 'netB', 'optim_factory', 'activation', 'criterion'], 
             **kwargs
         )
 
@@ -297,6 +297,7 @@ class DFALearner(AccLearningMachine):
         y_det = state[(self, x), 'y_det']
         y = state[(self, x), 'y']
         y = self.B(y)
+        print(y.size(), t.f.size())
         self.criterion(IO(y), t).backward()
         y2.backward(y_det.grad)
 
@@ -345,7 +346,7 @@ class DFALearner(AccLearningMachine):
         )
 
 
-LinearFABuilder = DFALearner.builder(
+LinearFABuilder = FALearner.builder(
     net=Factory(nn.Linear, Var('in_features'), Var('out_features')),
     netB=Factory(nn.Linear, Var('in_features'), Var('out_features')),
     optim_factory=Var('optim_factory'),

@@ -76,8 +76,16 @@ class Factory(BuilderFunctor):
 
     def __call__(self, **kwargs):
         
-        args, kwargs = self._args(**kwargs)
-        return self._factory(*args, **kwargs)
+        f_args, f_kwargs = self._args(**kwargs)
+        if isinstance(self._factory, BuilderFunctor):
+            factory = self._factory(**kwargs)
+        else:
+            factory = self._factory
+        if factory is None:
+            # TODO: Think if this is how I really want to 
+            # do it.. It could create conflicts
+            return None
+        return self._factory(*f_args, **f_kwargs)
 
     def vars(self) -> typing.List[Var]:            
         return self._args.vars()
@@ -228,6 +236,13 @@ class Builder(BuilderFunctor, Generic[T]):
         builder._builder_kwargs = kwargs
         return builder
 
+    def spawn(self, **kwargs) -> 'Builder[T]':
+        
+        builder = self.clone()
+        for k, v in kwargs.items():
+            builder[k] = v
+        return builder
+
     def vars(self) -> typing.List[Var]:
         return self._builder_kwargs.vars()
 
@@ -247,4 +262,3 @@ class Builder(BuilderFunctor, Generic[T]):
         """
 
         return {key: arg for key, arg in kwargs.items() if arg != UNDEFINED}
-

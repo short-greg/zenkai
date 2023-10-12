@@ -7,7 +7,7 @@ from torch import nn
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
     acc_dep, step_dep, 
-    AccLearningMachine
+    AccLearningMachine, Criterion
 )
 from abc import abstractmethod, ABC
 
@@ -107,7 +107,8 @@ class Pipeline(object):
             t = self._ts[machine]
             if t == Pipeline.T:
                 return self._t
-            return t
+            
+            return self._x_primes[t]
         if machine == self._out:
             return self._t
         if self._indices[machine] == (len(self._indices) - 1) and self._out_set is False:
@@ -121,7 +122,19 @@ class Pipeline(object):
     def set_target(self, *key_targs):
 
         for machine, t in key_targs:
-            if t != Pipeline.T and self._out_indices[t] <= self._indices[machine]:
+            if isinstance(machine, IO):
+                m_index = self._out_indices[machine]
+                machine = self._machines[m_index].machine
+            else:
+                m_index = self._indices[machine]
+            
+            if isinstance(t, IO):
+                t_index = self._out_indices[t]
+                t = self._machines[self._out_indices[machine]].machine
+            elif isinstance(t, LearningMachine):
+                t_index = self._indices[t]
+
+            if t != Pipeline.T and t_index <= m_index:
                 raise ValueError(f"Cannot set t to a previous value in the pipeline")
 
             self._ts[machine] = t
@@ -176,21 +189,34 @@ class Pipeline(object):
 
 class PipelineLearner(LearningMachine):
 
+    def __init__(self, criterion: Criterion=None) -> None:
+        super().__init__()
+        self._criterion = criterion
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        
+        if self._criterion is None:
+            raise RuntimeError('Cannot assess if criterion is none. Either set it or override assess_y')
+        
+        return self._criterion.assess(y, t, reduction_override)
+
     def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
 
         pipeline = Pipeline()
         state[(self, x), 'pipeline'] = pipeline
         return pipeline
     
-    def validate_pipeline_set(self, x: IO, state: State) -> bool:
-        if ((self, x), 'pipeline') not in state:
+    def get_pipeline(self, x: IO, state: State) -> 'Pipeline':
+        
+        pipeline = state.get((self, x), 'pipeline')
+        
+        if pipeline is None:
             raise RuntimeError('The pipeline has not been set in the forward method')
+        return pipeline
 
     def step(self, x: IO, t: IO, state: State):
 
-        self.validate_pipeline_set(x, state)
-
-        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline = self.get_pipeline(x, state)
         pipeline.set_out_target(t)
         for x, y, node, t in pipeline.reverse():
             if node.step_priority:
@@ -214,7 +240,7 @@ class PipelineLearner(LearningMachine):
     @step_dep('stepped', False, True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        self.validate_pipeline_set(x, state)
+        pipeline = self.get_pipeline(x, state)
         pipeline: Pipeline = state[(self, x), 'pipeline']
         x, _, node, t = pipeline.first()
         return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
@@ -226,10 +252,25 @@ class PipelineLearner(LearningMachine):
 
 class AccPipelineLearner(AccLearningMachine):
 
-    def validate_pipeline_set(self, x: IO, state: State) -> bool:
-        if ((self, x), 'pipeline') not in state:
-            raise RuntimeError('The pipeline has not been set in the forward method')
+    def __init__(self, criterion: Criterion=None) -> None:
+        super().__init__()
+        self._criterion = criterion
 
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        
+        if self._criterion is None:
+            raise RuntimeError('Cannot assess if criterion is none. Either set it or override assess_y')
+        
+        return self._criterion.assess(y, t, reduction_override)
+
+    def get_pipeline(self, x: IO, state: State) -> 'Pipeline':
+        
+        pipeline = state.get((self, x), 'pipeline')
+        
+        if pipeline is None:
+            raise RuntimeError('The pipeline has not been set in the forward method')
+        return pipeline
+        
     def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
 
         pipeline = Pipeline()
@@ -238,8 +279,7 @@ class AccPipelineLearner(AccLearningMachine):
 
     def accumulate(self, x: IO, t: IO, state: State):
         
-        self.validate_pipeline_set(x, state)
-        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline = self.get_pipeline(x, state)
         pipeline.set_out_target(t)
         for x, y, node, t in pipeline.reverse():
             node.accumulate(x, t, state)
@@ -257,16 +297,14 @@ class AccPipelineLearner(AccLearningMachine):
     @acc_dep('accumulated', False)
     def step(self, x: IO, t: IO, state: State) -> IO:
 
-        self.validate_pipeline_set(x, state)
-        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline = self.get_pipeline(x, state)
         for x, _, node, t  in pipeline.reverse():
             node.step(x, t, state, **pipeline.get_step_kwargs(node))
 
     @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        self.validate_pipeline_set(x, state)
-        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline = self.get_pipeline(x, state)
         x, _, node, t = pipeline.first()
         return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
 

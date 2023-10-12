@@ -4,6 +4,7 @@ Factories for creating optimizers
 
 # 1st Party
 import typing
+from typing import Any
 
 # 3rd Party
 import torch
@@ -46,6 +47,12 @@ OPTIM_MAP = {
     "asgd": torch.optim.ASGD
 }
 
+def lookup_optim(optim_name):
+
+    if hasattr(torch.optim, optim_name):
+        return getattr(torch.optim, optim_name)
+    return OPTIM_MAP[optim_name]
+
 
 class OptimFactory(object):
     """Factory used to create an optimizer
@@ -66,7 +73,7 @@ class OptimFactory(object):
             KeyError: If the string passed in for optim does not map to an optim in OPTIM_MAP
         """
         try:
-            optim = OPTIM_MAP[optim] if isinstance(optim, str) else optim
+            optim = lookup_optim(optim) if isinstance(optim, str) else optim
         except KeyError:
             raise KeyError(f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}")
         self._optim = optim
@@ -215,13 +222,15 @@ class _OptimF:
     """Class to make it easy to create Optimfactories
     """
     
-    def __getattr__(self, key) -> typing.Callable[[typing.Any], OptimFactory]:
-
+    def __getattr__(self, optim) -> typing.Callable[[typing.Any], OptimFactory]:
         
         def _(*args, **kwargs) -> OptimFactory:
 
-            return OptimFactory(key, *args, **kwargs)
+            return OptimFactory(optim, *args, **kwargs)
         return _
+    
+    def __call__(self, optim, *args: Any, **kwargs: Any) -> Any:
+        return OptimFactory(optim, *args, **kwargs)
 
 # Convenience object for creating optim factories
 optimf = _OptimF()
