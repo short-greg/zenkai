@@ -22,7 +22,7 @@ class PipeStep(AccLearningMachine):
         self._accumulate = isinstance(self._learning_machine, AccLearningMachine)
     
     @property
-    def accumulate(self) -> bool:
+    def to_accumulate(self) -> bool:
         return self._accumulate
 
     def forward(self, x: IO, state: State, release: bool = True, pipeline: 'Pipeline'=None) -> IO:
@@ -35,17 +35,17 @@ class PipeStep(AccLearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._learning_machine.assess_y(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: State):
-        self._learning_machine.step(x, t, state)
+    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
+        self._learning_machine.step(x, t, state, *args, **kwargs)
     
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
         
-        return self._learning_machine.step_x(x, t, state)  
+        return self._learning_machine.step_x(x, t, state, *args, **kwargs)  
     
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO, state: State, *args, **kwargs):
 
         if self._accumulate:
-            self._learning_machine.accumulate(x, t, state)
+            self._learning_machine.accumulate(x, t, state, *args, **kwargs)
 
     def __repr__(self):
         return f'Node({self._learning_machine})'
@@ -63,6 +63,8 @@ class PipeConn:
 
 
 class Pipeline(object):
+
+    T = "t"
 
     def __init__(self):
         
@@ -103,7 +105,7 @@ class Pipeline(object):
 
         if machine in self._ts:
             t = self._ts[machine]
-            if t == "t":
+            if t == Pipeline.T:
                 return self._t
             return t
         if machine == self._out:
@@ -119,7 +121,7 @@ class Pipeline(object):
     def set_target(self, *key_targs):
 
         for machine, t in key_targs:
-            if t != "t" and self._out_indices[t] <= self._indices[machine]:
+            if t != Pipeline.T and self._out_indices[t] <= self._indices[machine]:
                 raise ValueError(f"Cannot set t to a previous value in the pipeline")
 
             self._ts[machine] = t
