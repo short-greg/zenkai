@@ -87,7 +87,9 @@ def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
     if k <= 0:
         raise ValueError(f'Argument k must be greater than 0 not {k}')
 
-    y = x[None].repeat(k, *([1] * len(x.size())))  # .transpose(0, 1)
+    y = x[None]
+
+    y = y.repeat(k, *([1] * len(y.shape[1:])))  # .transpose(0, 1)
     if reshape:
         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
     return y

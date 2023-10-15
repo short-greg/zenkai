@@ -150,6 +150,48 @@ class BinarySampleMapper(PopulationMapper):
             self.k, self.decay, self._p0, self._sign_neg
         )
 
+from dataclasses import dataclass
+
+@dataclass
+class Bound:
+    lower: float=None
+    upper: float=None
+
+
+class ClampMapper(PopulationMapper):
+
+    def __init__(self, **bounds: Bound):
+        """initializer
+
+        Args:
+            std (float): The std by which to mutate
+            mean (float): The mean with which to mutate
+        """
+
+        super().__init__()
+        self.bounds = bounds
+
+    def map(self, population: Population) -> Population:
+        """Mutate all fields in the population
+
+        Args:
+            population (Population): The population to mutate
+
+        Returns:
+            Population: The mutated population
+        """
+        
+        result = {}
+        for k, v in population:
+            if k in self.bounds:
+                result[k] = v.clamp(self.bounds.lower, self.bounds.upper)
+            else:
+                result[k] = v
+        return Population(**result)
+
+    def spawn(self) -> 'ClampMapper':
+        return ClampMapper(**self.bounds)
+
 
 class GaussianMutator(PopulationMapper):
 
@@ -180,7 +222,7 @@ class GaussianMutator(PopulationMapper):
         
         result = {}
         for k, v in population:
-            result[k] = v + torch.rand_like(v) * self.std + self.mean
+            result[k] = v + torch.randn_like(v) * self.std + self.mean
         return Population(**result)
 
     def spawn(self) -> 'GaussianMutator':

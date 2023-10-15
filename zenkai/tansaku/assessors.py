@@ -1,14 +1,23 @@
 # 1st party
 import typing
 from abc import ABC, abstractmethod
+import math
+import torch
 
 # local
-from ..kaku import IO, LearningMachine, Criterion
+from ..kaku import IO, LearningMachine, Criterion, Assessment
 from .core import Population, expand_t, reduce_assessment_dim1, Objective
 
 
-class PopulationAssessor(ABC):
+class PopAssessor(ABC):
     """Modules to asseess the population"""
+
+    def __init__(self, 
+        reduce_from: int=1,
+        reduction: str="mean"
+    ):
+        self.reduce_from = reduce_from
+        self.reduction = reduction
 
     @abstractmethod
     def assess(self, population: Population) -> Population:
@@ -17,13 +26,29 @@ class PopulationAssessor(ABC):
     def __call__(self, population: Population) -> Population:
         return self.assess(population)
 
+    def reduce(self, assessment: Assessment) -> torch.Tensor:
+        
+        base_shape = assessment.value.shape[:self.reduce_from]
+        reshaped = assessment.value.reshape(
+            *math.prod(base_shape), -1
+        )
+        if self.reduction == 'mean':
+            reduced = reshaped.mean(dim=1)
+        elif self.reduction == 'sum':
+            reduced = reshaped.sum(dim=1)
+        else:
+            raise ValueError(f'Invalid reduction {self.reduction}')
+        
+        return Assessment(reduced.rehape(base_shape), assessment.maximize)
 
-class ObjectivePopulationAssessor(PopulationAssessor):
+
+class ObjectivePopAssessor(PopAssessor):
 
     def __init__(
         self,
         objective: Objective,
         names: typing.List[str]=None,
+        reduce_from: int=1,
         reduction: str="mean",
     ):
         """initializer
@@ -34,10 +59,9 @@ class ObjectivePopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
-        super().__init__()
+        super().__init__(reduce_from, reduction)
         self.objective = objective
         self.names = names
-        self.reduction = reduction
 
     def assess(self, population: Population) -> Population:
         """Assess a population
@@ -51,25 +75,30 @@ class ObjectivePopulationAssessor(PopulationAssessor):
         """
         super().__init__()
 
-        x = population.flattened(self.names)
+        population = population.select(self.names)
 
-        x = IO(*x)
-        assessment = self.objective(**population.as_tensors())
-        if assessment.value.dim() >= 2:
-            assessment = reduce_assessment_dim1(assessment, population.k, True)
-        assessment = assessment.reshape(population.k, -1)
+        # (sample, batch, feature dim)
+        # reduce_form
+
+        assessment = self.reduce(
+            self.objective('none', **population.as_tensors())
+        )
+
+        # if assessment.value.dim() >= 2:
+        #     assessment = reduce_assessment_dim1(assessment, population.k, True)
 
         population.report(assessment)
 
         return population
 
 
-class CriterionPopulationAssessor(PopulationAssessor):
+class CriterionPopAssessor(PopAssessor):
 
     def __init__(
         self,
         criterion: Criterion,
         names: typing.List[str]=None,
+        reduce_from: int=1,
         reduction: str="mean",
     ):
         """initializer
@@ -80,10 +109,9 @@ class CriterionPopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
-        super().__init__()
+        super().__init__(reduce_from, reduction)
         self.criterion = criterion
         self.names = names
-        self.reduction = reduction
 
     def assess(self, population: Population) -> Population:
         """Assess a population
@@ -101,10 +129,10 @@ class CriterionPopulationAssessor(PopulationAssessor):
 
         x = IO(*x)
         t = IO(*t)
-        assessment = self.criterion(x, t, self.reduction)
-        if assessment.value.dim() >= 2:
-            assessment = reduce_assessment_dim1(assessment, population.k, True)
-        assessment = assessment.reshape(population.k, -1)
+        assessment = self.reduce(self.criterion(x, t, 'none'))
+        # if assessment.value.dim() >= 2:
+        #     assessment = reduce_assessment_dim1(assessment, population.k, True)
+        # assessment = assessment.reshape(population.k, -1)
 
         # print(assessment.value[:,0])
         population.report(assessment)
@@ -112,14 +140,15 @@ class CriterionPopulationAssessor(PopulationAssessor):
         return population
 
 
-class XPopulationAssessor(PopulationAssessor):
+class XPopAssessor(PopAssessor):
     """Assess the inputs to the population"""
 
     def __init__(
         self,
         learner: LearningMachine,
         names: typing.List[str],
-        reduction: str,
+        reduce_from: int=1,
+        reduction: str="mean",
     ):
         """initializer
 
@@ -129,9 +158,9 @@ class XPopulationAssessor(PopulationAssessor):
             loss_name (str): The name of the loss to use for assessment
             reduction (str): The reduction to use for assessment
         """
+        super().__init__(reduce_from, reduction)
         self.learner = learner
         self.names = names
-        self.reduction = reduction
 
     def assess(self, population: Population) -> Population:
         """Assess a population
@@ -149,12 +178,12 @@ class XPopulationAssessor(PopulationAssessor):
 
         x = IO(*x)
         t = IO(*t)
-        assessment = self.learner.assess(
+        assessment = self.reduce(self.learner.assess(
             IO(*x), t, reduction_override="none"
-        )
-        if assessment.value.dim() >= 2:
-            assessment = reduce_assessment_dim1(assessment, population.k, True)
-        assessment = assessment.reshape(population.k, -1)
+        ))
+        # if assessment.value.dim() >= 2:
+        #     assessment = reduce_assessment_dim1(assessment, population.k, True)
+        # assessment = assessment.reshape(population.k, -1)
 
         # print(assessment.value[:,0])
         population.report(assessment)

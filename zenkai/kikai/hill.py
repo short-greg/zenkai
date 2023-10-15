@@ -7,7 +7,7 @@ from ..kaku import (
     State,
     update_io,
 )
-from ..tansaku.assessors import XPopulationAssessor
+from ..tansaku.assessors import XPopAssessor
 from ..tansaku.core import Individual
 from ..tansaku.influencers import SlopeInfluencer, PopulationLimiter
 from ..tansaku.populators import BinaryPopulator, GaussianPopulator, populate_t
@@ -42,7 +42,7 @@ class HillClimbStepX(FeatureIdxStepX):
         self.limiter = PopulationLimiter()
         self.populator = GaussianPopulator(k, std=std)
         self.modifier = SlopeInfluencer(momentum, lr, maximize=maximize)
-        self.assessor = XPopulationAssessor(self.learner, ["x"], "mean")
+        self.assessor = XPopAssessor(self.learner, ["x"], "mean")
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update x
@@ -83,7 +83,7 @@ class HillClimbBinaryStepX(FeatureIdxStepX):
         self.populator = BinaryPopulator(k, keep_p)
         self.selector = BestSampleReducer()  # to_sample=False)
         self.limiter = PopulationLimiter()
-        self.assessor = XPopulationAssessor(self.learner, ["x"], "mean", k)
+        self.assessor = XPopAssessor(self.learner, ["x"], "mean", k)
 
     @property
     def update_populator(self, k: int, keep_p: float):

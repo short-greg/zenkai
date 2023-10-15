@@ -48,7 +48,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner(3, 4)
 
         population = Population(x=torch.rand(8, 3, 3), t=torch.rand(8, 3, 4))
-        assessor = assessors.XPopulationAssessor(
+        assessor = assessors.XPopAssessor(
             learner, ['x'], 'mean'
         )
         assessor(population)
@@ -58,7 +58,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner3(3, 3, 4)
 
         population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.XPopulationAssessor(
+        assessor = assessors.XPopAssessor(
             learner, ['x'], 'mean'
         )
         assessor(population)

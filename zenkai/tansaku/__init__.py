@@ -1,6 +1,9 @@
 # flake8: noqa
 
-from .assessors import PopulationAssessor, XPopulationAssessor
+from .assessors import (
+    PopAssessor, XPopAssessor,
+    ObjectivePopAssessor
+)
 from .core import (
     Individual,
     Population,
@@ -14,7 +17,18 @@ from .core import (
     select_best_sample,
     select_best_individual,
     gen_like,
-    Fitter
+    Fitter,
+    Objective,
+    FuncObjective,
+    CriterionObjective,
+    Constraint,
+    ValueConstraint,
+    CompoundConstraint,
+    impose,
+    LTE,
+    LT,
+    GT,
+    get_model_parameters
 )
 from .exploration import (
     AssessmentDist,

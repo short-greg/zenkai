@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
+from zenkai.kaku import Assessment
 
 
 # local
@@ -15,11 +16,6 @@ from ..kaku import IO, Assessment
 from ..kaku import Reduction, Criterion
 # TODO: Move to utils
 
-
-class Objective(object):
-
-    def __call__(self, *args, **kwargs) -> Assessment:
-        pass
 
 
 def reduce_assessment_dim0(
@@ -243,6 +239,8 @@ class Individual(object):
         for k, v in values.items():
             if isinstance(v, nn.Module):
                 v = get_model_parameters(v)
+            elif not isinstance(v, torch.Tensor):
+                v = torch.tensor(v)
             self._parameters[k] = v
         # TODO: validate the sizes
 
@@ -322,7 +320,11 @@ class Individual(object):
             typing.Union[torch.Tensor, Parameter]: The value in the key
         """
         return self._parameters[key]
+    
+    def get(self, key: str) -> typing.Union[torch.Tensor, None]:
 
+        return self._parameters.get(key)
+            
     def __contains__(self, key: str) -> bool:
         """
         Args:
@@ -367,6 +369,55 @@ class Individual(object):
 
         return {k: v for k, v in self._parameters.items()}
 
+    # TODO: Finalize these methods    
+    # def join_iter(self, other: 'Individual') -> typing.Iterator[str, torch.Tensor, torch.Tensor]:
+
+    #     for k in set(self.keys()).union(self.other.keys()):
+    #         yield k, self.get(k), other.get(k)
+    
+    # def __add__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 + v2
+    #         elif v1 is not None:
+    #             result[k] = v1
+    #         elif v2 is not None:
+    #             result[k] = v2
+    #     return Individual(**result)
+
+    # def __sub__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 + v2
+    #         elif v1 is not None:
+    #             result[k] = v1
+    #     return Individual(**result)
+
+    # def __mul__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 * v2
+    #     return Individual(**result)
+
+    # def __div__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 / v2
+    #     return Individual(**result)
+
+# individual = Individual(
+#   k=individual[k] + individual2[k]
+#   
+# )
+# individual[k] = individual.apply(k=lambda x: x * 2)
 
 class Population(object):
     """
@@ -418,6 +469,13 @@ class Population(object):
         """
 
         return self._individuals.get(index) is not individual
+
+    def select(self, names: typing.Union[str, typing.List[str]]):
+
+        result = {}
+        for name in names:
+            result[name] = self._parameters[name]
+        return Population(**result)
 
     def get_assessment(self, i: int) -> Assessment:
         """
@@ -690,6 +748,150 @@ class Population(object):
         )
 
 
+class Objective(ABC):
+
+    @abstractmethod
+    def __call__(self, reduction: str, **kwargs: typing.Union[Individual, Population]) -> Assessment:
+        pass
+
+
+class Constraint(ABC):
+    
+    @abstractmethod
+    def __call__(self, value: torch.Tensor, **kwargs: torch.Tensor):
+        pass
+
+    def __add__(self, other: 'Constraint') -> 'CompoundConstraint':
+
+        return CompoundConstraint([self, other])
+
+
+class CompoundConstraint(Constraint):
+
+    def __init__(self, constraints: typing.List[Constraint]) -> None:
+        super().__init__()
+        self.constraints = []
+        for constraint in constraints:
+            if isinstance(constraint, CompoundConstraint):
+                self.constraints.extend(constraint.flattened)
+            else: self.constraints.append(constraint)
+
+    @property
+    def flattened(self):
+        return self.constraints
+        
+    def __call__(self, **kwargs: torch.Tensor):
+        
+        result = None
+        for constraint in self.constraints:
+            cur = constraint(**kwargs)
+            if result is None:
+                result = cur
+            else:
+                for key in set(result.keys()).union(cur.keys()):
+                    if key in result and key in cur:
+                        result[key] = cur[key] & result[key]
+                    elif key in cur:
+                        result[key] = cur[key]
+        return result
+
+
+def impose(value: Assessment, constraint: torch.BoolTensor=None, penalty=torch.inf) -> Assessment:
+
+    if constraint is None:
+        return value
+    maximize = value.maximize
+    value = value.value.clone()
+    value[constraint] = penalty
+    return Assessment(value, maximize)
+
+
+class ValueConstraint(Constraint):
+
+    def __init__(self, f: typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor], reduce_dim: bool=None, keepdim: bool=False, **constraints) -> None:
+        super().__init__()
+        self.constraints = constraints
+        self.f = f
+        self.keepdim = keepdim
+        self.reduce_dim = reduce_dim
+        
+    def __call__(self, **kwargs: torch.Tensor):
+        
+        result = {}
+        for k, v in kwargs.items():
+
+            if k in self.constraints:
+                result[k] = self.f(v, self.constraints[k])
+                if self.reduce_dim is not None:
+                    result[k] = torch.any(result[k], dim=self.reduce_dim, keepdim=self.keepdim)
+
+        return result
+
+
+class LT(ValueConstraint):
+    
+    def __init__(self, **constraints) -> None:
+
+        super().__init__(lambda x, c: x < c, **constraints)
+
+
+class LTE(ValueConstraint):
+    
+    def __init__(self, **constraints) -> None:
+
+        super().__init__(lambda x, c: x <= c, **constraints)
+
+class GT(ValueConstraint):
+    
+    def __init__(self, **constraints) -> None:
+
+        super().__init__(lambda x, c: x > c, **constraints)
+
+
+class GTE(ValueConstraint):
+    
+    def __init__(self, **constraints) -> None:
+
+        super().__init__(lambda x, c: x >= c, **constraints)
+
+
+class FuncObjective(Objective):
+
+    def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, maximize: bool=False):
+
+        self.f = f
+        self.constraint = constraint
+        self.maximize = maximize
+
+    def __call__(self, reduction: str, **kwargs: typing.Union[Individual, Population]) -> Assessment:
+        
+        result = self.constraint(self.f(**kwargs), **kwargs)
+        return Assessment(Reduction[reduction].reduce(
+            result
+        ), self.maximize)
+
+
+# 1) 
+
+class ConstraintImpose(object):
+
+    pass
+
+
+class CriterionObjective(Objective):
+
+    def __init__(self, criterion: Criterion):
+
+        super().__init__()
+        self.criterion = criterion
+
+    def __call__(self, reduction: str, **kwargs) -> Assessment:
+        
+        x = IO(kwargs[x])
+        t = IO(kwargs[t])
+        return self.criterion.assess(x, t, reduction)
+
+
 class _popSub(object):
 
     def __init__(self, population: Population):
@@ -704,7 +906,7 @@ class _popSub(object):
 class Fitter(ABC):
 
     @abstractmethod
-    def fit(self, objective: Criterion, args: Individual):
+    def fit(self, objective: Criterion, constraint: Constraint, **kwargs):
         pass
 
 
