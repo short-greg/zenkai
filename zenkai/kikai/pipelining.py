@@ -133,7 +133,7 @@ class Pipeline(object):
             
             if isinstance(t, IO):
                 t_index = self._out_indices[t]
-                t = self._machines[self._out_indices[machine]].machine
+                t = self._machines[t_index].machine
             elif isinstance(t, LearningMachine):
                 t_index = self._indices[t]
 

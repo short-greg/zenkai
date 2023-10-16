@@ -5,7 +5,7 @@ import math
 import torch
 
 # local
-from ..kaku import IO, LearningMachine, Criterion, Assessment
+from ..kaku import IO, LearningMachine, Criterion, Assessment, State
 from .core import Population, expand_t, reduce_assessment_dim1, Objective
 
 
@@ -20,16 +20,14 @@ class PopAssessor(ABC):
         self.reduction = reduction
 
     @abstractmethod
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         pass
 
-    def __call__(self, population: Population) -> Population:
-        return self.assess(population)
+    def __call__(self, population: Population, state: State=None) -> Population:
+        return self.assess(population, state or State())
 
     def reduce(self, value: torch.Tensor, maximize: bool) -> torch.Tensor:
         
-        print(self.reduce_from)
-        print(value.shape)
         base_shape = value.shape[:self.reduce_from]
         reshaped = value.reshape(
             *[math.prod(base_shape), -1]
@@ -65,7 +63,7 @@ class ObjectivePopAssessor(PopAssessor):
         self.objective = objective
         self.names = names
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:
@@ -109,7 +107,7 @@ class CriterionPopAssessor(PopAssessor):
         self.criterion = criterion
         self.names = names
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:
@@ -158,7 +156,7 @@ class XPopAssessor(PopAssessor):
         self.learner = learner
         self.names = names
 
-    def assess(self, population: Population) -> Population:
+    def assess(self, population: Population, state: State) -> Population:
         """Assess a population
 
         Args:

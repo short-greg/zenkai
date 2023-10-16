@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import torch
 
 # local
-from ..kaku import Assessment
+from ..kaku import Assessment, State
 from ..utils import to_signed_neg
 from .core import (
     Individual,
@@ -46,11 +46,11 @@ class Reducer(ABC):
     """
 
     @abstractmethod
-    def reduce(self, population: Population) -> Individual:
+    def reduce(self, population: Population, state: State) -> Individual:
         pass
 
-    def __call__(self, population: Population) -> Individual:
-        return self.reduce(population)
+    def __call__(self, population: Population, state: State=None) -> Individual:
+        return self.reduce(population, state or State())
 
     @abstractmethod
     def spawn(self) -> "Reducer":
@@ -69,7 +69,7 @@ class StandardReducer(Reducer):
     ) -> torch.Tensor:
         pass
 
-    def reduce(self, population: Population) -> Individual:
+    def reduce(self, population: Population, state: State) -> Individual:
         """Loops over all of the fields in the population and reduces them
 
         Args:
@@ -87,7 +87,7 @@ class StandardReducer(Reducer):
         result = {}
         assessments = population.stack_assessments()
         for k, v in population:
-            result[k] = self.reduce_field(k, v, assessments)
+            result[k] = self.reduce_field(k, v, assessments, state)
         return Individual(**result)
 
 
@@ -105,7 +105,7 @@ class ReducerDecorator(Reducer):
 
     @abstractmethod
     def decorate(
-        self, key: str, individual: torch.Tensor, assessment: Assessment
+        self, key: str, individual: torch.Tensor, assessment: Assessment, state: State
     ) -> torch.Tensor:
         """Decorates the reduction
 
@@ -119,7 +119,7 @@ class ReducerDecorator(Reducer):
         """
         pass
 
-    def reduce(self, population: Population) -> Individual:
+    def reduce(self, population: Population, state: State) -> Individual:
         """Reduces the population and decorates it
 
         Args:
@@ -133,7 +133,7 @@ class ReducerDecorator(Reducer):
 
         result = {}
         for k, v in selected:
-            result[k] = self.decorate(k, v, selected.assessment)
+            result[k] = self.decorate(k, v, selected.assessment, state)
         return Individual(**result)
 
     @abstractmethod
@@ -150,7 +150,7 @@ class BestIndividualReducer(StandardReducer):
     """Select the best individual in the population"""
 
     def reduce_field(
-        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
     ) -> torch.Tensor:
         """Select the best individual in the population
 
@@ -174,7 +174,7 @@ class BestSampleReducer(StandardReducer):
     """
 
     def reduce_field(
-        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
     ) -> torch.Tensor:
         """Select the best features in the population
 
@@ -213,7 +213,7 @@ class MomentumReducer(ReducerDecorator):
         self.dx = None
 
     def decorate(
-        self, key: str, individual: torch.Tensor, assessment: Assessment
+        self, key: str, individual: torch.Tensor, assessment: Assessment, state: State
     ) -> torch.Tensor:
         """Decorates the individual with the momentum
 
@@ -256,7 +256,7 @@ class SlopeReducer(StandardReducer):
         self._slope = None
 
     def reduce_field(
-        self, key: str, pop_val: torch.Tensor, assessment: Assessment
+        self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
     ) -> torch.Tensor:
         # TODO: Add in momentum for slope (?)
 
@@ -293,7 +293,7 @@ class BinaryProbReducer(Reducer):
         super().__init__()
         self.x = x
 
-    def reduce(self, population: Population) -> Individual:
+    def reduce(self, population: Population, state: State) -> Individual:
         """
 
         Args:
@@ -344,7 +344,7 @@ class BinaryGaussianReducer(Reducer):
         self.pos_assessment_calc = EqualsAssessmentDist(1)
         self.neg_assessment_calc = EqualsAssessmentDist(-1 if not zero_neg else 0)
 
-    def reduce(self, population: Population) -> Individual:
+    def reduce(self, population: Population, state: State) -> Individual:
 
         assessments = population.stack_assessments()
         x = population[self.x]
