@@ -762,7 +762,7 @@ class Objective(ABC):
 class Constraint(ABC):
     
     @abstractmethod
-    def __call__(self, value: torch.Tensor, **kwargs: torch.Tensor):
+    def __call__(self, **kwargs: torch.Tensor):
         pass
 
     def __add__(self, other: 'Constraint') -> 'CompoundConstraint':
@@ -784,7 +784,7 @@ class CompoundConstraint(Constraint):
     def flattened(self):
         return self.constraints
         
-    def __call__(self, **kwargs: torch.Tensor):
+    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         
         result = None
         for constraint in self.constraints:
@@ -800,14 +800,29 @@ class CompoundConstraint(Constraint):
         return result
 
 
-def impose(value: Assessment, constraint: torch.BoolTensor=None, penalty=torch.inf) -> Assessment:
+def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=None, penalty=torch.inf) -> torch.Tensor:
 
     if constraint is None:
         return value
-    maximize = value.maximize
-    value = value.value.clone()
-    value[constraint] = penalty
-    return Assessment(value, maximize)
+    
+    constraint_tensor = None
+    for k, v in constraint.items():
+        if constraint_tensor is None:
+            constraint_tensor = v
+        else:
+            constraint_tensor = constraint_tensor & v
+    if constraint_tensor is None:
+        return value
+    value = value.clone()
+
+    value[constraint_tensor] = penalty
+    return value
+
+
+class NullConstraint(Constraint):
+
+    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        return {}
 
 
 class ValueConstraint(Constraint):
@@ -819,7 +834,7 @@ class ValueConstraint(Constraint):
         self.keepdim = keepdim
         self.reduce_dim = reduce_dim
         
-    def __call__(self, **kwargs: torch.Tensor):
+    def __call__(self, value: Assessment, **kwargs: torch.Tensor):
         
         result = {}
         for k, v in kwargs.items():
@@ -834,52 +849,54 @@ class ValueConstraint(Constraint):
 
 class LT(ValueConstraint):
     
-    def __init__(self, **constraints) -> None:
+    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x < c, **constraints)
+        super().__init__(lambda x, c: x < c, reduce_dim=reduce_dim, **constraints)
 
 
 class LTE(ValueConstraint):
     
-    def __init__(self, **constraints) -> None:
+    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x <= c, **constraints)
+        super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
+
 
 class GT(ValueConstraint):
     
-    def __init__(self, **constraints) -> None:
+    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x > c, **constraints)
+        super().__init__(lambda x, c: x > c, reduce_dim, **constraints)
 
 
 class GTE(ValueConstraint):
     
-    def __init__(self, **constraints) -> None:
+    def __init__(self,reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x >= c, **constraints)
+        super().__init__(lambda x, c: x >= c, reduce_dim, **constraints)
 
 
 class FuncObjective(Objective):
 
-    def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, maximize: bool=False):
+    def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, penalty: float=torch.inf, maximize: bool=False):
 
+        if penalty < 0:
+            raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
         self.f = f
-        self.constraint = constraint
+        self.constraint = constraint or NullConstraint()
         self.maximize = maximize
+        self.penalty = penalty if maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
         
-        result = self.constraint(self.f(**kwargs), **kwargs)
-        return Assessment(Reduction[reduction].reduce(
-            result
+        value = self.f(**kwargs)
+        constraint = self.constraint(**kwargs)
+        value = impose(value, constraint, self.penalty)
+        
+        result = Assessment(Reduction[reduction].reduce(
+            value
         ), self.maximize)
-
-
-# 1) 
-
-class ConstraintImpose(object):
-
-    pass
+        print(result)
+        return result
 
 
 class CriterionObjective(Objective):

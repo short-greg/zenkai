@@ -77,9 +77,10 @@ class ObjectivePopAssessor(PopAssessor):
 
         sub_population = population.select(self.names)
 
+        assessment = self.objective('none', **sub_population.as_tensors())
         assessment = self.reduce(
-            self.objective('none', **sub_population.as_tensors()),
-            self.objective.maximize
+            assessment.value,
+            assessment.maximize
         )
         population.report(assessment)
 

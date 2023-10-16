@@ -49,6 +49,7 @@ class FitnessProportionateDivider(Divider):
         Returns:
             typing.Tuple[Population]: The two parents
         """
+        
         assessment = population.stack_assessments()
         assessment = assessment.view(assessment.shape[0], -1)
         assessment = assessment.mean(dim=1)
