@@ -26,11 +26,13 @@ class PopAssessor(ABC):
     def __call__(self, population: Population) -> Population:
         return self.assess(population)
 
-    def reduce(self, assessment: Assessment) -> torch.Tensor:
+    def reduce(self, value: torch.Tensor, maximize: bool) -> torch.Tensor:
         
-        base_shape = assessment.value.shape[:self.reduce_from]
-        reshaped = assessment.value.reshape(
-            *math.prod(base_shape), -1
+        print(self.reduce_from)
+        print(value.shape)
+        base_shape = value.shape[:self.reduce_from]
+        reshaped = value.reshape(
+            *[math.prod(base_shape), -1]
         )
         if self.reduction == 'mean':
             reduced = reshaped.mean(dim=1)
@@ -39,7 +41,7 @@ class PopAssessor(ABC):
         else:
             raise ValueError(f'Invalid reduction {self.reduction}')
         
-        return Assessment(reduced.rehape(base_shape), assessment.maximize)
+        return Assessment(reduced.reshape(base_shape), maximize)
 
 
 class ObjectivePopAssessor(PopAssessor):
@@ -75,18 +77,12 @@ class ObjectivePopAssessor(PopAssessor):
         """
         super().__init__()
 
-        population = population.select(self.names)
-
-        # (sample, batch, feature dim)
-        # reduce_form
+        sub_population = population.select(self.names)
 
         assessment = self.reduce(
-            self.objective('none', **population.as_tensors())
+            self.objective('none', **sub_population.as_tensors()),
+            self.objective.maximize
         )
-
-        # if assessment.value.dim() >= 2:
-        #     assessment = reduce_assessment_dim1(assessment, population.k, True)
-
         population.report(assessment)
 
         return population
@@ -129,12 +125,12 @@ class CriterionPopAssessor(PopAssessor):
 
         x = IO(*x)
         t = IO(*t)
-        assessment = self.reduce(self.criterion(x, t, 'none'))
-        # if assessment.value.dim() >= 2:
-        #     assessment = reduce_assessment_dim1(assessment, population.k, True)
-        # assessment = assessment.reshape(population.k, -1)
+        k = len(population)
 
-        # print(assessment.value[:,0])
+        value = self.criterion(x, t, 'none')
+        assessment = self.reduce(
+            value.reshape(k, -1, *value.shape[1:]), self.criterion.maximize
+        )
         population.report(assessment)
 
         return population
@@ -147,7 +143,7 @@ class XPopAssessor(PopAssessor):
         self,
         learner: LearningMachine,
         names: typing.List[str],
-        reduce_from: int=1,
+        reduce_from: int=2,
         reduction: str="mean",
     ):
         """initializer
@@ -172,15 +168,20 @@ class XPopAssessor(PopAssessor):
         Returns:
             Population: The assessed population
         """
+        k = len(population)
 
         x = population.flattened(self.names)
         t = population.flattened(['t'])
 
         x = IO(*x)
         t = IO(*t)
-        assessment = self.reduce(self.learner.assess(
+        assessment = self.learner.assess(
             IO(*x), t, reduction_override="none"
-        ))
+        )
+        assessment = self.reduce(
+            assessment.value.reshape(k, -1, *assessment.value.shape[1:]), 
+            assessment.maximize
+        )
         # if assessment.value.dim() >= 2:
         #     assessment = reduce_assessment_dim1(assessment, population.k, True)
         # assessment = assessment.reshape(population.k, -1)

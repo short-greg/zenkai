@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from abc import ABC
+from typing import Any
 import numpy as np
 
 # 3rd Party
@@ -529,6 +530,7 @@ class Criterion(nn.Module):
     @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
+
 
 
 LOSS_MAP = {

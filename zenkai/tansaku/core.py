@@ -750,8 +750,12 @@ class Population(object):
 
 class Objective(ABC):
 
+    def __init__(self, maximize: bool=True) -> None:
+        super().__init__()
+        self.maximize = maximize
+
     @abstractmethod
-    def __call__(self, reduction: str, **kwargs: typing.Union[Individual, Population]) -> Assessment:
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
         pass
 
 
@@ -863,7 +867,7 @@ class FuncObjective(Objective):
         self.constraint = constraint
         self.maximize = maximize
 
-    def __call__(self, reduction: str, **kwargs: typing.Union[Individual, Population]) -> Assessment:
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
         
         result = self.constraint(self.f(**kwargs), **kwargs)
         return Assessment(Reduction[reduction].reduce(

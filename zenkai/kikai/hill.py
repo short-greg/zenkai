@@ -42,7 +42,7 @@ class HillClimbStepX(FeatureIdxStepX):
         self.limiter = PopulationLimiter()
         self.populator = GaussianPopulator(k, std=std)
         self.modifier = SlopeInfluencer(momentum, lr, maximize=maximize)
-        self.assessor = XPopAssessor(self.learner, ["x"], "mean")
+        self.assessor = XPopAssessor(self.learner, ["x"], 2, "mean")
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update x

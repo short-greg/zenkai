@@ -1,12 +1,11 @@
+import typing
 import torch
 import pytest
-from zenkai.kaku.assess import Assessment
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
 
-from zenkai.tansaku import assessors, Population
-from zenkai.kaku import IO, State, LearningMachine, ThLoss
+from zenkai.tansaku import Individual, assessors, Population
+from zenkai.kaku import IO, Assessment, State, LearningMachine, ThLoss, Reduction
 from ..kaku.test_machine import SimpleLearner
+from zenkai.tansaku import Objective
 
 
 class SimpleLearner2(SimpleLearner):
@@ -42,6 +41,15 @@ class SimpleLearner3(LearningMachine):
         return y
 
 
+class SimpleObjective(Objective):
+
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
+
+        return Reduction[reduction].reduce(
+            kwargs['x'] + kwargs['y'], self.maximize
+        )
+
+
 class TestXPopulationAssessor:
 
     def test_assess_outputs_correct_size(self):
@@ -49,7 +57,7 @@ class TestXPopulationAssessor:
 
         population = Population(x=torch.rand(8, 3, 3), t=torch.rand(8, 3, 4))
         assessor = assessors.XPopAssessor(
-            learner, ['x'], 'mean'
+            learner, ['x'], 2, 'mean'
         )
         assessor(population)
         assert len(population.stack_assessments()) == 8
@@ -59,7 +67,98 @@ class TestXPopulationAssessor:
 
         population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
         assessor = assessors.XPopAssessor(
-            learner, ['x'], 'mean'
+            learner, ['x'], 2, 'mean'
         )
         assessor(population)
         assert len(population.stack_assessments()) == 8
+
+    def test_assess_outputs_correct_size_with_3_dims_and_reduce_on_dim1(self):
+        learner = SimpleLearner3(3, 3, 4)
+
+        population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
+        assessor = assessors.XPopAssessor(
+            learner, ['x'], 1, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+
+    def test_assess_outputs_correct_dim_with_3_dims_and_reduce_on_dim1(self):
+        learner = SimpleLearner3(3, 3, 4)
+
+        population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
+        assessor = assessors.XPopAssessor(
+            learner, ['x'], 1, 'mean'
+        )
+        assessor(population)
+        assert population.stack_assessments().dim() == 1
+
+
+class TestCriterionAssessor:
+
+    def test_assess_outputs_correct_size(self):
+        criterion = ThLoss('MSELoss', reduction='mean')
+
+        population = Population(x=torch.rand(8, 3, 4), t=torch.rand(8, 3, 4))
+        assessor = assessors.CriterionPopAssessor(
+            criterion, ['x'], 2, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+    
+    def test_assess_outputs_correct_size_with_3_dims(self):
+        criterion = ThLoss('MSELoss', reduction='mean')
+
+        population = Population(x=torch.rand(8, 4, 3, 4), t=torch.rand(8, 4, 3, 4))
+        assessor = assessors.CriterionPopAssessor(
+            criterion, ['x'], 2, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+
+
+class TestCriterionAssessor:
+
+    def test_assess_outputs_correct_size(self):
+        criterion = ThLoss('MSELoss', reduction='mean')
+
+        population = Population(x=torch.rand(8, 3, 4), t=torch.rand(8, 3, 4))
+        assessor = assessors.CriterionPopAssessor(
+            criterion, ['x'], 2, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+    
+    def test_assess_outputs_correct_size_with_3_dims(self):
+        criterion = ThLoss('MSELoss', reduction='mean')
+
+        population = Population(x=torch.rand(8, 4, 3, 4), t=torch.rand(8, 4, 3, 4))
+        assessor = assessors.CriterionPopAssessor(
+            criterion, ['x'], 2, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+
+
+
+class TestObjectiveAssessor:
+
+    def test_assess_outputs_correct_size(self):
+        objective = SimpleObjective(True)
+
+        population = Population(x=torch.rand(8, 3, 4), y=torch.rand(8, 3, 4))
+        assessor = assessors.ObjectivePopAssessor(
+            objective, ['x', 'y'], 1, 'mean'
+        )
+        assessor(population)
+        assert len(population.stack_assessments()) == 8
+    
+    def test_assess_outputs_correct_size_with_3_dims(self):
+        objective = SimpleObjective(True)
+
+        population = Population(x=torch.rand(8, 4, 3, 4), y=torch.rand(8, 4, 3, 4))
+        assessor = assessors.ObjectivePopAssessor(
+            objective, ['x', 'y'], 1, 'mean'
+        )
+        assessor(population)
+        stacked = population.stack_assessments()
+        assert stacked.shape == torch.Size([8])
