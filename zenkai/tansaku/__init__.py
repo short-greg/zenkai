@@ -17,7 +17,7 @@ from .core import (
     select_best_sample,
     select_best_individual,
     gen_like,
-    Fitter,
+    Itadaki,
     Objective,
     FuncObjective,
     CriterionObjective,
@@ -28,6 +28,7 @@ from .core import (
     LTE,
     LT,
     GT,
+    GTE,
     get_model_parameters
 )
 from .exploration import (

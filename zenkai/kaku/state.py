@@ -139,6 +139,27 @@ class State(object):
         except KeyError:
             return default
 
+    def get_or_set(self, obj: IDable, key: typing.Hashable, default) -> typing.Any:
+        """Retrieve the value for a key
+
+        Args:
+            obj (IDable): The object to retrieve
+            key (typing.Hashable): The key for the object
+            default (optional): The default value if the value does not exist. Defaults to None.
+
+        Returns:
+            typing.Any: The value stored in the object
+        """
+
+        # obj_id = self.id(obj)
+        obj_data, _, _ = self._get_obj(obj)
+        try:
+            return obj_data[key]
+        except KeyError:
+            obj_data[key] = default
+            return default
+
+
     def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]) -> typing.Any:
         """Retrieve an item from the state
 
@@ -441,7 +462,16 @@ class MyState(object):
         """
         if keep:
             return self._keep.get(key, default)
-        return self._data.get(key, default)
+        return self._obj.get(key, default)
+    
+    def get_or_set(self, key: typing.Hashable, default) -> typing.Any:
+
+        try: 
+            return self._data[key]
+        except KeyError:
+            self._data[key] = default
+            return default
+
 
     def store(self, key: str, value, keep: bool=False) -> typing.Any:
         """Get the value at a key

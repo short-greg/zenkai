@@ -7,7 +7,7 @@ from torch import nn
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
     acc_dep, step_dep, 
-    AccLearningMachine, Criterion, OptimFactory
+    AccLearningMachine, Objective, OptimFactory
 )
 from .grad import grad
 from .reversible import reverse
@@ -147,7 +147,7 @@ class Pipeline(object):
         for x in keys:
             del self._ts[x]
 
-    def add_grad(self, f, x: IO, y: IO, optim: OptimFactory=None, criterion: Criterion=None) -> PipeStep:
+    def add_grad(self, f, x: IO, y: IO, optim: OptimFactory=None, criterion: Objective=None) -> PipeStep:
 
         pipe_step = PipeStep(grad(
             f, optim, criterion
@@ -155,7 +155,7 @@ class Pipeline(object):
         self.add(pipe_step, x, y)
         return pipe_step
 
-    def add_reverse(self, f, x: IO, y: IO, criterion: Criterion=None) -> PipeStep:
+    def add_reverse(self, f, x: IO, y: IO, criterion: Objective=None) -> PipeStep:
 
         pipe_step = PipeStep(reverse(
             f, criterion
@@ -208,7 +208,7 @@ class Pipeline(object):
 
 class PipelineLearner(LearningMachine):
 
-    def __init__(self, criterion: Criterion=None) -> None:
+    def __init__(self, criterion: Objective=None) -> None:
         super().__init__()
         self._criterion = criterion
 
@@ -271,7 +271,7 @@ class PipelineLearner(LearningMachine):
 
 class AccPipelineLearner(AccLearningMachine):
 
-    def __init__(self, criterion: Criterion=None) -> None:
+    def __init__(self, criterion: Objective=None) -> None:
         super().__init__()
         self._criterion = criterion
 

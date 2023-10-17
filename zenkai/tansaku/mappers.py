@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from zenkai.kaku import State
+
 from .core import Individual, Population, gen_like
 from ..kaku import State
 import torch

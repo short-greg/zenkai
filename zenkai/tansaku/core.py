@@ -6,14 +6,13 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from zenkai.kaku import Assessment
 
 
 # local
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0
 
 from ..kaku import IO, Assessment
-from ..kaku import Reduction, Criterion
+from ..kaku import Reduction, Objective, State
 # TODO: Move to utils
 
 
@@ -342,7 +341,7 @@ class Individual(object):
         """
         return self._assessment
 
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], key: str=None) -> 'Individual':
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
         """Apply a function to he individual to generate a new individual
 
         Args:
@@ -352,12 +351,18 @@ class Individual(object):
         Returns:
             Population: The resulting individual
         """
+        if isinstance(keys, str):
+            keys = set([keys])
+        elif keys is None:
+            keys = set(self._parameters.keys())
+        else:
+            keys = set(keys)
         results = {}
         for k, v in self._parameters.items():
-            if key is None or key == k:
-                results[key] = f(v)
+            if k in keys:
+                results[k] = f(v)
             else:
-                results[key] = torch.clone(v)
+                results[k] = torch.clone(v)
         return Individual(**results)
 
     def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
@@ -713,24 +718,6 @@ class Population(object):
         for k, v in self._parameters.items():
             yield k, v
 
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], key: str=None) -> 'Population':
-        """Apply a function to he population to generate a new population
-
-        Args:
-            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
-            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
-
-        Returns:
-            Population: The resulting population
-        """
-        results = {}
-        for k, v in self._parameters.items():
-            if key is None or key == k:
-                results[key] = f(v)
-            else:
-                results[key] = torch.clone(v)
-        return Population(**results)
-    
     def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
         """Convert population to a dict of tensors
 
@@ -746,6 +733,30 @@ class Population(object):
             **self._parameters,
             **other._parameters
         )
+
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Population':
+        """Apply a function to he individual to generate a new individual
+
+        Args:
+            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
+            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+
+        Returns:
+            Population: The resulting individual
+        """
+        if isinstance(keys, str):
+            keys = set([keys])
+        elif keys is None:
+            keys = set(self._parameters.keys())
+        else:
+            keys = set(keys)
+        results = {}
+        for k, v in self._parameters.items():
+            if k in keys:
+                results[k] = f(v)
+            else:
+                results[k] = torch.clone(v)
+        return Population(**results)
 
 
 class Objective(ABC):
@@ -786,17 +797,14 @@ class CompoundConstraint(Constraint):
         
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         
-        result = None
+        result = {}
         for constraint in self.constraints:
             cur = constraint(**kwargs)
-            if result is None:
-                result = cur
-            else:
-                for key in set(result.keys()).union(cur.keys()):
-                    if key in result and key in cur:
-                        result[key] = cur[key] & result[key]
-                    elif key in cur:
-                        result[key] = cur[key]
+            for key, value in cur.items():
+                if key in result:
+                    result[key] = value | result[key]
+                elif key in cur:
+                    result[key] = value
         return result
 
 
@@ -804,17 +812,17 @@ def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=N
 
     if constraint is None:
         return value
+    value = value.clone()
     
     constraint_tensor = None
     for k, v in constraint.items():
         if constraint_tensor is None:
             constraint_tensor = v
         else:
-            constraint_tensor = constraint_tensor & v
+            constraint_tensor = constraint_tensor | v
     if constraint_tensor is None:
         return value
-    value = value.clone()
-
+    
     value[constraint_tensor] = penalty
     return value
 
@@ -834,7 +842,7 @@ class ValueConstraint(Constraint):
         self.keepdim = keepdim
         self.reduce_dim = reduce_dim
         
-    def __call__(self, value: Assessment, **kwargs: torch.Tensor):
+    def __call__(self, **kwargs: torch.Tensor):
         
         result = {}
         for k, v in kwargs.items():
@@ -851,28 +859,28 @@ class LT(ValueConstraint):
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x < c, reduce_dim=reduce_dim, **constraints)
+        super().__init__(lambda x, c: x >= c, reduce_dim=reduce_dim, **constraints)
 
 
 class LTE(ValueConstraint):
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
+        super().__init__(lambda x, c: x > c, reduce_dim, **constraints)
 
 
 class GT(ValueConstraint):
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x > c, reduce_dim, **constraints)
+        super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
 
 
 class GTE(ValueConstraint):
     
     def __init__(self,reduce_dim: bool=None, **constraints) -> None:
 
-        super().__init__(lambda x, c: x >= c, reduce_dim, **constraints)
+        super().__init__(lambda x, c: x < c, reduce_dim, **constraints)
 
 
 class FuncObjective(Objective):
@@ -895,13 +903,12 @@ class FuncObjective(Objective):
         result = Assessment(Reduction[reduction].reduce(
             value
         ), self.maximize)
-        print(result)
         return result
 
 
 class CriterionObjective(Objective):
 
-    def __init__(self, criterion: Criterion):
+    def __init__(self, criterion: Objective):
 
         super().__init__()
         self.criterion = criterion
@@ -924,11 +931,16 @@ class _popSub(object):
         return Population(**{k: v[idx] for k, v in self._population})
 
 
-class Fitter(ABC):
+class Itadaki(ABC):
 
     @abstractmethod
-    def fit(self, objective: Criterion, constraint: Constraint, **kwargs):
-        pass
+    def optim_iter(self, objective: Objective, state: State=None, **kwargs) -> typing.Iterator[Assessment]:
+        raise NotImplementedError
+
+    def optim(self, objective: Objective, state: State=None, **kwargs) -> Assessment:
+        for assessment in self.optim_iter(objective, state, **kwargs):
+            pass
+        return assessment
 
 
 # TODO:

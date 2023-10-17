@@ -470,7 +470,7 @@ class AssessmentDict(dict):
         }
 
 
-class Criterion(nn.Module):
+class Objective(nn.Module):
     """Base class for evaluating functions"""
 
     def __init__(self, reduction: str = "mean", maximize: bool = False):
@@ -554,7 +554,7 @@ def lookup_loss(loss_name: str):
     return LOSS_MAP[loss_name]
 
 
-class ThLoss(Criterion):
+class ThLoss(Objective):
     """Class to wrap a Torch loss module"""
 
     def __init__(

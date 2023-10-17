@@ -28,7 +28,7 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # local
-from .assess import Assessment, Criterion, ThLoss
+from .assess import Assessment, Objective, ThLoss
 from .state import IDable, State
 from torch.utils import data as torch_data
 from .io import (
@@ -464,7 +464,7 @@ class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
 
 
 class NullLearner(LearningMachine):
-    def __init__(self, loss: Criterion = None):
+    def __init__(self, loss: Objective = None):
         """Machine that does not actually learn.
 
         usage: Use when an intermediary layer should not perform any operation on the backward
@@ -474,7 +474,7 @@ class NullLearner(LearningMachine):
             loss (Loss, optional): The loss to evaluate by. Defaults to None.
         """
         super().__init__()
-        self.loss = loss or Criterion(nn.MSELoss, reduction="none")
+        self.loss = loss or Objective(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -565,7 +565,7 @@ class StdLearningMachine(LearningMachine):
     _step_theta: The StepTheta to use for updating the parameters
     """
 
-    def __init__(self, criterion: typing.Union[Criterion, typing.Iterable[Criterion]], step_theta: StepTheta=None, step_x: StepX=None):
+    def __init__(self, criterion: typing.Union[Objective, typing.Iterable[Objective]], step_theta: StepTheta=None, step_x: StepX=None):
         """Convenience class to easily create a learning machine that takes a StepX and StepTheta
 
         Args:
@@ -580,7 +580,7 @@ class StdLearningMachine(LearningMachine):
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         
-        if isinstance(self.criterion, Criterion):
+        if isinstance(self.criterion, Objective):
             return self.criterion.assess(y, t, reduction_override)
         assessment_dict = Assessment()
         for loss in self.criterion:

@@ -5,7 +5,7 @@ import typing
 
 from ..kaku import (
     IO, State, LearningMachine, Assessment,
-    OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
+    OptimFactory, StepX, Objective, ThLoss, AccLearningMachine,
     Builder, UNDEFINED, Var, Factory
 )
 from .grad import GradUpdater
@@ -34,7 +34,7 @@ class FALinearLearner(LearningMachine):
 
     def __init__(
         self, in_features: int, out_features: int, 
-        optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='mse'
+        optim_factory: OptimFactory, criterion: typing.Union[Objective, str]='mse'
     ) -> None:
         """Linear network for implementing feedback alignment
 
@@ -126,7 +126,7 @@ class FALearner(AccLearningMachine):
     """Learner for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Objective, str]='mse') -> None:
         """Wraps a module to create an FALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 
@@ -235,7 +235,7 @@ class DFALearner(AccLearningMachine):
     """Learner for implementing feedback alignment.
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Objective, str]='mse') -> None:
         """Wraps a network to create a DFALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 

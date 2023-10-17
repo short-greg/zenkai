@@ -3,7 +3,7 @@
 from .assess import (
     LOSS_MAP,
     Assessment,
-    Criterion,
+    Objective,
     Reduction,
     ThLoss,
     AssessmentDict,

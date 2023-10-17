@@ -139,7 +139,6 @@ class TestCriterionAssessor:
         assert len(population.stack_assessments()) == 8
 
 
-
 class TestObjectiveAssessor:
 
     def test_assess_outputs_correct_size(self):

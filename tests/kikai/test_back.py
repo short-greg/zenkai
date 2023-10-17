@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from zenkai.kaku import IO, State, Assessment, LearningMachine, Criterion, ThLoss
+from zenkai.kaku import IO, State, Assessment, LearningMachine, Objective, ThLoss
 
 from zenkai.kikai.back import BackTarget
 from zenkai.utils import Lambda

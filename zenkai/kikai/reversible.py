@@ -2,13 +2,13 @@
 import typing
 
 # local
-from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
+from ..kaku import IO, Assessment, IO, LearningMachine, State, Objective
 from ..utils import Reversible, SequenceReversible
 import torch.nn as nn
 import torch
 import typing
 
-from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
+from ..kaku import Assessment, LearningMachine, Objective, ThLoss, State, IO
 from ..utils import Lambda
 
 
@@ -19,7 +19,7 @@ class ReversibleMachine(LearningMachine):
     def __init__(
         self,
         reversible: typing.Union[Reversible, typing.List[Reversible]],
-        objective: Criterion
+        objective: Objective
     ):
         """initializer
 
@@ -68,7 +68,7 @@ class BackTarget(LearningMachine):
     simply reverses the forward operation
     """
 
-    def __init__(self, module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]], criterion: Criterion=None) -> None:
+    def __init__(self, module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]], criterion: Objective=None) -> None:
         super().__init__()
         self.module = module if isinstance(module, nn.Module) else Lambda(module)
         self.criterion = criterion or ThLoss('mse')
@@ -96,7 +96,7 @@ class BackTarget(LearningMachine):
         return IO(*xs, True)
 
 
-def reverse(f, criterion: Criterion=None) -> typing.Union[ReversibleMachine, BackTarget]:
+def reverse(f, criterion: Objective=None) -> typing.Union[ReversibleMachine, BackTarget]:
     """Convenicence function to create a reverse for cases where
     not much customization is needed. Especially for operations that do not
     have parameters and they can either be reversed through the backward operation or
