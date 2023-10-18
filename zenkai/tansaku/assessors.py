@@ -5,7 +5,7 @@ import math
 import torch
 
 # local
-from ..kaku import IO, LearningMachine, Objective, Assessment, State
+from ..kaku import IO, LearningMachine, Criterion, Assessment, State
 from .core import Population, expand_t, reduce_assessment_dim1, Objective
 
 
@@ -73,10 +73,8 @@ class ObjectivePopAssessor(PopAssessor):
         Returns:
             Population: The assessed population
         """
-        super().__init__()
 
         sub_population = population.select(self.names)
-
         assessment = self.objective('none', **sub_population.as_tensors())
         assessment = self.reduce(
             assessment.value,
@@ -91,7 +89,7 @@ class CriterionPopAssessor(PopAssessor):
 
     def __init__(
         self,
-        criterion: Objective,
+        criterion: Criterion,
         names: typing.List[str]=None,
         reduce_from: int=1,
         reduction: str="mean",

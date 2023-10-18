@@ -19,7 +19,7 @@ from ..kaku import (
     Idx,
     LearningMachine,
     State,
-    Objective,
+    Criterion,
     StepTheta,
     StepX,
     idx_io,
@@ -29,7 +29,7 @@ from ..kaku import (
     AccLearningMachine,
     AccStepTheta,
     BatchIdxAccStepTheta,
-    Objective,
+    Criterion,
     acc_dep,
     step_dep,
     ThLoss
@@ -243,11 +243,11 @@ class GradStepX(StepX):
         return x_prime
 
 
-class CriterionGrad(StepX, Objective):
+class CriterionGrad(StepX, Criterion):
     """Use to calculate x_prime for a criterion
     """
 
-    def __init__(self, criterion: typing.Union[Objective, str], x_lr: float=None, reduction: str=None):
+    def __init__(self, criterion: typing.Union[Criterion, str], x_lr: float=None, reduction: str=None):
 
         super().__init__()
         if isinstance(criterion, nn.Module):
@@ -338,7 +338,7 @@ class GradLearner(AccLearningMachine):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module], None],
-        criterion: Objective,
+        criterion: Criterion,
         optim_factory: OptimFactory=None,
         learn_theta: bool=True,
         reduction: str = "mean",
@@ -413,7 +413,7 @@ class GradLoopLearner(AccLearningMachine, BatchIdxStepX, BatchIdxAccStepTheta):
     def __init__(
         self,
         module: typing.Union[nn.Module, typing.List[nn.Module]],
-        criterion: Objective,
+        criterion: Criterion,
         theta_optim_factory: OptimFactory,
         x_optim_factory: OptimFactory,
         theta_reduction: str = "mean",
@@ -490,7 +490,7 @@ def update_x(
     return IO(*updated, detach=detach)
 
 
-def grad(f, optim: OptimFactory=None, criterion: Objective=None) -> GradLearner:
+def grad(f, optim: OptimFactory=None, criterion: Criterion=None) -> GradLearner:
     """Convenicence function to create a grad learner for cases where
     not much customization is needed. Especially for operations with no parameters
     that are in the middle of the network

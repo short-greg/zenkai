@@ -22,7 +22,7 @@ from ..kaku import (
     FeatureLimitGen,
     Idx,
     LearningMachine,
-    Objective,
+    Criterion,
     State,
 )
 from ..utils import Argmax, Sign
@@ -397,7 +397,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self,
         module: ScikitEstimator,
         step_x: FeatureIdxStepX,
-        criterion: Objective,
+        criterion: Criterion,
         preprocessor: nn.Module = None,
     ):
         """initializer

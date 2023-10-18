@@ -4,17 +4,17 @@
 
 # 1st Party
 import typing
-from abc import abstractmethod, abstractproperty
+from abc import abstractmethod, abstractproperty, ABC
 from dataclasses import dataclass
 from enum import Enum
+import math
 
-from abc import ABC
 from typing import Any
-import numpy as np
 
 # 3rd Party
 import torch
 import torch.nn as nn
+import numpy as np
 
 # Local
 from .io import IO
@@ -379,6 +379,21 @@ class Assessment(object):
             for element in self.value:
                 yield Assessment(element, self.maximize)
 
+    def to_2d(self, divide_start: int=1) -> typing.Tuple['Assessment', torch.Size, torch.Size]:
+        """Convert the assessment to a 2d tensor
+
+        Returns:
+            typing.Tuple['Assessment', torch.Size, torch.Size]: The assessment converted to 2d followed by the base size
+             of the first half and base size of the second half
+        """
+        shape = self.value.shape
+        size_dim1 = shape[:divide_start]
+        size_dim2 = shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
+        size1 = math.prod(shape[:divide_start])
+        return Assessment(
+            self.value.reshape(size1, -1), self.maximize
+        ), size_dim1, size_dim2
+
     def __str__(self) -> str:
 
         return f"""
@@ -470,7 +485,7 @@ class AssessmentDict(dict):
         }
 
 
-class Objective(nn.Module):
+class Criterion(nn.Module):
     """Base class for evaluating functions"""
 
     def __init__(self, reduction: str = "mean", maximize: bool = False):
@@ -554,7 +569,7 @@ def lookup_loss(loss_name: str):
     return LOSS_MAP[loss_name]
 
 
-class ThLoss(Objective):
+class ThLoss(Criterion):
     """Class to wrap a Torch loss module"""
 
     def __init__(

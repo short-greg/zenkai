@@ -27,17 +27,51 @@ class Divider(ABC):
         pass
 
 
+def select_parents(population: Population, prob: torch.Tensor, n_divisions: int):
+    parents1, parents2 = [], []
+    
+    base_shape = prob.shape
+    
+    # Figure out how to divide this up
+    # (population, ...)
+    # select()
+    if prob.dim() > 1:
+        r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
+        prob = prob.transpose(*r)
+    # (..., population)
+    prob = prob[None]
+    # (1, ..., population)
+    prob = prob.repeat(n_divisions, *[1] * len(prob.shape))
+    # (n_divisions * ..., population)
+    prob = prob.reshape(-1, prob.shape[-1])
+    parents1, parents2 = torch.multinomial(
+        prob, 2, False
+    ).transpose(1, 0)
+    # (n_divisions * ...), (n_divisions * ...)
+    parents1 = parents1.reshape(n_divisions, *base_shape[1:])
+    parents2 = parents2.reshape(n_divisions, *base_shape[1:])
+    # (n_divisions, ...)
+    
+    # not guaranteed to be the correct size
+    if parents1.dim() == 1:
+        return population.sub[parents1], population.sub[parents2]
+    return population.gather_sub(parents1), population.gather_sub(parents2)
+
+
 class FitnessProportionateDivider(Divider):
     """Divide the population into two based on the fitness proportionality
     """
 
-    def __init__(self, n_divisions: int):
+    def __init__(self, n_divisions: int, divide_start: int=1):
         """initializer
 
         Args:
             n_divisions (int): number of pairs to generate
         """
         super().__init__()
+        if divide_start < 1:
+            raise ValueError(f'Divide start must be greater than 1')
+        self._divide_start = divide_start
         self.n_divisions = n_divisions
 
     def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
@@ -49,24 +83,21 @@ class FitnessProportionateDivider(Divider):
         Returns:
             typing.Tuple[Population]: The two parents
         """
-        
+
+        # calc_probs() 
         assessment = population.stack_assessments()
-        assessment = assessment.view(assessment.shape[0], -1)
-        assessment = assessment.mean(dim=1)
+        assessment, size1, _ = assessment.to_2d(self._divide_start)
+        assessment = assessment.mean(dim=-1)
+        assessment = assessment.view(size1)
         loss = assessment.value
         if not assessment.maximize:
-            loss = 1 / (0.1 + loss)
-        prob = (loss / loss.sum()).numpy()
+            loss = 1 / (0.01 + loss)
+        prob = (loss / loss.sum(dim=0, keepdim=True))
         if (prob < 0.0).any():
             raise ValueError('All assessments must be greater than 0 to use this divider')
-        parents1, parents2 = [], []
-        for _ in range(self.n_divisions):
-            parent1, parent2 = np.random.choice(
-                len(assessment), 2, False, prob
-            )
-            parents1.append(parent1)
-            parents2.append(parent2)
-        return population.sub[parents1], population.sub[parents2]
+        return select_parents(
+            population, prob, self.n_divisions
+        )
 
     def spawn(self) -> Divider:
         return FitnessProportionateDivider(self.n_divisions)

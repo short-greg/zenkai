@@ -3,10 +3,11 @@
 from .assess import (
     LOSS_MAP,
     Assessment,
-    Objective,
+    Criterion,
     Reduction,
     ThLoss,
     AssessmentDict,
+    Criterion,
     #assess_dict,
     reduce_assessment
 )

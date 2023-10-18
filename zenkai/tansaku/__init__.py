@@ -17,19 +17,22 @@ from .core import (
     select_best_sample,
     select_best_individual,
     gen_like,
-    Itadaki,
     Objective,
+    Constraint,
+    CompoundConstraint
+)
+from .optimize import (
+    Itadaki,
     FuncObjective,
     CriterionObjective,
-    Constraint,
     ValueConstraint,
-    CompoundConstraint,
     impose,
     LTE,
     LT,
     GT,
     GTE,
-    get_model_parameters
+    NNLinearObjective,
+    NullConstraint,
 )
 from .exploration import (
     AssessmentDist,

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai import IO, State, Objective
+from zenkai import IO, State, Criterion
 from zenkai.kikai import ReversibleMachine
 from ..kaku.test_machine import SimpleLearner
 from zenkai.utils import get_model_parameters
@@ -13,7 +13,7 @@ class TestReversibleMachine:
     def test_step_x_reverses(self):
 
         reversible = ReversibleMachine(
-            reversibles.Neg1ToZero(), Objective('mse')
+            reversibles.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -22,7 +22,7 @@ class TestReversibleMachine:
     def test_step_x_results_in_valid_values(self):
 
         reversible = ReversibleMachine(
-            reversibles.Neg1ToZero(), Objective('mse')
+            reversibles.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -32,7 +32,7 @@ class TestReversibleMachine:
     def test_forward_converts_to_correct_value(self):
 
         reversible = ReversibleMachine(
-            reversibles.Neg1ToZero(), Objective('mse')
+            reversibles.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = (x.f + 1) / 2

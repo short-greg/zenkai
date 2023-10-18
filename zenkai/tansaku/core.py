@@ -12,7 +12,8 @@ from torch.nn.parameter import Parameter
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0
 
 from ..kaku import IO, Assessment
-from ..kaku import Reduction, Objective, State
+from ..kaku import Reduction, Criterion, State, Criterion
+from copy import deepcopy
 # TODO: Move to utils
 
 
@@ -215,6 +216,152 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
     return pop_val.gather(0, idx).squeeze(0)
 
 
+# TODO: have this be the base class
+class TensorDict(object):
+    """An individual in a population. An individual consists of fields for one element of a population"""
+
+    def __init__(
+        self,
+        assessment: Assessment = None,
+        **values: typing.Union[nn.Module, torch.Tensor, Parameter],
+    ):
+        self._assessment = assessment
+        self._population = None
+        self._id = None
+        self._parameters = {}
+
+        for k, v in values.items():
+            if isinstance(v, nn.Module):
+                v = get_model_parameters(v)
+            elif not isinstance(v, torch.Tensor):
+                v = torch.tensor(v)
+            self._parameters[k] = v
+
+    def __iter__(self) -> typing.Iterator:
+        """Iterate over the values in the individual
+
+        Yields:
+            Iterator[typing.Iterator]: The iterator to iterate over the values with
+        """
+
+        for k, v in self._parameters.items():
+            yield k, v
+
+    def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
+        """Retrieve the value specified by key
+        Args:
+            key (str):
+
+        Returns:
+            typing.Union[torch.Tensor, Parameter]: The value in the key
+        """
+        return self._parameters[key]
+    
+    def get(self, key: str) -> typing.Union[torch.Tensor, None]:
+
+        return self._parameters.get(key)
+            
+    def __contains__(self, key: str) -> bool:
+        """
+        Args:
+            key (str): The key to the values in the Individual to update the parameter with
+        Returns:
+            bool: True if the individual contains the key
+        """
+        return key in self._parameters
+
+    @property
+    def assessment(self) -> Assessment:
+        """
+        Returns:
+            Assessment: The assessment for the individual
+        """
+        return self._assessment
+    
+    # perhaps have this be separate
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
+        """Apply a function to he individual to generate a new individual
+
+        Args:
+            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
+            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+
+        Returns:
+            Population: The resulting individual
+        """
+        if isinstance(keys, str):
+            keys = set([keys])
+        elif keys is None:
+            keys = set(self._parameters.keys())
+        else:
+            keys = set(keys)
+        results = {}
+        for k, v in self._parameters.items():
+            if k in keys:
+                results[k] = f(v)
+            else:
+                results[k] = torch.clone(v)
+        return Individual(**results)
+
+    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
+        """Convert population to a dict of tensors
+
+        Returns:
+            typing.Dict[str, torch.Tensor]: dictionary of tensors
+        """
+
+        return {k: v for k, v in self._parameters.items()}
+    # TODO: Finalize these methods    
+    # def join_iter(self, other: 'Individual') -> typing.Iterator[str, torch.Tensor, torch.Tensor]:
+
+    #     for k in set(self.keys()).union(self.other.keys()):
+    #         yield k, self.get(k), other.get(k)
+    
+    # def __add__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 + v2
+    #         elif v1 is not None:
+    #             result[k] = v1
+    #         elif v2 is not None:
+    #             result[k] = v2
+    #     return Individual(**result)
+
+    # def __sub__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 + v2
+    #         elif v1 is not None:
+    #             result[k] = v1
+    #     return Individual(**result)
+
+    # def __mul__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 * v2
+    #     return Individual(**result)
+
+    # def __div__(self, other: 'Individual') -> 'Individual':
+
+    #     result = {}
+    #     for k, v1, v2 in self.join_iter(other):
+    #         if v1 is not None and v2 is not None:
+    #             result[k] = v1 / v2
+    #     return Individual(**result)
+
+# individual = Individual(
+#   k=individual[k] + individual2[k]
+#   
+# )
+# individual[k] = individual.apply(k=lambda x: x * 2)
+
+
 class Individual(object):
     """An individual in a population. An individual consists of fields for one element of a population"""
 
@@ -374,55 +521,6 @@ class Individual(object):
 
         return {k: v for k, v in self._parameters.items()}
 
-    # TODO: Finalize these methods    
-    # def join_iter(self, other: 'Individual') -> typing.Iterator[str, torch.Tensor, torch.Tensor]:
-
-    #     for k in set(self.keys()).union(self.other.keys()):
-    #         yield k, self.get(k), other.get(k)
-    
-    # def __add__(self, other: 'Individual') -> 'Individual':
-
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 + v2
-    #         elif v1 is not None:
-    #             result[k] = v1
-    #         elif v2 is not None:
-    #             result[k] = v2
-    #     return Individual(**result)
-
-    # def __sub__(self, other: 'Individual') -> 'Individual':
-
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 + v2
-    #         elif v1 is not None:
-    #             result[k] = v1
-    #     return Individual(**result)
-
-    # def __mul__(self, other: 'Individual') -> 'Individual':
-
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 * v2
-    #     return Individual(**result)
-
-    # def __div__(self, other: 'Individual') -> 'Individual':
-
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 / v2
-    #     return Individual(**result)
-
-# individual = Individual(
-#   k=individual[k] + individual2[k]
-#   
-# )
-# individual[k] = individual.apply(k=lambda x: x * 2)
 
 class Population(object):
     """
@@ -619,6 +717,31 @@ class Population(object):
                 raise ValueError(f"Assessment {i} has not been set.")
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
+    
+    def gather_sub(self, gather_by: torch.LongTensor) -> 'Population':
+        """Gather on the population dimension
+
+        Args:
+            gather_by (torch.LongTensor): The tensor to gather the population by
+
+        Returns:
+            Population: The gathered population
+        """
+
+        result = {}
+        for k, v in self._parameters.items():
+            if gather_by.dim() > v.dim():
+                raise ValueError(f'Gather By dim must be less than or equal to the value dimension')
+            shape = [1] * gather_by.dim()
+            for i in range(gather_by.dim(), v.dim()):
+                gather_by = gather_by.unsqueeze(i)
+                shape.append(v.shape[i])
+            gather_by = gather_by.repeat(*shape)
+            result[k] = v.gather(0, gather_by)
+        return Population(
+            **result
+        )
+                
 
     @property
     def sub(self):
@@ -808,117 +931,6 @@ class CompoundConstraint(Constraint):
         return result
 
 
-def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=None, penalty=torch.inf) -> torch.Tensor:
-
-    if constraint is None:
-        return value
-    value = value.clone()
-    
-    constraint_tensor = None
-    for k, v in constraint.items():
-        if constraint_tensor is None:
-            constraint_tensor = v
-        else:
-            constraint_tensor = constraint_tensor | v
-    if constraint_tensor is None:
-        return value
-    
-    value[constraint_tensor] = penalty
-    return value
-
-
-class NullConstraint(Constraint):
-
-    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
-        return {}
-
-
-class ValueConstraint(Constraint):
-
-    def __init__(self, f: typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor], reduce_dim: bool=None, keepdim: bool=False, **constraints) -> None:
-        super().__init__()
-        self.constraints = constraints
-        self.f = f
-        self.keepdim = keepdim
-        self.reduce_dim = reduce_dim
-        
-    def __call__(self, **kwargs: torch.Tensor):
-        
-        result = {}
-        for k, v in kwargs.items():
-
-            if k in self.constraints:
-                result[k] = self.f(v, self.constraints[k])
-                if self.reduce_dim is not None:
-                    result[k] = torch.any(result[k], dim=self.reduce_dim, keepdim=self.keepdim)
-
-        return result
-
-
-class LT(ValueConstraint):
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
-
-        super().__init__(lambda x, c: x >= c, reduce_dim=reduce_dim, **constraints)
-
-
-class LTE(ValueConstraint):
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
-
-        super().__init__(lambda x, c: x > c, reduce_dim, **constraints)
-
-
-class GT(ValueConstraint):
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
-
-        super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
-
-
-class GTE(ValueConstraint):
-    
-    def __init__(self,reduce_dim: bool=None, **constraints) -> None:
-
-        super().__init__(lambda x, c: x < c, reduce_dim, **constraints)
-
-
-class FuncObjective(Objective):
-
-    def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, penalty: float=torch.inf, maximize: bool=False):
-
-        if penalty < 0:
-            raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
-        self.f = f
-        self.constraint = constraint or NullConstraint()
-        self.maximize = maximize
-        self.penalty = penalty if maximize else -penalty
-
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
-        
-        value = self.f(**kwargs)
-        constraint = self.constraint(**kwargs)
-        value = impose(value, constraint, self.penalty)
-        
-        result = Assessment(Reduction[reduction].reduce(
-            value
-        ), self.maximize)
-        return result
-
-
-class CriterionObjective(Objective):
-
-    def __init__(self, criterion: Objective):
-
-        super().__init__()
-        self.criterion = criterion
-
-    def __call__(self, reduction: str, **kwargs) -> Assessment:
-        
-        x = IO(kwargs[x])
-        t = IO(kwargs[t])
-        return self.criterion.assess(x, t, reduction)
-
 
 class _popSub(object):
 
@@ -931,16 +943,6 @@ class _popSub(object):
         return Population(**{k: v[idx] for k, v in self._population})
 
 
-class Itadaki(ABC):
-
-    @abstractmethod
-    def optim_iter(self, objective: Objective, state: State=None, **kwargs) -> typing.Iterator[Assessment]:
-        raise NotImplementedError
-
-    def optim(self, objective: Objective, state: State=None, **kwargs) -> Assessment:
-        for assessment in self.optim_iter(objective, state, **kwargs):
-            pass
-        return assessment
 
 
 # TODO:

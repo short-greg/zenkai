@@ -71,6 +71,42 @@ class TestPopulation:
         population.set_p(p1, "x", 1)
         assert (p1 == pop_x1[1]).all()
 
+    def test_gather_sub_gets_correct_output_when_dim_is_3(self):
+
+        x1 = torch.rand(4, 2, 2)
+        gather_by = torch.randint(0, 4, (6, 2))
+
+        population = Population(x=x1)
+        gathered = population.gather_sub(gather_by)
+        assert gathered['x'].size() == torch.Size([6, 2, 2])
+
+    def test_gather_sub_gets_correct_output_when_dim_is_2(self):
+
+        x1 = torch.rand(4, 2)
+        gather_by = torch.randint(0, 4, (6, 2))
+
+        population = Population(x=x1)
+        gathered = population.gather_sub(gather_by)
+        assert gathered['x'].size() == torch.Size([6, 2])
+
+    def test_gather_sub_gets_correct_output_when_dim_is_4(self):
+
+        x1 = torch.rand(4, 2, 2, 3)
+        gather_by = torch.randint(0, 4, (6, 2))
+
+        population = Population(x=x1)
+        gathered = population.gather_sub(gather_by)
+        assert gathered['x'].size() == torch.Size([6, 2, 2, 3])
+
+    def test_gather_sub_raises_error_if_dim_too_large(self):
+
+        x1 = torch.rand(4, 2)
+        gather_by = torch.randint(0, 4, (6, 2, 2))
+
+        population = Population(x=x1)
+        with pytest.raises(ValueError):
+            population.gather_sub(gather_by)
+
 
 class TestSelectBestSample:
 
