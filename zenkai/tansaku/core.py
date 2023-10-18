@@ -737,6 +737,7 @@ class Population(object):
                 gather_by = gather_by.unsqueeze(i)
                 shape.append(v.shape[i])
             gather_by = gather_by.repeat(*shape)
+            print(v.shape, gather_by.shape)
             result[k] = v.gather(0, gather_by)
         return Population(
             **result

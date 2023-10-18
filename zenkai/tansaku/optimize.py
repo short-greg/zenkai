@@ -134,7 +134,7 @@ class NNLinearObjective(Objective):
         assessment = Assessment.stack(assessments)
         constraint = self.constraint(**kwargs)
         value = impose(assessment.value, constraint, self.penalty)
-        
+        value = value.transpose(2, 1)
         result = Assessment(Reduction[reduction].reduce(
             value
         ), self.criterion.maximize)
