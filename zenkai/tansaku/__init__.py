@@ -56,10 +56,13 @@ from .dividers import (
     Divider,
     EqualDivider
 )
+from .crossover import (
+    CrossOver,
+    SmoothCrossOver,
+    BinaryRandCrossOver
+)
 from .mixers import (
     KBestElitism,
-    BinaryRandCrossOver,
-    SmoothCrossOver,
     keep_mixer
 )
 from .influencers import (

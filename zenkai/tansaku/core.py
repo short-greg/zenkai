@@ -7,6 +7,7 @@ import functools
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
+from ..kaku import IndexMap
 
 
 # local
@@ -336,6 +337,13 @@ class TensorDict(dict):
         return self.__class__(
             **result
         )
+
+    def select_index(self, index_map: IndexMap) -> 'TensorDict':
+        
+        result = {}
+        for k, v in self.items():
+            result[k] = index_map(v)
+        return self.spawn(result)
 
     def __add__(self, other: 'TensorDict') -> 'TensorDict':
         return self.binary_op(other, torch.add, False, True)
