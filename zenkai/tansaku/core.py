@@ -1,6 +1,7 @@
 # 1st party
 import typing
 from abc import ABC, abstractmethod
+import functools
 
 # 3rd party
 import torch
@@ -270,7 +271,7 @@ class TensorDict(dict):
         all_ = [self, *others]
         for key in keys:
             result = [d[key] if key in d else None for d in all_]
-            yield tuple(key, *result)        
+            yield tuple([key, *result])        
 
     # perhaps have this be separate
     def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'TensorDict':
@@ -296,57 +297,64 @@ class TensorDict(dict):
             else:
                 results[k] = torch.clone(v)
         return self.__class__(**results)
-
-
-    # TODO: Finalize these methods    
-    # def join_iter(self, other: 'Individual') -> typing.Iterator[str, torch.Tensor, torch.Tensor]:
-
-    #     for k in set(self.keys()).union(self.other.keys()):
-    #         yield k, self.get(k), other.get(k)
     
-    # def __add__(self, other: 'Individual') -> 'Individual':
+    def binary_op(self, f, other: 'TensorDict', only_my_k: bool=True, union: bool=True) -> 'TensorDict':
+        """Executes a binary op if key defined for self and other. Otherwise sets the key to the value
 
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 + v2
-    #         elif v1 is not None:
-    #             result[k] = v1
-    #         elif v2 is not None:
-    #             result[k] = v2
-    #     return Individual(**result)
 
-    # def __sub__(self, other: 'Individual') -> 'Individual':
+        Args:
+            f: The binary op
+            other (TensorDict): The right hand side of the operator
+            only_my_k (bool, optional): Whehter to only loop over k defined in self. Defaults to True.
+            union (bool, optional): Whether to use the union or intersection (False). If using the intersection, must
+             will need to be defined in both. Defaults to True.
 
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 + v2
-    #         elif v1 is not None:
-    #             result[k] = v1
-    #     return Individual(**result)
+        Returns:
+            TensorDict: The resulting TensorDict
+        """
+        if not isinstance(self, TensorDict):
+            result = {}
+            for k, v in other:
+                result[k] = f(self, v)
+            return self.spawn(result)
 
-    # def __mul__(self, other: 'Individual') -> 'Individual':
+        if not isinstance(other, TensorDict):
+            result = {}
+            for k, v in self:
+                result[k] = f(v, other)
+            return self.spawn(result)
+        
+        result = {}
+        for k, v1, v2 in self.loop_over(other, only_my_k=only_my_k, union=union):
+            if v1 is not None and v2 is not None:
+                result[k] = f(v1, v2)
+            elif v1 is not None:
+                result[k] = v1
+            else:
+                result[k] = v2
 
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 * v2
-    #     return Individual(**result)
+        return self.__class__(
+            **result
+        )
 
-    # def __div__(self, other: 'Individual') -> 'Individual':
+    def __add__(self, other: 'TensorDict') -> 'TensorDict':
+        return self.binary_op(other, torch.add, False, True)
 
-    #     result = {}
-    #     for k, v1, v2 in self.join_iter(other):
-    #         if v1 is not None and v2 is not None:
-    #             result[k] = v1 / v2
-    #     return Individual(**result)
+    def __sub__(self, other: 'TensorDict') -> 'TensorDict':
 
-# individual = Individual(
-#   k=individual[k] + individual2[k]
-#   
-# )
-# individual[k] = individual.apply(k=lambda x: x * 2)
+        return self.binary_op(other, torch.sub, True, True)
+
+    def __mul__(self, other: 'TensorDict') -> 'TensorDict':
+
+        return self.binary_op(other, torch.mul, True, False)
+
+    def __div__(self, other: 'TensorDict') -> 'TensorDict':
+
+        return self.binary_op(other, torch.div, True, False)
+
+    @abstractmethod
+    def spawn(self) -> 'TensorDict':
+        pass
 
 
 class Individual(TensorDict):
@@ -393,6 +401,17 @@ class Individual(TensorDict):
         """
         parameter.data = self[key]
         return self
+    
+    def populate(self, k: int=1) -> 'Population':
+        """convert an individual to a solitary population
+
+        Returns:
+            Population: population with one member
+        """
+
+        return Population(
+            **{key: expand_dim0(v, k, False) for key, v in self}
+        )    
 
     def join(self, population: "Population", individual_idx: int) -> "Individual":
         """Set the population for the individual
@@ -432,79 +451,12 @@ class Individual(TensorDict):
             Assessment: The assessment for the individual
         """
         return self._assessment
-    # def __iter__(self) -> typing.Iterator:
-    #     """Iterate over the values in the individual
 
-    #     Yields:
-    #         Iterator[typing.Iterator]: The iterator to iterate over the values with
-    #     """
-
-    #     for k, v in self._parameters.items():
-    #         yield k, v
-
-    # def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
-    #     """Retrieve the value specified by key
-    #     Args:
-    #         key (str):
-
-    #     Returns:
-    #         typing.Union[torch.Tensor, Parameter]: The value in the key
-    #     """
-    #     return self._parameters[key]
-    
-    # def get(self, key: str) -> typing.Union[torch.Tensor, None]:
-
-    #     return self._parameters.get(key)
-            
-    # def __contains__(self, key: str) -> bool:
-    #     """
-    #     Args:
-    #         key (str): The key to the values in the Individual to update the parameter with
-    #     Returns:
-    #         bool: True if the individual contains the key
-    #     """
-    #     return key in self._parameters
-
-    # @property
-    # def assessment(self) -> Assessment:
-    #     """
-    #     Returns:
-    #         Assessment: The assessment for the individual
-    #     """
-    #     return self._assessment
-
-    # def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
-    #     """Apply a function to he individual to generate a new individual
-
-    #     Args:
-    #         f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
-    #         key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
-
-    #     Returns:
-    #         Population: The resulting individual
-    #     """
-    #     if isinstance(keys, str):
-    #         keys = set([keys])
-    #     elif keys is None:
-    #         keys = set(self._parameters.keys())
-    #     else:
-    #         keys = set(keys)
-    #     results = {}
-    #     for k, v in self._parameters.items():
-    #         if k in keys:
-    #             results[k] = f(v)
-    #         else:
-    #             results[k] = torch.clone(v)
-    #     return Individual(**results)
-
-    # def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
-    #     """Convert population to a dict of tensors
-
-    #     Returns:
-    #         typing.Dict[str, torch.Tensor]: dictionary of tensors
-    #     """
-
-    #     return {k: v for k, v in self._parameters.items()}
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'Individual':
+        
+        return Individual(
+            **tensor_dict
+        )
 
 
 class Population(TensorDict):
@@ -728,7 +680,24 @@ class Population(TensorDict):
         return Population(
             **result
         )
-                
+
+    def pstack(self, others: typing.Iterable['Population']) -> 'Population':
+        """Stack the populations on top of one another
+
+        Args:
+            others (typing.Iterable[Population]): The other populations
+
+        Returns:
+            Population: The resulting population
+        """
+        result = {}
+        for v in self.loop_over(*others, only_my_k=False, union=False):
+            k = v[0]
+            tensors = v[1:]
+            result[k] = torch.stack(tensors)
+        return Population(
+            **result
+        )
 
     @property
     def sub(self):
@@ -868,6 +837,34 @@ class Population(TensorDict):
                 results[k] = torch.clone(v)
         return Population(**results)
 
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'Population':
+        
+        return Population(
+            **tensor_dict
+        )
+
+# def tensor_dict(ts: typing.Iterable[TensorDict], population_priority: bool=True, **values) -> typing.Union[Individual, Population]:
+#     """create a tensordict
+
+#     Args:
+#         ts (TensorDict): The tensor dict to unify
+#         population_priority (bool, optional): _description_. Defaults to True.
+
+#     Returns:
+#         typing.Union[Individual, Population]: _description_
+#     """
+#     if population_priority:
+#         is_population = functools.reduce(
+#             lambda t, cur: cur or isinstance(t, Population), ts
+#         )
+#     else:
+#         is_population = functools.reduce(
+#             lambda t, cur: cur and isinstance(t, Population), ts
+#         )
+#     if is_population:
+#         return Population(**values)
+#     return Individual(**values)
+
 
 class Objective(ABC):
 
@@ -916,7 +913,6 @@ class CompoundConstraint(Constraint):
                 elif key in cur:
                     result[key] = value
         return result
-
 
 
 class _popSub(object):

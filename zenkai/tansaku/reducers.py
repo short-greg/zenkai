@@ -17,8 +17,6 @@ from .core import (
 from .exploration import EqualsAssessmentDist
 
 
-
-
 def keep_original(
     candidate: torch.Tensor,
     original: torch.Tensor,

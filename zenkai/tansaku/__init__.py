@@ -1,7 +1,7 @@
 # flake8: noqa
 
 from .assessors import (
-    PopAssessor, XPopAssessor,
+    Assessor, XPopAssessor,
     ObjectivePopAssessor
 )
 from .core import (
@@ -19,7 +19,8 @@ from .core import (
     gen_like,
     Objective,
     Constraint,
-    CompoundConstraint
+    CompoundConstraint,
+    TensorDict
 )
 from .optimize import (
     Itadaki,
@@ -56,12 +57,10 @@ from .dividers import (
     EqualDivider
 )
 from .mixers import (
-    KeepMixer,
-    IndividualMixer,
     KBestElitism,
-    StandardPopulationMixer,
-    BinaryRandCrossOverBreeder,
-    SmoothCrossOverBreeder
+    BinaryRandCrossOver,
+    SmoothCrossOver,
+    keep_mixer
 )
 from .influencers import (
     IndividualInfluencer,
@@ -70,15 +69,15 @@ from .influencers import (
     JoinInfluencer
 )
 from .populators import (
-    ConservativePopulator,
-    GaussianPopulator,
-    Populator,
-    PopulatorDecorator,
-    RepeatPopulator,
-    SimpleGaussianPopulator,
-    StandardPopulator,
     VoterPopulator,
-    populate_t,
+    populate,
+    # ConservativePopulator,
+    # GaussianPopulator,
+    # Populator,
+    # PopulatorDecorator,
+    # RepeatPopulator,
+    # SimpleGaussianPopulator,
+    # StandardPopulator,
 )
 from .reducers import (
     BestSampleReducer,
@@ -93,11 +92,9 @@ from .reducers import (
     keep_original,
 )
 from .mappers import (
-    GaussianSampleMapper,
-    BinarySampleMapper,
-    GaussianMutator,
-    BinaryMutator,
-    IndividualMapper,
-    PopulationMapper
+    GaussianSamplePerturber,
+    BinarySamplePerturber,
+    GaussianPerturber,
+    BinaryPerturber,
 
 )

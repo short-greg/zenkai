@@ -1,112 +1,32 @@
 # 1st party
 from abc import ABC, abstractmethod
+import typing
 
 # 3rd party
 import torch
 
 # local
-from .core import Population, Individual
+from .core import Population, Individual, TensorDict
 from ..kaku import State
 
 
-class IndividualMixer(ABC):
-    """Mixes two individuals together"""
+def keep_mixer(original: TensorDict, updated: TensorDict, keep_p: float) -> typing.Union[Population, Individual]:
+    new_values = {}
+    for k, original_v, updated_v in original.loop_over(updated, union=False):
+        keep = (torch.rand_like(original_v) < keep_p).type_as(original_v)
+        new_values[k] = keep * original_v + (1 - keep) * updated_v
+
+    return original.__class__(**new_values)
+
+
+class Elitism(ABC):
 
     @abstractmethod
-    def mix(self, individual1: Individual, individual2: Individual, state: State) -> Individual:
-        pass
-
-    def __call__(self, individual1: Individual, individual2: Individual, state: State=None) -> Individual:
-        return self.mix(individual1, individual2, state or State())
-
-    @abstractmethod
-    def spawn(self) -> "IndividualMixer":
-        pass
-
-
-class PopulationMixer(ABC):
-    """Mixes two populations together"""
-
-    @abstractmethod
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
-        pass
-
-    def __call__(self, population1: Population, population2: Population, state: State=None) -> Population:
-        return self.mix(
-            population1, population2, state or State()
-        )
-
-    @abstractmethod
-    def spawn(self) -> "PopulationMixer":
+    def __call__(self, population1: Population, population2: Population) -> Population:
         pass
 
 
-class KeepMixer(IndividualMixer):
-    """Modify the original based on the selection by keeping the values in
-    the individual with a set probability"""
-
-    def __init__(self, keep_p: float):
-        """initializer
-
-        Args:
-            keep_p (float): Probability of keeping the value for the first individual
-
-        Raises:
-            ValueError: If the probability is invalid
-        """
-        if not (0 <= keep_p <= 1.0):
-            raise ValueError(f"{keep_p} must be between 0 and 1.")
-        self.keep_p = keep_p
-
-    def mix(self, individual1: Individual, individual2: Individual, state: State) -> Individual:
-        """Randomly choose whether to select original or selection for each value
-
-        Args:
-            individual (Individual): The individual to modify
-            individual2 (Population): The population to modify based on
-
-        Returns:
-            Individual: The modified individual
-        """
-        new_values = {}
-        for k, v in individual1.items():
-            if k in individual2:
-                keep = (torch.rand_like(v) < self.keep_p).type_as(v)
-                new_values[k] = keep * v + (1 - keep) * individual2[k]
-
-        return Individual(**new_values)
-
-    def spawn(self) -> "KeepMixer":
-        return KeepMixer(self.keep_p)
-
-
-class StandardPopulationMixer(PopulationMixer):
-
-    @abstractmethod
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
-        pass
-
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
-
-        results = {}
-        for k, v in population1.items():
-            results[k] = self.mix_field(k, v, population2[k], state)
-
-        return Population(**results)
-
-# from ..kaku import TopKSelector
-
-# def kbest_elitism(old_population, new_population, k, divide_start, state):
-   
-#     selector = TopKSelector(k=k, dim=0)
-#     index_map = selector(old_population.stack_assessments())
-#     selection = old_population.select_by(index_map)
-#     return selection.join(new_population)
-
-    # for k, x1, x2 in old_population.connect(new_population):
-
-
-class KBestElitism(PopulationMixer):
+class KBestElitism(Elitism):
     """Add the k best from the previous generation to the new generation
     """
 
@@ -121,7 +41,7 @@ class KBestElitism(PopulationMixer):
         self.k = k
         self.divide_start = divide_start
 
-    def mix(self, population1: Population, population2: Population, state: State) -> Population:
+    def __call__(self, population1: Population, population2: Population) -> Population:
         """
 
         Args:
@@ -138,19 +58,15 @@ class KBestElitism(PopulationMixer):
         # index_map = selector(assessment)
         # select = population.select_index(index_map)
         # selected = index_map(features)
-
-
         
         assessment = population1.stack_assessments().reduce_image(self.divide_start)
 
-
         _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
         results = {}
-        for k, v in population1.items():
-            if k in population2:
-                results[k] = torch.cat(
-                    [v[indices], population2[k]]
-                )
+        for k, v1, v2 in population1.loop_over(population2, only_my_k=True, union=False):
+            results[k] = torch.cat(
+                [v1[indices], v2]
+            )
 
         return Population(**results)
     
@@ -158,7 +74,14 @@ class KBestElitism(PopulationMixer):
         return KBestElitism(self.k)
 
 
-class BinaryRandCrossOverBreeder(StandardPopulationMixer):
+class CrossOver(ABC):
+
+    @abstractmethod
+    def __call__(self, parents1: Population, parents2: Population) -> Population:
+        pass
+
+
+class BinaryRandCrossOver(CrossOver):
     """Mix two tensors together by choosing one gene for each
     """
 
@@ -166,7 +89,7 @@ class BinaryRandCrossOverBreeder(StandardPopulationMixer):
         super().__init__()
         self.p = p
 
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
+    def __call__(self, parents1: Population, parents2: Population) -> Population:
         """Mix two tensors together by choosing one gene for each
 
         Args:
@@ -177,30 +100,96 @@ class BinaryRandCrossOverBreeder(StandardPopulationMixer):
         Returns:
             torch.Tensor: The mixed result
         """
-        to_choose = (torch.rand_like(val1) > self.p)
-        return val1 * to_choose.type_as(val1) + val2 * (~to_choose).type_as(val2)
+        result = {}
+        for k, p1, p2 in parents1.loop_over(parents2, only_my_k=True, union=False):
+            to_choose = (torch.rand_like(p1) > self.p)
+            result[k] = p1 * to_choose.type_as(p1) + p2 * (~to_choose).type_as(p2)
+        return Population(**result)
 
-    def spawn(self) -> 'BinaryRandCrossOverBreeder':
-        return BinaryRandCrossOverBreeder(self.p)
+    def spawn(self) -> 'BinaryRandCrossOver':
+        return BinaryRandCrossOver(self.p)
 
 
-class SmoothCrossOverBreeder(StandardPopulationMixer):
+class SmoothCrossOver(CrossOver):
     """Do a smooth interpolation between the values to breed
     """
 
-    def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
-        """Mix two tensors together with smooth interpolation
+
+    def __call__(self, parents1: Population, parents2: Population) -> Population:
+        """Mix two tensors together by choosing one gene for each
 
         Args:
             key (str): The name of the field
             val1 (torch.Tensor): The first value to mix
             val2 (torch.Tensor): The second value to mix
-
+    
         Returns:
             torch.Tensor: The mixed result
         """
-        degree = torch.rand_like(val1)
-        return val1 * degree + val2 * (1 - degree)
+        result = {}
+        for k, p1, p2 in parents1.loop_over(parents2, only_my_k=True, union=False):
+            degree = torch.rand_like(p1)
+            result[k] = p1 * degree + p2 * (1 - degree)
+        return Population(**result)
     
-    def spawn(self) -> 'SmoothCrossOverBreeder':
-        return SmoothCrossOverBreeder()
+    def spawn(self) -> 'SmoothCrossOver':
+        return SmoothCrossOver()
+
+
+
+# class IndividualMixer(ABC):
+#     """Mixes two individuals together"""
+
+#     @abstractmethod
+#     def mix(self, individual1: Individual, individual2: Individual, state: State) -> Individual:
+#         pass
+
+#     def __call__(self, individual1: Individual, individual2: Individual, state: State=None) -> Individual:
+#         return self.mix(individual1, individual2, state or State())
+
+#     @abstractmethod
+#     def spawn(self) -> "IndividualMixer":
+#         pass
+
+
+# class PopulationMixer(ABC):
+#     """Mixes two populations together"""
+
+#     @abstractmethod
+#     def mix(self, population1: Population, population2: Population, state: State) -> Population:
+#         pass
+
+#     def __call__(self, population1: Population, population2: Population, state: State=None) -> Population:
+#         return self.mix(
+#             population1, population2, state or State()
+#         )
+
+#     @abstractmethod
+#     def spawn(self) -> "PopulationMixer":
+#         pass
+
+
+# class StandardPopulationMixer(PopulationMixer):
+
+#     @abstractmethod
+#     def mix_field(self, key: str, val1: torch.Tensor, val2: torch.Tensor, state: State) -> torch.Tensor:
+#         pass
+
+#     def mix(self, population1: Population, population2: Population, state: State) -> Population:
+
+#         results = {}
+#         for k, v in population1.items():
+#             results[k] = self.mix_field(k, v, population2[k], state)
+
+#         return Population(**results)
+
+# from ..kaku import TopKSelector
+
+# def kbest_elitism(old_population, new_population, k, divide_start, state):
+   
+#     selector = TopKSelector(k=k, dim=0)
+#     index_map = selector(old_population.stack_assessments())
+#     selection = old_population.select_by(index_map)
+#     return selection.join(new_population)
+
+    # for k, x1, x2 in old_population.connect(new_population):

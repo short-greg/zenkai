@@ -8,8 +8,7 @@ import torch
 # local
 from .reducers import SlopeReducer
 from ..utils import to_signed_neg, to_zero_neg
-from .core import Individual, Population, expand_dim0
-from .populators import RepeatPopulator
+from .core import Individual, TensorDict, expand_dim0
 from ..kaku import State
 
 
@@ -17,13 +16,13 @@ from ..kaku import State
 class IndividualInfluencer(ABC):
     """Modifies an Individual based on the Population"""
 
-    def __call__(self, individual: Individual, population: Population, state: State=None) -> Individual:
+    def __call__(self, individual: Individual, population: TensorDict, state: State=None) -> Individual:
         return self.influence(
             individual, population, state or State()
         )
 
     @abstractmethod
-    def influence(self, individual: Individual, population: Population, state: State) -> Individual:
+    def influence(self, individual: Individual, population: TensorDict, state: State) -> Individual:
         pass
 
     @abstractmethod
@@ -35,10 +34,10 @@ class PopulationInfluencer(ABC):
     """"""
 
     @abstractmethod
-    def influence(self, population: Population, individual: Population, state: State) -> Population:
+    def influence(self, population: TensorDict, individual: TensorDict, state: State) -> TensorDict:
         pass
 
-    def __call__(self, population: Population, individual: Population, state: State=None) -> Population:
+    def __call__(self, population: TensorDict, individual: TensorDict, state: State=None) -> TensorDict:
         return self.influence(
             population, individual, state or State()
         )
@@ -51,23 +50,23 @@ class PopulationInfluencer(ABC):
 class JoinIndividual(PopulationInfluencer):
     """"""
 
-    def influence(self, population: Population, individual: Individual, state: State) -> Population:
+    def influence(self, population: TensorDict, individual: Individual, state: State) -> TensorDict:
         
         new_population = {**population}
 
         for k, v in individual:
             new_population[k] = expand_dim0(v, population.n_individuals)
         
-        return Population(**new_population)
+        return TensorDict(**new_population)
 
     def spawn(self) -> "PopulationInfluencer":
         return JoinIndividual()
     
-    def join_t(self, population: Population, t: torch.Tensor):
+    def join_t(self, population: TensorDict, t: torch.Tensor):
 
         return self(population, Individual(t=t))
 
-    def join_tensor(self, population: Population, key: str, val: torch.Tensor):
+    def join_tensor(self, population: TensorDict, key: str, val: torch.Tensor):
 
         return self(population, Individual(**{key: val}))
 
@@ -109,7 +108,7 @@ class SlopeInfluencer(IndividualInfluencer):
     def maximize(self, maximize):
         self._multiplier = 1 if maximize else -1
 
-    def influence(self, original: Individual, population: Population, state: State) -> Individual:
+    def influence(self, original: Individual, population: TensorDict, state: State) -> Individual:
         x = original[self.x]
         slope = self._slope_selector(population)[self.x]
         return Individual(**{self.x: x + self.lr * slope})
@@ -125,10 +124,10 @@ class JoinInfluencer(PopulationInfluencer):
 
     def influence(
         self,
-        population: Population,
+        population: TensorDict,
         individual: Individual,
         state: State
-    ) -> Population:
+    ) -> TensorDict:
         """
 
         Args:
@@ -145,13 +144,13 @@ class JoinInfluencer(PopulationInfluencer):
             result[k] = torch.cat(
                 [individual[k][None], v], dim=0
             )
-        return Population(**result)
+        return TensorDict(**result)
     
     def spawn(self) -> 'PopulationLimiter':
         return JoinInfluencer()
 
 
-def keep_feature(original: Individual, population: Population, limit: torch.LongTensor):
+def keep_feature(original: Individual, population: TensorDict, limit: torch.LongTensor):
     
     result = {}
 
@@ -160,7 +159,7 @@ def keep_feature(original: Individual, population: Population, limit: torch.Long
         individual_v = individual_v.repeat(v.size(0), 1, 1)
         individual_v[:, :, limit] = v[:, :, limit].detach()
         result[k] = individual_v
-    return Population(**result)
+    return TensorDict(**result)
 
 
 class PopulationLimiter(PopulationInfluencer):
@@ -180,10 +179,10 @@ class PopulationLimiter(PopulationInfluencer):
 
     def influence(
         self,
-        population: Population,
+        population: TensorDict,
         individual: Individual,
         state: State
-    ) -> Population:
+    ) -> TensorDict:
         """
 
         Args:
@@ -204,7 +203,7 @@ class PopulationLimiter(PopulationInfluencer):
             individual_v = individual_v.repeat(v.size(0), 1, 1)
             individual_v[:, :, self.limit] = v[:, :, self.limit].detach()
             result[k] = individual_v
-        return Population(**result)
+        return TensorDict(**result)
     
     def spawn(self) -> 'PopulationLimiter':
         return PopulationLimiter(self.limit.clone())

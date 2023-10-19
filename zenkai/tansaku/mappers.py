@@ -2,43 +2,22 @@ from abc import ABC, abstractmethod
 
 from zenkai.kaku import State
 
-from .core import Individual, Population, gen_like
+from .core import Individual, TensorDict, gen_like, TensorDict
 from ..kaku import State
 import torch
 import typing
 from dataclasses import dataclass
 
 
-
-
-
-class IndividualMapper(ABC):
-    """Mixes two individuals together"""
-
-    @abstractmethod
-    def map(self, individual: Individual, state: State) -> Individual:
-        pass
-
-    def __call__(self, individual: Individual, state: State=None) -> Individual:
-        return self.map(individual, state or State())
-
-    @abstractmethod
-    def spawn(self) -> "IndividualMapper":
-        pass
-
-
-class PopulationMapper(ABC):
+class Perturber(ABC):
     """Mixes two populations together"""
 
     @abstractmethod
-    def map(self, population: Population, state: State) -> Population:
+    def __call__(self, population: TensorDict) -> TensorDict:
         pass
 
-    def __call__(self, population: Population, state: State=None) -> Population:
-        return self.map(population, state or State())
-
     @abstractmethod
-    def spawn(self) -> "PopulationMapper":
+    def spawn(self) -> "Perturber":
         pass
 
 
@@ -58,7 +37,7 @@ def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=No
     return decay * cur_v + (1 - decay) * new_v
 
 
-class GaussianSampleMapper(PopulationMapper):
+class GaussianSamplePerturber(Perturber):
     """Calculate the Gaussian parameters based on the population and sample values based on them
     """
 
@@ -78,7 +57,7 @@ class GaussianSampleMapper(PopulationMapper):
         self._mean = {}
         self._std = {}
 
-    def map(self, population: Population, state: State) -> Population:
+    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
         """Calculate the Gaussian parameters and sample a population using them 
 
         Args:
@@ -90,23 +69,23 @@ class GaussianSampleMapper(PopulationMapper):
 
         samples = {}
         
-        for k, v in population.items():
+        for k, v in tensor_dict.items():
             self._mean[k] = decay(v.mean(dim=0, keepdim=True), self._mean.get(k, self._mu0), self.decay)
             self._std[k] = decay(v.std(dim=0, keepdim=True), self._std.get(k, self._std0))
             samples[k] = (
                 gen_like(torch.randn, self.k, self._mean[k]) * self._std[k] + self._mean[k]
             )
-        return Population(**samples)
+        return tensor_dict.spawn(samples)
 
-    def spawn(self) -> 'GaussianSampleMapper':
-        return GaussianSampleMapper(
+    def spawn(self) -> 'GaussianSamplePerturber':
+        return GaussianSamplePerturber(
             self.k, self.decay, self._mu0, self._std0
         )
 
 
 # TODO ALTER SO IT DOES NOT NEED STATE
 # CREATE  population -> probability -> mixer
-class BinarySampleMapper(PopulationMapper):
+class BinarySamplePerturber(Perturber):
     """Calculate the Bernoulli parameters and sample from them
     """
 
@@ -126,7 +105,7 @@ class BinarySampleMapper(PopulationMapper):
         self._sign_neg = sign_neg
         self._p = {}
 
-    def map(self, population: Population, state: State) -> Population:
+    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
         """Calculate the bernoulli paramter and sample a population using them 
 
         Args:
@@ -137,7 +116,7 @@ class BinarySampleMapper(PopulationMapper):
         """
         samples = {}
 
-        for k, v in population.items():
+        for k, v in tensor_dict.items():
             if self._sign_neg:
                 v = (v + 1) / 2
             self._p[k] = decay(v.mean(dim=0, keepdim=True), self._p.get(k, self._p0), self.decay)
@@ -148,16 +127,16 @@ class BinarySampleMapper(PopulationMapper):
             if self._sign_neg:
                 cur_samples = (cur_samples * 2) - 1
             samples[k] = cur_samples
-        return Population(**samples)
+        return tensor_dict.spawn(samples)
 
-    def spawn(self) -> 'BinarySampleMapper':
-        return BinarySampleMapper(
+    def spawn(self) -> 'BinarySamplePerturber':
+        return BinarySamplePerturber(
             self.k, self.decay, self._p0, self._sign_neg
         )
 
 
 
-class GaussianMutator(PopulationMapper):
+class GaussianPerturber(Perturber):
 
     def __init__(self, std: float, mean: float=0.0):
         """initializer
@@ -174,7 +153,7 @@ class GaussianMutator(PopulationMapper):
             raise ValueError(f'Argument std must be >= 0 not {std}')
         self.std = std
 
-    def map(self, population: Population, state: State) -> Population:
+    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
         """Mutate all fields in the population
 
         Args:
@@ -185,15 +164,15 @@ class GaussianMutator(PopulationMapper):
         """
         
         result = {}
-        for k, v in population.items():
+        for k, v in tensor_dict.items():
             result[k] = v + torch.randn_like(v) * self.std + self.mean
-        return Population(**result)
+        return tensor_dict.spawn(result)
 
-    def spawn(self) -> 'GaussianMutator':
-        return GaussianMutator(self.std, self.mean)
+    def spawn(self) -> 'GaussianPerturber':
+        return GaussianPerturber(self.std, self.mean)
 
 
-class BinaryMutator(PopulationMapper):
+class BinaryPerturber(Perturber):
     """Randomly mutate boolean genes in the population
     """
 
@@ -208,7 +187,7 @@ class BinaryMutator(PopulationMapper):
         self.flip_p = flip_p
         self.signed_neg = signed_neg
 
-    def map(self, population: Population, state: State=None) -> Population:
+    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
         """Mutate all fields in the population
 
         Args:
@@ -219,16 +198,16 @@ class BinaryMutator(PopulationMapper):
         """
         
         result = {}
-        for k, v in population.items():
+        for k, v in tensor_dict.items():
             to_flip = (torch.rand_like(v) > self.flip_p)
             if self.signed_neg:
                 result[k] = to_flip.float() * -v + (~to_flip).float() * v
             else:
                 result[k] = (v - to_flip.float()).abs()
-        return Population(**result)
+        return TensorDict(**result)
 
-    def spawn(self) -> 'BinaryMutator':
-        return BinaryMutator(
+    def spawn(self) -> 'BinaryPerturber':
+        return BinaryPerturber(
             self.flip_p, self.signed_neg
         )
 

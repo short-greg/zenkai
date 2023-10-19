@@ -12,27 +12,24 @@ class TestKeepMixer:
 
     def test_keep_mixer_results_in_correct_size(self):
         
-        mixer = tansaku.KeepMixer(0.9)
         individual1 = tansaku.Individual(x=torch.rand(4, 2))
         individual2 = tansaku.Individual(x=torch.rand(4, 2))
-        new_individual = mixer(individual1, individual2)
+        new_individual = tansaku.keep_mixer(individual1, individual2, 0.9)
         
         assert new_individual['x'].shape == individual1['x'].shape
     
     def test_keep_mixer_results_in_same_as_original(self):
         
-        mixer = tansaku.KeepMixer(1.0)
         individual1 = tansaku.Individual(x=torch.rand(4, 2))
         individual2 = tansaku.Individual(x=torch.rand(4, 2))
-        new_individual = mixer(individual1, individual2)
+        new_individual = tansaku.keep_mixer(individual1, individual2, 1.0)
         assert (new_individual['x'] == individual1['x']).all()
 
     def test_keep_mixer_results_in_same_as_new(self):
         
-        mixer = tansaku.KeepMixer(0.0)
         individual1 = tansaku.Individual(x=torch.rand(4, 2))
         individual2 = tansaku.Individual(x=torch.rand(4, 2))
-        new_individual = mixer(individual1, individual2)
+        new_individual = tansaku.keep_mixer(individual1, individual2, 0.0)
         assert (new_individual['x'] == individual2['x']).all()
 
 
@@ -63,7 +60,7 @@ class TestBinaryRandCrossOver:
 
     def test_binary_rand_crossover(self):
         
-        mixer = tansaku.BinaryRandCrossOverBreeder(0.5)
+        mixer = tansaku.BinaryRandCrossOver(0.5)
         population1 = tansaku.Population(x=torch.randn(4, 4, 2).sign())
         population2 = tansaku.Population(x=torch.randn(4, 4, 2).sign())
         new_population = mixer(population1, population2)
@@ -74,7 +71,7 @@ class TestSmoothCrossOver:
 
     def test_gaussian_rand_crossover(self):
         
-        mixer = tansaku.SmoothCrossOverBreeder()
+        mixer = tansaku.SmoothCrossOver()
         population1 = tansaku.Population(x=torch.rand(4, 4, 2))
         population1.report(Assessment(torch.tensor([0.1, 0.2, 0.8, 1.0])))
         population2 = tansaku.Population(x=torch.rand(4, 4, 2))

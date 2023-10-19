@@ -27,7 +27,7 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 
 """
 
-from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
+# from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
 from .grad import (
     GradLearner,
     GradLoopLearner,

@@ -6,10 +6,10 @@ import torch
 
 # local
 from ..kaku import IO, LearningMachine, Criterion, Assessment, State
-from .core import Population, expand_t, reduce_assessment_dim1, Objective
+from .core import Population, expand_t, reduce_assessment_dim1, Objective, TensorDict
 
 
-class PopAssessor(ABC):
+class Assessor(ABC):
     """Modules to asseess the population"""
 
     def __init__(self, 
@@ -20,11 +20,8 @@ class PopAssessor(ABC):
         self.reduction = reduction
 
     @abstractmethod
-    def assess(self, population: Population, state: State) -> Population:
+    def __call__(self, population: Population) -> Population:
         pass
-
-    def __call__(self, population: Population, state: State=None) -> Population:
-        return self.assess(population, state or State())
 
     def reduce(self, value: torch.Tensor, maximize: bool) -> torch.Tensor:
         
@@ -42,7 +39,7 @@ class PopAssessor(ABC):
         return Assessment(reduced.reshape(base_shape), maximize)
 
 
-class ObjectivePopAssessor(PopAssessor):
+class ObjectivePopAssessor(Assessor):
 
     def __init__(
         self,
@@ -63,7 +60,7 @@ class ObjectivePopAssessor(PopAssessor):
         self.objective = objective
         self.names = names
 
-    def assess(self, population: Population, state: State) -> Population:
+    def __call__(self, population: Population) -> Population:
         """Assess a population
 
         Args:
@@ -85,7 +82,7 @@ class ObjectivePopAssessor(PopAssessor):
         return population
 
 
-class CriterionPopAssessor(PopAssessor):
+class CriterionPopAssessor(Assessor):
 
     def __init__(
         self,
@@ -106,7 +103,7 @@ class CriterionPopAssessor(PopAssessor):
         self.criterion = criterion
         self.names = names
 
-    def assess(self, population: Population, state: State) -> Population:
+    def __call__(self, population: Population) -> Population:
         """Assess a population
 
         Args:
@@ -133,7 +130,7 @@ class CriterionPopAssessor(PopAssessor):
         return population
 
 
-class XPopAssessor(PopAssessor):
+class XPopAssessor(Assessor):
     """Assess the inputs to the population"""
 
     def __init__(
@@ -155,7 +152,7 @@ class XPopAssessor(PopAssessor):
         self.learner = learner
         self.names = names
 
-    def assess(self, population: Population, state: State) -> Population:
+    def __call__(self, population: Population) -> Population:
         """Assess a population
 
         Args:

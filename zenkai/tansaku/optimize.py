@@ -7,6 +7,7 @@ from ..kaku import Assessment, IO, Criterion, Reduction, State
 
 from .core import Constraint, CompoundConstraint, Objective
 
+
 def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=None, penalty=torch.inf) -> torch.Tensor:
 
     if constraint is None:
