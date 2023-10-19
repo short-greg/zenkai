@@ -16,6 +16,7 @@ class TestKeepMixer:
         individual1 = tansaku.Individual(x=torch.rand(4, 2))
         individual2 = tansaku.Individual(x=torch.rand(4, 2))
         new_individual = mixer(individual1, individual2)
+        
         assert new_individual['x'].shape == individual1['x'].shape
     
     def test_keep_mixer_results_in_same_as_original(self):

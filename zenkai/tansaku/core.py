@@ -17,6 +17,19 @@ from copy import deepcopy
 # TODO: Move to utils
 
 
+# Only use a class if I think that it will be 'replaceable'
+# Elitism() <-
+# Mixer() <- remove   tansaku.conserve(old_p, new_p, prob=...)
+# Crossover()
+# Perturber()
+# Sampler() (Include reduers in here)
+# SlopeCalculator() <- doesn't need to be a functor.. I should combine this with "SlopeMapper"... Think about this more
+# concat <- add in concat
+# Limiter??? - similar to "keep mixer" -> tansaku.limit_feature(population, limit=...)
+# Divider() -> ParentSelector() <- rename
+# Assessor
+# concat()
+# 
 
 def reduce_assessment_dim0(
     assessment: Assessment, k: int, reduction: str = "mean"
@@ -217,69 +230,50 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
 
 
 # TODO: have this be the base class
-class TensorDict(object):
+class TensorDict(dict):
     """An individual in a population. An individual consists of fields for one element of a population"""
 
     def __init__(
         self,
-        assessment: Assessment = None,
         **values: typing.Union[nn.Module, torch.Tensor, Parameter],
     ):
-        self._assessment = assessment
-        self._population = None
-        self._id = None
-        self._parameters = {}
-
+        results = {}
         for k, v in values.items():
             if isinstance(v, nn.Module):
                 v = get_model_parameters(v)
             elif not isinstance(v, torch.Tensor):
                 v = torch.tensor(v)
-            self._parameters[k] = v
+            results[k] = v
+        
+        super().__init__(**results)
 
-    def __iter__(self) -> typing.Iterator:
-        """Iterate over the values in the individual
+    def loop_over(self, *others: 'TensorDict', only_my_k: bool=False, union: bool=True) -> typing.Iterator[typing.Tuple[str, torch.Tensor]]:
+        """Loop over the tensor dict and other tensor dicts
+
+        Args:
+            only_my_k (bool, optional): Whether to only loop over keys in self. Defaults to False.
+
+        Returns:
+            typing.Iterator[typing.Tuple]: The iterator
 
         Yields:
-            Iterator[typing.Iterator]: The iterator to iterate over the values with
+            typing.Tuple: The key followed by the tensors
         """
 
-        for k, v in self._parameters.items():
-            yield k, v
+        keys = set(self.keys())
+        if not only_my_k:
+            for other in others:
+                if union:
+                    keys = keys.union(other.keys())
+                else:
+                    keys = keys.intersection(other.keys())
+        all_ = [self, *others]
+        for key in keys:
+            result = [d[key] if key in d else None for d in all_]
+            yield tuple(key, *result)        
 
-    def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
-        """Retrieve the value specified by key
-        Args:
-            key (str):
-
-        Returns:
-            typing.Union[torch.Tensor, Parameter]: The value in the key
-        """
-        return self._parameters[key]
-    
-    def get(self, key: str) -> typing.Union[torch.Tensor, None]:
-
-        return self._parameters.get(key)
-            
-    def __contains__(self, key: str) -> bool:
-        """
-        Args:
-            key (str): The key to the values in the Individual to update the parameter with
-        Returns:
-            bool: True if the individual contains the key
-        """
-        return key in self._parameters
-
-    @property
-    def assessment(self) -> Assessment:
-        """
-        Returns:
-            Assessment: The assessment for the individual
-        """
-        return self._assessment
-    
     # perhaps have this be separate
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'TensorDict':
         """Apply a function to he individual to generate a new individual
 
         Args:
@@ -292,25 +286,18 @@ class TensorDict(object):
         if isinstance(keys, str):
             keys = set([keys])
         elif keys is None:
-            keys = set(self._parameters.keys())
+            keys = set(self.keys())
         else:
             keys = set(keys)
         results = {}
-        for k, v in self._parameters.items():
+        for k, v in self.items():
             if k in keys:
                 results[k] = f(v)
             else:
                 results[k] = torch.clone(v)
-        return Individual(**results)
+        return self.__class__(**results)
 
-    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
-        """Convert population to a dict of tensors
 
-        Returns:
-            typing.Dict[str, torch.Tensor]: dictionary of tensors
-        """
-
-        return {k: v for k, v in self._parameters.items()}
     # TODO: Finalize these methods    
     # def join_iter(self, other: 'Individual') -> typing.Iterator[str, torch.Tensor, torch.Tensor]:
 
@@ -362,7 +349,7 @@ class TensorDict(object):
 # individual[k] = individual.apply(k=lambda x: x * 2)
 
 
-class Individual(object):
+class Individual(TensorDict):
     """An individual in a population. An individual consists of fields for one element of a population"""
 
     def __init__(
@@ -376,19 +363,10 @@ class Individual(object):
         Args:
             assessment (Assessment, optional): The assessment for the individual. Defaults to None.
         """
-
+        super().__init__(**values)
         self._assessment = assessment
-        self._population = None
         self._id = None
-        self._parameters = {}
-
-        for k, v in values.items():
-            if isinstance(v, nn.Module):
-                v = get_model_parameters(v)
-            elif not isinstance(v, torch.Tensor):
-                v = torch.tensor(v)
-            self._parameters[k] = v
-        # TODO: validate the sizes
+        self._population = None
 
     def set_model(self, model: nn.Module, key: str) -> "Individual":
         """Update the parameters in a module
@@ -400,7 +378,7 @@ class Individual(object):
         Returns:
             Individual: self
         """
-        update_model_parameters(model, self._parameters[key])
+        update_model_parameters(model, self[key])
         return self
 
     def set_p(self, parameter: Parameter, key: str) -> "Individual":
@@ -413,7 +391,7 @@ class Individual(object):
         Returns:
             Individual: self
         """
-        parameter.data = self._parameters[key]
+        parameter.data = self[key]
         return self
 
     def join(self, population: "Population", individual_idx: int) -> "Individual":
@@ -447,39 +425,6 @@ class Individual(object):
             self._population.report_for(self._id, assessment)
         return self
 
-    def __iter__(self) -> typing.Iterator:
-        """Iterate over the values in the individual
-
-        Yields:
-            Iterator[typing.Iterator]: The iterator to iterate over the values with
-        """
-
-        for k, v in self._parameters.items():
-            yield k, v
-
-    def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
-        """Retrieve the value specified by key
-        Args:
-            key (str):
-
-        Returns:
-            typing.Union[torch.Tensor, Parameter]: The value in the key
-        """
-        return self._parameters[key]
-    
-    def get(self, key: str) -> typing.Union[torch.Tensor, None]:
-
-        return self._parameters.get(key)
-            
-    def __contains__(self, key: str) -> bool:
-        """
-        Args:
-            key (str): The key to the values in the Individual to update the parameter with
-        Returns:
-            bool: True if the individual contains the key
-        """
-        return key in self._parameters
-
     @property
     def assessment(self) -> Assessment:
         """
@@ -487,42 +432,82 @@ class Individual(object):
             Assessment: The assessment for the individual
         """
         return self._assessment
+    # def __iter__(self) -> typing.Iterator:
+    #     """Iterate over the values in the individual
 
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
-        """Apply a function to he individual to generate a new individual
+    #     Yields:
+    #         Iterator[typing.Iterator]: The iterator to iterate over the values with
+    #     """
 
-        Args:
-            f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
-            key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+    #     for k, v in self._parameters.items():
+    #         yield k, v
 
-        Returns:
-            Population: The resulting individual
-        """
-        if isinstance(keys, str):
-            keys = set([keys])
-        elif keys is None:
-            keys = set(self._parameters.keys())
-        else:
-            keys = set(keys)
-        results = {}
-        for k, v in self._parameters.items():
-            if k in keys:
-                results[k] = f(v)
-            else:
-                results[k] = torch.clone(v)
-        return Individual(**results)
+    # def __getitem__(self, key: str) -> typing.Union[torch.Tensor, Parameter]:
+    #     """Retrieve the value specified by key
+    #     Args:
+    #         key (str):
 
-    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
-        """Convert population to a dict of tensors
+    #     Returns:
+    #         typing.Union[torch.Tensor, Parameter]: The value in the key
+    #     """
+    #     return self._parameters[key]
+    
+    # def get(self, key: str) -> typing.Union[torch.Tensor, None]:
 
-        Returns:
-            typing.Dict[str, torch.Tensor]: dictionary of tensors
-        """
+    #     return self._parameters.get(key)
+            
+    # def __contains__(self, key: str) -> bool:
+    #     """
+    #     Args:
+    #         key (str): The key to the values in the Individual to update the parameter with
+    #     Returns:
+    #         bool: True if the individual contains the key
+    #     """
+    #     return key in self._parameters
 
-        return {k: v for k, v in self._parameters.items()}
+    # @property
+    # def assessment(self) -> Assessment:
+    #     """
+    #     Returns:
+    #         Assessment: The assessment for the individual
+    #     """
+    #     return self._assessment
+
+    # def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Individual':
+    #     """Apply a function to he individual to generate a new individual
+
+    #     Args:
+    #         f (typing.Callable[[torch.Tensor], torch.Tensor]): The function to apply
+    #         key (str, optional): The field to apply to. If none, applies to all fields. Defaults to None.
+
+    #     Returns:
+    #         Population: The resulting individual
+    #     """
+    #     if isinstance(keys, str):
+    #         keys = set([keys])
+    #     elif keys is None:
+    #         keys = set(self._parameters.keys())
+    #     else:
+    #         keys = set(keys)
+    #     results = {}
+    #     for k, v in self._parameters.items():
+    #         if k in keys:
+    #             results[k] = f(v)
+    #         else:
+    #             results[k] = torch.clone(v)
+    #     return Individual(**results)
+
+    # def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
+    #     """Convert population to a dict of tensors
+
+    #     Returns:
+    #         typing.Dict[str, torch.Tensor]: dictionary of tensors
+    #     """
+
+    #     return {k: v for k, v in self._parameters.items()}
 
 
-class Population(object):
+class Population(TensorDict):
     """
     A population is a collection of individuals
     """
@@ -536,18 +521,18 @@ class Population(object):
             ValueError: If dimension is 0 for any
             ValueError: If the population size is not the same as all
         """
-        self._parameters = {}
-        k = None
-        for key, v in kwargs.items():
-            if v.dim() == 0:
-                raise ValueError("Population must consist of tensors of dimension > 0")
-            if k is not None and v.shape[0] != k:
+        super().__init__(
+            **kwargs
+        )
+        self._k = None
+        for _, v in self.items():
+            if self._k is None:
+                self._k = len(v)
+            elif self._k != len(v):
                 raise ValueError(
                     "All members of the population must have the same size"
                 )
-            k = k or v.shape[0]
-            self._parameters[key] = v
-        self._k = k
+
         # lazily fill this in if requested
         self._individuals = {}
         self._assessments: typing.List[Assessment] = [None] * self._k
@@ -577,7 +562,7 @@ class Population(object):
 
         result = {}
         for name in names:
-            result[name] = self._parameters[name]
+            result[name] = self[name]
         return Population(**result)
 
     def get_assessment(self, i: int) -> Assessment:
@@ -605,7 +590,7 @@ class Population(object):
             return self._individuals[i]
 
         individual = Individual(
-            **{f: self._parameters[f][i] for f in self._parameters.keys()},
+            **{f: self[f][i] for f in self.keys()},
             assessment=self.get_assessment(i),
         )
         individual.join(self, i)
@@ -648,7 +633,7 @@ class Population(object):
         self._assessments[id] = assessment
 
     def set_model(self, model: nn.Module, key: str, id: int):
-        update_model_parameters(model, self._parameters[key][id])
+        update_model_parameters(model, self[key][id])
         return self
 
     def set_p(
@@ -664,7 +649,7 @@ class Population(object):
         Returns:
             Individual: self
         """
-        parameter.data = self._parameters[key][individual_index]
+        parameter.data = self[key][individual_index]
         return self
 
     def individuals(self) -> typing.Iterator[Individual]:
@@ -675,7 +660,8 @@ class Population(object):
         for i in range(self.k):
             yield self.get_i(i)
 
-    def __len__(self) -> int:
+    @property
+    def k(self) -> int:
         """
         Returns:
             int: The number of individuals in the population
@@ -729,7 +715,7 @@ class Population(object):
         """
 
         result = {}
-        for k, v in self._parameters.items():
+        for k, v in self.items():
             if gather_by.dim() > v.dim():
                 raise ValueError(f'Gather By dim must be less than or equal to the value dimension')
             shape = [1] * gather_by.dim()
@@ -757,15 +743,15 @@ class Population(object):
 
         return _popSub(self)
 
-    def __contains__(self, key: str) -> bool:
-        """
-        Args:
-            key (str): The key to check if the individual contains
+    # def __contains__(self, key: str) -> bool:
+    #     """
+    #     Args:
+    #         key (str): The key to check if the individual contains
 
-        Returns:
-            bool: If the key is in the parameters
-        """
-        return key in self._parameters
+    #     Returns:
+    #         bool: If the key is in the parameters
+    #     """
+    #     return key in self._parameters
 
     def _flattened_helper(self, key: str) -> torch.Tensor:
         """
@@ -776,7 +762,7 @@ class Population(object):
         Returns:
             torch.Tensor:
         """
-        t = self._parameters[key]
+        t = self[key]
         return t.reshape(t.size(0) * t.size(1), *t.shape[2:])
 
     def flattened(
@@ -813,9 +799,9 @@ class Population(object):
                 pass
         if isinstance(key, tuple):
             field, i = key
-            return self._parameters[field][i]
+            return self[field][i]
         
-        return self._parameters[key]
+        return super().__getitem__(key)
 
     def __setitem__(
         self, key: str, value: torch.Tensor
@@ -829,33 +815,33 @@ class Population(object):
         """
         if self.k != value.shape[0]:
             raise ValueError(f'Batch size of {value.shape[0]} does not equal population batch size {self.k}')
-        self._parameters[key] = value
+        self[key] = value
         
         return value
 
-    def __iter__(self) -> typing.Iterator[torch.Tensor]:
-        """
+    # def __iter__(self) -> typing.Iterator[torch.Tensor]:
+    #     """
 
-        Yields:
-            Iterator[typing.Iterator[torch.Tensor]]: Iterate over the values in the population
-        """
-        for k, v in self._parameters.items():
-            yield k, v
+    #     Yields:
+    #         Iterator[typing.Iterator[torch.Tensor]]: Iterate over the values in the population
+    #     """
+    #     for k, v in self._parameters.items():
+    #         yield k, v
 
-    def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
-        """Convert population to a dict of tensors
+    # def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
+    #     """Convert population to a dict of tensors
 
-        Returns:
-            typing.Dict[str, torch.Tensor]: dictionary of tensors
-        """
+    #     Returns:
+    #         typing.Dict[str, torch.Tensor]: dictionary of tensors
+    #     """
 
-        return {k: v for k, v in self._parameters.items()}
+    #     return {k: v for k, v in self._parameters.items()}
     
     def union(self, other: 'Population') -> 'Population':
 
         return Population(
-            **self._parameters,
-            **other._parameters
+            **self,
+            **other
         )
 
     def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Population':
@@ -871,11 +857,11 @@ class Population(object):
         if isinstance(keys, str):
             keys = set([keys])
         elif keys is None:
-            keys = set(self._parameters.keys())
+            keys = set(self.keys())
         else:
             keys = set(keys)
         results = {}
-        for k, v in self._parameters.items():
+        for k, v in self.items():
             if k in keys:
                 results[k] = f(v)
             else:
@@ -941,7 +927,7 @@ class _popSub(object):
 
     def __getitem__(self, idx) -> Population:
 
-        return Population(**{k: v[idx] for k, v in self._population})
+        return Population(**{k: v[idx] for k, v in self._population.items()})
 
 
 

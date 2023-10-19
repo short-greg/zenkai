@@ -69,7 +69,7 @@ class KeepMixer(IndividualMixer):
             Individual: The modified individual
         """
         new_values = {}
-        for k, v in individual1:
+        for k, v in individual1.items():
             if k in individual2:
                 keep = (torch.rand_like(v) < self.keep_p).type_as(v)
                 new_values[k] = keep * v + (1 - keep) * individual2[k]
@@ -89,17 +89,28 @@ class StandardPopulationMixer(PopulationMixer):
     def mix(self, population1: Population, population2: Population, state: State) -> Population:
 
         results = {}
-        for k, v in population1:
+        for k, v in population1.items():
             results[k] = self.mix_field(k, v, population2[k], state)
 
         return Population(**results)
+
+# from ..kaku import TopKSelector
+
+# def kbest_elitism(old_population, new_population, k, divide_start, state):
+   
+#     selector = TopKSelector(k=k, dim=0)
+#     index_map = selector(old_population.stack_assessments())
+#     selection = old_population.select_by(index_map)
+#     return selection.join(new_population)
+
+    # for k, x1, x2 in old_population.connect(new_population):
 
 
 class KBestElitism(PopulationMixer):
     """Add the k best from the previous generation to the new generation
     """
 
-    def __init__(self, k: int):
+    def __init__(self, k: int, divide_start: int=1):
         """initializer
 
         Args:
@@ -108,6 +119,7 @@ class KBestElitism(PopulationMixer):
         if k <= 0:
             raise ValueError(f'Argument k must be greater than 0 not {self.k}')
         self.k = k
+        self.divide_start = divide_start
 
     def mix(self, population1: Population, population2: Population, state: State) -> Population:
         """
@@ -119,12 +131,22 @@ class KBestElitism(PopulationMixer):
         Returns:
             Population: the updated new generation
         """
+        # 
+        # assessemnt = assessmetn.reduce_image(2, 'mean') DONE
+        # selector = ProbSelector(dim=2)
+        # selector = TopKSelector(k=2, dim=0)
+        # index_map = selector(assessment)
+        # select = population.select_index(index_map)
+        # selected = index_map(features)
+
+
         
-        assessment = population1.stack_assessments().reduce('samplemeans')
+        assessment = population1.stack_assessments().reduce_image(self.divide_start)
+
 
         _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
         results = {}
-        for k, v in population1:
+        for k, v in population1.items():
             if k in population2:
                 results[k] = torch.cat(
                     [v[indices], population2[k]]
@@ -182,4 +204,3 @@ class SmoothCrossOverBreeder(StandardPopulationMixer):
     
     def spawn(self) -> 'SmoothCrossOverBreeder':
         return SmoothCrossOverBreeder()
-

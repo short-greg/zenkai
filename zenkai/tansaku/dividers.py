@@ -11,6 +11,7 @@ from .core import Population
 from ..kaku import State
 
 
+
 class Divider(ABC):
 
     @abstractmethod

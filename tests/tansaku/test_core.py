@@ -15,9 +15,11 @@ from .fixtures import (assessment1, binary_individual1, binary_individual2,
 class TestIndividual:
 
     def test_get_returns_requested_parameter(self, x1, individual1):
+        print(list(individual1.keys()))
         assert (x1 == individual1['x']).all()
 
     def test_set_parameter_updates_parameter(self, x1, individual1, p1):
+        print(list(individual1.keys()))
         individual1.set_p(p1, "x")
         assert (p1.data == x1).all()
     
@@ -26,7 +28,7 @@ class TestIndividual:
         assert (get_model_parameters(model2) == get_model_parameters(model1)).all()
 
     def test_iter_returns_all_individuals(self, x1, x2, individual2):
-        result = {k: v for k, v in individual2}
+        result = {k: v for k, v in individual2.items()}
         assert result['x1'] is x1
         assert result['x2'] is x2
 
@@ -50,7 +52,7 @@ class TestPopulation:
 
     def test_len_is_correct(self):
         population = Population(x=torch.rand(3, 2, 2), y=torch.rand(3, 3, 3))
-        assert len(population) == 3
+        assert population.k == 3
 
     def test_loop_over_population_returns_three_individuals(self):
         population = Population(x=torch.rand(3, 2, 2), y=torch.rand(3, 3, 3))

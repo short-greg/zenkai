@@ -16,8 +16,8 @@ class TestFitnessProportionalDivider:
         
         divider = dividers.FitnessProportionateDivider(3)
         child1, child2 = divider(population)
-        assert len(child1) == 3
-        assert len(child2) == 3
+        assert child1.k == 3
+        assert child2.k == 3
 
     def test_divides_into_correct_sizes_with_two_dims_for_assessment(self):
 
@@ -28,8 +28,8 @@ class TestFitnessProportionalDivider:
         divider = dividers.FitnessProportionateDivider(3)
         child1, child2 = divider(population)
 
-        assert len(child1) == 3
-        assert len(child2) == 3
+        assert child1.k == 3
+        assert child2.k == 3
     
     def test_divides_into_correct_sizes_when_div_start_is_two(self):
 
@@ -39,8 +39,8 @@ class TestFitnessProportionalDivider:
         
         divider = dividers.FitnessProportionateDivider(3, 2)
         child1, child2 = divider(population)
-        assert len(child1) == 3
-        assert len(child2) == 3
+        assert child1.k == 3
+        assert child2.k == 3
 
     def test_divides_into_correct_sizes_when_div_start_is_two_and_dim_is_1(self):
 
@@ -50,8 +50,8 @@ class TestFitnessProportionalDivider:
         
         divider = dividers.FitnessProportionateDivider(3, 2)
         child1, child2 = divider(population)
-        assert len(child1) == 3
-        assert len(child2) == 3
+        assert child1.k == 3
+        assert child2.k == 3
 
     def test_raises_error_if_negative_assessments(self):
         torch.manual_seed(1)
@@ -74,8 +74,8 @@ class TestFitnessEqualDivider:
         
         divider = dividers.EqualDivider()
         child1, child2 = divider(population)
-        assert len(child1) == 8
-        assert len(child2) == 8
+        assert child1.k == 8
+        assert child2.k == 8
 
     def test_divides_into_correct_sizes_with_two_dims_for_assessment(self):
 
@@ -85,5 +85,5 @@ class TestFitnessEqualDivider:
         
         divider = dividers.EqualDivider()
         child1, child2 = divider(population)
-        assert len(child1) == 8
-        assert len(child2) == 8
+        assert child1.k == 8
+        assert child2.k == 8

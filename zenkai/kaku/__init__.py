@@ -59,6 +59,12 @@ from .machine import (
     forward_dep,
     step_dep
 )
+from .selection import (
+    TopKSelector,
+    Selector,
+    BestSelector,
+    IndexMap
+)
 from .optimize import (
     OPTIM_MAP,
     ParamFilter,

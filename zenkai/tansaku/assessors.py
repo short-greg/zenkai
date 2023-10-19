@@ -75,10 +75,10 @@ class ObjectivePopAssessor(PopAssessor):
         """
 
         sub_population = population.select(self.names)
-        assessment = self.objective('none', **sub_population.as_tensors())
+        assessment = self.objective('none', **sub_population)
         assessment = self.reduce(
-            assessment.value,
-            assessment.maximize
+            assessment,
+            self.objective.maximize
         )
         population.report(assessment)
 
@@ -122,7 +122,7 @@ class CriterionPopAssessor(PopAssessor):
 
         x = IO(*x)
         t = IO(*t)
-        k = len(population)
+        k = population.k
 
         value = self.criterion(x, t, 'none')
         assessment = self.reduce(
@@ -165,7 +165,7 @@ class XPopAssessor(PopAssessor):
         Returns:
             Population: The assessed population
         """
-        k = len(population)
+        k = population.k
 
         x = population.flattened(self.names)
         t = population.flattened(['t'])

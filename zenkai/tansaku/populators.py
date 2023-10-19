@@ -76,7 +76,7 @@ class StandardPopulator(Populator):
             Population: The resulting population
         """
         expanded = {}
-        for key, val in individual:
+        for key, val in individual.items():
             cur = self.populate_field(key, val, state)
             if cur is not None:
                 expanded[key] = cur
@@ -121,7 +121,7 @@ class PopulatorDecorator(Populator):
         """
         populated = self.base_populator(individual)
         expanded = {}
-        for key, val in populated:
+        for key, val in populated.items():
             if key in individual:
                 expanded[key] = self.decorate(key, individual[key], val, state)
 

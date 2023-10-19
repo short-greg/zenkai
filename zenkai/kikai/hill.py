@@ -64,7 +64,7 @@ class HillClimbStepX(FeatureIdxStepX):
             individual,
         )
         
-        population = population.union(populate_t(t.f, len(population)))
+        population = population.union(populate_t(t.f, population.k))
         population = self.assessor(population)
         selected = self.modifier(individual, population)
         update_io(IO(selected["x"], detach=True), x)

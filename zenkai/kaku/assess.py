@@ -379,6 +379,22 @@ class Assessment(object):
             for element in self.value:
                 yield Assessment(element, self.maximize)
 
+    def reduce_image(self, divide_start: int=1, reduction: str='mean') -> 'Assessment':
+
+        if divide_start < 1:
+            raise ValueError(f'Divide start must be greater than or equal to 1 not {divide_start}')
+        shape = self.value.shape
+        size_dim1 = shape[:divide_start]
+        # size_dim2 = shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
+        size1 = math.prod(shape[:divide_start])
+        reshaped = self.value.reshape(size1, -1)
+        reduced = Reduction[reduction].reduce(
+            reshaped, dim=1
+        )
+        return Assessment(
+            reduced.reshape(size_dim1), maximize=self.maximize
+        )
+
     def to_2d(self, divide_start: int=1) -> typing.Tuple['Assessment', torch.Size, torch.Size]:
         """Convert the assessment to a 2d tensor
 

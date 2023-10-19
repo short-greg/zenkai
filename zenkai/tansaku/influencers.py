@@ -13,6 +13,7 @@ from .populators import RepeatPopulator
 from ..kaku import State
 
 
+
 class IndividualInfluencer(ABC):
     """Modifies an Individual based on the Population"""
 
@@ -69,7 +70,6 @@ class JoinIndividual(PopulationInfluencer):
     def join_tensor(self, population: Population, key: str, val: torch.Tensor):
 
         return self(population, Individual(**{key: val}))
-
 
 
 class SlopeInfluencer(IndividualInfluencer):
@@ -141,14 +141,26 @@ class JoinInfluencer(PopulationInfluencer):
         """
         result = {}
 
-        for k, v in population:
+        for k, v in population.items():
             result[k] = torch.cat(
                 [individual[k][None], v], dim=0
             )
         return Population(**result)
     
     def spawn(self) -> 'PopulationLimiter':
-        return PopulationLimiter(self.limit.clone())
+        return JoinInfluencer()
+
+
+def keep_feature(original: Individual, population: Population, limit: torch.LongTensor):
+    
+    result = {}
+
+    for k, v in population.items():
+        individual_v = original[k][None].clone()
+        individual_v = individual_v.repeat(v.size(0), 1, 1)
+        individual_v[:, :, limit] = v[:, :, limit].detach()
+        result[k] = individual_v
+    return Population(**result)
 
 
 class PopulationLimiter(PopulationInfluencer):
@@ -187,7 +199,7 @@ class PopulationLimiter(PopulationInfluencer):
         if self.limit is None:
             return population
 
-        for k, v in population:
+        for k, v in population.items():
             individual_v = individual[k][None].clone()
             individual_v = individual_v.repeat(v.size(0), 1, 1)
             individual_v[:, :, self.limit] = v[:, :, self.limit].detach()

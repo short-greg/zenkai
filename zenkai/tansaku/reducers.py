@@ -17,6 +17,8 @@ from .core import (
 from .exploration import EqualsAssessmentDist
 
 
+
+
 def keep_original(
     candidate: torch.Tensor,
     original: torch.Tensor,
@@ -86,7 +88,7 @@ class StandardReducer(Reducer):
             raise ValueError("Population has not been assessed")
         result = {}
         assessments = population.stack_assessments()
-        for k, v in population:
+        for k, v in population.items():
             result[k] = self.reduce_field(k, v, assessments, state)
         return Individual(**result)
 
@@ -132,7 +134,7 @@ class ReducerDecorator(Reducer):
         selected = self.base_reducer(population)
 
         result = {}
-        for k, v in selected:
+        for k, v in selected.items():
             result[k] = self.decorate(k, v, selected.assessment, state)
         return Individual(**result)
 
