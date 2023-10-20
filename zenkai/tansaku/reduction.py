@@ -192,9 +192,8 @@ class BestSampleReducer(StandardReducer):
         return BestSampleReducer()
 
 
-# Remove state... Need to split this up
 class MomentumReducer(ReducerDecorator):
-    """Reduces the population to momentum
+    """Reduces the population using momentum
     """
 
     def __init__(self, best_reducer: Reducer, momentum: float = None):
@@ -225,59 +224,26 @@ class MomentumReducer(ReducerDecorator):
         Returns:
             torch.Tensor: The decorated reducer
         """
-
-        if self.diff is None and self.cur is None:
-            self.cur = individual
+        my_state = state.mine(self)
+        diff = my_state.get('diff')
+        cur = my_state.get('cur')
+        
+        if diff is None and cur is None:
+            my_state.cur = individual
         elif self.diff is None:
-            self.cur = individual
-            self.diff = individual - self.cur
+            my_state.diff = individual - my_state.cur
+            my_state.cur = individual
         else:
-            self.cur = self.diff + individual
-            self.diff = (individual - self.cur) + self._momentum * self.diff
+            my_state.diff = (individual - my_state.cur) + self._momentum * self.diff
+            my_state.cur = my_state.diff + individual
 
-        return self.cur
+        return my_state.cur
 
     def spawn(self) -> "MomentumReducer":
         return MomentumReducer(self.base_reducer.spawn(), self._momentum)
 
 
-class SlopeReducer(StandardReducer):
-    """
-    'Reduces' the population to the slope from current evaluation.
-    Can be used to add to the value before 'spawning'
-    """
-
-    def __init__(self, momentum: float = None):
-        if momentum is not None and momentum <= 0.0:
-            raise ValueError(
-                f"Momentum must be greater or equal to 0 or None, not {momentum}"
-            )
-        self._momentum = momentum
-        self._slope = None
-
-    def reduce_field(
-        self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
-    ) -> torch.Tensor:
-        # TODO: Add in momentum for slope (?)
-
-        evaluation = assessment.value[:, :, None]
-        ssx = (pop_val**2).sum(0) - (1 / len(pop_val)) * (pop_val.sum(0)) ** 2
-        ssy = (pop_val * evaluation).sum(0) - (1 / len(pop_val)) * (
-            (pop_val.sum(0) * evaluation.sum(0))
-        )
-        slope = ssy / ssx
-        self._slope = (
-            self._slope * self._momentum + slope
-            if self._slope is not None and self._momentum is not None
-            else slope
-        )
-        return self._slope
-
-    def spawn(self) -> "SlopeReducer":
-        return SlopeReducer(self._momentum)
-
-
-class BinaryProbReducer(Reducer):
+class BinaryProbCalculator(Reducer):
     """
     """
 

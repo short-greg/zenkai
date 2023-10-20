@@ -345,6 +345,21 @@ def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.
     return getattr(nn, module)(*args, **kwargs)
 
 
+def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=None, decay: float=0.1) -> torch.Tensor:
+    """Decay the current
+
+    Args:
+        new_v (torch.Tensor): The new value
+        cur_v (typing.Union[torch.Tensor, float, None], optional): The current value. Defaults to None.
+        decay (float, optional): The amount to reduce the current . Defaults to 0.1.
+
+    Returns:
+        torch.Tensor: The updated tensor
+    """
+    if cur_v is None or decay == 0.0:
+        return new_v
+    return decay * cur_v + (1 - decay) * new_v
+
 
 # def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
 #     """Calculate the mean absolute error in correlation

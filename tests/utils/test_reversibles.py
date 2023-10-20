@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai.utils import reversibles
+from zenkai.reverse import reversibles
 
 
 class TestNull:

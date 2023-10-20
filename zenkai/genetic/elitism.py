@@ -1,8 +1,8 @@
-from abc import ABC, abstractmethod
 
-from ..kaku import selection
 import torch
-from .core import Population
+from abc import ABC, abstractmethod
+from ..tansaku.core import Population
+from ..kaku import selection
 
 
 class Elitism(ABC):
@@ -45,22 +45,21 @@ class KBestElitism(Elitism):
         # select = population.select_index(index_map)
         # selected = index_map(features)
         selector = selection.TopKSelector(self.k)
-        
         assessment = population1.stack_assessments().reduce_image(self.divide_start)
         index_map = selector.select(assessment)
 
         population1 = population1.select_index(index_map)
-        # _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
-        results = {}
-        for k, v1, v2 in population1.loop_over(population2, only_my_k=True, union=False):
-            results[k] = torch.cat(
-                [v1, v2]
-            )
 
-        return Population(**results)
+        return population1.pstack(population2)
+        # _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
+        # results = {}
+        # for k, v1, v2 in population1.loop_over(population2, only_my_k=True, union=False):
+        #     results[k] = torch.cat(
+        #         [v1, v2]
+        #     )
+
+        # return Population(**results)
     
     def spawn(self) -> 'KBestElitism':
         return KBestElitism(self.k)
-
-
 

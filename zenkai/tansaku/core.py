@@ -7,7 +7,19 @@ import functools
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from ..kaku import IndexMap
+from ..kaku import IndexMap, Selector
+
+# 1st party
+from abc import ABC, abstractmethod
+import typing
+
+# 3rd party
+import torch
+
+# local
+from .core import Population, Individual, TensorDict
+from ..kaku import State
+
 
 
 # local
@@ -33,62 +45,10 @@ from copy import deepcopy
 # concat()
 # 
 
-def reduce_assessment_dim0(
-    assessment: Assessment, k: int, reduction: str = "mean"
-) -> Assessment:
-    """
-    Args:
-        assessment (Assessment): The assessment for the population
-        k (int): The size of the population
-        reduction (str, optional): The name of the reduction. Defaults to "mean".
-
-    Returns:
-        Assessment: The reduced assessment
-    """
-    return Assessment(
-        Reduction[reduction].sample_reduce(assessment.value.view(k, -1).value)
-    )
 
 
-def reduce_assessment_dim1(
-    assessment: Assessment, k: int, flattened: bool = True, reduction: str = "mean"
-) -> Assessment:
-    """
-    Args:
-        assessment (Assessment): The assessment for the population
-        k (int): The size of the population
-        flattened (bool, optional): Whether the population and batch dimensions are flattened. Defaults to True.
-        reduction (str, optional): The name of the reduction.. Defaults to "mean".
 
-    Returns:
-        Assessment: The reduced assessment
-    """
-
-    if not flattened:
-        value = assessment.value.view(k * assessment.value.size(1))
-    else:
-        value = assessment.value
-
-    return Assessment(Reduction[reduction].sample_reduce(value).view(k, -1))
-
-
-def expand_t(t: IO, k: int) -> IO:
-    """expand the population dimension for t
-
-    Args:
-        t (IO): the target IO
-        k (int): the size of the population
-
-    Returns:
-        IO: the expanded target IO
-    """
-
-    ts = []
-    for t_i in t:
-        ts.append(expand_dim0(t_i, k, True))
-
-    return IO(*ts)
-
+# TODO: Remove
 def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
     """generate a tensor like another
 
@@ -102,30 +62,6 @@ def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typi
         typing.Dict: _description_
     """
     return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
-
-
-def cat_params(
-    params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bool = False
-):
-    """Reorder the parameters for the perturber
-
-    Args:
-        value (torch.Tensor): _description_
-        perturbed (torch.Tensor): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    if params.shape != perturbed_params.shape[1:]:
-        raise RuntimeError(
-            f"The parameters shape {params.shape} does not match "
-            f"the perturbed_params shape {perturbed_params.shape}"
-        )
-    ordered = torch.cat([params[None], perturbed_params])
-    if reorder:
-        reordered = torch.randperm(len(perturbed_params) + 1, device=params.device)
-        return ordered[reordered]
-    return ordered
 
 
 def binary_prob(
@@ -180,7 +116,7 @@ def gaussian_sample(
         )
     return torch.randn_like(mean) * std + mean
 
-
+# TODO: Remove
 def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
     """Retrieve the indices from population. idx is a 2 dimensional tensor"""
     repeat_by = [1] * len(idx.shape)
@@ -191,6 +127,7 @@ def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
     return pop.gather(0, idx)
 
 
+# TODO: Remove
 def select_best_individual(
     pop_val: torch.Tensor, assessment: Assessment
 ) -> torch.Tensor:
@@ -208,6 +145,7 @@ def select_best_individual(
     return pop_val[idx[0]]
 
 
+# TODO: Remove
 def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.Tensor:
     """
     Args:
@@ -317,7 +255,7 @@ class TensorDict(dict):
             result = {}
             for k, v in other:
                 result[k] = f(self, v)
-            return self.spawn(result)
+            return other.spawn(result)
 
         if not isinstance(other, TensorDict):
             result = {}
@@ -338,12 +276,30 @@ class TensorDict(dict):
             **result
         )
 
-    def select_index(self, index_map: IndexMap) -> 'TensorDict':
+    def select_index(self, index_map: IndexMap) -> typing.Union['TensorDict', typing.Tuple['TensorDict']]:
         
-        result = {}
-        for k, v in self.items():
-            result[k] = index_map(v)
-        return self.spawn(result)
+        if len(index_map) == 1:
+            result = {}
+            for k, v in self.items():
+                result[k] = index_map(v)
+            return self.spawn(result)
+
+        result = [{}] * len(index_map)
+        for i in range(len(index_map)):
+            cur_result = {}
+            for k, v in self.items():
+                cur_result[k] = index_map.index_for(i, v)
+            result.append(self.spawn(cur_result))
+
+        return tuple(result)
+    
+    def validate_keys(self, *others) -> bool:
+
+        keys = set(self.keys())
+        for other in others:
+            if len(keys.intersection(other.keys())) != len(keys.union(other.keys())):
+                return False
+        return True
 
     def __add__(self, other: 'TensorDict') -> 'TensorDict':
         return self.binary_op(other, torch.add, False, True)
@@ -359,6 +315,52 @@ class TensorDict(dict):
     def __div__(self, other: 'TensorDict') -> 'TensorDict':
 
         return self.binary_op(other, torch.div, True, False)
+    
+    def __and__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            return False
+
+        return self.binary_op(torch.__and__, other, union=False)
+
+    def __or__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            return False
+        return self.binary_op(torch.__or__, other, union=False)
+    
+    def __or__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            return False
+        return self.binary_op(torch.__or__, other, union=False)
+
+    def __le__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            raise ValueError('All keys must be same in self and other to compute less than')
+
+        return self.binary_op(torch.less_equal, other, union=False)
+
+    def __ge__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            raise ValueError('All keys must be same in self and other to compute greater than')
+
+        return self.binary_op(torch.greater_equal, other, union=False)
+
+    def __lt__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            raise ValueError('All keys must be same in self and other to compute less than')
+
+        return self.binary_op(torch.less, other, union=False)
+
+    def __gt__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            raise ValueError('All keys must be same in self and other to compute greater than')
+
+        return self.binary_op(torch.greater, other, union=False)
+
+    def __eq__(self, other: 'TensorDict') -> 'TensorDict':
+        if not self.validate_keys(other):
+            raise ValueError('All keys must be same in self and other to compute greater than')
+
+        return self.binary_op(torch.equal, other, union=False)
 
     @abstractmethod
     def spawn(self) -> 'TensorDict':
@@ -699,6 +701,9 @@ class Population(TensorDict):
             Population: The resulting population
         """
         result = {}
+        
+        others = [other.populate() if isinstance(other, Individual) else other for other in others]
+
         for v in self.loop_over(*others, only_my_k=False, union=False):
             k = v[0]
             tensors = v[1:]
@@ -718,17 +723,7 @@ class Population(TensorDict):
             Population: the resulting population
         """
 
-        return _popSub(self)
-
-    # def __contains__(self, key: str) -> bool:
-    #     """
-    #     Args:
-    #         key (str): The key to check if the individual contains
-
-    #     Returns:
-    #         bool: If the key is in the parameters
-    #     """
-    #     return key in self._parameters
+        return PopulationIndexer(self)
 
     def _flattened_helper(self, key: str) -> torch.Tensor:
         """
@@ -796,31 +791,6 @@ class Population(TensorDict):
         
         return value
 
-    # def __iter__(self) -> typing.Iterator[torch.Tensor]:
-    #     """
-
-    #     Yields:
-    #         Iterator[typing.Iterator[torch.Tensor]]: Iterate over the values in the population
-    #     """
-    #     for k, v in self._parameters.items():
-    #         yield k, v
-
-    # def as_tensors(self) -> typing.Dict[str, torch.Tensor]:
-    #     """Convert population to a dict of tensors
-
-    #     Returns:
-    #         typing.Dict[str, torch.Tensor]: dictionary of tensors
-    #     """
-
-    #     return {k: v for k, v in self._parameters.items()}
-    
-    def union(self, other: 'Population') -> 'Population':
-
-        return Population(
-            **self,
-            **other
-        )
-
     def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Population':
         """Apply a function to he individual to generate a new individual
 
@@ -851,27 +821,21 @@ class Population(TensorDict):
             **tensor_dict
         )
 
-# def tensor_dict(ts: typing.Iterable[TensorDict], population_priority: bool=True, **values) -> typing.Union[Individual, Population]:
-#     """create a tensordict
 
-#     Args:
-#         ts (TensorDict): The tensor dict to unify
-#         population_priority (bool, optional): _description_. Defaults to True.
+def populate(x: torch.Tensor, k: int, name: str = "t") -> Population:
+    """Convenience function to expand the t dimension along the population dimension
 
-#     Returns:
-#         typing.Union[Individual, Population]: _description_
-#     """
-#     if population_priority:
-#         is_population = functools.reduce(
-#             lambda t, cur: cur or isinstance(t, Population), ts
-#         )
-#     else:
-#         is_population = functools.reduce(
-#             lambda t, cur: cur and isinstance(t, Population), ts
-#         )
-#     if is_population:
-#         return Population(**values)
-#     return Individual(**values)
+    Args:
+        t (torch.Tensor): the tensor to expand
+        k (int): the size of the population
+        name (str, optional): the name of the value. Defaults to "t".
+
+    Returns:
+        Population: The result of the expansion
+    """
+    individual = Individual(**{name: x})
+    populator = individual.populate(k)
+    return populator(x)
 
 
 class Objective(ABC):
@@ -923,7 +887,7 @@ class CompoundConstraint(Constraint):
         return result
 
 
-class _popSub(object):
+class PopulationIndexer(object):
 
     def __init__(self, population: Population):
 
@@ -934,9 +898,113 @@ class _popSub(object):
         return Population(**{k: v[idx] for k, v in self._population.items()})
 
 
+def keep_mixer(original: TensorDict, updated: TensorDict, keep_p: float) -> typing.Union[Population, Individual]:
+    new_values = {}
+    for k, original_v, updated_v in original.loop_over(updated, union=False):
+        keep = (torch.rand_like(original_v) < keep_p).type_as(original_v)
+        new_values[k] = keep * original_v + (1 - keep) * updated_v
+
+    return original.spawn(new_values)
+
+
+def keep_feature(original: Individual, population: Population, limit: torch.LongTensor):
+    
+    result = {}
+
+    for k, v in population.items():
+        individual_v = original[k][None].clone()
+        individual_v = individual_v.repeat(v.size(0), 1, 1)
+        individual_v[:, :, limit] = v[:, :, limit].detach()
+        result[k] = individual_v
+    return Population(**result)
+
+
+
+# # TODO: Remove
+# def cat_params(
+#     params: torch.Tensor, perturbed_params: torch.Tensor, reorder: bool = False
+# ):
+#     """Reorder the parameters for the perturber
+
+#     Args:
+#         value (torch.Tensor): _description_
+#         perturbed (torch.Tensor): _description_
+
+#     Returns:
+#         _type_: _description_
+#     """
+#     if params.shape != perturbed_params.shape[1:]:
+#         raise RuntimeError(
+#             f"The parameters shape {params.shape} does not match "
+#             f"the perturbed_params shape {perturbed_params.shape}"
+#         )
+#     ordered = torch.cat([params[None], perturbed_params])
+#     if reorder:
+#         reordered = torch.randperm(len(perturbed_params) + 1, device=params.device)
+#         return ordered[reordered]
+#     return ordered
+
+
+# # TODO: Remove
+# def expand_t(t: IO, k: int) -> IO:
+#     """expand the population dimension for t
+
+#     Args:
+#         t (IO): the target IO
+#         k (int): the size of the population
+
+#     Returns:
+#         IO: the expanded target IO
+#     """
+
+#     ts = []
+#     for t_i in t:
+#         ts.append(expand_dim0(t_i, k, True))
+
+#     return IO(*ts)
+
+
+# # TODO: Remove
+# def reduce_assessment_dim1(
+#     assessment: Assessment, k: int, flattened: bool = True, reduction: str = "mean"
+# ) -> Assessment:
+#     """
+#     Args:
+#         assessment (Assessment): The assessment for the population
+#         k (int): The size of the population
+#         flattened (bool, optional): Whether the population and batch dimensions are flattened. Defaults to True.
+#         reduction (str, optional): The name of the reduction.. Defaults to "mean".
+
+#     Returns:
+#         Assessment: The reduced assessment
+#     """
+
+#     if not flattened:
+#         value = assessment.value.view(k * assessment.value.size(1))
+#     else:
+#         value = assessment.value
+
+#     return Assessment(Reduction[reduction].sample_reduce(value).view(k, -1))
 
 
 # TODO:
 # add functional
 # cat, topk, math
 # 
+
+# TODO: Remove
+# def reduce_assessment_dim0(
+#     assessment: Assessment, k: int, reduction: str = "mean"
+# ) -> Assessment:
+#     """
+#     Args:
+#         assessment (Assessment): The assessment for the population
+#         k (int): The size of the population
+#         reduction (str, optional): The name of the reduction. Defaults to "mean".
+
+#     Returns:
+#         Assessment: The reduced assessment
+#     """
+#     return Assessment(
+#         Reduction[reduction].sample_reduce(assessment.value.view(k, -1).value)
+#     )

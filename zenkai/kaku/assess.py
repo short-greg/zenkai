@@ -166,6 +166,10 @@ class Assessment(object):
             be 0
         """
         return len(self.value) if self.value.dim() != 0 else 0
+    
+    @property
+    def shape(self) -> torch.Size:
+        return self.value.shape
 
     def update_direction(self, maximize: bool) -> 'Assessment':
         """Change the direction of the assessment to be maximize of minimize

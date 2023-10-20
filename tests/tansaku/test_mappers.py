@@ -97,7 +97,7 @@ class TestGaussianMutator:
 
     def test_binary_mapper_generates_population_after_one(self):
 
-        mapper = tansaku.GaussianPerturber(
+        mapper = tansaku.GaussianNoiser(
             4
         )
         population = tansaku.Population(
@@ -108,7 +108,7 @@ class TestGaussianMutator:
     
     def test_binary_mapper_generates_population_after_two(self):
 
-        mapper = tansaku.GaussianPerturber(
+        mapper = tansaku.GaussianNoiser(
             4
         )
         population = tansaku.Population(
@@ -126,7 +126,7 @@ class TestBinaryMutator:
 
     def test_binary_mutator_generates_population_after_one(self):
 
-        mapper = tansaku.BinaryPerturber(
+        mapper = tansaku.BinaryNoiser(
             4, signed_neg=False
         )
         population = tansaku.Population(
@@ -137,7 +137,7 @@ class TestBinaryMutator:
     
     def test_binary_mutator_generates_population_after_two_with_signed_neg(self):
 
-        mapper = tansaku.BinaryPerturber(
+        mapper = tansaku.BinaryNoiser(
             4, signed_neg=True
         )
         population = tansaku.Population(

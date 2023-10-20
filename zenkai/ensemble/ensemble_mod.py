@@ -11,7 +11,7 @@ from abc import abstractmethod, abstractproperty
 from torch.nn.functional import one_hot
 
 # local
-from .modules import sign_ste, binary_ste
+from ..utils.modules import sign_ste, binary_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:

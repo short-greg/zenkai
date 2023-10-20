@@ -16,6 +16,26 @@ from ..kaku import (
 )
 
 
+# 1st part
+import typing
+from abc import ABC, abstractmethod
+import math
+
+# 3rd party
+import torch
+
+# local
+from ..tansaku import (
+    Individual,
+    Population,
+    binary_prob,
+    cat_params,
+)
+from ..kaku import State
+from .ensemble import Voter
+
+
+
 class EnsembleLearner(LearningMachine):
     """Base class for A LearningMachine that optimizes over an ensemble of otehr machines
     """
@@ -82,3 +102,37 @@ class EnsembleLearnerVoter(nn.Module):
         if len(y) > 1:
             return y.u
         return y.f
+
+
+class VoterPopulator(object):
+    """Populator that uses multiple outputs from votes
+    """
+    
+    def __init__(self, voter: Voter, x_name: str):
+        """initializer
+
+        Args:
+            voter (Voter): the module to use for voting
+            x_name (str): the name of the input into x
+        """
+        self.voter = voter
+        self.x_name = x_name
+
+    def __call__(self, individual: Individual) -> Population:
+        """Populator function
+
+        Args:
+            individual (Individual): the individual to populate based on
+
+        Returns:
+            Population: The resulting population
+        """
+        x = individual[self.x_name]
+        y = self.voter(x)
+        result = {self.x_name: y}
+        return Population(**result)
+    
+    def spawn(self) -> 'VoterPopulator':
+        return VoterPopulator(
+            self.voter, self.x_name
+        )

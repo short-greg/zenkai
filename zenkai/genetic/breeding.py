@@ -1,8 +1,9 @@
 import typing
 from abc import ABC, abstractmethod
-import torch
 
-from .core import Population
+from ..kaku import selection
+import torch
+from ..tansaku.core import Population
 
 
 class CrossOver(ABC):
@@ -65,3 +66,4 @@ class SmoothCrossOver(CrossOver):
     
     def spawn(self) -> 'SmoothCrossOver':
         return SmoothCrossOver()
+

@@ -5,7 +5,7 @@ from .modules import (
     Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout,
     binary_ste, sign_ste, Clamp
 )
-from .reversibles import (
+from ..reverse.reversibles import (
     BatchNorm1DReversible,
     LeakyReLUInvertable,
     Neg1ToZero,

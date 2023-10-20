@@ -6,7 +6,7 @@ import torch
 
 # local
 from ..kaku import IO, LearningMachine, Criterion, Assessment, State
-from .core import Population, expand_t, reduce_assessment_dim1, Objective, TensorDict
+from .core import Population, expand_t, Objective, TensorDict
 
 
 class Assessor(ABC):

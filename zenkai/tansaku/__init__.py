@@ -20,7 +20,8 @@ from .core import (
     Objective,
     Constraint,
     CompoundConstraint,
-    TensorDict
+    TensorDict,
+    populate,
 )
 from .optimize import (
     Itadaki,
@@ -51,29 +52,24 @@ from .exploration import (
     expand_k,
     remove_noise,
 )
-from .dividers import (
-    FitnessProportionateDivider,
-    Divider,
-    EqualDivider
-)
-from .crossover import (
-    CrossOver,
-    SmoothCrossOver,
-    BinaryRandCrossOver
-)
-from .mixers import (
-    KBestElitism,
-    keep_mixer
-)
+# from .genetic import (
+#     CrossOver,
+#     SmoothCrossOver,
+#     BinaryRandCrossOver,
+#     FitnessProportionateDivider,
+#     Divider,
+#     EqualDivider,
+#     KBestElitism,
+#     Elitism
+# )
+# from .mixers import (
+#     keep_mixer
+# )
 from .influencers import (
-    IndividualInfluencer,
-    PopulationLimiter,
-    SlopeInfluencer,
-    JoinInfluencer
+    SlopeUpdater,
 )
 from .populators import (
     VoterPopulator,
-    populate,
     # ConservativePopulator,
     # GaussianPopulator,
     # Populator,
@@ -82,7 +78,7 @@ from .populators import (
     # SimpleGaussianPopulator,
     # StandardPopulator,
 )
-from .reducers import (
+from .reduction import (
     BestSampleReducer,
     BestIndividualReducer,
     BinaryGaussianReducer,
@@ -90,14 +86,13 @@ from .reducers import (
     MomentumReducer,
     Reducer,
     ReducerDecorator,
-    SlopeReducer,
     StandardReducer,
     keep_original,
 )
 from .mappers import (
     GaussianSamplePerturber,
     BinarySamplePerturber,
-    GaussianPerturber,
-    BinaryPerturber,
+    GaussianNoiser,
+    BinaryNoiser,
 
 )

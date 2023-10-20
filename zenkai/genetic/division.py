@@ -1,3 +1,4 @@
+
 # 1st party
 from abc import ABC, abstractmethod
 import typing
@@ -7,9 +8,8 @@ import numpy as np
 import torch
 
 # local
-from .core import Population
-from ..kaku import State
-
+from ..tansaku.core import Population
+from ..kaku import State, selection
 
 
 class Divider(ABC):
@@ -28,6 +28,7 @@ class Divider(ABC):
         pass
 
 
+# TODO: REMOVE
 def select_parents(population: Population, prob: torch.Tensor, n_divisions: int):
     parents1, parents2 = [], []
     
@@ -87,18 +88,32 @@ class FitnessProportionateDivider(Divider):
 
         # calc_probs() 
         assessment = population.stack_assessments()
-        assessment, size1, _ = assessment.to_2d(self._divide_start)
-        assessment = assessment.mean(dim=-1)
-        assessment = assessment.view(size1)
-        loss = assessment.value
-        if not assessment.maximize:
-            loss = 1 / (0.01 + loss)
-        prob = (loss / loss.sum(dim=0, keepdim=True))
-        if (prob < 0.0).any():
-            raise ValueError('All assessments must be greater than 0 to use this divider')
-        return select_parents(
-            population, prob, self.n_divisions
-        )
+
+        # shape = assessment.shape
+        reduced = assessment.reduce_image(self._divide_start)
+        selector = selection.ParentSelector(self.n_divisions, self._divide_start, 0, assessment.maximize)
+        index_map = selector.select(reduced)
+        
+        return population.select_index(index_map)
+        # parents1, parents2 = {}, {}
+        # for k, v in population.items():
+        #     parents1[k], parents2[k] = index_map(v)
+        # return 
+        # # assessment, size1, _ = assessment.to_2d(self._divide_start)
+        # # assessment = assessment.mean(dim=-1)
+        # # assessment = assessment.view(size1)
+        # # loss = assessment.value
+        # # if not assessment.maximize:
+        # #     loss = 1 / (0.01 + loss)
+        # # prob = (loss / loss.sum(dim=0, keepdim=True))
+        # # if (prob < 0.0).any():
+        # #     raise ValueError('All assessments must be greater than 0 to use this divider')
+        # selection.P
+        
+        
+        # return select_parents(
+        #     population, prob, self.n_divisions
+        # )
 
     def spawn(self) -> Divider:
         return FitnessProportionateDivider(self.n_divisions)

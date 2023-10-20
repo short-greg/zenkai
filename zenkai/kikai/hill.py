@@ -9,7 +9,7 @@ from ..kaku import (
 )
 from ..tansaku.assessors import XPopAssessor
 from ..tansaku.core import Individual
-from ..tansaku.influencers import SlopeInfluencer, PopulationLimiter
+from ..tansaku.influencers import SlopeUpdater, PopulationLimiter
 from ..tansaku.populators import populate
 
 
