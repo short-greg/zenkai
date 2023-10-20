@@ -7,9 +7,11 @@ import typing
 import numpy as np
 import torch
 
+from ..assess import selection
+
 # local
 from ..tansaku.core import Population
-from ..kaku import State, selection
+from ..kaku import State
 
 
 class Divider(ABC):

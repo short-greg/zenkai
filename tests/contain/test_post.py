@@ -1,7 +1,7 @@
 import torch
 
 from zenkai import IO, State
-from zenkai.kikai import post
+from zenkai.contain import post
 from ..kaku.test_machine import SimpleLearner
 from zenkai.utils import get_model_parameters
 

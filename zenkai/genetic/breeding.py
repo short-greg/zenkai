@@ -1,7 +1,7 @@
 import typing
 from abc import ABC, abstractmethod
 
-from ..kaku import selection
+from ..assess import selection
 import torch
 from ..tansaku.core import Population
 

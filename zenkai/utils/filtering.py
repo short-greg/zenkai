@@ -8,7 +8,7 @@ from torch import nn
 
 # local
 from . import utils
-from .reversibles import Reversible
+from ..reverse.reversibles import Reversible
 
 
 class Stride2D(nn.Module):

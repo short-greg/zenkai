@@ -243,7 +243,7 @@ class MomentumReducer(ReducerDecorator):
         return MomentumReducer(self.base_reducer.spawn(), self._momentum)
 
 
-class BinaryProbCalculator(Reducer):
+class BinaryProbReducer(Reducer):
     """
     """
 

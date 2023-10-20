@@ -65,7 +65,7 @@ from .exploration import (
 # from .mixers import (
 #     keep_mixer
 # )
-from .influencers import (
+from .slope import (
     SlopeUpdater,
 )
 from .populators import (
@@ -89,7 +89,7 @@ from .reduction import (
     StandardReducer,
     keep_original,
 )
-from .mappers import (
+from .distortion import (
     GaussianSamplePerturber,
     BinarySamplePerturber,
     GaussianNoiser,

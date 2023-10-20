@@ -11,7 +11,7 @@ from .assess import (
     #assess_dict,
     reduce_assessment
 )
-from .layer_assess import (
+from ..assess.layer_assess import (
     LayerAssessor, 
     StepAssessHook, 
     # union_pre_and_post, 
@@ -59,7 +59,7 @@ from .machine import (
     forward_dep,
     step_dep
 )
-from .selection import (
+from ..assess.selection import (
     TopKSelector,
     Selector,
     BestSelector,

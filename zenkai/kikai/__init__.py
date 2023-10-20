@@ -28,7 +28,7 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 """
 
 # from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
-from .grad import (
+from ..grad.grad import (
     GradLearner,
     GradLoopLearner,
     GradLoopStepTheta,
@@ -39,7 +39,7 @@ from .grad import (
     GradUpdater,
     update_x,
 )
-from .least_squares import (
+from ..bio.least_squares import (
     LeastSquaresLearner,
     LeastSquaresRidgeSolver,
     LeastSquaresSolver,
@@ -48,8 +48,8 @@ from .least_squares import (
     LeastSquaresStepX,
     GradLeastSquaresLearner
 )
-from .reversible import ReversibleMachine, BackTarget, reverse
-from .scikit import (
+from ..reverse.reversible import ReversibleMachine, BackTarget, reverse
+from ..sk.scikit import (
     ScikitLimitGen,
     ScikitEstimator, ScikitRegressor,
     ScikitMulticlass, ScikitBinary,
@@ -57,21 +57,21 @@ from .scikit import (
     ScikitStepTheta, SciClone
 
 )
-from .iterable import (
+from ..contain.iterable import (
     IterStepTheta, 
     IterHiddenStepTheta,
     IterStepX
 )
-from .target_prop import (
+from ..bio.target_prop import (
     TargetPropStepX, TargetPropObjective, RegTargetPropObjective,
     StandardTargetPropObjective
 )
-from .ensemble import EnsembleLearner, EnsembleLearnerVoter
-from .feedback_alignment import (
+from ..ensemble.ensemble import EnsembleLearner, EnsembleLearnerVoter
+from ..bio.feedback_alignment import (
     BStepX, FALinearLearner, DFALearner, FALearner,
     LinearDFABuilder, LinearFABuilder
 )
-from .pipelining import (
+from ..contain.pipelining import (
     Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
 )
-from .post import StackPostStepTheta
+from ..contain.post import StackPostStepTheta

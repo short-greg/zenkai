@@ -1,7 +1,7 @@
 import torch
 
 from zenkai.tansaku.core import Individual
-from zenkai.tansaku.influencers import (SlopeUpdater, PopulationLimiter)
+from zenkai.tansaku.slope import (SlopeUpdater, PopulationLimiter)
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2, binary_x,

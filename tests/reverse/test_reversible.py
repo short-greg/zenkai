@@ -5,12 +5,12 @@ from zenkai import IO, State, Criterion
 from zenkai.kikai import ReversibleMachine
 from ..kaku.test_machine import SimpleLearner
 from zenkai.utils import get_model_parameters
-from zenkai.utils import reversibles
+from zenkai.reverse import reversibles
 import torch
 import torch.nn as nn
 from zenkai.kaku import IO, State, Assessment, LearningMachine, Criterion, ThLoss
 
-from zenkai.kikai.reversible import BackTarget
+from zenkai.reverse.reversible import BackTarget
 from zenkai.utils import Lambda
 
 

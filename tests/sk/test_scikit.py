@@ -6,9 +6,9 @@ from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
 from zenkai.kaku import IO, RandomFeatureIdxGen, State, StepX, Criterion
-from zenkai.kikai.scikit import (ScikitBinary, ScikitLimitGen,
+from zenkai.sk.scikit import (ScikitBinary, ScikitLimitGen,
                                       ScikitMachine, ScikitRegressor)
-from zenkai.kikai.scikit import ScikitBinary, ScikitRegressor
+from zenkai.sk.scikit import ScikitBinary, ScikitRegressor
 
 
 class NullStepX(StepX):

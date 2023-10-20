@@ -1,6 +1,6 @@
 import torch
 
-from ..kaku.selection import Selector, IndexMap
+from ..assess.selection import Selector, IndexMap
 from ..kaku.assess import Assessment
 
 

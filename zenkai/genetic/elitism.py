@@ -2,7 +2,7 @@
 import torch
 from abc import ABC, abstractmethod
 from ..tansaku.core import Population
-from ..kaku import selection
+from ..assess import selection
 
 
 class Elitism(ABC):

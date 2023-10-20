@@ -1,5 +1,5 @@
 from zenkai.tansaku.core import Individual, Population
-from zenkai.tansaku.reducers import (BestSampleReducer,
+from zenkai.tansaku.reduction import (BestSampleReducer,
                                       BestIndividualReducer,
                                       BinaryGaussianReducer, MomentumReducer,
                                       SlopeReducer)

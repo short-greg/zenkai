@@ -23,7 +23,7 @@ from ..kaku import (
     AccLearningMachine
 )
 from ..utils import to_np, to_th_as
-from .grad import GradStepTheta
+from ..grad.grad import GradStepTheta
 
 
 class LeastSquaresSolver(ABC):

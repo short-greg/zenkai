@@ -8,7 +8,7 @@ from ..kaku import (
     OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
     Builder, UNDEFINED, Var, Factory
 )
-from .grad import GradUpdater
+from ..grad.grad import GradUpdater
 
 from ..utils import get_model_grads, set_model_grads, Null
 

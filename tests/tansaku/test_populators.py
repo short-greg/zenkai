@@ -3,7 +3,7 @@ import pytest
 import torch
 from torch import nn
 from zenkai import Assessment
-from zenkai.tansaku.core import Individual, TensorDict
+from zenkai.tansaku.core import Individual, Population
 from zenkai.tansaku.populators import VoterPopulator 
 # (BinaryPopulator, ConservativePopulator,
 #                                        GaussianPopulator, RepeatPopulator, )

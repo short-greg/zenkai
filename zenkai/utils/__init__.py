@@ -17,7 +17,7 @@ from ..reverse.reversibles import (
     TargetReverser,
     ZeroToNeg1,
 )
-from .ensemble import (
+from ..ensemble.ensemble_mod import (
     weighted_votes,
     VoteAggregator,
     MeanVoteAggregator,
