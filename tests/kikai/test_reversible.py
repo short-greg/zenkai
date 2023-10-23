@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from zenkai import IO, State, Criterion
-from zenkai.kikai import ReversibleMachine
+from zenkai.kikai.reversible import ReversibleMachine, BackTarget
 from ..kaku.test_machine import SimpleLearner
 from zenkai.utils import get_model_parameters
 from zenkai.mod import reversible
@@ -10,40 +10,37 @@ import torch
 import torch.nn as nn
 from zenkai.kaku import IO, State, Assessment, LearningMachine, Criterion, ThLoss
 
-from zenkai.mod.reversible import BackTarget
-from zenkai.utils import Lambda
-
 
 
 class TestReversibleMachine:
 
     def test_step_x_reverses(self):
 
-        reversible = ReversibleMachine(
+        machine = ReversibleMachine(
             reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
-        assert (reversible.step_x(x, t, State()).f == x.f).all()
+        assert (machine.step_x(x, t, State()).f == x.f).all()
 
     def test_step_x_results_in_valid_values(self):
 
-        reversible = ReversibleMachine(
+        machine = ReversibleMachine(
             reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
-        reversed = reversible.step_x(x, t, State()).f
+        reversed = machine.step_x(x, t, State()).f
         assert ((reversed == -1) | (reversed == 1)).all()
 
     def test_forward_converts_to_correct_value(self):
 
-        reversible = ReversibleMachine(
+        machine = ReversibleMachine(
             reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = (x.f + 1) / 2
-        y = reversible(x, State()).f
+        y = machine(x, State()).f
         assert (y == t).all()
 
 

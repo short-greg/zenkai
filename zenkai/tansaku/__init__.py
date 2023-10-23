@@ -5,37 +5,9 @@ from .assessors import (
     ObjectivePopAssessor
 )
 from .functional import (
-    Individual,
-    Population,
-    binary_prob,
-    gather_idx_from_population,
-    gaussian_sample,
-    select_best_sample,
-    select_best_individual,
-    gen_like,
-    Objective,
-    Constraint,
-    CompoundConstraint,
-    TensorDict,
-    populate,
+    keep_feature,
+    keep_mixer
 )
-from ..mod.noise import (
-    AssessmentDist,
-    EqualsAssessmentDist,
-    Explorer,
-    ExplorerNoiser,
-    ExplorerSelector,
-    GaussianNoiser,
-    Indexer,
-    ModuleNoise,
-    NoiseReplace,
-    RandSelector,
-    RepeatSpawner,
-    collapse_k,
-    expand_k,
-    remove_noise,
-)
-
 # from .mixers import (
 #     keep_mixer
 # )
@@ -64,6 +36,11 @@ from .distortion import (
     Noiser,
     GaussianNoiser,
     BinaryNoiser,
+)
+from .breeding import (
+    CrossOver,
+    SmoothCrossOver,
+    BinaryRandCrossOver
 )
 from .slope import (
     SlopeUpdater,

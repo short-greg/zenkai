@@ -10,6 +10,7 @@ from zenkai import utils
 # local
 from zenkai.kaku import IO, IDable, Assessment, State
 from zenkai.kaku import machine as core
+from zenkai.kaku import assess
 
 
 class Base:
@@ -244,7 +245,7 @@ class SimpleLearner(core.LearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
@@ -277,7 +278,7 @@ class SimpleAccLearner(core.AccLearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
@@ -495,6 +496,9 @@ class TestMyState:
         state = core.State()
         state.add_sub(x, "sub")
         mine = state.mine(x)
+        print(state.subs(x))
+        print(mine.subs)
+        print(state.sub(x, 'sub', to_add=False))
         assert mine.subs['sub'] is state.sub(x, 'sub')
 
 
@@ -503,7 +507,7 @@ class DependentLearner(core.LearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = core.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:

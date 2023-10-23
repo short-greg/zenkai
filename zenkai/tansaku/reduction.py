@@ -7,7 +7,7 @@ import torch
 # local
 from ..kaku import Assessment, State
 from ..utils import to_signed_neg
-from .functional import (
+from ..kaku import (
     Individual,
     Population,
 )

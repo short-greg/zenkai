@@ -9,7 +9,8 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 from .. import kaku
-from ..mod import module_factory, Lambda
+from ..mod import Lambda
+from ..utils import module_factory
 
 # Local
 from ..kaku import (
@@ -25,7 +26,8 @@ from ..kaku import (
     step_dep,
     ThLoss
 )
-from ..utils import get_model_grads, set_model_grads, Null
+from ..utils import get_model_grads, set_model_grads
+from ..mod import Null
 
 
 class BackTarget(LearningMachine):

@@ -18,13 +18,13 @@ from ..kaku import (
     Assessment,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
-    FeatureLimitGen,
     Idx,
     LearningMachine,
     Criterion,
     State,
 )
-from ..mod.scikit import ScikitEstimator
+from ..mod import ScikitEstimator
+from .utils import FeatureLimitGen
 
 
 class ScikitStepTheta(FeatureIdxStepTheta):

@@ -2,7 +2,7 @@ import torch
 
 from zenkai import utils
 from zenkai.kaku import IO, State
-from zenkai.contain.iterable import IterStepTheta, IterStepX, IterHiddenStepTheta
+from zenkai.kikai.iterable import IterStepTheta, IterStepX, IterHiddenStepTheta
 from ..kaku.test_machine import SimpleLearner
 
 

@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from zenkai.kaku import OptimFactory, IO, State
 from zenkai.utils import get_model_parameters
-from zenkai.bio import feedback_alignment
+from zenkai.kikai import feedback_alignment
 
 
 class TestFA:

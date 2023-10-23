@@ -22,11 +22,10 @@ import torch
 
 # local
 from ...kaku import State, Population, Individual, TensorDict
-from . import gahter_idx_from_population
 
 
 # local
-from . import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
+from ...utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
 
 from ...kaku import IO, Assessment
 from .generate import expand_k
@@ -197,6 +196,23 @@ class IndexMap(object):
             return result[0]
         return result
 
+    def select_index(self, tensor_dict: TensorDict) -> typing.Union['TensorDict', typing.Tuple['TensorDict']]:
+        
+        if len(self) == 1:
+            result = {}
+            for k, v in tensor_dict.items():
+                result[k] = self(v)
+            return tensor_dict.spawn(result)
+
+        result = []
+        for i in range(len(self.index)):
+            cur_result = {}
+            for k, v in tensor_dict.items():
+                cur_result[k] = self.index_for(i, v)
+            result.append(tensor_dict.spawn(cur_result))
+        return tuple(result)
+
+
 
 class Selector(ABC):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0 so must be reshaped
@@ -213,14 +229,13 @@ class Selector(ABC):
 
 class TopKSelector(Selector):
 
-    def __init__(self, k: int, dim: int=0, largest: bool=True):
+    def __init__(self, k: int, dim: int=0):
         self.k = k
-        self.largest = largest
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
         
-        _, topk = assessment.value.topk(self.k, dim=self.dim, largest=self.largest)
+        _, topk = assessment.value.topk(self.k, dim=self.dim, largest=assessment.maximize)
         return IndexMap(topk, dim=0)
 
 
@@ -228,13 +243,58 @@ class BestSelector(Selector):
 
     def __init__(self, k: int, dim: int=0, largest: bool=True):
         self.k = k
-        self.largest = largest
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
         
-        if self.largest:
+        if assessment.maximize:
             _, best = assessment.value.max(self.k, dim=self.dim, keepdim=True)
         else:
             _, best = assessment.value.min(self.k, dim=self.dim, keepdim=True)
         return IndexMap(best, dim=0)
+
+
+class ParentSelector(Selector):
+
+    def __init__(self, k: int, divide_from: int=1, dim: int=0, largest: bool=True):
+        self.k = k
+        self.largest = largest
+        self.dim = dim
+        self.divide_from = divide_from
+    
+    def select(self, assessment: Assessment) -> IndexMap:
+        
+        base_shape = assessment.shape
+        loss = assessment.value
+        if not assessment.maximize:
+            loss = 1 / (0.01 + loss)
+        prob = (loss / loss.sum(dim=0, keepdim=True))
+        if (prob < 0.0).any():
+            raise ValueError('All assessments must be greater than 0 to use this divider')
+        
+        # Figure out how to divide this up
+        # (population, ...)
+        # select()
+        if prob.dim() > 1:
+            r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
+            prob = prob.transpose(*r)
+
+        # (..., population)
+        prob = prob[None]
+
+        # (1, ..., population)
+        prob = prob.repeat(self.k, *[1] * len(prob.shape))
+        # (n_divisions * ..., population)
+        prob = prob.reshape(-1, prob.shape[-1])
+        parents1, parents2 = torch.multinomial(
+            prob, 2, False
+        ).transpose(1, 0)
+
+        parents1 = parents1.reshape(self.k, *base_shape[1:])
+        parents2 = parents2.reshape(self.k, *base_shape[1:])
+        # (n_divisions * ...), (n_divisions * ...)
+
+        # assessment = assessment.reduce_image(self.divide_from)
+
+        return IndexMap(parents1, parents2, dim=0)
+

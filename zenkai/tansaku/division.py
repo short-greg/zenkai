@@ -10,7 +10,7 @@ import torch
 from .utils import select as selection
 
 # local
-from .functional import Population
+from ..kaku import Population
 from ..kaku import State
 
 
@@ -93,10 +93,12 @@ class FitnessProportionateDivider(Divider):
 
         # shape = assessment.shape
         reduced = assessment.reduce_image(self._divide_start)
+        
         selector = selection.ParentSelector(self.n_divisions, self._divide_start, 0, assessment.maximize)
         index_map = selector.select(reduced)
         
-        return population.select_index(index_map)
+        result = index_map.select_index(population)
+        return Population(**result[0]), Population(**result[1])
         # parents1, parents2 = {}, {}
         # for k, v in population.items():
         #     parents1[k], parents2[k] = index_map(v)

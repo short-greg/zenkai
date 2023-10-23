@@ -2,11 +2,10 @@ from abc import ABC, abstractmethod
 
 from zenkai.kaku import State
 
-from .functional import Individual, Population 
 # gen_like, TensorDict, decay
 from ..kaku import TensorDict
 
-from ..kaku import State
+from ..kaku import State, Individual, Population
 import torch
 import typing
 from dataclasses import dataclass

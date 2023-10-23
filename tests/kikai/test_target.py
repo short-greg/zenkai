@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from zenkai import IO, ThLoss
-from zenkai.bio import target_prop
+from zenkai.kikai import target_prop
 
 
 class TestStandardTargetPropLoss:

@@ -25,7 +25,7 @@ from ...kaku import State, Population, Individual, TensorDict
 
 
 # local
-from . import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
+from ...utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
 
 from ...kaku import IO, Assessment
 from ...kaku import Reduction, Criterion, State, Criterion

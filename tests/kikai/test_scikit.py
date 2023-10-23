@@ -5,10 +5,11 @@ import torch
 from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
-from zenkai.kaku import IO, RandomFeatureIdxGen, State, StepX, Criterion
-from zenkai.contain.scikit import (ScikitBinary, ScikitLimitGen,
-                                      ScikitMachine, ScikitRegressor)
-from zenkai.contain.scikit import ScikitBinary, ScikitRegressor
+from zenkai.kaku import IO, State, StepX, Criterion
+from zenkai.kikai.scikit import (ScikitLimitGen,
+                                      ScikitMachine)
+from zenkai.mod.scikit import ScikitBinary, ScikitRegressor
+from zenkai.kikai.utils import RandomFeatureIdxGen
 
 
 class NullStepX(StepX):

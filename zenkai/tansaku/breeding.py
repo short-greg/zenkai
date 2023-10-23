@@ -1,9 +1,8 @@
 import typing
 from abc import ABC, abstractmethod
 
-from .utils import select as selection
 import torch
-from .functional import Population
+from ..kaku import Population
 
 
 class CrossOver(ABC):

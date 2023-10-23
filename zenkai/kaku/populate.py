@@ -7,7 +7,6 @@ import functools
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from ..kaku import IndexMap, Selector
 
 # 1st party
 from abc import ABC, abstractmethod
@@ -136,23 +135,6 @@ class TensorDict(dict):
         return self.__class__(
             **result
         )
-
-    def select_index(self, index_map: IndexMap) -> typing.Union['TensorDict', typing.Tuple['TensorDict']]:
-        
-        if len(index_map) == 1:
-            result = {}
-            for k, v in self.items():
-                result[k] = index_map(v)
-            return self.spawn(result)
-
-        result = [{}] * len(index_map)
-        for i in range(len(index_map)):
-            cur_result = {}
-            for k, v in self.items():
-                cur_result[k] = index_map.index_for(i, v)
-            result.append(self.spawn(cur_result))
-
-        return tuple(result)
     
     def validate_keys(self, *others) -> bool:
 
@@ -568,7 +550,7 @@ class Population(TensorDict):
         for v in self.loop_over(*others, only_my_k=False, union=False):
             k = v[0]
             tensors = v[1:]
-            result[k] = torch.stack(tensors)
+            result[k] = torch.vstack(tensors)
         return Population(
             **result
         )

@@ -64,6 +64,7 @@ from .objective import (
     FuncObjective,
     CriterionObjective,
     ValueConstraint,
+    Objective,
     impose,
     LTE,
     LT,

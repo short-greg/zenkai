@@ -7,7 +7,7 @@ import functools
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from ..kaku import IndexMap, Selector
+from .utils import IndexMap, Selector
 
 # 1st party
 from abc import ABC, abstractmethod

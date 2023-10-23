@@ -1,7 +1,7 @@
 import zenkai
 import torch.nn as nn
 from zenkai import Assessment, State, IO, AccLearningMachine, ThLoss, acc_dep
-from zenkai.contain import pipelining
+from zenkai.kikai import pipelining
 from ..kaku.test_machine import SimpleLearner
 import torch
 from zenkai.utils import get_model_parameters, get_model_grads

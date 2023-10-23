@@ -5,7 +5,7 @@ import torch.nn as nn
 
 # local
 from zenkai.kaku import IO, State
-from zenkai.bio import least_squares
+from zenkai.kikai import least_squares
 
 
 @pytest.fixture

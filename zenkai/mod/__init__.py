@@ -34,4 +34,14 @@ from .reversible import (
     ZeroToNeg1,
     Neg1ToZero
 )
-
+from .ensemble import (
+    EnsembleVoter,
+    VoteAggregator,
+    Voter,
+    MeanVoteAggregator,
+    BinaryVoteAggregator,
+    MulticlassVoteAggregator,
+    StochasticVoter,
+    weighted_votes,
+    
+)

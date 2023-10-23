@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
 
-from .functional import Population, gen_like, TensorDict
+from ..kaku import Population, TensorDict
+from .utils import gen_like
 import torch
 from dataclasses import dataclass
 
@@ -20,7 +21,7 @@ class Noiser(ABC):
 
 class GaussianNoiser(Noiser):
 
-    def __init__(self, std: float, mean: float=0.0):
+    def __init__(self, std: float=0.0, mean: float=0.0):
         """initializer
 
         Args:
@@ -58,7 +59,7 @@ class BinaryNoiser(Noiser):
     """Randomly mutate boolean genes in the population
     """
 
-    def __init__(self, flip_p: bool, signed_neg: bool=True):
+    def __init__(self, flip_p: bool=0.5, signed_neg: bool=True):
         """initializer
 
         Args:

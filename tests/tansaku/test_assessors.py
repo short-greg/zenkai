@@ -2,10 +2,9 @@ import typing
 import torch
 import pytest
 
-from zenkai.tansaku import Individual, assessors, Population
-from zenkai.kaku import IO, Assessment, State, LearningMachine, ThLoss, Reduction
+from zenkai.tansaku import assessors
+from zenkai.kaku import IO, Assessment, Objective, Population, State, LearningMachine, ThLoss, Reduction
 from ..kaku.test_machine import SimpleLearner
-from zenkai.tansaku import Objective
 
 
 class SimpleLearner2(SimpleLearner):

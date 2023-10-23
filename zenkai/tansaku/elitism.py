@@ -1,7 +1,7 @@
 
 import torch
 from abc import ABC, abstractmethod
-from .functional import Population
+from ..kaku import Population
 from .utils import select as selection
 
 
@@ -48,9 +48,9 @@ class KBestElitism(Elitism):
         assessment = population1.stack_assessments().reduce_image(self.divide_start)
         index_map = selector.select(assessment)
 
-        population1 = population1.select_index(index_map)
+        population1 = index_map.select_index(population1)
 
-        return population1.pstack(population2)
+        return population1.pstack([population2])
         # _, indices = assessment.value.topk(self.k, largest=assessment.maximize)
         # results = {}
         # for k, v1, v2 in population1.loop_over(population2, only_my_k=True, union=False):

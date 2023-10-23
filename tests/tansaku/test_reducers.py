@@ -1,8 +1,7 @@
-from zenkai.tansaku.functional import Individual, Population
 from zenkai.tansaku.reduction import (BestSampleReducer,
                                       BestIndividualReducer,
                                       BinaryGaussianReducer, MomentumReducer,
-                                      SlopeReducer)
+                                      )
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2,
@@ -45,22 +44,6 @@ class TestMomentumReducer:
     def test_momentum_selector_returns_best_after_two_iterations_two_dimensions(self, population2_with_assessment):
 
         selector = MomentumReducer(BestSampleReducer(), 0.1)
-        individual = selector(population2_with_assessment)
-        individual = selector(population2_with_assessment)
-        assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
-
-
-class TestSlopeReducer:
-
-    def test_slope_selector_returns_slope_with_one_dimensions(self, population2_with_assessment):
-
-        selector = SlopeReducer(0.1)
-        individual = selector(population2_with_assessment)
-        assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
-
-    def test_slope_selector_returns_slope_after_two_iterations(self, population2_with_assessment):
-
-        selector = SlopeReducer(0.1)
         individual = selector(population2_with_assessment)
         individual = selector(population2_with_assessment)
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]

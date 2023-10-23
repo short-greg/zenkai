@@ -25,14 +25,15 @@ import math
 import torch
 
 # local
-from ..tansaku import (
-    Individual,
-    Population,
-    binary_prob,
-    cat_params,
+from ..kaku import (
+    Individual, Population
 )
+# from ..tansaku import (
+#     binary_prob,
+#     cat_params,
+# )
 from ..kaku import State
-from .ensemble import Voter
+from ..mod import Voter
 
 
 class EnsembleLearner(LearningMachine):

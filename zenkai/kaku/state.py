@@ -226,7 +226,7 @@ class State(object):
         """
         _, _, sub_data = self._get_obj(obj)
 
-        if key in sub_data:
+        if key in sub_data and not ignore_exists:
             raise StateKeyError(
                 f"Subs State {key} is already in State and ignore exists is False."
             )
@@ -266,6 +266,11 @@ class State(object):
             return state
         return sub_data[key]
     
+    def subs(self, obj: IDable):
+
+        sub = self._subs.get(id(obj))
+        return sub if sub is not None else None
+
     def keep(self, obj: IDable, key: str, keep: bool=True):
         
         id = self.id(obj)
@@ -319,7 +324,8 @@ class State(object):
         Returns:
             MyState: MyState for the object
         """
-        return MyState(obj, *self._get_obj(obj, to_add=to_add))
+        self._get_obj(obj, to_add)
+        return MyState(obj, self)
 
     def __contains__(self, key) -> bool:
         """
@@ -399,17 +405,17 @@ class MyState(object):
     my_state.t = 1
     """
 
-    def __init__(self, obj, data: typing.Dict, keep: typing.Dict, subs: typing.Dict):
+    def __init__(self, obj: IDable, state: 'State'):
         """initializer
 
         Args:
             data (typing.Dict): The data for the object
             subs (typing.Dict): The sub states for the object
         """
-        object.__setattr__(self, "_obj", obj)
-        object.__setattr__(self, "_data", data)
-        object.__setattr__(self, "_keep", keep)
-        object.__setattr__(self, "_subs", subs)
+        object.__setattr__(self, 'obj', obj)
+        object.__setattr__(self, 'state', state)
+        self.obj: IDable = obj
+        self.state: State = state
 
     @property
     def subs(self) -> typing.Dict[str, State]:
@@ -418,9 +424,9 @@ class MyState(object):
         Returns:
             typing.Dict[str, State]: The sub states
         """
-        return {**self._subs}
+        return self.state.subs(self.obj)
 
-    def add_sub(self, key: str, state: State = None) -> "State":
+    def add_sub(self, key: str, state: State = None, ignore_exists: bool=True) -> "State":
         """Add a substate to the state
 
         Args:
@@ -430,11 +436,12 @@ class MyState(object):
         Raises:
             KeyError: The key already exists in the sub states
         """
-        if key in self._subs:
-            raise KeyError(f"State by name of {key} already exists in subs")
-        state = state or State()
-        self._subs[key] = state
-        return state
+        self.state.add_sub(self.obj, key, state, ignore_exists=ignore_exists)
+        # if key in self._subs:
+        #     raise KeyError(f"State by name of {key} already exists in subs")
+        # state = state or State()
+        # self._subs[key] = state
+        # return state
 
     def my_sub(self, key: str, to_add: bool = True) -> "MyState":
         """Get the sub state for a key
@@ -446,9 +453,12 @@ class MyState(object):
         Returns:
             MyState: The substate
         """
-        if to_add and key not in self._subs:
-            self._subs[key] = State()
-        return self._subs[key].mine(self._obj)
+        sub = self.state.sub(self.obj, key, to_add)
+        return sub.mine(self)
+
+        # if to_add and key not in self._subs:
+        #     self._state.subs[key] = State()
+        # return self._subs[key].mine(self._obj)
 
     def get(self, key: str, default=None, keep: bool=False) -> typing.Any:
         """Get the value at a key
@@ -460,18 +470,18 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
-        if keep:
-            return self._keep.get(key, default)
-        return self._obj.get(key, default)
+        self.state.get(self.obj, key, default)
+        # if keep:
+        #     return self._keep.get(key, default)
+        # return self._obj.get(key, default)
     
     def get_or_set(self, key: typing.Hashable, default) -> typing.Any:
 
         try: 
-            return self._data[key]
+            return self.state[key]
         except KeyError:
-            self._data[key] = default
+            self.state[key] = default
             return default
-
 
     def store(self, key: str, value, keep: bool=False) -> typing.Any:
         """Get the value at a key
@@ -483,10 +493,11 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
-        if keep:
-            self._keep[key] = value
-        else:
-            self._data[key] = value
+        self.state.store(self.obj, key, value, keep)
+        # if keep:
+        #     self._keep[key] = value
+        # else:
+        #     self._data[key] = value
 
     def __getitem__(self, key: str) -> typing.Any:
         """Get the value at a key
@@ -497,7 +508,8 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key
         """
-        return self._data[key]
+        return self.state[self.obj, key]
+        # return self._data[key]
 
     def __setitem__(self, key: str, value):
         """Set the value at the key
@@ -506,7 +518,8 @@ class MyState(object):
             key (str): The key to set the value to
             value: The value to set
         """
-        self._data[key] = value
+        self.state[self.obj, key] = value
+        # self._data[key] = value
 
     def __getattr__(self, key):
         """Get the value at a key
@@ -517,7 +530,8 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key
         """
-        return self._data[key]
+        return self.state[self.obj, key]
+        # return self._data[key]
 
     def __setattr__(self, key: str, value: typing.Any) -> typing.Any:
         """Set the value at the key
@@ -526,12 +540,13 @@ class MyState(object):
             key (str): The key to set the value to
             value: The value to set
         """
-        self._data[key] = value
+        self.state[self.obj, key] = value
         return value
+        # self._data[key] = value
+        # return value
 
     def __contains__(self, key: str) -> bool:
-        return key in self._data
-
+        return (self.obj, key) in self.state
 
 
 class EmissionStack(object):
@@ -564,7 +579,6 @@ class EmissionStack(object):
         Returns:
             IO: the element that was added
         """
-
         self._stack.append(io)
         return io
 
@@ -577,7 +591,6 @@ class EmissionStack(object):
         Args:
             io (IO): the io to stack the current stack onto
         """
-
         self._stack.insert(0, io)
 
     def pop(self) -> typing.Union[IO, None]:

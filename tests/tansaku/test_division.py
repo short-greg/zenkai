@@ -3,7 +3,8 @@ import torch.nn as nn
 import pytest
 
 from zenkai import Assessment
-from zenkai.tansaku import dividers, Population
+from zenkai.kaku import Population
+from zenkai.tansaku import division as dividers
 
 
 class TestFitnessProportionalDivider:

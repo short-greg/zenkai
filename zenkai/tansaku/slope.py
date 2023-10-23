@@ -24,24 +24,30 @@ class SlopeCalculator(object):
             )
         self._momentum = momentum
         self._slope = None
+        self._slopes = {}
 
-    def reduce_field(
-        self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
+    def __call__(
+        self, population: Population
     ) -> torch.Tensor:
         # TODO: Add in momentum for slope (?)
 
-        evaluation = assessment.value[:, :, None]
-        ssx = (pop_val**2).sum(0) - (1 / len(pop_val)) * (pop_val.sum(0)) ** 2
-        ssy = (pop_val * evaluation).sum(0) - (1 / len(pop_val)) * (
-            (pop_val.sum(0) * evaluation.sum(0))
-        )
-        slope = ssy / ssx
-        self._slope = (
-            self._slope * self._momentum + slope
-            if self._slope is not None and self._momentum is not None
-            else slope
-        )
-        return self._slope
+        slopes = {}
+        assessment = population.stack_assessments()
+        for k, pop_val in population.items():
+
+            evaluation = assessment.value[:, :, None]
+            ssx = (pop_val**2).sum(0) - (1 / len(pop_val)) * (pop_val.sum(0)) ** 2
+            ssy = (pop_val * evaluation).sum(0) - (1 / len(pop_val)) * (
+                (pop_val.sum(0) * evaluation.sum(0))
+            )
+            slope = ssy / ssx
+            self._slopes[k] = (
+                self._slopes[k] * self._momentum + slope
+                if k in self._slopes and self._momentum is not None
+                else slope
+            )
+            slopes[k] = self._slopes[k]
+        return Population(**slopes)
 
     def spawn(self) -> "SlopeCalculator":
         return SlopeCalculator(self._momentum)
@@ -84,7 +90,7 @@ class SlopeUpdater(object):
     def maximize(self, maximize):
         self._multiplier = 1 if maximize else -1
 
-    def influence(self, original: Individual, population: Population, state: State) -> Individual:
+    def __call__(self, original: Individual, population: Population) -> Individual:
         x = original[self.x]
         slope = self._slope_selector(population)[self.x]
         return Individual(**{self.x: x + self.lr * slope})

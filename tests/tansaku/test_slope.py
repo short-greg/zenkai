@@ -1,7 +1,7 @@
 import torch
 
 from zenkai.tansaku.functional import Individual
-from zenkai.tansaku.slope import (SlopeUpdater, PopulationLimiter)
+from zenkai.tansaku.slope import (SlopeUpdater, SlopeCalculator)
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2, binary_x,
@@ -29,11 +29,18 @@ class TestSlopeInfluencer:
         assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
 
 
-class TestPopulationLimiter:
+class TestSlopeCalculator:
 
-    def test_slope_modifier_returns_slope_after_two_iterations(self, population2_with_assessment):
-        
-        individual = Individual(x=torch.rand(population2_with_assessment["x"][0].size()))
-        modifier = PopulationLimiter(torch.tensor([0], dtype=torch.int64))
-        population = modifier(population2_with_assessment, individual)
-        assert population['x'].size() == population2_with_assessment["x"].shape
+    def test_slope_selector_returns_slope_with_one_dimensions(self, population2_with_assessment):
+
+        selector = SlopeCalculator(0.1)
+        individual = selector(population2_with_assessment)
+        assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
+
+    def test_slope_selector_returns_slope_after_two_iterations(self, population2_with_assessment):
+
+        selector = SlopeCalculator(0.1)
+        individual = selector(population2_with_assessment)
+        individual = selector(population2_with_assessment)
+        assert individual['x'].size() == population2_with_assessment["x"].shape[1:]
+

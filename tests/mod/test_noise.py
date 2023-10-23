@@ -5,10 +5,9 @@ import torch.nn as nn
 from zenkai.tansaku.functional import IO, Assessment
 from zenkai.mod.noise import (
     GaussianNoiser, NoiseReplace,
-    RandSelector, RepeatSpawner,
-    collapse_k, expand_k, EqualsAssessmentDist, Indexer, ModuleNoise
+    RandSelector, EqualsAssessmentDist, ModuleNoise
 )
-
+from zenkai.tansaku.utils import RepeatSpawner, expand_k, collapse_k
 
 def g(seed: int):
     g = torch.Generator()

@@ -10,7 +10,7 @@ from ..kaku import (
 )
 from .grad import GradUpdater
 
-from ..utils import get_model_grads, set_model_grads, Null
+from ..mod import Null
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool=True) -> IO:

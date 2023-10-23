@@ -13,7 +13,7 @@ import sklearn.base
 
 # local
 from .. import utils
-from ..utils import Argmax, Sign
+from .classify import Argmax, Sign
 
 
 class ScikitEstimator(nn.Module):

@@ -9,7 +9,8 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 from .. import kaku
-from ..utils import module_factory, Lambda
+from ..utils import module_factory
+from ..mod import Lambda
 
 # Local
 from ..kaku import (
@@ -25,7 +26,6 @@ from ..kaku import (
     idx_io,
     Assessment,
     OptimFactory,
-    optimf,
     AccLearningMachine,
     AccStepTheta,
     BatchIdxAccStepTheta,
@@ -34,7 +34,8 @@ from ..kaku import (
     step_dep,
     ThLoss
 )
-from ..utils import get_model_grads, set_model_grads, Null
+from ..utils import get_model_grads, set_model_grads
+from ..mod import Null
 
 
 class GradUpdater(object):

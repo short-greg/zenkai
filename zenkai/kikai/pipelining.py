@@ -7,7 +7,7 @@ from ..kaku import (
     AccLearningMachine, Criterion, OptimFactory
 )
 from .grad import grad
-from ..mod.reversible import reverse
+from .reversible import reverse
 from abc import abstractmethod
 
 
