@@ -1,4 +1,4 @@
-from zenkai.contain import modules
+from zenkai.mod import ensemble as modules
 import torch
 from torch import nn
 from torch.nn.functional import one_hot

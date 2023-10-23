@@ -10,11 +10,13 @@ from ..utils import to_signed_neg
 from .functional import (
     Individual,
     Population,
-    binary_prob,
-    select_best_sample,
-    select_best_individual,
 )
 from ..mod.noise import EqualsAssessmentDist
+from .utils import (
+    binary_prob,
+    select_best_sample,
+    select_best_individual
+)
 
 
 def keep_original(

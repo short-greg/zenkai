@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import typing
 
-from .machine import LearningMachine
 from typing import TypeVar, Generic
 import random
 import uuid

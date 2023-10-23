@@ -33,7 +33,8 @@ from .convert import (
     update_model_grads,
     get_model_grads,
     set_model_grads,
-    module_factory
+    module_factory,
+    decay
 )
 from .sampling import (
     gather_idx_from_population, 

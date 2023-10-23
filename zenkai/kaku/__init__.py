@@ -57,7 +57,7 @@ from .optimize import (
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack
 from .populate import (
-    Population, PopulationIndexer, Individual
+    Population, PopulationIndexer, Individual, TensorDict
 )
 from .objective import (
     Itadaki,

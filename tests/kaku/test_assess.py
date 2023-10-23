@@ -108,7 +108,6 @@ class TestAssessmentDict:
         assert d_[0] == assessment
 
 
-
 class TestThLoss:
 
     def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):

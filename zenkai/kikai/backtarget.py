@@ -9,14 +9,11 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 from .. import kaku
-from ..utils import module_factory, Lambda
+from ..mod import module_factory, Lambda
 
 # Local
 from ..kaku import (
     IO,
-    BatchIdxStepTheta,
-    BatchIdxStepX,
-    Idx,
     LearningMachine,
     State,
     Criterion,
@@ -29,6 +26,7 @@ from ..kaku import (
     ThLoss
 )
 from ..utils import get_model_grads, set_model_grads, Null
+
 
 class BackTarget(LearningMachine):
     """Use this in general for modules that reshape or 
