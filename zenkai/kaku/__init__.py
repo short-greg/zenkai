@@ -11,16 +11,7 @@ from .assess import (
     #assess_dict,
     reduce_assessment
 )
-from ..assess.layer_assess import (
-    LayerAssessor, 
-    StepAssessHook, 
-    # union_pre_and_post, 
-    StepHook, 
-    StepXHook, 
-    StepXLayerAssessor,
-    StepFullLayerAssessor,
-) 
-from .limit import FeatureLimitGen, RandomFeatureIdxGen
+
 from .io import (
     IO,
     Idx,
@@ -48,8 +39,6 @@ from .machine import (
     StepXHook,
     InDepStepX,
     OutDepStepTheta,
-    StepLoop,
-    StdLearningMachine,
     NullStepTheta,
     AccLearningMachine,
     AccStepTheta,
@@ -59,12 +48,6 @@ from .machine import (
     forward_dep,
     step_dep
 )
-from ..assess.selection import (
-    TopKSelector,
-    Selector,
-    BestSelector,
-    IndexMap
-)
 from .optimize import (
     OPTIM_MAP,
     ParamFilter,
@@ -73,3 +56,19 @@ from .optimize import (
     optimf
 )
 from .state import IDable, MyState, State, StateKeyError, EmissionStack
+from .populate import (
+    Population, PopulationIndexer, Individual
+)
+from .objective import (
+    Itadaki,
+    FuncObjective,
+    CriterionObjective,
+    ValueConstraint,
+    impose,
+    LTE,
+    LT,
+    GT,
+    GTE,
+    NNLinearObjective,
+    NullConstraint,
+)

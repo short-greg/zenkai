@@ -28,50 +28,33 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 """
 
 # from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
-from ..grad.grad import (
-    GradLearner,
-    GradLoopLearner,
-    GradLoopStepTheta,
-    GradLoopStepX,
-    GradStepTheta,
-    GradStepX,
-    NullStepTheta,
-    GradUpdater,
-    update_x,
-)
-from ..bio.least_squares import (
-    LeastSquaresLearner,
-    LeastSquaresRidgeSolver,
-    LeastSquaresSolver,
-    LeastSquaresStandardSolver,
-    LeastSquaresStepTheta,
-    LeastSquaresStepX,
-    GradLeastSquaresLearner
-)
-from ..reverse.reversible import ReversibleMachine, BackTarget, reverse
-from ..sk.scikit import (
-    ScikitLimitGen,
-    ScikitEstimator, ScikitRegressor,
-    ScikitMulticlass, ScikitBinary,
-    ScikitMachine,
-    ScikitStepTheta, SciClone
 
-)
-from ..contain.iterable import (
+
+from .iterable import (
     IterStepTheta, 
     IterHiddenStepTheta,
     IterStepX
 )
-from ..bio.target_prop import (
-    TargetPropStepX, TargetPropObjective, RegTargetPropObjective,
-    StandardTargetPropObjective
-)
-from ..ensemble.ensemble import EnsembleLearner, EnsembleLearnerVoter
-from ..bio.feedback_alignment import (
-    BStepX, FALinearLearner, DFALearner, FALearner,
-    LinearDFABuilder, LinearFABuilder
-)
-from ..contain.pipelining import (
+from .pipelining import (
     Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
 )
-from ..contain.post import StackPostStepTheta
+from .post import StackPostStepTheta
+from .ensemble import EnsembleLearner, EnsembleLearnerVoter
+
+from .scikit import (
+    ScikitLimitGen,
+    ScikitEstimator,
+    ScikitMachine,
+    ScikitStepTheta, SciClone
+
+)
+from .utils.assess import (
+    LayerAssessor, 
+    StepAssessHook, 
+    # union_pre_and_post, 
+    StepHook, 
+    StepXHook, 
+    StepXLayerAssessor,
+    StepFullLayerAssessor,
+) 
+from . import utils

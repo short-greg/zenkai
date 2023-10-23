@@ -8,9 +8,9 @@ from ..kaku import (
     update_io,
 )
 from ..tansaku.assessors import XPopAssessor
-from ..tansaku.core import Individual
+from ..tansaku.functional import Individual
 from ..tansaku.slope import SlopeUpdater, PopulationLimiter
-from ..tansaku.populators import populate
+# from ..tansaku.populators import populate
 
 
 # class HillClimbStepX(FeatureIdxStepX):

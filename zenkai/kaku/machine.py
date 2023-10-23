@@ -28,9 +28,8 @@ from zenkai.kaku.io import IO
 from zenkai.kaku.state import State
 
 # local
-from .assess import Assessment, Criterion, ThLoss
+from .assess import Assessment, Criterion
 from .state import IDable, State
-from torch.utils import data as torch_data
 from .io import (
     IO,
     Idx 
@@ -490,54 +489,6 @@ class NullLearner(LearningMachine):
         return x
 
 
-class StepLoop(object):
-
-    def __init__(self, batch_size: int=None, shuffle: bool = True):
-        """Loop over a connection by indexing
-
-        Args:
-            batch_size (int): The size of the batch for the loop. If None. There will only be one iteration
-            shuffle (bool, optional): whether to shuffle the indices. Defaults to True.
-        """
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-
-    def create_dataloader(self, io: IO) -> torch_data.DataLoader:
-        """
-        Args:
-            io (IO): the IO to create the dataloader for
-
-        Returns:
-            DataLoader: The data loader to loop over
-        """
-
-        batch_size = (
-            self.batch_size if self.batch_size is not None else len(io[0])
-        )
-
-        # TODO: Change so 0 is not indexed
-        indices = torch_data.TensorDataset(torch.arange(0, len(io.f)).long())
-        return torch_data.DataLoader(indices, batch_size, self.shuffle)
-
-    def loop(self, io: IO) -> typing.Iterator[Idx]:
-        """Loop over the io
-
-        Args:
-            io (IO): The io to iterate over
-
-        Returns:
-            typing.Iterator[Idx]: Return 
-
-        Yields:
-            Iterator[typing.Iterator[Conn]]: _description_
-        """
-        if self.batch_size is None:
-            yield Idx(dim=0)
-        else:
-            for (idx,) in self.create_dataloader(io):
-                yield Idx(idx.to(io.f.device), dim=0)
-
-
 class OutDepStepTheta(StepTheta):
     """StepTheta that optionally depends on the outgoing module if outgoing_t is specified"""
 
@@ -551,50 +502,6 @@ class InDepStepX(StepX):
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
-        pass
-
-
-class StdLearningMachine(LearningMachine):
-    """
-    LearningMachine that uses a generic 
-
-    Attributes
-    ---------
-    objective: The objective to use for updating the network
-    _step_x: The StepX to use for updating x
-    _step_theta: The StepTheta to use for updating the parameters
-    """
-
-    def __init__(self, criterion: typing.Union[Criterion, typing.Iterable[Criterion]], step_theta: StepTheta=None, step_x: StepX=None):
-        """Convenience class to easily create a learning machine that takes a StepX and StepTheta
-
-        Args:
-            loss (typing.Union[Loss, typing.Iterable[Loss]]): The loss to optimize
-            step_theta (StepTheta, optional): The theta update functor. Defaults to None.
-            step_x (StepX, optional): The x update functor. Defaults to None.
-        """
-        super().__init__()
-        self.criterion = criterion
-        self._step_x = step_x or NullStepX()
-        self._step_theta = step_theta or NullStepTheta()
-
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        
-        if isinstance(self.criterion, Criterion):
-            return self.criterion.assess(y, t, reduction_override)
-        assessment_dict = Assessment()
-        for loss in self.criterion:
-            assessment_dict = assessment_dict.union(loss.assess_dict(y, t, reduction_override))
-        return assessment_dict
-
-    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
-        return self._step_x(x, t, state, *args, **kwargs)
-    
-    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
-        return self._step_theta(x, t, state, *args, **kwargs)
-    
-    @abstractmethod
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
         pass
 
 
@@ -731,3 +638,47 @@ def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bo
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
+
+
+# class StdLearningMachine(LearningMachine):
+#     """
+#     LearningMachine that uses a generic 
+
+#     Attributes
+#     ---------
+#     objective: The objective to use for updating the network
+#     _step_x: The StepX to use for updating x
+#     _step_theta: The StepTheta to use for updating the parameters
+#     """
+
+#     def __init__(self, criterion: typing.Union[Criterion, typing.Iterable[Criterion]], step_theta: StepTheta=None, step_x: StepX=None):
+#         """Convenience class to easily create a learning machine that takes a StepX and StepTheta
+
+#         Args:
+#             loss (typing.Union[Loss, typing.Iterable[Loss]]): The loss to optimize
+#             step_theta (StepTheta, optional): The theta update functor. Defaults to None.
+#             step_x (StepX, optional): The x update functor. Defaults to None.
+#         """
+#         super().__init__()
+#         self.criterion = criterion
+#         self._step_x = step_x or NullStepX()
+#         self._step_theta = step_theta or NullStepTheta()
+
+#     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        
+#         if isinstance(self.criterion, Criterion):
+#             return self.criterion.assess(y, t, reduction_override)
+#         assessment_dict = Assessment()
+#         for loss in self.criterion:
+#             assessment_dict = assessment_dict.union(loss.assess_dict(y, t, reduction_override))
+#         return assessment_dict
+
+#     def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+#         return self._step_x(x, t, state, *args, **kwargs)
+    
+#     def step(self, x: IO, t: IO, state: State, *args, **kwargs):
+#         return self._step_theta(x, t, state, *args, **kwargs)
+    
+#     @abstractmethod
+#     def forward(self, x: IO, state: State, release: bool = True) -> IO:
+#         pass
