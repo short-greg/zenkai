@@ -7,7 +7,7 @@ from torch import nn
 from zenkai import OptimFactory, ThLoss, utils
 # local
 from zenkai.kaku import IO, State
-from zenkai.grad import grad
+from zenkai.back import grad
 
 
 class THGradLearnerT1(grad.GradLearner):

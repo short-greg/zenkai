@@ -3,10 +3,10 @@ import typing
 from abc import ABC, abstractmethod
 
 # local
-from ..kaku.machine import IO, State, StepXHook, StepHook, LearningMachine
-from ..kaku.state import State
-from ..kaku.io import IO
-from ..kaku.assess import Assessment
+from ...kaku.machine import IO, State, StepXHook, StepHook, LearningMachine
+from ...kaku.state import State
+from ...kaku.io import IO
+from ...kaku.assess import Assessment
 
 
 class LayerAssessor(ABC):

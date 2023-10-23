@@ -1,9 +1,9 @@
 import typing
 from abc import ABC, abstractmethod
 
-from ..assess import selection
+from .utils import select as selection
 import torch
-from ..tansaku.core import Population
+from .functional import Population
 
 
 class CrossOver(ABC):

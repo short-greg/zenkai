@@ -15,6 +15,7 @@ def _undefined():
 
 UNDEFINED = _undefined()
 
+
 class BuilderFunctor(ABC):
     """Base class for functors used in building a learning machine
     """

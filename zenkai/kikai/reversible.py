@@ -3,14 +3,14 @@ import typing
 
 # local
 from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
-from .modules import Reversible, SequenceReversible
+from ..mod.scikit import Reversible, SequenceReversible
 import torch.nn as nn
 import torch
 import typing
 
 from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
 from ..utils import Lambda
-from ..grad import BackTarget
+from . import BackTarget
 
 
 class ReversibleMachine(LearningMachine):

@@ -7,7 +7,7 @@ import torch
 
 # local
 from ..utils import to_signed_neg, to_zero_neg
-from .core import Individual, Population, expand_dim0
+from .functional import Individual, Population, expand_dim0
 from ..kaku import State, Assessment
 
 

@@ -7,14 +7,14 @@ import torch
 # local
 from ..kaku import Assessment, State
 from ..utils import to_signed_neg
-from .core import (
+from .functional import (
     Individual,
     Population,
     binary_prob,
     select_best_sample,
     select_best_individual,
 )
-from .exploration import EqualsAssessmentDist
+from ..mod.noise import EqualsAssessmentDist
 
 
 def keep_original(

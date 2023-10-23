@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from zenkai.kaku import State
 
-from .core import Individual, Population, gen_like, TensorDict, decay
+from .functional import Individual, Population, gen_like, TensorDict, decay
 from ..kaku import State
 import torch
 import typing

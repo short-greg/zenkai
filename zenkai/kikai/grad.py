@@ -34,7 +34,7 @@ from ..kaku import (
     step_dep,
     ThLoss
 )
-from ..utils import get_model_grads, set_model_grads, get_model_parameters, Null
+from ..utils import get_model_grads, set_model_grads, Null
 
 
 class GradUpdater(object):

@@ -24,7 +24,7 @@ from ..kaku import (
     Criterion,
     State,
 )
-from .modules import ScikitEstimator
+from ..mod.scikit import ScikitEstimator
 
 
 class ScikitStepTheta(FeatureIdxStepTheta):

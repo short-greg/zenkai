@@ -2,8 +2,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-from zenkai.tansaku.core import IO, Assessment
-from zenkai.tansaku.exploration import (
+from zenkai.tansaku.functional import IO, Assessment
+from zenkai.mod.noise import (
     GaussianNoiser, NoiseReplace,
     RandSelector, RepeatSpawner,
     collapse_k, expand_k, EqualsAssessmentDist, Indexer, ModuleNoise

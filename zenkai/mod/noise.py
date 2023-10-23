@@ -15,6 +15,7 @@ import torch.nn as nn
 # local
 from ..kaku import IO, Assessment
 from ..utils import get_model_parameters, update_model_parameters
+from ..tansaku.functional import gather_idx_from_population, gaussian_sample
 
 
 class NoiseReplace(torch.autograd.Function):

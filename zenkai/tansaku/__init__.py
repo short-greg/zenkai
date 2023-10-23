@@ -4,7 +4,7 @@ from .assessors import (
     Assessor, XPopAssessor,
     ObjectivePopAssessor
 )
-from .core import (
+from .functional import (
     Individual,
     Population,
     binary_prob,

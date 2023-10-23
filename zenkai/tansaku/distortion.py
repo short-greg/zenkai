@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-from .core import Population, gen_like, TensorDict
+from .functional import Population, gen_like, TensorDict
 import torch
 from dataclasses import dataclass
 

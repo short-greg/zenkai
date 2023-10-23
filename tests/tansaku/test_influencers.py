@@ -1,6 +1,6 @@
 import torch
 
-from zenkai.tansaku.core import Individual
+from zenkai.tansaku.functional import Individual
 from zenkai.tansaku.slope import (SlopeUpdater, PopulationLimiter)
 from zenkai.utils import get_model_parameters
 

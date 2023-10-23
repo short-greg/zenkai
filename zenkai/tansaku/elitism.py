@@ -1,8 +1,8 @@
 
 import torch
 from abc import ABC, abstractmethod
-from ..tansaku.core import Population
-from ..assess import selection
+from .functional import Population
+from .utils import select as selection
 
 
 class Elitism(ABC):

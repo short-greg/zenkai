@@ -1,4 +1,4 @@
-from zenkai.kaku.limit import RandomFeatureIdxGen
+from zenkai.kikai.utils.limit import RandomFeatureIdxGen
 
 
 class TestRandomChoiceLimitGen(object):

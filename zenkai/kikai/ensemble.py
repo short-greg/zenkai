@@ -32,7 +32,7 @@ from ..tansaku import (
     cat_params,
 )
 from ..kaku import State
-from .machines import Voter
+from .ensemble import Voter
 
 
 class EnsembleLearner(LearningMachine):

@@ -7,10 +7,10 @@ import typing
 import numpy as np
 import torch
 
-from ..assess import selection
+from .utils import select as selection
 
 # local
-from ..tansaku.core import Population
+from .functional import Population
 from ..kaku import State
 
 
