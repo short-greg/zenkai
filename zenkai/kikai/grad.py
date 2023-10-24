@@ -94,7 +94,7 @@ class GradUpdater(object):
         x_grad = state.get((self, x), 'x_grad')
         if x_grad is not None:
 
-            return IO(x[0] - x_grad, detach=True), True
+            return IO(x.f - x_grad, detach=True), True
 
         return x, False
         

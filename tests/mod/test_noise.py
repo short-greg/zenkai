@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from zenkai.tansaku.functional import IO, Assessment
+from zenkai import IO, Assessment
 from zenkai.mod.noise import (
     GaussianNoiser, NoiseReplace,
     RandSelector, EqualsAssessmentDist, ModuleNoise
@@ -105,9 +105,9 @@ class TestRepeatSpawner:
 
         x = IO(x)
         spawner = RepeatSpawner(N_TRIALS)
-        spawned = expand_k(spawner.spawn_io(x)[0], N_TRIALS)
+        spawned = expand_k(spawner.spawn_io(x).f, N_TRIALS)
 
-        assert (spawned[0] == x[0]).all()
+        assert (spawned[0] == x.f).all()
         assert (spawned[0] == spawned[1]).all()
 
 

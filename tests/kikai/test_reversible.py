@@ -3,13 +3,10 @@ import torch.nn as nn
 
 from zenkai import IO, State, Criterion
 from zenkai.kikai.reversible import ReversibleMachine, BackTarget
-from ..kaku.test_machine import SimpleLearner
-from zenkai.utils import get_model_parameters
 from zenkai.mod import reversible
 import torch
 import torch.nn as nn
-from zenkai.kaku import IO, State, Assessment, LearningMachine, Criterion, ThLoss
-
+from zenkai.kaku import IO, State, Criterion
 
 
 class TestReversibleMachine:

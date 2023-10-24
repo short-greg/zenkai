@@ -1,6 +1,6 @@
 import torch
 
-from zenkai.tansaku.functional import Individual
+from zenkai.tansaku.keep import Individual
 from zenkai.tansaku.slope import (SlopeUpdater, SlopeCalculator)
 from zenkai.utils import get_model_parameters
 

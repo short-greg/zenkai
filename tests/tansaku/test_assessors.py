@@ -1,7 +1,4 @@
-import typing
 import torch
-import pytest
-
 from zenkai.tansaku import assessors
 from zenkai.kaku import IO, Assessment, Objective, Population, State, LearningMachine, ThLoss, Reduction
 from ..kaku.test_machine import SimpleLearner

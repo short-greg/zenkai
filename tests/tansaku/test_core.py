@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from zenkai import Assessment, Individual, Population
+from zenkai import Assessment
 from zenkai.tansaku.utils import select_best_individual, select_best_sample
 from zenkai.utils import get_model_parameters
 

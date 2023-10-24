@@ -2,7 +2,6 @@
 
 # 3rd party
 import torch
-import torch.nn as nn
 
 # local
 from zenkai import tansaku, Assessment

@@ -4,8 +4,6 @@ from abc import abstractmethod
 from enum import Enum
 import math
 
-from typing import Any
-
 # 3rd Party
 import torch
 import torch.nn as nn
@@ -469,15 +467,19 @@ class AssessmentDict(dict):
     """Use to store a set of assessments
     """
 
-    def __init__(self, **assessments: Assessment):
+    def __init__(self, assessment=None, **kwargs: Assessment):
         """Create the assessment dict
         """
-        if len(assessments) == 1 and type(assessments[0], typing.Generator):
-            super().__init__(assessments[0])
-        elif len(assessments) == 1 and isinstance(assessments[0], typing.Dict):
-            super().__init__(assessments)
+        if assessment is not None and len(kwargs) > 0:
+            raise RuntimeError('Cannot pass kwargs if passing assessment')
+        if isinstance(assessment, typing.Generator):
+            if len(kwargs) != 0:
+                raise RuntimeError('Cannot pass kwargs if passing assessment')
+            super().__init__(assessment)
+        elif isinstance(assessment, typing.Dict):
+            super().__init__(assessment)
         else:
-            super().__init__(**assessments)
+            super().__init__(**kwargs)
 
     def __getattr__(self, key: str):
         """Retrieve the value for an attribute

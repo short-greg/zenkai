@@ -3,8 +3,8 @@
 # 3rd party
 import torch
 from torch import nn
-
 from zenkai import OptimFactory, ThLoss, utils
+
 # local
 from zenkai.kaku import IO, State
 from zenkai.kikai import grad

@@ -1,16 +1,11 @@
 # 3rd party
-import typing
 import pytest
 import torch
 import torch.optim
-from torch import nn
-
-from zenkai import utils
 
 # local
-from zenkai.kaku import IO, IDable, Assessment, State
+from zenkai.kaku import IO, Assessment
 from zenkai.kaku import machine as core
-from zenkai.kaku import assess
 
 
 class Base:

@@ -5,8 +5,6 @@ from torch import nn
 from zenkai import Assessment
 from zenkai.tansaku.keep import Individual
 from zenkai.kikai.ensemble import VoterPopulator
-# (BinaryPopulator, ConservativePopulator,
-#                                        GaussianPopulator, RepeatPopulator, )
 from zenkai.utils import get_model_parameters
 from .fixtures import (binary_individual1, binary_individual2, binary_x,
                        binary_x2, individual1, individual2, individual_model,
