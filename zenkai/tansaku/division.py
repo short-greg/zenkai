@@ -4,14 +4,12 @@ from abc import ABC, abstractmethod
 import typing
 
 # 3rd party
-import numpy as np
 import torch
-
-from .utils import select as selection
 
 # local
 from ..kaku import Population
 from ..kaku import State
+from .utils import select as selection
 
 
 class Divider(ABC):

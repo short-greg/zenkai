@@ -1,6 +1,7 @@
-
-import torch
+# 1st party
 from abc import ABC, abstractmethod
+
+# local
 from ..kaku import Population
 from .utils import select as selection
 

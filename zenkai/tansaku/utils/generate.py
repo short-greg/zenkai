@@ -1,43 +1,11 @@
-
-
-import torch
-
-
 # 1st party
-import typing
-from abc import ABC, abstractmethod
-import functools
-
-# 3rd party
-import torch
-import torch.nn as nn
-from torch.nn.parameter import Parameter
-
-# 1st party
-from abc import ABC, abstractmethod
 import typing
 
 # 3rd party
 import torch
 
 # local
-from ...kaku import State, Population, Individual, TensorDict
-
-
-# local
-from ...utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
-
-from ...kaku import IO, Assessment
-from ...kaku import Reduction, Criterion, State, Criterion
-
-from copy import deepcopy
-
-
-import torch
-
-from ...kaku.assess import Assessment
-from abc import abstractmethod, ABC
-
+from ...kaku import Population, Individual
 
 
 # TODO: Remove
@@ -131,5 +99,3 @@ def collapse_k(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
     if reshape:
         return x.reshape(-1, *x.shape[2:])
     return x.view(-1, *x.shape[2:])
-
-

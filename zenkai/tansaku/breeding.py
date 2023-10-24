@@ -1,7 +1,10 @@
-import typing
+# 1st party
 from abc import ABC, abstractmethod
 
+# 3rd party
 import torch
+
+# local
 from ..kaku import Population
 
 
@@ -65,4 +68,3 @@ class SmoothCrossOver(CrossOver):
     
     def spawn(self) -> 'SmoothCrossOver':
         return SmoothCrossOver()
-

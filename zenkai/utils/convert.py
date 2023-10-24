@@ -10,6 +10,8 @@ import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 
+# TODO: Organize better
+
 def to_np(x: torch.Tensor) -> np.ndarray:
     return x.detach().cpu().numpy()
 
@@ -316,6 +318,24 @@ def calc_size2d(x: torch.Tensor, stride, kernel_size) -> typing.Tuple[int, int, 
         kernel_size[0],
         kernel_size[1],
     )
+
+
+def unsqueeze_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
+    """Unsqueeze a tensor to align with another tensor that has more dimensions
+    Will only work if source has fewer dimensions than align to and all of those dimensions
+    are already aligned
+
+    Args:
+        source (torch.Tensor): the tensor to unsqueeze
+        align_to (torch.Tensor): the tensor to align to
+
+    Returns:
+        torch.Tensor: the aligned tensor
+    """
+
+    for i in range(source.dim(), align_to.dim()):
+        source = source.unsqueeze(i)
+    return source
 
 
 @singledispatch

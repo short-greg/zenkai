@@ -165,10 +165,11 @@ class IndexMap(object):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0
     """
 
-    def __init__(self, *index: torch.LongTensor, dim: int=0):
+    def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int=0):
         super().__init__()
         self.index = index
         self.dim = dim
+        self._assessment = assessment
     
     def __getitem__(self, i: int) -> 'IndexMap':
 
@@ -212,6 +213,10 @@ class IndexMap(object):
             result.append(tensor_dict.spawn(cur_result))
         return tuple(result)
 
+    @property
+    def assessment(self) -> torch.Tensor:
+        
+        return self._assessment
 
 
 class Selector(ABC):
@@ -230,39 +235,85 @@ class Selector(ABC):
 class TopKSelector(Selector):
 
     def __init__(self, k: int, dim: int=0):
+        """Select the top K 
+
+        Args:
+            k (int): The number to selecct
+            dim (int, optional): The dimmension to select on. Defaults to 0.
+        """
         self.k = k
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
+        """Select the TopK fromm the assessment with k specified by in the initializer
+
+        Args:
+            assessment (Assessment): The assessment to select fromm
+
+        Returns:
+            IndexMap: The resulting index map
+        """
         
         _, topk = assessment.value.topk(self.k, dim=self.dim, largest=assessment.maximize)
-        return IndexMap(topk, dim=0)
+        return IndexMap(assessment, topk, dim=0)
 
 
 class BestSelector(Selector):
 
-    def __init__(self, k: int, dim: int=0, largest: bool=True):
+    def __init__(self, k: int, dim: int=0):
+        """Select the best
+
+        Args:
+            k (int): The number to selecct
+            dim (int, optional): The dimmension to select on. Defaults to 0.
+        """
         self.k = k
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
+        """Select the Best fromm the assessment with k specified by in the initializer
+
+        Args:
+            assessment (Assessment): The assessment to select fromm
+
+        Returns:
+            IndexMap: The resulting index map
+        """
         
         if assessment.maximize:
-            _, best = assessment.value.max(self.k, dim=self.dim, keepdim=True)
+            _, best = assessment.value.max(dim=self.dim, keepdim=True)
         else:
-            _, best = assessment.value.min(self.k, dim=self.dim, keepdim=True)
-        return IndexMap(best, dim=0)
+            _, best = assessment.value.min(dim=self.dim, keepdim=True)
+        return IndexMap(assessment, best, dim=0)
 
 
 class ParentSelector(Selector):
 
-    def __init__(self, k: int, divide_from: int=1, dim: int=0, largest: bool=True):
+    def __init__(self, k: int, divide_from: int=1, largest: bool=True):
+        """
+
+        Args:
+            k (int): The number to select
+            divide_from (int, optional): The dimension to divide on. Defaults to 1.
+            largest (bool, optional): _description_. Defaults to True.
+        """
         self.k = k
         self.largest = largest
-        self.dim = dim
         self.divide_from = divide_from
     
     def select(self, assessment: Assessment) -> IndexMap:
+        """Select parents from the assessment. It calculates a probability based on the 
+        population dimension currently
+
+        Args:
+            assessment (Assessment): The assessment to select from
+
+        Raises:
+            ValueError: If any of the assessments are negative.
+
+        Returns:
+            IndexMap: The resulting index map containing two indices
+        """
         
         base_shape = assessment.shape
         loss = assessment.value
@@ -294,7 +345,4 @@ class ParentSelector(Selector):
         parents2 = parents2.reshape(self.k, *base_shape[1:])
         # (n_divisions * ...), (n_divisions * ...)
 
-        # assessment = assessment.reduce_image(self.divide_from)
-
-        return IndexMap(parents1, parents2, dim=0)
-
+        return IndexMap(assessment, parents1, parents2, dim=0)

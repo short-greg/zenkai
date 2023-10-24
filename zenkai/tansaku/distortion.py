@@ -1,10 +1,13 @@
+# 1st party
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
+# 3rd party
+import torch
 
+# local
 from ..kaku import Population, TensorDict
 from .utils import gen_like
-import torch
-from dataclasses import dataclass
 
 
 class Noiser(ABC):
