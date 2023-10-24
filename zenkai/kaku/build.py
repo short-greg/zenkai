@@ -33,6 +33,8 @@ class BuilderFunctor(ABC):
 
 
 class Var(BuilderFunctor):
+    """Defines a variable for including in your build process
+    """
 
     def __init__(self, name: str, dtype: typing.Type=None):
         """
@@ -46,10 +48,18 @@ class Var(BuilderFunctor):
 
     @property
     def name(self) -> str:
+        """
+        Returns:
+            str: The name of the variable
+        """
         return self._name
     
     @property
     def dtype(self) -> typing.Type:
+        """
+        Returns:
+            typing.Type: the type of the variable
+        """
         return self._dtype
 
     def __call__(self, **kwargs):
@@ -60,21 +70,42 @@ class Var(BuilderFunctor):
             raise KeyError(f'Variable {self._name} not found in kwargs passed in.')
 
     def clone(self) -> 'Var':
+        """
+        Returns:
+            Var: The cloned variable
+        """
         return Var(self._name, self._dtype)
 
     def vars(self) -> typing.List['Var']:
-            
+        """
+        Returns:
+            typing.List[Var]: This variable wrapped in a list
+        """
         return [self]
 
 
-class Factory(BuilderFunctor):
+T = TypeVar('T')
+
+
+class Factory(BuilderFunctor, Generic[T]):
+    """Defines a factory
+    """
 
     def __init__(self, factory, *args, **kwargs):
-        
+        """Create a factory which you call
+
+        Args:
+            factory: The factory 
+        """
         self._factory = factory
         self._args = BuilderArgs(args=args, kwargs=kwargs)
 
-    def __call__(self, **kwargs):
+    def __call__(self, **kwargs) -> T:
+        """Execute the factory
+
+        Returns:
+            The result of the factory
+        """
         
         f_args, f_kwargs = self._args(**kwargs)
         if isinstance(self._factory, BuilderFunctor):
@@ -87,29 +118,47 @@ class Factory(BuilderFunctor):
             return None
         return self._factory(*f_args, **f_kwargs)
 
-    def vars(self) -> typing.List[Var]:            
-        return self._args.vars()
+    def vars(self) -> typing.List[Var]:
+        """
+        Returns:
+            List[Var] All of the variables used by the factory
+        """
+        vars = self._args.vars()
+        if isinstance(self._factory, BuilderFunctor):
+            vars.extend(self._factory.vars())
+        return vars
 
-    def clone(self) -> 'Factory':
+    def clone(self) -> 'Factory[T]':
+        """
+        Returns:
+            Factory: The clone of the factory
+        """
         factory = Factory(self._factory)
         factory._args = self._args.clone()
         return factory
 
 
 class BuilderArgs(BuilderFunctor):
+    """Defines the args for building
+    """
     
     def __init__(self, args=None, kwargs=None):
-        """
+        """Create a 
 
         Args:
-            args (_type_, optional): _description_. Defaults to None.
-            kwargs (_type_, optional): _description_. Defaults to None.
+            args (typing.List, optional): The args for the function. Defaults to None.
+            kwargs (typing.Dict[str, typing.Any], optional): The kwargs ofr the function. Defaults to None.
         """
         
         self._args = args or []
         self._kwargs = kwargs or {}
 
     def __call__(self, **kwargs) -> typing.Any:
+        """Retrieve the args and the kwargs
+
+        Returns:
+            typing.Tuple[typing.List, typing.Dict[str, typing.Any]]: The args and kwargs to pass to a function
+        """
 
         result_args = []
         result_kwargs = {}
@@ -126,13 +175,23 @@ class BuilderArgs(BuilderFunctor):
         return result_args, result_kwargs
 
     def update(self, key, value):
+        """Update a kwarg
 
+        Args:
+            key (typing.Any[int, str]): The key for the value. If it is an int it will update the args otherwise the kwargs
+            value: The value to update with
+        """
         if isinstance(key, int):
             self._args[key] = value
         else:
             self._kwargs[key] = value
 
     def vars(self) -> typing.List[Var]:
+        """
+
+        Returns:
+            typing.List[Var]: The variables contained in the args
+        """
 
         vars = []
 
@@ -146,7 +205,11 @@ class BuilderArgs(BuilderFunctor):
 
         return vars
 
-    def clone(self):
+    def clone(self) -> 'BuilderArgs':
+        """
+        Returns:
+            BuilderArgs: The cclone of the builder args
+        """
 
         result_args = []
         result_kwargs = {}
@@ -165,9 +228,10 @@ class BuilderArgs(BuilderFunctor):
         )
 
 
-T = TypeVar('T')
 
 class Builder(BuilderFunctor, Generic[T]):
+    """Create a Builder class. A builder allows for the user to more easily edit the parameters than a factory
+    """
 
     class Updater(Generic[T]):
 
@@ -199,36 +263,70 @@ class Builder(BuilderFunctor, Generic[T]):
         super().__setattr__('_builder_kwargs', BuilderArgs(kwargs=kwargs))
 
     def __setitem__(self, name: str, value: typing.Any) -> None:
-        self._builder_kwargs.update(name, value)
-    
-    def __setattr__(self, name: str, value: typing.Any) -> None:
-        """Update or 
+        """Set the builder arg
 
         Args:
-            name (str): 
-            value (typing.Any): 
+            name (str): The name of the arg
+            value (typing.Any): The value for the arg
+        """
+        self._builder_kwargs.update(name, value)
+        return value
+    
+    def __setattr__(self, name: str, value: typing.Any) -> None:
+        """Update an arg
+
+        Args:
+            name (str): The name of the arg
+            value (typing.Any): The value for the arg
         """
         if name in self._arg_names:
             self[name] = value
         else:
             object.__setattr__(self, name, value)
+        return value
 
     def __getitem__(self, name: str) -> Updater[T]:
+        """
+        Args:
+            name (str): The name of the arg to update
+
+        Returns:
+            Updater[T]: The Updater object to update the arg
+        """
         return self.Updater[T](self, name)
 
     def __getattr__(self, name: str) -> Updater[T]:
+        """
+        Args:
+            name (str): The name of the arg to update
+
+        Returns:
+            Updater[T]: The Updater object to update the arg
+        """
         
         if name in self._arg_names:            
             return self[name]
         return super().__getattr__(name)
     
-    def get(self, name: str):
+    def get(self, name: str) -> typing.Any:
+        """
+        Args:
+            name (str): The name of the arg to retrieve
+
+        Returns:
+            typing.Any: The retrieved arg
+        """
 
         if name in self._arg_names:
             return self._builder_kwargs.get(name)
         return super().__getattr__(name)
 
     def clone(self) -> 'Builder[T]':
+        """The clone of the Builder
+
+        Returns:
+            Builder[T]: The cloned of the Builder
+        """
         kwargs = self._builder_kwargs.clone()
         builder = Builder(
             self._factory, [*self._arg_names], 

@@ -30,38 +30,6 @@ class Divider(ABC):
         pass
 
 
-# TODO: REMOVE
-def select_parents(population: Population, prob: torch.Tensor, n_divisions: int):
-    parents1, parents2 = [], []
-    
-    base_shape = prob.shape
-    
-    # Figure out how to divide this up
-    # (population, ...)
-    # select()
-    if prob.dim() > 1:
-        r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
-        prob = prob.transpose(*r)
-    # (..., population)
-    prob = prob[None]
-    # (1, ..., population)
-    prob = prob.repeat(n_divisions, *[1] * len(prob.shape))
-    # (n_divisions * ..., population)
-    prob = prob.reshape(-1, prob.shape[-1])
-    parents1, parents2 = torch.multinomial(
-        prob, 2, False
-    ).transpose(1, 0)
-    # (n_divisions * ...), (n_divisions * ...)
-    parents1 = parents1.reshape(n_divisions, *base_shape[1:])
-    parents2 = parents2.reshape(n_divisions, *base_shape[1:])
-    # (n_divisions, ...)
-    
-    # not guaranteed to be the correct size
-    if parents1.dim() == 1:
-        return population.sub[parents1], population.sub[parents2]
-    return population.gather_sub(parents1), population.gather_sub(parents2)
-
-
 class FitnessProportionateDivider(Divider):
     """Divide the population into two based on the fitness proportionality
     """
@@ -99,25 +67,6 @@ class FitnessProportionateDivider(Divider):
         
         result = index_map.select_index(population)
         return Population(**result[0]), Population(**result[1])
-        # parents1, parents2 = {}, {}
-        # for k, v in population.items():
-        #     parents1[k], parents2[k] = index_map(v)
-        # return 
-        # # assessment, size1, _ = assessment.to_2d(self._divide_start)
-        # # assessment = assessment.mean(dim=-1)
-        # # assessment = assessment.view(size1)
-        # # loss = assessment.value
-        # # if not assessment.maximize:
-        # #     loss = 1 / (0.01 + loss)
-        # # prob = (loss / loss.sum(dim=0, keepdim=True))
-        # # if (prob < 0.0).any():
-        # #     raise ValueError('All assessments must be greater than 0 to use this divider')
-        # selection.P
-        
-        
-        # return select_parents(
-        #     population, prob, self.n_divisions
-        # )
 
     def spawn(self) -> Divider:
         return FitnessProportionateDivider(self.n_divisions)
@@ -148,3 +97,35 @@ class EqualDivider(Divider):
 
     def spawn(self) -> Divider:
         return EqualDivider()
+
+
+# TODO: REMOVE
+# def select_parents(population: Population, prob: torch.Tensor, n_divisions: int):
+#     parents1, parents2 = [], []
+    
+#     base_shape = prob.shape
+    
+#     # Figure out how to divide this up
+#     # (population, ...)
+#     # select()
+#     if prob.dim() > 1:
+#         r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
+#         prob = prob.transpose(*r)
+#     # (..., population)
+#     prob = prob[None]
+#     # (1, ..., population)
+#     prob = prob.repeat(n_divisions, *[1] * len(prob.shape))
+#     # (n_divisions * ..., population)
+#     prob = prob.reshape(-1, prob.shape[-1])
+#     parents1, parents2 = torch.multinomial(
+#         prob, 2, False
+#     ).transpose(1, 0)
+#     # (n_divisions * ...), (n_divisions * ...)
+#     parents1 = parents1.reshape(n_divisions, *base_shape[1:])
+#     parents2 = parents2.reshape(n_divisions, *base_shape[1:])
+#     # (n_divisions, ...)
+    
+#     # not guaranteed to be the correct size
+#     if parents1.dim() == 1:
+#         return population.sub[parents1], population.sub[parents2]
+#     return population.gather_sub(parents1), population.gather_sub(parents2)

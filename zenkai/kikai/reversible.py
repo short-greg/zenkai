@@ -1,11 +1,12 @@
 # 1st party
 import typing
 
+# 3rd party
+import torch.nn as nn
+
 # local
 from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
 from ..mod import Reversible, SequenceReversible
-import torch.nn as nn
-import typing
 
 from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
 from ..mod import Lambda

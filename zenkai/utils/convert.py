@@ -3,14 +3,11 @@ import math
 import typing
 from functools import singledispatch
 
+# 3rd party
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.utils as nn_utils
-
-# 3rd party
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from torch.utils import data as torch_data
 
 
 def to_np(x: torch.Tensor) -> np.ndarray:

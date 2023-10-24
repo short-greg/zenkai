@@ -1,11 +1,6 @@
-"""
-
-"""
-
 # 1st Party
 import typing
-from abc import abstractmethod, abstractproperty, ABC
-from dataclasses import dataclass
+from abc import abstractmethod
 from enum import Enum
 import math
 
@@ -471,11 +466,22 @@ def _f_assess_dict(assessment_dict: 'AssessmentDict', f):
 
 
 class AssessmentDict(dict):
+    """Use to store a set of assessments
+    """
 
     def __init__(self, **assessments: Assessment):
-        super().__init__(**assessments)
+        """Create the assessment dict
+        """
+        if len(assessments) == 1 and type(assessments[0], typing.Generator):
+            super().__init__(assessments[0])
+        elif len(assessments) == 1 and isinstance(assessments[0], typing.Dict):
+            super().__init__(assessments)
+        else:
+            super().__init__(**assessments)
 
     def __getattr__(self, key: str):
+        """Retrieve the value for an attribute
+        """
 
         if key in self:
             return self[key]
@@ -487,20 +493,33 @@ class AssessmentDict(dict):
             raise KeyError(f'No key named {key} in AssessmentDict')
     
     def sub(self, keys: typing.List[str]) -> 'AssessmentDict':
+        """Get a subset of keys
+        """
+        return AssessmentDict(
+            {key: self[key] for key in keys}
+        )
 
+    def apply(self, f: typing.Callable, filter: typing.List[str]=None) -> 'AssessmentDict':
+        """
+
+        Args:
+            f (typing.Callable): The function to apply
+            filter (typing.List[str], optional): A list of keys to filter by. Defaults to None.
+
+        Returns:
+            AssessmentDict: 
+        """
+        return AssessmentDict({
+            key: f(value) for key, value in self.items() if filter is None or key in filter
+        })
+
+    def value_dict(self) -> typing.Dict[str, torch.Tensor]:
+        """
+        Returns:
+            typing.Dict[str, torch.Tensor]: The 
+        """
         return {
-            key: self[key] for key in keys
-        }
-
-    def apply(self, f: typing.Callable):
-
-        return {
-            key: f(value) for key, value in self.items()
-        }
-
-    def as_dict(self, to_tensor: bool = True):
-        return {
-            key: assessment.value if to_tensor else assessment
+            key: assessment.value
             for key, assessment in self.items()
         }
 
@@ -582,8 +601,16 @@ LOSS_MAP = {
     "cosine_embedding": nn.CosineEmbeddingLoss
 }
 
-def lookup_loss(loss_name: str):
 
+def lookup_loss(loss_name: str) -> typing.Callable[[], nn.Module]:
+    """Get the factory for a loss
+
+    Args:
+        loss_name (str): Name of the loss to get the factory for
+
+    Returns:
+        nn.Module: the loss retrieved
+    """
     if hasattr(nn, loss_name):
         return getattr(nn, loss_name)
     return LOSS_MAP[loss_name]

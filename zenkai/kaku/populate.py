@@ -1,33 +1,16 @@
 # 1st party
 import typing
 from abc import ABC, abstractmethod
-import functools
 
 # 3rd party
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 
-# 1st party
-from abc import ABC, abstractmethod
-import typing
-
-# 3rd party
-import torch
-
 # local
-from ..kaku import State
+from ..utils import get_model_parameters, update_model_parameters, expand_dim0
 
-
-# local
-from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0
-
-from ..kaku import IO, Assessment
-from ..kaku import Reduction, Criterion, State, Criterion
-from copy import deepcopy
-# TODO: Move to utils
-
-# TODO: have this be the base class
+from ..kaku import Assessment
 
 
 class TensorDict(dict):
@@ -113,13 +96,13 @@ class TensorDict(dict):
         """
         if not isinstance(self, TensorDict):
             result = {}
-            for k, v in other:
+            for k, v in other.items():
                 result[k] = f(self, v)
             return other.spawn(result)
 
         if not isinstance(other, TensorDict):
             result = {}
-            for k, v in self:
+            for k, v in self.items():
                 result[k] = f(v, other)
             return self.spawn(result)
         
@@ -145,19 +128,20 @@ class TensorDict(dict):
         return True
 
     def __add__(self, other: 'TensorDict') -> 'TensorDict':
-        return self.binary_op(other, torch.add, False, True)
+        return self.binary_op(torch.add, other, False, True)
 
     def __sub__(self, other: 'TensorDict') -> 'TensorDict':
 
-        return self.binary_op(other, torch.sub, True, True)
+        return self.binary_op(torch.sub, other, True, True)
 
     def __mul__(self, other: 'TensorDict') -> 'TensorDict':
 
-        return self.binary_op(other, torch.mul, True, False)
+        return self.binary_op(torch.mul, other, True, False)
+    
+    def __truediv__(self, other: 'TensorDict') -> 'TensorDict':
+        print('True Dividing')
 
-    def __div__(self, other: 'TensorDict') -> 'TensorDict':
-
-        return self.binary_op(other, torch.div, True, False)
+        return self.binary_op(torch.true_divide, other, True, False)
     
     def __and__(self, other: 'TensorDict') -> 'TensorDict':
         if not self.validate_keys(other):
@@ -202,12 +186,16 @@ class TensorDict(dict):
     def __eq__(self, other: 'TensorDict') -> 'TensorDict':
         if not self.validate_keys(other):
             raise ValueError('All keys must be same in self and other to compute greater than')
-
+        print('CALLED!')
         return self.binary_op(torch.equal, other, union=False)
 
     @abstractmethod
     def spawn(self) -> 'TensorDict':
         pass
+
+    def copy(self) -> 'TensorDict':
+
+        return self.__class__(**super().copy())
 
 
 class Individual(TensorDict):
@@ -674,5 +662,3 @@ class PopulationIndexer(object):
     def __getitem__(self, idx) -> Population:
 
         return Population(**{k: v[idx] for k, v in self._population.items()})
-
-

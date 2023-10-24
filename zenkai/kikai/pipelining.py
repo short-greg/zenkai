@@ -1,6 +1,9 @@
+# 1st party
 import typing
 from dataclasses import dataclass
+from abc import abstractmethod
 
+# local
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
     acc_dep, step_dep, 
@@ -8,13 +11,19 @@ from ..kaku import (
 )
 from .grad import grad
 from .reversible import reverse
-from abc import abstractmethod
 
 
 class PipeStep(AccLearningMachine):
+    """Defines a step in a pipeline
+    """
 
     def __init__(self, learning_machine: typing.Union[LearningMachine, AccLearningMachine], step_priority: bool=False):
+        """Create a step in the pipeline
 
+        Args:
+            learning_machine (typing.Union[LearningMachine, AccLearningMachine]): The learning machine
+            step_priority (bool, optional): Whether to prioritize step before step_x. Defaults to False.
+        """
         super().__init__()
         self._learning_machine = learning_machine
         self.step_priority = step_priority
@@ -25,7 +34,17 @@ class PipeStep(AccLearningMachine):
         return self._accumulate
 
     def forward(self, x: IO, state: State, release: bool = True, pipeline: 'Pipeline'=None) -> IO:
-        
+        """Pass the value through the learning machine
+
+        Args:
+            x (IO): the input
+            state (State): the learning state
+            release (bool, optional): whether to release the output. Defaults to True.
+            pipeline (Pipeline, optional): _description_. Defaults to None.
+
+        Returns:
+            IO: 
+        """
         y = self._learning_machine(x, state, release)
         if pipeline is not None:
             pipeline.add(self, x, y)
@@ -267,6 +286,8 @@ class PipelineLearner(LearningMachine):
 
 
 class AccPipelineLearner(AccLearningMachine):
+    """Defines a Pipeline that implements the accumulate method
+    """
 
     def __init__(self, criterion: Criterion=None) -> None:
         super().__init__()
@@ -280,6 +301,18 @@ class AccPipelineLearner(AccLearningMachine):
         return self._criterion.assess(y, t, reduction_override)
 
     def get_pipeline(self, x: IO, state: State) -> 'Pipeline':
+        """Retrieve the pipeline
+
+        Args:
+            x (IO): The input
+            state (State): The state
+
+        Raises:
+            RuntimeError: If the pipeline was set
+
+        Returns:
+            Pipeline: The pipeline to retrieve
+        """
         
         pipeline = state.get((self, x), 'pipeline')
         
@@ -288,13 +321,28 @@ class AccPipelineLearner(AccLearningMachine):
         return pipeline
         
     def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
+        """Set the pipeline for the learner
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            Pipeline: The pipeline set
+        """
 
         pipeline = Pipeline()
         state[(self, x), 'pipeline'] = pipeline
         return pipeline
 
     def accumulate(self, x: IO, t: IO, state: State):
-        
+        """accumulate the updates
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         pipeline = self.get_pipeline(x, state)
         pipeline.set_out_target(t)
         for x, y, node, t in pipeline.reverse():
@@ -305,13 +353,28 @@ class AccPipelineLearner(AccLearningMachine):
         state[self, 'accumulated'] = True
 
     def node(self, machine: LearningMachine, step_priority: bool=False) -> PipeStep:
+        """
 
+        Args:
+            machine (LearningMachine): Add a 
+            step_priority (bool, optional): Whether the step should . Defaults to False.
+
+        Returns:
+            PipeStep: The PipeStep wrapping the node
+        """
         return PipeStep(
             machine, step_priority
         )
     
     @acc_dep('accumulated', False)
-    def step(self, x: IO, t: IO, state: State) -> IO:
+    def step(self, x: IO, t: IO, state: State):
+        """
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
 
         pipeline = self.get_pipeline(x, state)
         for x, _, node, t  in pipeline.reverse():
@@ -319,13 +382,19 @@ class AccPipelineLearner(AccLearningMachine):
 
     @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """
 
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: The updated input
+        """
         pipeline = self.get_pipeline(x, state)
         x, _, node, t = pipeline.first()
         return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
-
-    def add_node(self, learning_machine: LearningMachine) -> 'PipeStep':
-        return PipeStep(self, learning_machine, priority_step=False)
 
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True) -> IO:

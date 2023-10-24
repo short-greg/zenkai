@@ -5,8 +5,8 @@ import math
 import torch
 
 # local
-from ..kaku import IO, LearningMachine, Criterion, Assessment, State
-from .functional import Population
+from ..kaku import IO, LearningMachine, Criterion, Assessment
+from .keep import Population
 from ..kaku import Objective
 
 

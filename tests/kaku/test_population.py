@@ -18,7 +18,6 @@ class TestIndividual:
         assert (x1 == individual1['x']).all()
 
     def test_set_parameter_updates_parameter(self, x1, individual1, p1):
-        print(list(individual1.keys()))
         individual1.set_p(p1, "x")
         assert (p1.data == x1).all()
     
@@ -34,6 +33,77 @@ class TestIndividual:
     def test_report_sets_the_assessment(self, individual1, assessment1):
         individual1 = individual1.report(assessment1)
         assert individual1.assessment is assessment1
+
+    def test_add_individuals_adds_correctly(self, x1, x2, individual2):
+        individual3 = individual2 + individual2
+        assert (individual3['x1'] == (x1 + x1)).all()
+        assert (individual3['x2'] == (x2 + x2)).all()
+
+    def test_add_individuals_adds_correctly_when_not_exists(self, x1, x2, individual1, individual2):
+        individual1 = individual1.copy()
+        individual1['x1'] = individual1['x']
+        individual3 = individual1 + individual2
+        
+        assert (individual3['x1'] == (x1 + x1)).all()
+        assert (individual3['x2'] == x2).all()
+
+    def test_sub_individuals_subs_correctly_when_not_exists(self, x1, x2, individual1, individual2):
+        individual1 = individual1.copy()
+        individual1['x1'] = x2
+        individual3 = individual1 - individual2
+        
+        assert (individual3['x1'] == (x2 - x1)).all()
+        assert individual3.get('x2') is None
+
+    def test_sub_individuals_subs_correctly_when_not_exists(self, x1, x2, individual1, individual2):
+        individual1 = individual1.copy()
+        individual1['x1'] = x2
+        individual3 = individual1 - individual2
+        
+        assert (individual3['x1'] == (x2 - x1)).all()
+        assert individual3.get('x2') is None
+
+    def test_mul_individuals_muls_correctly_when_not_exists(self, x1, x2, individual1, individual2):
+        individual1 = individual1.copy()
+        individual1['x1'] = x2
+        individual3 = individual1 * individual2
+        
+        assert (individual3['x1'] == (x2 * x1)).all()
+        assert individual3.get('x2') is None
+
+    def test_le_gets_less_value_from_inviduals(self, individual1):
+        individual1 = individual1.copy()
+        individual2 = individual1 + 1
+        individual3 = individual1 < individual2
+        
+        assert (individual3['x']).all()
+
+    def test_lt_gets_less_value_from_inviduals(self, individual1):
+        individual1 = individual1.copy()
+        individual2 = individual1.copy()
+        individual3 = individual1 <= individual2
+        
+        assert (individual3['x']).all()
+
+    def test_gt_gets_greater_value_from_inviduals(self, individual1):
+        individual1 = individual1.copy()
+        individual2 = individual1.copy()
+        individual3 = individual1 >= individual2
+        
+        assert (individual3['x']).all()
+
+    def test_gt_gets_greater_value_from_inviduals(self, individual1):
+        individual1 = individual1.copy()
+        individual2 = individual1 - 1
+        individual3 = individual1 > individual2
+        
+        assert (individual3['x']).all()
+
+    def test_eq_returns_equal_if_same(self, individual1):
+        individual1 = individual1.copy()
+        individual2 = individual1.copy()
+        
+        assert (individual1 == individual2)['x'].all()
 
 
 class TestPopulation:
@@ -107,4 +177,32 @@ class TestPopulation:
         population = Population(x=x1)
         with pytest.raises(ValueError):
             population.gather_sub(gather_by)
+
+    def test_lt_gets_greater_value_from_inviduals(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        population2 = Population(x=population['x']+0.1)
+        assert (population < population2)['x'].all()
     
+    def test_apply_rand_like_produces_similar_population(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        population2 = population.apply(torch.rand_like)
+        
+        assert (population2['x'] != population['x']).any()
+    
+    def test_apply_add_produces_population_plus_1(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        population2 = population.apply(lambda x: torch.add(x, 1))
+        
+        assert (population2['x'] == population['x'] + 1).all()
+
+    def test_apply_add_does_not_add_if_filtered(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        population2 = population.apply(lambda x: torch.add(x, 1), keys=['y'])
+        
+        assert (population2['x'] == population['x']).all()
+
+    def test_apply_add_does_not_add_if_not_filtered(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        population2 = population.apply(lambda x: torch.add(x, 1), keys=['x'])
+        
+        assert (population2['x'] == population['x'] + 1).all()

@@ -8,7 +8,6 @@ from .assess import (
     ThLoss,
     AssessmentDict,
     Criterion,
-    #assess_dict,
     reduce_assessment
 )
 

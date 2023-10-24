@@ -1,10 +1,9 @@
 # 1st party
 import typing
 
-#
+# 3rd party
 import torch
 from torch import nn
-
 
 # local
 from ..kaku import (

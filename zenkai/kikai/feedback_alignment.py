@@ -1,15 +1,17 @@
+# 1st party
+import typing
+
+# 3rd party
 import torch.nn as nn
 import torch
 
-import typing
-
+# local
 from ..kaku import (
     IO, State, LearningMachine, Assessment,
     OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
     Builder, UNDEFINED, Var, Factory
 )
 from .grad import GradUpdater
-
 from ..mod import Null
 
 

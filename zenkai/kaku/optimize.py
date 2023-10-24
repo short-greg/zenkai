@@ -37,6 +37,7 @@ class NullOptim(torch.optim.Optimizer):
     def zero_grad(self) -> None:
         pass
 
+
 OPTIM_MAP = {
     "sgd": torch.optim.SGD,
     "adam": torch.optim.Adam,
@@ -46,6 +47,7 @@ OPTIM_MAP = {
     "null": NullOptim,
     "asgd": torch.optim.ASGD
 }
+
 
 def lookup_optim(optim_name):
 

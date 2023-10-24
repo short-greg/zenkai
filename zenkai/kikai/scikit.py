@@ -1,16 +1,10 @@
 # 1st party
-import typing
-from copy import deepcopy
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional
-from collections import deque
 
 # 3rd party
 from sklearn.base import BaseEstimator
-from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 from torch.nn.functional import one_hot
-import sklearn.base
 
 # local
 from ..kaku import (

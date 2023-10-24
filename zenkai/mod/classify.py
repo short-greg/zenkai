@@ -129,9 +129,19 @@ class Clamp(torch.autograd.Function):
 
 
 class FreezeDropout(nn.Module):
+    """Freeze the dropout
+    """
 
     def __init__(self, p: float, freeze: bool=False):
+        """Create a FreezeDropout
 
+        Args:
+            p (float): The dropout rate
+            freeze (bool, optional): Whether to freeze the dropout. Defaults to False.
+
+        Raises:
+            ValueError: If p is greater or equal to one or less than zero
+        """
         super().__init__()
         if p >= 1.0 or p < 0.0:
             raise ValueError(f'P must be in range [0.0, 1.0) not {p}')

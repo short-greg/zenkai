@@ -14,24 +14,9 @@ from ..kaku import (
     LearningMachine,
     State,
 )
-
-
-# 1st part
-import typing
-from abc import ABC, abstractmethod
-import math
-
-# 3rd party
-import torch
-
-# local
 from ..kaku import (
     Individual, Population
 )
-# from ..tansaku import (
-#     binary_prob,
-#     cat_params,
-# )
 from ..kaku import State
 from ..mod import Voter
 
@@ -102,7 +87,6 @@ class EnsembleLearnerVoter(nn.Module):
         if len(y) > 1:
             return y.u
         return y.f
-
 
 
 # TODO: Find a better place for this

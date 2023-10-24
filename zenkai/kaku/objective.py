@@ -9,8 +9,15 @@ from ..kaku import Assessment, IO, Criterion, Reduction, State
 
 
 class Objective(ABC):
+    """Defines an objective function
+    """
 
     def __init__(self, maximize: bool=True) -> None:
+        """Create an objective function to be maximized or minimized
+
+        Args:
+            maximize (bool, optional): Whether to maximize or minimize the objective. Defaults to True.
+        """
         super().__init__()
         self.maximize = maximize
 
@@ -31,23 +38,37 @@ class Constraint(ABC):
 
 
 class CompoundConstraint(Constraint):
+    """Create a constraint 
+    """
 
     def __init__(self, constraints: typing.List[Constraint]) -> None:
+        """Create a compound constraint
+
+        Args:
+            constraints (typing.List[Constraint]): The constraints making up the compound constraint
+        """
         super().__init__()
-        self.constraints = []
+        self._constraints = []
         for constraint in constraints:
             if isinstance(constraint, CompoundConstraint):
-                self.constraints.extend(constraint.flattened)
-            else: self.constraints.append(constraint)
+                self._constraints.extend(constraint.flattened)
+            else: self._constraints.append(constraint)
 
     @property
-    def flattened(self):
-        return self.constraints
+    def flattened(self) -> typing.List[Constraint]:
+        """
+        Returns:
+            typing.List[Constraint]: The list of constraints
+        """
+        return self._constraints
         
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
-        
+        """
+        Returns:
+            typing.Dict[str, torch.BoolTensor]: The result of the constraints for each value
+        """
         result = {}
-        for constraint in self.constraints:
+        for constraint in self._constraints:
             cur = constraint(**kwargs)
             for key, value in cur.items():
                 if key in result:
@@ -57,8 +78,17 @@ class CompoundConstraint(Constraint):
         return result
 
 
-def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=None, penalty=torch.inf) -> torch.Tensor:
+def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=None, penalty: torch.Tensor=torch.inf) -> torch.Tensor:
+    """Impose a constraint on a tensor
 
+    Args:
+        value (torch.Tensor): The tensor specifying the valeu
+        constraint (typing.Dict[str, torch.BoolTensor], optional): The constraint to impose. Defaults to None.
+        penalty (_type_, optional): The penalty to level. Defaults to torch.inf.
+
+    Returns:
+        torch.Tensor: The result of imposing the tensor
+    """
     if constraint is None:
         return value
     value = value.clone()
@@ -77,27 +107,55 @@ def impose(value: torch.Tensor, constraint: typing.Dict[str, torch.BoolTensor]=N
 
 
 class NullConstraint(Constraint):
+    """Defines a constraint that does not constrain any value
+    """
 
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        """
+
+        Returns:
+            typing.Dict[str, torch.BoolTensor]: No Constraints
+        """
         return {}
 
 
 class ValueConstraint(Constraint):
+    """Defines a constraint on a value
+    """
 
     def __init__(self, f: typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor], reduce_dim: bool=None, keepdim: bool=False, **constraints) -> None:
+        """Defines a value constraint
+
+        Args:
+            f (typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor]): The function to check if a constraint is violated
+            reduce_dim (bool, optional): The dimension to reduce upon. Defaults to None.
+            keepdim (bool, optional): Whether to keep the dimension. Defaults to False.
+        """
         super().__init__()
-        self.constraints = constraints
+        self._constraints = constraints
         self.f = f
         self.keepdim = keepdim
         self.reduce_dim = reduce_dim
-        
-    def __call__(self, **kwargs: torch.Tensor):
-        
+
+    @property
+    def flattened(self) -> typing.List[Constraint]:
+        """
+        Returns:
+            typing.List[Constraint]: The list of constraints
+        """
+        return self._constraints
+
+    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        """
+
+        Returns:
+            typing.Dict[str, torch.BoolTensor]: 
+        """
         result = {}
         for k, v in kwargs.items():
 
-            if k in self.constraints:
-                result[k] = self.f(v, self.constraints[k])
+            if k in self._constraints:
+                result[k] = self.f(v, self._constraints[k])
                 if self.reduce_dim is not None:
                     result[k] = torch.any(result[k], dim=self.reduce_dim, keepdim=self.keepdim)
 
@@ -105,6 +163,8 @@ class ValueConstraint(Constraint):
 
 
 class LT(ValueConstraint):
+    """Place a constraint that the tensor must be less than a value
+    """
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
@@ -112,6 +172,8 @@ class LT(ValueConstraint):
 
 
 class LTE(ValueConstraint):
+    """Place a constraint that the tensor must be less than or equal to a value
+    """
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
@@ -119,6 +181,8 @@ class LTE(ValueConstraint):
 
 
 class GT(ValueConstraint):
+    """Place a constraint that the tensor must be greater than to a value
+    """
     
     def __init__(self, reduce_dim: bool=None, **constraints) -> None:
 
@@ -126,49 +190,72 @@ class GT(ValueConstraint):
 
 
 class GTE(ValueConstraint):
+    """Place a constraint that the tensor must be greater than or equal to a value
+    """
     
     def __init__(self,reduce_dim: bool=None, **constraints) -> None:
 
         super().__init__(lambda x, c: x < c, reduce_dim, **constraints)
 
 
-
 class FuncObjective(Objective):
 
     def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, penalty: float=torch.inf, maximize: bool=False):
+        """Define an objective based on a function
 
+        Args:
+            f (typing.Callable[[typing.Any], torch.Tensor]): The function to maximize or minimize
+            constraint (Constraint, optional): _description_. Defaults to None.
+            penalty (float, optional): _description_. Defaults to torch.inf.
+            maximize (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: _description_
+        """
         if penalty < 0:
             raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
-        self.f = f
-        self.constraint = constraint or NullConstraint()
-        self.maximize = maximize
-        self.penalty = penalty if maximize else -penalty
+        self._f = f
+        self._constraint = constraint or NullConstraint()
+        self._maximize = maximize
+        self._penalty = penalty if maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
         
-        value = self.f(**kwargs)
-        constraint = self.constraint(**kwargs)
-        value = impose(value, constraint, self.penalty)
+        value = self._f(**kwargs)
+        constraint = self._constraint(**kwargs)
+        value = impose(value, constraint, self._penalty)
         
-        result = Assessment(Reduction[reduction].reduce(
+        return Assessment(Reduction[reduction].reduce(
             value
-        ), self.maximize)
-        return result
+        ), self._maximize)
 
 
 class NNLinearObjective(Objective):
 
     def __init__(self, linear: nn.Linear, net: nn.Module, criterion: Criterion, x: IO, t: IO, constraint: Constraint=None, penalty: float=torch.inf):
+        """Create an objective for optimizing a linear network
 
+        Args:
+            linear (nn.Linear): The linear network to optimize or minimize the tensor for
+            net (nn.Module): The net that the linear is a part of
+            criterion (Criterion): The criterion for optimization
+            x (IO): The input to the objective
+            t (IO): The target for the objective
+            constraint (Constraint, optional): The constraint to impose on the network. Defaults to None.
+            penalty (float, optional): The penalty to place on constraint violations. Defaults to torch.inf.
+
+        Raises:
+            ValueError: If the penalty is less than 0
+        """
         if penalty < 0:
             raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
-        self.linear = linear
-        self.net = net
-        self.criterion = criterion
+        self._linear = linear
+        self._net = net
+        self._criterion = criterion
         self.x = x
         self.t = t
-        self.constraint = constraint or NullConstraint()
-        self.penalty = penalty if self.criterion.maximize else -penalty
+        self._constraint = constraint or NullConstraint()
+        self._penalty = penalty if self._criterion.maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
         
@@ -176,22 +263,23 @@ class NNLinearObjective(Objective):
         b = kwargs.get('b', [None] * len(w))
         assessments = []
         for w_i, b_i in zip(w, b):
-            self.linear.weight.data = w_i
+            self._linear.weight.data = w_i
             if b_i is not None:
-                self.linear.bias.data = b_i
+                self._linear.bias.data = b_i
             with torch.no_grad():
-                assessments.append(self.criterion.assess(IO(self.net(self.x.f)), self.t, reduction_override=reduction))
+                assessments.append(self._criterion.assess(IO(self._net(self.x.f)), self.t, reduction_override=reduction))
         assessment = Assessment.stack(assessments)
-        constraint = self.constraint(**kwargs)
-        value = impose(assessment.value, constraint, self.penalty)
+        constraint = self._constraint(**kwargs)
+        value = impose(assessment.value, constraint, self._penalty)
         value = value.transpose(2, 1)
-        result = Assessment(Reduction[reduction].reduce(
+        return Assessment(Reduction[reduction].reduce(
             value
-        ), self.criterion.maximize)
-        return result
+        ), self._criterion.maximize)
 
 
 class CriterionObjective(Objective):
+    """Create an objective to optimize based on a criterion
+    """
 
     def __init__(self, criterion: Criterion):
 
@@ -206,6 +294,8 @@ class CriterionObjective(Objective):
 
 
 class Itadaki(ABC):
+    """Create an optimizer
+    """
 
     @abstractmethod
     def optim_iter(self, objective: Criterion, state: State=None, **kwargs) -> typing.Iterator[Assessment]:

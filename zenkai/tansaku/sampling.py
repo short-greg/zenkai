@@ -1,14 +1,11 @@
+# 1st party
 from abc import ABC, abstractmethod
 
-from zenkai.kaku import State
-
-# gen_like, TensorDict, decay
-from ..kaku import TensorDict
-
-from ..kaku import State, Individual, Population
+# 3rd party
 import torch
-import typing
-from dataclasses import dataclass
+
+# local
+from ..kaku import TensorDict
 from ..utils import decay
 from .utils import gen_like
 

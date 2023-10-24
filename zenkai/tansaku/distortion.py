@@ -20,6 +20,8 @@ class Noiser(ABC):
 
 
 class GaussianNoiser(Noiser):
+    """Add Gaussian noise to the input
+    """
 
     def __init__(self, std: float=0.0, mean: float=0.0):
         """initializer

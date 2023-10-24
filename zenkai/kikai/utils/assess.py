@@ -27,23 +27,6 @@ class LayerAssessor(ABC):
         pass
 
 
-# def union_pre_and_post(pre: typing.Union[Assessment, None]=None, post: typing.Union[Assessment, None]=None) -> Assessment:
-#     """
-#     Combine pre and post assessments
-
-#     Returns:
-#         AssessmentDict: the unified assessment dict
-#     """
-#     if pre is None:
-#         return post
-#     if post is None:
-#         return pre
-#     if pre is None and post is None:
-#         return Assessment()
-    
-#     return {'pre': pre, 'post': post}
-
-
 class StepAssessHook(StepXHook, StepHook):
     """Class to assess before and after calling step
     """

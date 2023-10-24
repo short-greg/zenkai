@@ -5,13 +5,6 @@ import typing
 import torch.nn as nn
 import torch
 
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
-
-from .. import kaku
-from ..utils import module_factory
-from ..mod import Lambda
-
 # Local
 from ..kaku import (
     IO,
@@ -34,6 +27,9 @@ from ..kaku import (
     step_dep,
     ThLoss
 )
+from ..kaku.io import IO
+from ..kaku.state import State
+from ..mod import Lambda
 from ..utils import get_model_grads, set_model_grads
 from ..mod import Null
 
