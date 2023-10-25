@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import torch
 from ..kaku import Population, Individual, State
-from .utils import select
+from . import select
 from .. import utils
 
 

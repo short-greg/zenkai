@@ -21,22 +21,22 @@ import typing
 import torch
 
 # local
-from ...kaku import State, Population, Individual, TensorDict
+from ..kaku import State, Population, Individual, TensorDict
 
 
 # local
-from ...utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
+from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
 
-from ...kaku import IO, Assessment
-from .generate import expand_k
-from ...kaku import Reduction, Criterion, State, Criterion
+from ..kaku import IO, Assessment
+from .utils.generate import expand_k
+from ..kaku import Reduction, Criterion, State, Criterion
 
 from copy import deepcopy
 
 
 import torch
 
-from ...kaku.assess import Assessment
+from ..kaku.assess import Assessment
 from abc import abstractmethod, ABC
 
 # TODO: Move to utils
@@ -289,7 +289,7 @@ class BestSelector(Selector):
 
 class ParentSelector(Selector):
 
-    def __init__(self, k: int, divide_from: int=1, largest: bool=True):
+    def __init__(self, k: int, divide_from: int=1):
         """
 
         Args:
@@ -298,7 +298,6 @@ class ParentSelector(Selector):
             largest (bool, optional): _description_. Defaults to True.
         """
         self.k = k
-        self.largest = largest
         self.divide_from = divide_from
     
     def select(self, assessment: Assessment) -> IndexMap:

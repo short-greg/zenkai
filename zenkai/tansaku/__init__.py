@@ -31,4 +31,30 @@ from .breeding import (
 )
 from .slope import (
     SlopeUpdater,
+    SlopeCalculator
 )
+from .sampling import (
+    Sampler,
+    BinarySampler,
+    GaussianSampler
+)
+from .elitism import (
+    KBestElitism,
+    Elitism
+)
+from .division import (
+    Divider,
+    EqualDivider,
+    FitnessProportionateDivider
+)
+from .select import (
+    TopKSelector,
+    BestSelector,
+    Selector,
+    select_best_individual,
+    select_best_sample,
+    ParentSelector,
+    RepeatSpawner,
+    IndexMap
+)
+from . import utils

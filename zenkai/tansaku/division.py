@@ -9,7 +9,7 @@ import torch
 # local
 from ..kaku import Population
 from ..kaku import State
-from .utils import select as selection
+from . import select as selection
 
 
 class Divider(ABC):
@@ -60,7 +60,7 @@ class FitnessProportionateDivider(Divider):
         # shape = assessment.shape
         reduced = assessment.reduce_image(self._divide_start)
         
-        selector = selection.ParentSelector(self.n_divisions, self._divide_start, 0, assessment.maximize)
+        selector = selection.ParentSelector(self.n_divisions, self._divide_start)
         index_map = selector.select(reduced)
         
         result = index_map.select_index(population)

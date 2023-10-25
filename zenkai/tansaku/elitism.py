@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 # local
 from ..kaku import Population
-from .utils import select as selection
+from . import select as selection
 
 
 class Elitism(ABC):
@@ -43,6 +43,10 @@ class KBestElitism(Elitism):
         index_map = selector.select(assessment)
 
         population1 = index_map.select_index(population1)
+        for k, v in population1.items():
+            print(k, v.size())
+        for k, v in population2.items():
+            print(k, v.size())
 
         return population1.pstack([population2])
 

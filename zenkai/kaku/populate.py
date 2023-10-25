@@ -186,7 +186,6 @@ class TensorDict(dict):
     def __eq__(self, other: 'TensorDict') -> 'TensorDict':
         if not self.validate_keys(other):
             raise ValueError('All keys must be same in self and other to compute greater than')
-        print('CALLED!')
         return self.binary_op(torch.equal, other, union=False)
 
     @abstractmethod
@@ -251,7 +250,7 @@ class Individual(TensorDict):
         """
 
         return Population(
-            **{key: expand_dim0(v, k, False) for key, v in self}
+            **{key: expand_dim0(v, k, False) for key, v in self.items()}
         )    
 
     def join(self, population: "Population", individual_idx: int) -> "Individual":
@@ -538,7 +537,11 @@ class Population(TensorDict):
         for v in self.loop_over(*others, only_my_k=False, union=False):
             k = v[0]
             tensors = v[1:]
-            result[k] = torch.vstack(tensors)
+            if tensors[0].dim() == 1:
+                result[k] = torch.hstack(tensors)
+            else:
+                result[k] = torch.vstack(tensors)
+
         return Population(
             **result
         )

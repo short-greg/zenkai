@@ -437,11 +437,6 @@ class MyState(object):
             KeyError: The key already exists in the sub states
         """
         self.state.add_sub(self.obj, key, state, ignore_exists=ignore_exists)
-        # if key in self._subs:
-        #     raise KeyError(f"State by name of {key} already exists in subs")
-        # state = state or State()
-        # self._subs[key] = state
-        # return state
 
     def my_sub(self, key: str, to_add: bool = True) -> "MyState":
         """Get the sub state for a key
@@ -456,10 +451,6 @@ class MyState(object):
         sub = self.state.sub(self.obj, key, to_add)
         return sub.mine(self)
 
-        # if to_add and key not in self._subs:
-        #     self._state.subs[key] = State()
-        # return self._subs[key].mine(self._obj)
-
     def get(self, key: str, default=None, keep: bool=False) -> typing.Any:
         """Get the value at a key
 
@@ -471,16 +462,13 @@ class MyState(object):
             typing.Any: The value at the key or the default
         """
         self.state.get(self.obj, key, default)
-        # if keep:
-        #     return self._keep.get(key, default)
-        # return self._obj.get(key, default)
     
     def get_or_set(self, key: typing.Hashable, default) -> typing.Any:
 
         try: 
-            return self.state[key]
+            return self.state[self.obj, key]
         except KeyError:
-            self.state[key] = default
+            self.state[self.obj, key] = default
             return default
 
     def store(self, key: str, value, keep: bool=False) -> typing.Any:
@@ -494,10 +482,6 @@ class MyState(object):
             typing.Any: The value at the key or the default
         """
         self.state.store(self.obj, key, value, keep)
-        # if keep:
-        #     self._keep[key] = value
-        # else:
-        #     self._data[key] = value
 
     def __getitem__(self, key: str) -> typing.Any:
         """Get the value at a key
@@ -509,7 +493,6 @@ class MyState(object):
             typing.Any: The value at the key
         """
         return self.state[self.obj, key]
-        # return self._data[key]
 
     def __setitem__(self, key: str, value):
         """Set the value at the key
@@ -519,7 +502,6 @@ class MyState(object):
             value: The value to set
         """
         self.state[self.obj, key] = value
-        # self._data[key] = value
 
     def __getattr__(self, key):
         """Get the value at a key
@@ -607,7 +589,6 @@ class EmissionStack(object):
             return self._stack.pop()
         except IndexError:
             return None
-            # raise IndexError("No more elements left in the EmissionStack to pop")
 
     def __iter__(self):
         """

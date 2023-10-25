@@ -68,7 +68,6 @@ def populate(x: torch.Tensor, k: int, name: str = "t") -> Population:
     return populator(x)
 
 
-
 def expand_k(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
     """expand the trial dimension in the tensor (separates the trial dimension from the sample dimension)
 

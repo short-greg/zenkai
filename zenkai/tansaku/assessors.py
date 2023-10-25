@@ -24,8 +24,9 @@ class Assessor(ABC):
     def __call__(self, population: Population) -> Population:
         pass
 
-    def reduce(self, value: torch.Tensor, maximize: bool) -> torch.Tensor:
+    def reduce(self, assessment: Assessment) -> torch.Tensor:
         
+        value = assessment.value
         base_shape = value.shape[:self.reduce_from]
         reshaped = value.reshape(
             *[math.prod(base_shape), -1]
@@ -37,7 +38,7 @@ class Assessor(ABC):
         else:
             raise ValueError(f'Invalid reduction {self.reduction}')
         
-        return Assessment(reduced.reshape(base_shape), maximize)
+        return Assessment(reduced.reshape(base_shape), assessment.maximize)
 
 
 class ObjectivePopAssessor(Assessor):
@@ -76,7 +77,6 @@ class ObjectivePopAssessor(Assessor):
         assessment = self.objective('none', **sub_population)
         assessment = self.reduce(
             assessment,
-            self.objective.maximize
         )
         population.report(assessment)
 
@@ -124,7 +124,7 @@ class CriterionPopAssessor(Assessor):
 
         value = self.criterion(x, t, 'none')
         assessment = self.reduce(
-            value.reshape(k, -1, *value.shape[1:]), self.criterion.maximize
+            Assessment(value.reshape(k, -1, *value.shape[1:]), self.criterion.maximize)
         )
         population.report(assessment)
 
@@ -174,8 +174,7 @@ class XPopAssessor(Assessor):
             IO(*x), t, reduction_override="none"
         )
         assessment = self.reduce(
-            assessment.value.reshape(k, -1, *assessment.value.shape[1:]), 
-            assessment.maximize
+            Assessment(assessment.value.reshape(k, -1, *assessment.value.shape[1:]), assessment.maximize)
         )
         # if assessment.value.dim() >= 2:
         #     assessment = reduce_assessment_dim1(assessment, population.k, True)

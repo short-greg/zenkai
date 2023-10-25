@@ -14,6 +14,8 @@ from ..kaku import (
 from ..mod.noise import EqualsAssessmentDist
 from .utils import (
     binary_prob,
+)
+from .select import (
     select_best_sample,
     select_best_individual
 )

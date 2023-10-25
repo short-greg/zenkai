@@ -8,7 +8,7 @@ from ..kaku import (
     update_io,
 )
 from ..tansaku.assessors import XPopAssessor
-from ..tansaku.functional import Individual
+from ..tansaku.keep import Individual
 from ..tansaku.slope import SlopeUpdater, PopulationLimiter
 # from ..tansaku.populators import populate
 
