@@ -6,7 +6,7 @@ import torch.nn as nn
 # local
 from zenkai import tansaku, Assessment
 from zenkai import kaku
-from zenkai.tansaku import elitism
+from zenkai.tansaku import _elitism
 
 
 class TestKeepMixer:
@@ -40,7 +40,7 @@ class TestKBestElitism:
 
         torch.manual_seed(1)
         
-        mixer = elitism.KBestElitism(2)
+        mixer = _elitism.KBestElitism(2)
         population1 = kaku.Population(x=torch.rand(4, 4, 2))
         population1.report(Assessment(torch.tensor([0.1, 0.2, 0.8, 1.0])))
         population2 = kaku.Population(x=torch.rand(4, 4, 2))
@@ -52,7 +52,7 @@ class TestKBestElitism:
     def test_k_best_elitism_chooses_best_with_maximize(self):
         
         torch.manual_seed(1)
-        mixer = elitism.KBestElitism(2)
+        mixer = _elitism.KBestElitism(2)
         population1 = kaku.Population(x=torch.rand(4, 4, 2))
         population1.report(Assessment(torch.tensor([0.1, 0.2, 0.8, 1.0]), True))
         population2 = kaku.Population(x=torch.rand(4, 4, 2))

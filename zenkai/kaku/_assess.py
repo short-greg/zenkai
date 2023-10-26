@@ -10,7 +10,7 @@ import torch.nn as nn
 import numpy as np
 
 # Local
-from .io import IO
+from ._io import IO
 
 
 class Reduction(Enum):

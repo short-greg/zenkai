@@ -9,7 +9,7 @@ from torch.nn.parameter import Parameter
 
 # local
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0
-from ..kaku import Assessment
+from . import Assessment
 
 
 class TensorDict(dict):

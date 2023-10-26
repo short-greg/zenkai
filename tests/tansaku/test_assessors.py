@@ -1,5 +1,5 @@
 import torch
-from zenkai.tansaku import assessors
+from zenkai.tansaku import _assessors
 from zenkai.kaku import IO, Assessment, Objective, Population, State, LearningMachine, ThLoss, Reduction
 from ..kaku.test_machine import SimpleLearner
 
@@ -52,7 +52,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner(3, 4)
 
         population = Population(x=torch.rand(8, 3, 3), t=torch.rand(8, 3, 4))
-        assessor = assessors.XPopAssessor(
+        assessor = _assessors.XPopAssessor(
             learner, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -62,7 +62,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner3(3, 3, 4)
 
         population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.XPopAssessor(
+        assessor = _assessors.XPopAssessor(
             learner, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -72,7 +72,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner3(3, 3, 4)
 
         population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.XPopAssessor(
+        assessor = _assessors.XPopAssessor(
             learner, ['x'], 1, 'mean'
         )
         assessor(population)
@@ -82,7 +82,7 @@ class TestXPopulationAssessor:
         learner = SimpleLearner3(3, 3, 4)
 
         population = Population(x=torch.rand(8, 4, 3, 3), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.XPopAssessor(
+        assessor = _assessors.XPopAssessor(
             learner, ['x'], 1, 'mean'
         )
         assessor(population)
@@ -95,7 +95,7 @@ class TestCriterionAssessor:
         criterion = ThLoss('MSELoss', reduction='mean')
 
         population = Population(x=torch.rand(8, 3, 4), t=torch.rand(8, 3, 4))
-        assessor = assessors.CriterionPopAssessor(
+        assessor = _assessors.CriterionPopAssessor(
             criterion, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -105,7 +105,7 @@ class TestCriterionAssessor:
         criterion = ThLoss('MSELoss', reduction='mean')
 
         population = Population(x=torch.rand(8, 4, 3, 4), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.CriterionPopAssessor(
+        assessor = _assessors.CriterionPopAssessor(
             criterion, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -118,7 +118,7 @@ class TestCriterionAssessor:
         criterion = ThLoss('MSELoss', reduction='mean')
 
         population = Population(x=torch.rand(8, 3, 4), t=torch.rand(8, 3, 4))
-        assessor = assessors.CriterionPopAssessor(
+        assessor = _assessors.CriterionPopAssessor(
             criterion, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -128,7 +128,7 @@ class TestCriterionAssessor:
         criterion = ThLoss('MSELoss', reduction='mean')
 
         population = Population(x=torch.rand(8, 4, 3, 4), t=torch.rand(8, 4, 3, 4))
-        assessor = assessors.CriterionPopAssessor(
+        assessor = _assessors.CriterionPopAssessor(
             criterion, ['x'], 2, 'mean'
         )
         assessor(population)
@@ -141,7 +141,7 @@ class TestObjectiveAssessor:
         objective = SimpleObjective(True)
 
         population = Population(x=torch.rand(8, 3, 4), y=torch.rand(8, 3, 4))
-        assessor = assessors.ObjectivePopAssessor(
+        assessor = _assessors.ObjectivePopAssessor(
             objective, ['x', 'y'], 1, 'mean'
         )
         assessor(population)
@@ -151,7 +151,7 @@ class TestObjectiveAssessor:
         objective = SimpleObjective(True)
 
         population = Population(x=torch.rand(8, 4, 3, 4), y=torch.rand(8, 4, 3, 4))
-        assessor = assessors.ObjectivePopAssessor(
+        assessor = _assessors.ObjectivePopAssessor(
             objective, ['x', 'y'], 1, 'mean'
         )
         assessor(population)

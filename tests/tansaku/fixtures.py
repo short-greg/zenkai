@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from zenkai import Assessment
-from zenkai.tansaku.keep import Individual, Population
+from zenkai.tansaku._keep import Individual, Population
 from zenkai.utils import get_model_parameters
 
 

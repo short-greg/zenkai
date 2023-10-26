@@ -6,7 +6,7 @@ import torch
 
 # local
 from ..kaku import IO, LearningMachine, Criterion, Assessment
-from .keep import Population
+from ._keep import Population
 from ..kaku import Objective
 
 

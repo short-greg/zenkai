@@ -5,7 +5,7 @@ import torch.optim
 
 # local
 from zenkai.kaku import IO, Assessment
-from zenkai.kaku import machine as core
+from zenkai.kaku import _machine as core
 
 
 class Base:

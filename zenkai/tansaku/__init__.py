@@ -1,14 +1,14 @@
 # flake8: noqa
 
-from .assessors import (
+from ._assessors import (
     Assessor, XPopAssessor,
     ObjectivePopAssessor
 )
-from .keep import (
+from ._keep import (
     keep_feature,
     keep_mixer
 )
-from .reduction import (
+from ._reduction import (
     BestSampleReducer,
     BestIndividualReducer,
     BinaryGaussianReducer,
@@ -19,35 +19,35 @@ from .reduction import (
     StandardReducer,
     keep_original,
 )
-from .distortion import (
+from ._distortion import (
     Noiser,
     GaussianNoiser,
     BinaryNoiser,
 )
-from .breeding import (
+from ._breeding import (
     CrossOver,
     SmoothCrossOver,
     BinaryRandCrossOver
 )
-from .slope import (
+from ._slope import (
     SlopeUpdater,
     SlopeCalculator
 )
-from .sampling import (
+from ._sampling import (
     Sampler,
     BinarySampler,
     GaussianSampler
 )
-from .elitism import (
+from ._elitism import (
     KBestElitism,
     Elitism
 )
-from .division import (
+from ._division import (
     Divider,
     EqualDivider,
     ProbDivider
 )
-from .select import (
+from ._select import (
     TopKSelector,
     BestSelector,
     Selector,

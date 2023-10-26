@@ -3,7 +3,7 @@ import torch
 
 # local
 from ..utils import to_signed_neg, to_zero_neg
-from .keep import Individual, Population
+from ._keep import Individual, Population
 
 
 class SlopeCalculator(object):

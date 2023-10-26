@@ -30,18 +30,18 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 # from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
 
 
-from .iterable import (
+from ._iterable import (
     IterStepTheta, 
     IterHiddenStepTheta,
     IterStepX
 )
-from .pipelining import (
+from ._pipelining import (
     Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
 )
-from .post import StackPostStepTheta
-from .ensemble import EnsembleLearner, EnsembleLearnerVoter
+from ._post import StackPostStepTheta
+from ._ensemble import EnsembleLearner, EnsembleLearnerVoter
 
-from .scikit import (
+from ._scikit import (
     ScikitLimitGen,
     ScikitEstimator,
     ScikitMachine,
@@ -70,10 +70,10 @@ from ._grad import (
     grad,
     grad_update
 )
-from .backtarget import (
+from ._backtarget import (
     BackTarget,
 )
-from .reversible import (
+from ._reversible import (
     ReversibleMachine,
     reverse
 )

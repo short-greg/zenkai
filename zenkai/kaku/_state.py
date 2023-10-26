@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from collections import deque
 
 # local
-from .io import IO
-from .assess import Assessment, AssessmentDict
+from ._io import IO
+from ._assess import Assessment, AssessmentDict
 
 
 class IDable:

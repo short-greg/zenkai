@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from zenkai.kaku import assess as _evaluation, ThLoss, IO
+from zenkai.kaku import _assess as _evaluation, ThLoss, IO
 
 
 class TestAssessment:

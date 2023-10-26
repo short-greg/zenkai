@@ -10,7 +10,7 @@ from ..kaku import (
     AccLearningMachine, Criterion, OptimFactory
 )
 from ._grad import grad
-from .reversible import reverse
+from ._reversible import reverse
 
 
 class PipeStep(AccLearningMachine):

@@ -10,7 +10,7 @@ from ..mod import Reversible, SequenceReversible
 
 from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
 from ..mod import Lambda
-from .backtarget import BackTarget
+from ._backtarget import BackTarget
 
 
 class ReversibleMachine(LearningMachine):

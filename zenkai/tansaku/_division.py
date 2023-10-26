@@ -9,7 +9,7 @@ import torch
 # local
 from ..kaku import Population
 from ..kaku import State
-from . import select as selection
+from . import _select as selection
 
 
 class Divider(ABC):

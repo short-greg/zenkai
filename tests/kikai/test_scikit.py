@@ -6,11 +6,11 @@ from sklearn.linear_model import LogisticRegression, SGDRegressor
 
 # local
 from zenkai.kaku import IO, State, StepX, Criterion
-from zenkai.kikai.scikit import (
+from zenkai.kikai._scikit import (
     ScikitLimitGen,
     ScikitMachine
 )
-from zenkai.mod.scikit import ScikitBinary, ScikitRegressor
+from zenkai.mod._scikit import ScikitBinary, ScikitRegressor
 from zenkai.kikai.utils import RandomFeatureIdxGen
 
 

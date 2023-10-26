@@ -28,8 +28,8 @@ from ..kaku import (
     ThLoss,
     XCriterion
 )
-from ..kaku.io import IO
-from ..kaku.state import State
+from ..kaku._io import IO
+from ..kaku._state import State
 from ..mod import Lambda
 from ..utils import get_model_grads, set_model_grads
 from ..mod import Null

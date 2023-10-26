@@ -1,15 +1,15 @@
-from .scikit import (
+from ._scikit import (
     ScikitBinary,
     ScikitEstimator,
     ScikitMulticlass,
     ScikitRegressor,
 )
-from .filtering import Stride2D, TargetStride, UndoStride2D
-from .classify import (
+from ._filtering import Stride2D, TargetStride, UndoStride2D
+from ._classify import (
     Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout,
     binary_ste, sign_ste, Clamp
 )
-from .noise import (
+from ._noise import (
     NoiseReplace,
     NoiseReplace2,
     ModuleNoise,
@@ -21,7 +21,7 @@ from .noise import (
     remove_noise,
     AssessmentDist
 )
-from .reversible import (
+from ._reversible import (
     Reversible,
     Null,
     TargetReverser,
@@ -34,7 +34,7 @@ from .reversible import (
     ZeroToNeg1,
     Neg1ToZero
 )
-from .ensemble import (
+from ._ensemble import (
     EnsembleVoter,
     VoteAggregator,
     Voter,

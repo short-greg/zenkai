@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from zenkai import IO, Assessment
-from zenkai.mod.noise import (
+from zenkai.mod._noise import (
     GaussianNoiser, NoiseReplace,
     RandSelector, EqualsAssessmentDist, ModuleNoise
 )

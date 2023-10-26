@@ -1,7 +1,7 @@
 import torch
 
-from zenkai.tansaku.keep import Individual
-from zenkai.tansaku.slope import (SlopeUpdater, SlopeCalculator)
+from zenkai.tansaku._keep import Individual
+from zenkai.tansaku._slope import (SlopeUpdater, SlopeCalculator)
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (binary_individual1, binary_individual2, binary_x,

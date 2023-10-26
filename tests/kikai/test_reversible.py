@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 
 from zenkai import IO, State, Criterion
-from zenkai.kikai.reversible import ReversibleMachine, BackTarget
-from zenkai.mod import reversible
+from zenkai.kikai._reversible import ReversibleMachine, BackTarget
+from zenkai.mod import _reversible
 import torch
 import torch.nn as nn
 from zenkai.kaku import IO, State, Criterion
@@ -14,7 +14,7 @@ class TestReversibleMachine:
     def test_step_x_reverses(self):
 
         machine = ReversibleMachine(
-            reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -23,7 +23,7 @@ class TestReversibleMachine:
     def test_step_x_results_in_valid_values(self):
 
         machine = ReversibleMachine(
-            reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -33,7 +33,7 @@ class TestReversibleMachine:
     def test_forward_converts_to_correct_value(self):
 
         machine = ReversibleMachine(
-            reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('mse')
         )
         x = IO(torch.randn(4, 3).sign())
         t = (x.f + 1) / 2

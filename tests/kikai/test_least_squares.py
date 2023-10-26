@@ -5,7 +5,7 @@ import torch.nn as nn
 
 # local
 from zenkai.kaku import IO, State
-from zenkai.kikai import least_squares
+from zenkai.kikai import _least_squares
 
 
 @pytest.fixture
@@ -42,8 +42,8 @@ class TestLeastSquaresStepTheta:
 
     def test_step_x_with_optimize_dx(self, linear, conn1):
         x, t, y = conn1
-        solver = least_squares.LeastSquaresStandardSolver(True)
-        step_theta = least_squares.LeastSquaresStepTheta(
+        solver = _least_squares.LeastSquaresStandardSolver(True)
+        step_theta = _least_squares.LeastSquaresStepTheta(
             linear, solver, True
         )
         before = torch.clone(step_theta.linear.weight)
@@ -52,8 +52,8 @@ class TestLeastSquaresStepTheta:
 
     def test_step_x_with_optimize_x(self, linear, conn1):
         x, t, y = conn1
-        solver = least_squares.LeastSquaresStandardSolver(True)
-        step_theta = least_squares.LeastSquaresStepTheta(
+        solver = _least_squares.LeastSquaresStandardSolver(True)
+        step_theta = _least_squares.LeastSquaresStepTheta(
             linear, solver, False
         )
         before = torch.clone(step_theta.linear.weight)
@@ -62,8 +62,8 @@ class TestLeastSquaresStepTheta:
 
     def test_step_x_with_no_bias(self, linear_wo_bias, conn1):
         x, t, y = conn1
-        solver = least_squares.LeastSquaresStandardSolver(False)
-        step_theta = least_squares.LeastSquaresStepTheta(
+        solver = _least_squares.LeastSquaresStandardSolver(False)
+        step_theta = _least_squares.LeastSquaresStepTheta(
             linear_wo_bias, solver, False
         )
         before = torch.clone(step_theta.linear.weight)
@@ -75,8 +75,8 @@ class TestLeastSquaresStepX:
 
     def test_step_x_with_optimize_dx(self, linear2, conn2):
         x, t, y = conn2
-        solver = least_squares.LeastSquaresStandardSolver(False)
-        step_x = least_squares.LeastSquaresStepX(
+        solver = _least_squares.LeastSquaresStandardSolver(False)
+        step_x = _least_squares.LeastSquaresStepX(
             linear2, solver, True
         )
         before = torch.clone(x.f)
@@ -85,8 +85,8 @@ class TestLeastSquaresStepX:
 
     def test_step_x_with_optimize_x(self, linear2, conn2):
         x, t, y = conn2
-        solver = least_squares.LeastSquaresStandardSolver(False)
-        step_x = least_squares.LeastSquaresStepX(
+        solver = _least_squares.LeastSquaresStandardSolver(False)
+        step_x = _least_squares.LeastSquaresStepX(
             linear2, solver, False
         )
         before = torch.clone(x.f)
@@ -95,8 +95,8 @@ class TestLeastSquaresStepX:
 
     def test_step_x_with_optimize_x_wo_bias(self, linear2_wo_bias, conn2):
         x, t, y = conn2
-        solver = least_squares.LeastSquaresStandardSolver(False)
-        step_x = least_squares.LeastSquaresStepX(
+        solver = _least_squares.LeastSquaresStandardSolver(False)
+        step_x = _least_squares.LeastSquaresStepX(
             linear2_wo_bias, solver, False
         )
         before = torch.clone(x.f)

@@ -9,8 +9,8 @@ from zenkai import utils
 
 # local
 from zenkai.kaku import IO, IDable, Assessment, State
-from zenkai.kaku import machine as core
-from zenkai.kaku import assess
+from zenkai.kaku import _machine as core
+from zenkai.kaku import _assess
 
 
 class Base:
@@ -163,7 +163,7 @@ class SimpleLearner(core.LearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
@@ -196,7 +196,7 @@ class SimpleAccLearner(core.AccLearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
@@ -422,7 +422,7 @@ class DependentLearner(core.LearningMachine):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:

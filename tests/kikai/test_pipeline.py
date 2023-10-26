@@ -1,7 +1,7 @@
 import zenkai
 import torch.nn as nn
 from zenkai import Assessment, State, IO, AccLearningMachine, ThLoss, acc_dep
-from zenkai.kikai import pipelining
+from zenkai.kikai import _pipelining
 from ..kaku.test_machine import SimpleLearner
 import torch
 from zenkai.utils import get_model_parameters, get_model_grads
@@ -85,11 +85,11 @@ class AccSimpleLearner3(AccLearningMachine):
         return y.out(release)
 
 
-class SamplePipeline(pipelining.PipelineLearner):
+class SamplePipeline(_pipelining.PipelineLearner):
 
     def __init__(self, step_priority: bool=True):
         super().__init__()
-        self._node = pipelining.PipeStep(
+        self._node = _pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
 
@@ -101,14 +101,14 @@ class SamplePipeline(pipelining.PipelineLearner):
         return self._node(x, state, release, pipeline)
 
 
-class SamplePipeline2(pipelining.PipelineLearner):
+class SamplePipeline2(_pipelining.PipelineLearner):
 
     def __init__(self, step_priority: bool=True):
         super().__init__()
-        self._node = pipelining.PipeStep(
+        self._node = _pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
-        self._node2 = pipelining.PipeStep(
+        self._node2 = _pipelining.PipeStep(
             SimpleLearner(3, 3), step_priority
         )
 
@@ -123,14 +123,14 @@ class SamplePipeline2(pipelining.PipelineLearner):
         return y2.out(release)
 
 
-class AccSamplePipeline(pipelining.AccPipelineLearner):
+class AccSamplePipeline(_pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
         super().__init__()
-        self._node = pipelining.PipeStep(
+        self._node = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = pipelining.PipeStep(
+        self._node2 = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
 
@@ -144,17 +144,17 @@ class AccSamplePipeline(pipelining.AccPipelineLearner):
         return y2.out(release)
 
 
-class AccSamplePipelineT(pipelining.AccPipelineLearner):
+class AccSamplePipelineT(_pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
         super().__init__()
-        self._node = pipelining.PipeStep(
+        self._node = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = pipelining.PipeStep(
+        self._node2 = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node3 = pipelining.PipeStep(
+        self._node3 = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
 
@@ -170,17 +170,17 @@ class AccSamplePipelineT(pipelining.AccPipelineLearner):
         return y3.out(release)
 
 
-class AccSamplePipelineT2(pipelining.AccPipelineLearner):
+class AccSamplePipelineT2(_pipelining.AccPipelineLearner):
 
     def __init__(self, step_priority: bool=True):
         super().__init__()
-        self._node = pipelining.PipeStep(
+        self._node = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node2 = pipelining.PipeStep(
+        self._node2 = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
-        self._node3 = pipelining.PipeStep(
+        self._node3 = _pipelining.PipeStep(
             AccSimpleLearner(3, 3), step_priority
         )
 

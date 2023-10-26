@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 # Local
-from zenkai.kaku.optimize import ParamFilter, OptimFactory
+from zenkai.kaku._optimize import ParamFilter, OptimFactory
 from zenkai.utils import get_model_parameters
 
 

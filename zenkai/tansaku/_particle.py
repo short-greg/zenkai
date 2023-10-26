@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import torch
 from ..kaku import Population, Individual, State
-from . import select
+from . import _select
 from .. import utils
 
 
@@ -64,7 +64,7 @@ class GlobalParticleSmooth(GlobalParticle):
         #     global_best = self._update_best(weight, state)
         #     self._update_dist()
 
-        selector = select.BestSelector(1, self.dim, assessment.maximize)
+        selector = _select.BestSelector(1, self.dim, assessment.maximize)
         value = assessment.value.mean(dim=0)
         index_map = selector.select(assessment)
         best_value = selector.select_value(assessment)

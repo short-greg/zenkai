@@ -5,7 +5,7 @@ from abc import abstractmethod, ABC
 
 import torch
 import torch.nn as nn
-from ..kaku import Assessment, IO, Criterion, Reduction, State
+from . import Assessment, IO, Criterion, Reduction, State
 
 
 class Objective(ABC):

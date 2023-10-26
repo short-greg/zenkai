@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 # local
 from ..kaku import Population
-from . import select as selection
+from . import _select as selection
 
 
 class Elitism(ABC):

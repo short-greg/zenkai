@@ -7,8 +7,8 @@ import torch
 from torch import nn
 
 # local
-from ..utils import convert
-from .reversible import Reversible
+from ..utils import _convert
+from ._reversible import Reversible
 
 
 class Stride2D(nn.Module):
@@ -25,10 +25,10 @@ class Stride2D(nn.Module):
         stride = stride or 1
         padding = padding or 0
         self._in_features = in_features
-        self._kernel_size = convert.to_2dtuple(kernel_size)
-        self._stride = convert.to_2dtuple(stride)
+        self._kernel_size = _convert.to_2dtuple(kernel_size)
+        self._stride = _convert.to_2dtuple(stride)
         if padding is not None:
-            padding = convert.to_2dtuple(padding)
+            padding = _convert.to_2dtuple(padding)
             self._padding = tuple(
                 map(int, (padding[0], padding[0], padding[1], padding[1]))
             )
@@ -74,8 +74,8 @@ class Stride2D(nn.Module):
 
         strided = torch.as_strided(
             x,
-            convert.calc_size2d(x, self._stride, self._kernel_size),
-            convert.calc_stride2d(x, self._stride),
+            _convert.calc_size2d(x, self._stride, self._kernel_size),
+            _convert.calc_stride2d(x, self._stride),
         )
         strided = strided.permute(0, 2, 3, 1, 4, 5)
         if not self._reshape_output:
@@ -89,7 +89,7 @@ class UndoStride2D(Reversible):
     def __init__(self, n_channels: int, size: typing.Tuple[int]):
         super().__init__()
         self._n_channels = n_channels
-        self._size = convert.to_2dtuple(size)
+        self._size = _convert.to_2dtuple(size)
 
     @property
     def n_channels(self) -> int:

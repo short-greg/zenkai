@@ -1,4 +1,4 @@
-from zenkai.tansaku.reduction import (BestSampleReducer,
+from zenkai.tansaku._reduction import (BestSampleReducer,
                                       BestIndividualReducer,
                                       BinaryGaussianReducer, MomentumReducer,
                                       )

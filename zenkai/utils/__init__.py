@@ -15,7 +15,7 @@
 #     EnsembleVoter,
 #     StochasticVoter
 # )
-from .convert import (
+from ._convert import (
     binary_encoding,
     calc_size2d,
     calc_stride2d,
@@ -38,7 +38,7 @@ from .convert import (
     collapse_k,
     expand_k
 )
-from .sampling import (
+from ._sampling import (
     gather_idx_from_population, 
     gaussian_sample
 )

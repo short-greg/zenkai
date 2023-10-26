@@ -24,13 +24,13 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from zenkai.kaku.io import IO
-from zenkai.kaku.state import State
+from zenkai.kaku._io import IO
+from zenkai.kaku._state import State
 
 # local
-from .assess import Assessment, Criterion
-from .state import IDable, State
-from .io import (
+from ._assess import Assessment, Criterion
+from ._state import IDable, State
+from ._io import (
     IO,
     Idx 
 )

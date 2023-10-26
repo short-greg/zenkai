@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from .assess import (
+from ._assess import (
     LOSS_MAP,
     Assessment,
     Criterion,
@@ -12,7 +12,7 @@ from .assess import (
     reduce_assessment
 )
 
-from .io import (
+from ._io import (
     IO,
     Idx,
     update_io,
@@ -22,11 +22,11 @@ from .io import (
     ToIO,
     FromIO
 )
-from .build import (
+from ._build import (
     Builder, Factory, BuilderArgs, BuilderFunctor,
     Var, UNDEFINED
 )
-from .machine import (
+from ._machine import (
     # TODO: Separate out hooks
     BatchIdxStepTheta,
     BatchIdxStepX,
@@ -49,18 +49,18 @@ from .machine import (
     forward_dep,
     step_dep
 )
-from .optimize import (
+from ._optimize import (
     OPTIM_MAP,
     ParamFilter,
     NullOptim,
     OptimFactory,
     optimf
 )
-from .state import IDable, MyState, State, StateKeyError, EmissionStack
-from .populate import (
+from ._state import IDable, MyState, State, StateKeyError, EmissionStack
+from ._populate import (
     Population, PopulationIndexer, Individual, TensorDict
 )
-from .objective import (
+from ._objective import (
     Itadaki,
     Objective,
     impose,
