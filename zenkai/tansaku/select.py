@@ -302,6 +302,7 @@ class FitnessParentSelector(Selector):
         prob = prob.repeat(self.k, *[1] * len(prob.shape))
         # (n_divisions * ..., population)
         prob = prob.reshape(-1, prob.shape[-1])
+        print(prob.shape)
         parents1, parents2 = torch.multinomial(
             prob, 2, False
         ).transpose(1, 0)
@@ -333,20 +334,26 @@ class RankParentSelector(Selector):
         value = assessment.value
         maximize = assessment.maximize
         k = self.k
-        
-        value = torch.randn(4, 8)
-        maximize = False
+        # value = torch.randn(4, 8)
+        # maximize = False
         _, sorted_indices = torch.sort(value, dim=0, descending=maximize)
         ranks = torch.arange(1, len(value) + 1)
-        feat_total = math.prod(value.shape[1:])
+        feat_total = math.prod(value.shape[1:]) if value.dim() > 1 else 0
         ranks_prob = ranks / ranks.sum(dim=0, keepdim=True)
-        ranks_prob = ranks_prob[:, None].repeat(1, feat_total)
-        ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
-        ranks_prob = ranks_prob.transpose(1, 0)
-        ranks_prob = ranks_prob[None,:,:].repeat(k, 1, 1).reshape(-1, len(ranks))
+        if feat_total > 0:
+            ranks_prob = ranks_prob[:, None].repeat(1, feat_total)
+            print('R: ', ranks_prob.shape, sorted_indices.shape)
+            ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
+            ranks_prob = ranks_prob.transpose(1, 0)
+            ranks_prob = ranks_prob[None,:,:].repeat(k, 1, 1).reshape(-1, len(ranks))
+        else:
+            ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
+            ranks_prob = ranks_prob[None,:].repeat(k, 1).reshape(-1, len(ranks))
+
         parents1, parents2 = torch.multinomial(ranks_prob, num_samples=2, replacement=False).transpose(1, 0)
         
         parents1 = parents1.reshape(k, *base_shape[1:])
         parents2 = parents2.reshape(k, *base_shape[1:])
 
+        print(parents1.shape)
         return IndexMap(assessment, parents1, parents2, dim=0)
