@@ -28,21 +28,24 @@ class Divider(ABC):
         pass
 
 
-class FitnessProportionateDivider(Divider):
+# Change the name to take any selector
+class ProbDivider(Divider):
     """Divide the population into two based on the fitness proportionality
     """
 
-    def __init__(self, n_divisions: int, divide_start: int=1):
+    def __init__(self, selector: selection.Selector, divide_start: int=1):
         """initializer
 
         Args:
             n_divisions (int): number of pairs to generate
         """
         super().__init__()
-        if divide_start < 1:
-            raise ValueError(f'Divide start must be greater than 1')
-        self._divide_start = divide_start
-        self.n_divisions = n_divisions
+        self.divide_start = divide_start
+        self.selector = selector
+        # if divide_start < 1:
+        #     raise ValueError(f'Divide start must be greater than 1')
+        # self._divide_start = divide_start
+        # self.n_divisions = n_divisions
 
     def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
@@ -58,16 +61,16 @@ class FitnessProportionateDivider(Divider):
         assessment = population.stack_assessments()
 
         # shape = assessment.shape
-        reduced = assessment.reduce_image(self._divide_start)
+        reduced = assessment.reduce_image(self.divide_start)
         
-        selector = selection.ParentSelector(self.n_divisions, self._divide_start)
-        index_map = selector.select(reduced)
+        index_map = self.selector.select(reduced)
+        # index_map = selector.select(reduced)
         
         result = index_map.select_index(population)
         return Population(**result[0]), Population(**result[1])
 
     def spawn(self) -> Divider:
-        return FitnessProportionateDivider(self.n_divisions)
+        return ProbDivider(self.n_divisions)
 
 
 class EqualDivider(Divider):

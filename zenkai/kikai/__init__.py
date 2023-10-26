@@ -58,3 +58,23 @@ from .utils.assess import (
     StepFullLayerAssessor,
 ) 
 from . import utils
+from ._grad import (
+    GradLearner,
+    GradLoopLearner,
+    GradLoopStepTheta,
+    GradLoopStepX,
+    GradStepTheta,
+    GradStepX,
+    GradUpdater,
+    CriterionGrad,
+    grad,
+    grad_update
+)
+from .backtarget import (
+    BackTarget,
+)
+from .reversible import (
+    ReversibleMachine,
+    reverse
+)
+

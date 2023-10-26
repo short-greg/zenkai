@@ -244,3 +244,41 @@ class TestToZeroNeg:
         x = torch.ones(2, 4)
         x = convert.to_zero_neg(x)
         assert (x == 1).all()
+
+
+
+N_TRIALS = 4
+
+N_SAMPLES = 3
+
+
+def g(seed: int):
+    g = torch.Generator()
+    g.manual_seed(seed)
+
+@pytest.fixture
+def x():
+    return torch.rand(N_SAMPLES, 2, generator=g(2))
+
+@pytest.fixture
+def x_trial():
+    return torch.rand(N_TRIALS, N_SAMPLES, 2, generator=g(2))
+
+@pytest.fixture
+def x_trial_collapsed():
+    return torch.rand(N_TRIALS * N_SAMPLES, 2, generator=g(2))
+
+
+class TestCollapseK:
+
+    def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
+        shape = convert.collapse_k(x_trial).shape
+        assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
+
+
+class TestExpandK:
+
+    def test_collapse_k_collapses_the_trial_dimension(self, x_trial_collapsed: torch.Tensor):
+        shape = convert.expand_k(x_trial_collapsed, N_TRIALS).shape
+        assert shape[0] == N_TRIALS 
+        assert shape[1] == N_SAMPLES

@@ -8,6 +8,7 @@ from .assess import (
     ThLoss,
     AssessmentDict,
     Criterion,
+    XCriterion,
     reduce_assessment
 )
 
@@ -26,6 +27,7 @@ from .build import (
     Var, UNDEFINED
 )
 from .machine import (
+    # TODO: Separate out hooks
     BatchIdxStepTheta,
     BatchIdxStepX,
     FeatureIdxStepTheta,
@@ -60,11 +62,12 @@ from .populate import (
 )
 from .objective import (
     Itadaki,
+    Objective,
+    impose,
+    # TODO: keep only the core modules (i.e. the base classes)
     FuncObjective,
     CriterionObjective,
     ValueConstraint,
-    Objective,
-    impose,
     LTE,
     LT,
     GT,

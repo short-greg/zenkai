@@ -75,6 +75,7 @@ class ObjectivePopAssessor(Assessor):
 
         sub_population = population.select(self.names)
         assessment = self.objective('none', **sub_population)
+        print(type(assessment))
         assessment = self.reduce(
             assessment,
         )

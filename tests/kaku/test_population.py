@@ -14,7 +14,6 @@ from .fixtures import (assessment1, binary_individual1, binary_individual2,
 class TestIndividual:
 
     def test_get_returns_requested_parameter(self, x1, individual1):
-        print(list(individual1.keys()))
         assert (x1 == individual1['x']).all()
 
     def test_set_parameter_updates_parameter(self, x1, individual1, p1):

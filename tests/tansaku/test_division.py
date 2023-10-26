@@ -3,7 +3,7 @@ import pytest
 
 from zenkai import Assessment
 from zenkai.kaku import Population
-from zenkai.tansaku import division as dividers
+from zenkai.tansaku import division as dividers, select
 
 
 class TestFitnessProportionalDivider:
@@ -14,7 +14,7 @@ class TestFitnessProportionalDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0])))
         
-        divider = dividers.FitnessProportionateDivider(3)
+        divider = dividers.ProbDivider(select.FitnessParentSelector(3))
         child1, child2 = divider(population)
         assert child1.k == 3
         assert child2.k == 3
@@ -25,7 +25,7 @@ class TestFitnessProportionalDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
         
-        divider = dividers.FitnessProportionateDivider(3)
+        divider = dividers.ProbDivider(select.FitnessParentSelector(3))
         child1, child2 = divider(population)
 
         assert child1.k == 3
@@ -37,7 +37,7 @@ class TestFitnessProportionalDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
         
-        divider = dividers.FitnessProportionateDivider(3, 2)
+        divider = dividers.ProbDivider(select.FitnessParentSelector(3))
         child1, child2 = divider(population)
         assert child1.k == 3
         assert child2.k == 3
@@ -48,7 +48,7 @@ class TestFitnessProportionalDivider:
         population = Population(x=torch.rand(8, 4))
         population.report(Assessment(torch.rand(8, 4)))
         
-        divider = dividers.FitnessProportionateDivider(3, 2)
+        divider = dividers.ProbDivider(select.FitnessParentSelector(3), 2)
         child1, child2 = divider(population)
         assert child1.k == 3
         assert child2.k == 3
@@ -59,7 +59,7 @@ class TestFitnessProportionalDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.randn(8, 4)))
         
-        divider = dividers.FitnessProportionateDivider(3)
+        divider = dividers.ProbDivider(select.FitnessParentSelector(3))
         with pytest.raises(ValueError):
             divider(population)
 

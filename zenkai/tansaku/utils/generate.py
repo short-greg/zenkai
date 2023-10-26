@@ -66,35 +66,3 @@ def populate(x: torch.Tensor, k: int, name: str = "t") -> Population:
     individual = Individual(**{name: x})
     populator = individual.populate(k)
     return populator(x)
-
-
-def expand_k(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
-    """expand the trial dimension in the tensor (separates the trial dimension from the sample dimension)
-
-    Args:
-        x (torch.Tensor): The tensor to update
-        k (int): The number of trials
-        reshape (bool, optional): Whether to use reshape (True) or view (False). Defaults to True.
-
-    Returns:
-        torch.Tensor: The expanded tensor
-    """
-    shape = torch.Size([k, -1, *x.shape[1:]])
-    if reshape:
-        return x.reshape(shape)
-    return x.view(shape)
-
-
-def collapse_k(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
-    """collapse the trial dimension in the tensor (merges the trial dimension with the sample dimension)
-
-    Args:
-        x (torch.Tensor): The tensor to update
-        reshape (bool, optional): Whether to use reshape (True) or view (False). Defaults to True.
-
-    Returns:
-        torch.Tensor: The collapsed tensor
-    """
-    if reshape:
-        return x.reshape(-1, *x.shape[2:])
-    return x.view(-1, *x.shape[2:])

@@ -34,7 +34,9 @@ from .convert import (
     get_model_grads,
     set_model_grads,
     module_factory,
-    decay
+    decay,
+    collapse_k,
+    expand_k
 )
 from .sampling import (
     gather_idx_from_population, 

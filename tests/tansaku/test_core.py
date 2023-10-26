@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from zenkai import Assessment
-from zenkai.tansaku.utils import select_best_individual, select_best_sample
+from zenkai.tansaku.select import select_best_individual, select_best_sample
 from zenkai.utils import get_model_parameters
 
 from .fixtures import (assessment1, binary_individual1, binary_individual2,

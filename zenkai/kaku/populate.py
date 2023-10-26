@@ -1,6 +1,6 @@
 # 1st party
 import typing
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 # 3rd party
 import torch
@@ -9,7 +9,6 @@ from torch.nn.parameter import Parameter
 
 # local
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0
-
 from ..kaku import Assessment
 
 
@@ -139,8 +138,6 @@ class TensorDict(dict):
         return self.binary_op(torch.mul, other, True, False)
     
     def __truediv__(self, other: 'TensorDict') -> 'TensorDict':
-        print('True Dividing')
-
         return self.binary_op(torch.true_divide, other, True, False)
     
     def __and__(self, other: 'TensorDict') -> 'TensorDict':
@@ -212,6 +209,8 @@ class Individual(TensorDict):
             assessment (Assessment, optional): The assessment for the individual. Defaults to None.
         """
         super().__init__(**values)
+        if len(self) == 0:
+            raise ValueError(f'Must pass tensors into the population')
         self._assessment = assessment
         self._id = None
         self._population = None
@@ -317,6 +316,8 @@ class Population(TensorDict):
             **kwargs
         )
         self._k = None
+        if len(self) == 0:
+            raise ValueError(f'Must pass tensors into the population')
         for _, v in self.items():
             if self._k is None:
                 self._k = len(v)
@@ -515,7 +516,6 @@ class Population(TensorDict):
                 gather_by = gather_by.unsqueeze(i)
                 shape.append(v.shape[i])
             gather_by = gather_by.repeat(*shape)
-            print(v.shape, gather_by.shape)
             result[k] = v.gather(0, gather_by)
         return Population(
             **result

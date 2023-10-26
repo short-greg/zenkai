@@ -588,6 +588,48 @@ class Criterion(nn.Module):
         pass
 
 
+class XCriterion(nn.Module):
+    """Base class for evaluating functions that rely on the input to the module as well"""
+
+    def __init__(self, reduction: str = "mean", maximize: bool = False):
+        """Evaluate the output of a learning machine
+
+        Args:
+            reduction (str, optional): Reduction to reduce by. Defaults to 'mean'.
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+        """
+        super().__init__()
+        self.reduction = reduction
+        self._maximize = maximize
+
+    @property
+    def maximize(self) -> bool:
+        """
+        Returns:
+            bool: whether to maximize
+        """
+        return self._maximize
+    
+    def assess(
+        self, x: IO, y: IO, t: IO, reduction_override: str = None
+    ) -> Assessment:
+        """Calculate the assessment
+
+        Args:
+            x (torch.Tensor): The input
+            t (torch.Tensor): The target
+            reduction_override (str, optional): The . Defaults to None.
+
+        Returns:
+            Assessment: The assessment resulting from the objective
+        """
+        return Assessment(self.forward(x, y, t, reduction_override), self._maximize)
+
+    @abstractmethod
+    def forward(self, x: IO, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        pass
+
+
 
 LOSS_MAP = {
     "mse": nn.MSELoss,

@@ -9,7 +9,7 @@ from ..kaku import (
     acc_dep, step_dep, 
     AccLearningMachine, Criterion, OptimFactory
 )
-from .grad import grad
+from ._grad import grad
 from .reversible import reverse
 
 

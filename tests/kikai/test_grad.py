@@ -7,10 +7,10 @@ from zenkai import OptimFactory, ThLoss, utils
 
 # local
 from zenkai.kaku import IO, State
-from zenkai.kikai import grad
+from zenkai.kikai import _grad
 
 
-class THGradLearnerT1(grad.GradLearner):
+class THGradLearnerT1(_grad.GradLearner):
 
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
@@ -22,7 +22,7 @@ class THGradLearnerT1(grad.GradLearner):
         self.linear = linear
 
 
-class THGradLearnerT2(grad.GradLoopLearner):
+class THGradLearnerT2(_grad.GradLoopLearner):
 
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)

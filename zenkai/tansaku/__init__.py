@@ -45,7 +45,7 @@ from .elitism import (
 from .division import (
     Divider,
     EqualDivider,
-    FitnessProportionateDivider
+    ProbDivider
 )
 from .select import (
     TopKSelector,
@@ -53,8 +53,8 @@ from .select import (
     Selector,
     select_best_individual,
     select_best_sample,
-    ParentSelector,
-    RepeatSpawner,
+    FitnessParentSelector,
+    # RepeatSpawner,
     IndexMap
 )
 from . import utils

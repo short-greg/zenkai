@@ -7,7 +7,7 @@ from zenkai.mod.noise import (
     GaussianNoiser, NoiseReplace,
     RandSelector, EqualsAssessmentDist, ModuleNoise
 )
-from zenkai.tansaku.utils import RepeatSpawner, expand_k, collapse_k
+
 
 def g(seed: int):
     g = torch.Generator()
@@ -69,46 +69,31 @@ class TestRandSelector:
         assert (selected.size() == x.size())
 
 
-class TestCollapseK:
+# class TestRepeatSpawner:
 
-    def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
-        shape = collapse_k(x_trial).shape
-        assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
+#     def test_select_chooses_the_best_assessment(self):
 
+#         assessment = torch.rand(N_TRIALS, N_SAMPLES)
+#         sorted, _ = assessment.sort(0, True)
+#         spawner = RepeatSpawner(N_TRIALS)
+#         _, idx = spawner.select(Assessment(sorted.flatten()))
+#         assert (idx.idx == 3).all()
 
-class TestExpandK:
+#     def test_spawn_repeats_along_trial_dimension(self, x: torch.Tensor):
 
-    def test_collapse_k_collapses_the_trial_dimension(self, x_trial_collapsed: torch.Tensor):
-        shape = expand_k(x_trial_collapsed, N_TRIALS).shape
-        assert shape[0] == N_TRIALS 
-        assert shape[1] == N_SAMPLES
+#         spawner = RepeatSpawner(N_TRIALS)
+#         spawned = expand_k(spawner(x), N_TRIALS)
+#         assert (spawned[0] == x).all()
+#         assert (spawned[0] == spawned[1]).all()
 
+#     def test_spawn_io_spawns_correctly(self, x: torch.Tensor):
 
-class TestRepeatSpawner:
+#         x = IO(x)
+#         spawner = RepeatSpawner(N_TRIALS)
+#         spawned = expand_k(spawner.spawn_io(x).f, N_TRIALS)
 
-    def test_select_chooses_the_best_assessment(self):
-
-        assessment = torch.rand(N_TRIALS, N_SAMPLES)
-        sorted, _ = assessment.sort(0, True)
-        spawner = RepeatSpawner(N_TRIALS)
-        _, idx = spawner.select(Assessment(sorted.flatten()))
-        assert (idx.idx == 3).all()
-
-    def test_spawn_repeats_along_trial_dimension(self, x: torch.Tensor):
-
-        spawner = RepeatSpawner(N_TRIALS)
-        spawned = expand_k(spawner(x), N_TRIALS)
-        assert (spawned[0] == x).all()
-        assert (spawned[0] == spawned[1]).all()
-
-    def test_spawn_io_spawns_correctly(self, x: torch.Tensor):
-
-        x = IO(x)
-        spawner = RepeatSpawner(N_TRIALS)
-        spawned = expand_k(spawner.spawn_io(x).f, N_TRIALS)
-
-        assert (spawned[0] == x.f).all()
-        assert (spawned[0] == spawned[1]).all()
+#         assert (spawned[0] == x.f).all()
+#         assert (spawned[0] == spawned[1]).all()
 
 
 class TestEqualAssessmentDist:

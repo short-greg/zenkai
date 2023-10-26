@@ -271,11 +271,12 @@ class NNLinearObjective(Objective):
         assessment = Assessment.stack(assessments)
         constraint = self._constraint(**kwargs)
         value = impose(assessment.value, constraint, self._penalty)
-        value = value.transpose(2, 1)
+        if value.dim() == 3:
+            value = value.transpose(2, 1)
         return Assessment(Reduction[reduction].reduce(
             value
         ), self._criterion.maximize)
-
+    
 
 class CriterionObjective(Objective):
     """Create an objective to optimize based on a criterion

@@ -43,10 +43,6 @@ class KBestElitism(Elitism):
         index_map = selector.select(assessment)
 
         population1 = index_map.select_index(population1)
-        for k, v in population1.items():
-            print(k, v.size())
-        for k, v in population2.items():
-            print(k, v.size())
 
         return population1.pstack([population2])
 

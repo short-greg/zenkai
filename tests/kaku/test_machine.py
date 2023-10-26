@@ -414,9 +414,6 @@ class TestMyState:
         state = core.State()
         state.add_sub(x, "sub")
         mine = state.mine(x)
-        print(state.subs(x))
-        print(mine.subs)
-        print(state.sub(x, 'sub', to_add=False))
         assert mine.subs['sub'] is state.sub(x, 'sub')
 
 

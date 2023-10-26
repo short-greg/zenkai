@@ -41,8 +41,8 @@ class SimpleObjective(Objective):
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
 
-        return Reduction[reduction].reduce(
-            kwargs['x'] + kwargs['y'], self.maximize
+        return Assessment(Reduction[reduction].reduce(
+            kwargs['x'] + kwargs['y']), self.maximize
         )
 
 

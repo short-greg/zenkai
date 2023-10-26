@@ -11,7 +11,7 @@ from ..kaku import (
     OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
     Builder, UNDEFINED, Var, Factory
 )
-from .grad import GradUpdater
+from ._grad import GradUpdater
 from ..mod import Null
 
 
@@ -299,7 +299,6 @@ class DFALearner(AccLearningMachine):
         y_det = state[(self, x), 'y_det']
         y = state[(self, x), 'y']
         y = self.B(y)
-        print(y.size(), t.f.size())
         self.criterion(IO(y), t).backward()
         y2.backward(y_det.grad)
 

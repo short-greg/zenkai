@@ -22,6 +22,7 @@ class Noiser(ABC):
         pass
 
 
+# Can do this with apply now
 class GaussianNoiser(Noiser):
     """Add Gaussian noise to the input
     """

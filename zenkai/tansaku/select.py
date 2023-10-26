@@ -1,100 +1,76 @@
 
-
-import torch
-
-
 # 1st party
 import typing
 from abc import ABC, abstractmethod
-import functools
+import typing
+import math
+from copy import deepcopy
 
 # 3rd party
 import torch
 import torch.nn as nn
-from torch.nn.parameter import Parameter
-
-# 1st party
-from abc import ABC, abstractmethod
-import typing
-
-# 3rd party
-import torch
 
 # local
-from ..kaku import State, Population, Individual, TensorDict
-
-
-# local
-from ..utils import get_model_parameters, update_model_parameters, expand_dim0, flatten_dim0, gather_idx_from_population
+from ..kaku import TensorDict
+from ..utils import gather_idx_from_population
 
 from ..kaku import IO, Assessment
-from .utils.generate import expand_k
-from ..kaku import Reduction, Criterion, State, Criterion
-
-from copy import deepcopy
 
 
-import torch
+# class RepeatSpawner(object):
+#     """Repeat the samples in the batch k times
+#     """
 
-from ..kaku.assess import Assessment
-from abc import abstractmethod, ABC
+#     def __init__(self, k: int):
+#         """initializer
 
-# TODO: Move to utils
+#         Args:
+#             k (int): the population size
+#         """
+#         self.k = k
 
+#     def __call__(self, x: torch.Tensor):
 
-class RepeatSpawner(object):
-    """Repeat the samples in the batch k times
-    """
+#         return (
+#             x[None]
+#             .repeat(self.k, *([1] * len(x.shape)))
+#             .reshape(self.k * x.shape[0], *x.shape[1:])
+#         )
 
-    def __init__(self, k: int):
-        """initializer
+#     def spawn_io(self, io: IO):
+#         """
+#         Args:
+#             io (IO): the io to spawn
 
-        Args:
-            k (int): the population size
-        """
-        self.k = k
+#         Returns:
+#             IO: The spawned IO
+#         """
+#         xs = []
+#         for x in io:
+#             if isinstance(x, torch.Tensor):
+#                 x = self(x)
+#             xs.append(x)
+#         return IO(*xs)
 
-    def __call__(self, x: torch.Tensor):
+#     def select(self, assessment: Assessment) -> typing.Tuple[Assessment, 'Indexer']:
+#         """Select the best assessment from the tensor
 
-        return (
-            x[None]
-            .repeat(self.k, *([1] * len(x.shape)))
-            .reshape(self.k * x.shape[0], *x.shape[1:])
-        )
+#         Args:
+#             assessment (Assessment): the assessment
 
-    def spawn_io(self, io: IO):
-        """
-        Args:
-            io (IO): the io to spawn
+#         Returns:
+#             typing.Tuple[Assessment, Indexer]: The best assessment and the tensor
+#         """
+#         assert assessment.value.dim() == 1
+#         expanded = expand_k(assessment.value, self.k, False)
+#         if assessment.maximize:
+#             value, idx = expanded.max(dim=0, keepdim=True)
+#         else:
+#             value, idx = expanded.min(dim=0, keepdim=True)
+#         return Assessment(value, assessment.maximize), Indexer(
+#             idx, self.k, assessment.maximize
+#         )
 
-        Returns:
-            IO: The spawned IO
-        """
-        xs = []
-        for x in io:
-            if isinstance(x, torch.Tensor):
-                x = self(x)
-            xs.append(x)
-        return IO(*xs)
-
-    def select(self, assessment: Assessment) -> typing.Tuple[Assessment, 'Indexer']:
-        """Select the best assessment from the tensor
-
-        Args:
-            assessment (Assessment): the assessment
-
-        Returns:
-            typing.Tuple[Assessment, Indexer]: The best assessment and the tensor
-        """
-        assert assessment.value.dim() == 1
-        expanded = expand_k(assessment.value, self.k, False)
-        if assessment.maximize:
-            value, idx = expanded.max(dim=0, keepdim=True)
-        else:
-            value, idx = expanded.min(dim=0, keepdim=True)
-        return Assessment(value, assessment.maximize), Indexer(
-            idx, self.k, assessment.maximize
-        )
 
 # TODO: Remove
 def select_best_individual(
@@ -133,8 +109,12 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
 
     if (assessment.value.dim() != 2):
         raise ValueError('Expected assessment for each sample for each individual')
-    pop_val = pop_val.view(value.shape[0], value.shape[1], -1)
-    idx = idx[:, :, None].repeat(1, 1, pop_val.shape[2])
+    if pop_val.dim() > 2:
+        pop_val = pop_val.view(value.shape[0], value.shape[1], -1)
+        idx = idx[:, :, None].repeat(1, 1, pop_val.shape[2])
+    else:
+        pop_val = pop_val.view(value.shape[0], value.shape[1])
+
     return pop_val.gather(0, idx).squeeze(0)
 
 
@@ -222,6 +202,14 @@ class IndexMap(object):
 class Selector(ABC):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0 so must be reshaped
     """
+    def __init__(self, k: int):
+        """Select the best
+
+        Args:
+            k (int): The number to selecct
+            dim (int, optional): The dimmension to select on. Defaults to 0.
+        """
+        self.k = k
 
     @abstractmethod
     def select(self, assessment: Assessment) -> 'IndexMap':
@@ -233,15 +221,9 @@ class Selector(ABC):
 
 
 class TopKSelector(Selector):
-
-    def __init__(self, k: int, dim: int=0):
-        """Select the top K 
-
-        Args:
-            k (int): The number to selecct
-            dim (int, optional): The dimmension to select on. Defaults to 0.
-        """
-        self.k = k
+    
+    def __init__(self, k: int, dim: int = 0):
+        super().__init__(k)
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
@@ -260,14 +242,8 @@ class TopKSelector(Selector):
 
 class BestSelector(Selector):
 
-    def __init__(self, k: int, dim: int=0):
-        """Select the best
-
-        Args:
-            k (int): The number to selecct
-            dim (int, optional): The dimmension to select on. Defaults to 0.
-        """
-        self.k = k
+    def __init__(self, k: int, dim: int = 0):
+        super().__init__(k)
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
@@ -287,18 +263,7 @@ class BestSelector(Selector):
         return IndexMap(assessment, best, dim=0)
 
 
-class ParentSelector(Selector):
-
-    def __init__(self, k: int, divide_from: int=1):
-        """
-
-        Args:
-            k (int): The number to select
-            divide_from (int, optional): The dimension to divide on. Defaults to 1.
-            largest (bool, optional): _description_. Defaults to True.
-        """
-        self.k = k
-        self.divide_from = divide_from
+class FitnessParentSelector(Selector):
     
     def select(self, assessment: Assessment) -> IndexMap:
         """Select parents from the assessment. It calculates a probability based on the 
@@ -316,6 +281,7 @@ class ParentSelector(Selector):
         
         base_shape = assessment.shape
         loss = assessment.value
+
         if not assessment.maximize:
             loss = 1 / (0.01 + loss)
         prob = (loss / loss.sum(dim=0, keepdim=True))
@@ -343,5 +309,44 @@ class ParentSelector(Selector):
         parents1 = parents1.reshape(self.k, *base_shape[1:])
         parents2 = parents2.reshape(self.k, *base_shape[1:])
         # (n_divisions * ...), (n_divisions * ...)
+
+        return IndexMap(assessment, parents1, parents2, dim=0)
+
+
+class RankParentSelector(Selector):
+    
+    def select(self, assessment: Assessment) -> IndexMap:
+        """Select parents from the assessments using ranks
+
+        Args:
+            assessment (Assessment): The assessment to select from
+
+        Raises:
+            ValueError: If any of the assessments are negative.
+
+        Returns:
+            IndexMap: The resulting index map containing two indices
+        """
+        
+        base_shape = assessment.shape
+
+        value = assessment.value
+        maximize = assessment.maximize
+        k = self.k
+        
+        value = torch.randn(4, 8)
+        maximize = False
+        _, sorted_indices = torch.sort(value, dim=0, descending=maximize)
+        ranks = torch.arange(1, len(value) + 1)
+        feat_total = math.prod(value.shape[1:])
+        ranks_prob = ranks / ranks.sum(dim=0, keepdim=True)
+        ranks_prob = ranks_prob[:, None].repeat(1, feat_total)
+        ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
+        ranks_prob = ranks_prob.transpose(1, 0)
+        ranks_prob = ranks_prob[None,:,:].repeat(k, 1, 1).reshape(-1, len(ranks))
+        parents1, parents2 = torch.multinomial(ranks_prob, num_samples=2, replacement=False).transpose(1, 0)
+        
+        parents1 = parents1.reshape(k, *base_shape[1:])
+        parents2 = parents2.reshape(k, *base_shape[1:])
 
         return IndexMap(assessment, parents1, parents2, dim=0)
