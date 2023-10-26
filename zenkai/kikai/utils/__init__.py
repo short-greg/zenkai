@@ -1,10 +1,10 @@
-from .assess import (
+from ._assess import (
     LayerAssessor,
     StepFullLayerAssessor,
     StepAssessHook,
     StepXLayerAssessor
 )
-from .limit import (
+from ._limit import (
     FeatureLimitGen,
     RandomFeatureIdxGen
 )
