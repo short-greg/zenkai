@@ -62,17 +62,6 @@ class IO(object):
     def items(self) -> typing.Dict:
         return dict(enumerate(self._x))
 
-    # def __getitem__(self, idx: int):
-    #     """Retrieve item from the IO
-
-    #     Args:
-    #         idx (int): The index to retrieve for
-
-    #     Returns:
-    #         the value at the index
-    #     """
-    #     return self._x[idx]
-
     def to(self, device) -> "IO":
         """Change the device of all tensors in the IO
 

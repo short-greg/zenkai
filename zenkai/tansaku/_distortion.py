@@ -28,7 +28,7 @@ class GaussianNoiser(Noiser):
     """
 
     def __init__(self, std: float=0.0, mean: float=0.0):
-        """initializer
+        """Create Gaussian noiser
 
         Args:
             std (float): The std by which to mutate

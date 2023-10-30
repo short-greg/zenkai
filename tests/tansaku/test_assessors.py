@@ -112,29 +112,6 @@ class TestCriterionAssessor:
         assert len(population.stack_assessments()) == 8
 
 
-class TestCriterionAssessor:
-
-    def test_assess_outputs_correct_size(self):
-        criterion = ThLoss('MSELoss', reduction='mean')
-
-        population = Population(x=torch.rand(8, 3, 4), t=torch.rand(8, 3, 4))
-        assessor = _assessors.CriterionPopAssessor(
-            criterion, ['x'], 2, 'mean'
-        )
-        assessor(population)
-        assert len(population.stack_assessments()) == 8
-    
-    def test_assess_outputs_correct_size_with_3_dims(self):
-        criterion = ThLoss('MSELoss', reduction='mean')
-
-        population = Population(x=torch.rand(8, 4, 3, 4), t=torch.rand(8, 4, 3, 4))
-        assessor = _assessors.CriterionPopAssessor(
-            criterion, ['x'], 2, 'mean'
-        )
-        assessor(population)
-        assert len(population.stack_assessments()) == 8
-
-
 class TestObjectiveAssessor:
 
     def test_assess_outputs_correct_size(self):

@@ -6,7 +6,7 @@ from zenkai.kaku import Population
 from zenkai.tansaku import _division as dividers, _select
 
 
-class TestFitnessProportionalDivider:
+class TestProbDivider:
 
     def test_divides_into_correct_sizes(self):
 

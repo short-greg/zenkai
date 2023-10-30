@@ -48,12 +48,10 @@ from ._scikit import (
     ScikitStepTheta, SciClone
 
 )
-from .utils.assess import (
+from .utils._assess import (
     LayerAssessor, 
     StepAssessHook, 
     # union_pre_and_post, 
-    StepHook, 
-    StepXHook, 
     StepXLayerAssessor,
     StepFullLayerAssessor,
 ) 
@@ -77,4 +75,7 @@ from ._reversible import (
     ReversibleMachine,
     reverse
 )
-
+from ._feedback_alignment import (
+    FALearner, FALinearLearner, LinearFABuilder,
+    DFALearner, LinearDFABuilder, fa_target
+)

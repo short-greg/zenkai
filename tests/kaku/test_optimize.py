@@ -7,7 +7,7 @@ from zenkai.kaku._optimize import ParamFilter, OptimFactory
 from zenkai.utils import get_model_parameters
 
 
-class TestFilterOptim:
+class TestParamFilter:
 
     def test_filter_optim_updates_parameters_with_meta_step(self):
 

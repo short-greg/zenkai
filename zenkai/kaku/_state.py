@@ -9,10 +9,33 @@ from ._io import IO
 from ._assess import Assessment, AssessmentDict
 
 
-class IDable:
-    @abstractproperty
+class IDable(object):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._id = id(self)
+
+    def load_state_dict(self, state_dict: typing.Dict):
+        # Assumes that the 
+
+        try:
+            super().load_state_dict(state_dict)
+        except KeyError:
+            # Not required for the super to have this method
+            pass
+        self._id = state_dict.get('id', id(self))
+
+    def state_dict(self) -> typing.Dict:
+
+        try:
+            state_dict = super().state_dict()
+        except KeyError:
+            # Not required for the super to have this method
+            pass
+        state_dict['id'] = self._id
+
     def id(self) -> str:
-        pass
+        return self._id
 
 
 class StateKeyError(KeyError):

@@ -66,7 +66,8 @@ class StepX(ABC):
     machine definition
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._step_x_hook_initialized = True
         self._step_x_prehooks = []
         self._step_x_posthooks = []
@@ -126,8 +127,9 @@ class StepTheta(ABC):
     machine definition
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
+        super().__init__(*args, **kwargs)
         self._step_hook_initialized = True
         self._step_prehooks = []
         self._step_posthooks = []
@@ -230,9 +232,10 @@ class FeatureIdxStepX(StepX):
         pass
 
 
-class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
+class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
     
     def __init__(self) -> None:
+
         super().__init__()
         self._test_posthooks = []
         self._learn_posthooks = []
@@ -456,10 +459,6 @@ class LearningMachine(nn.Module, StepTheta, StepX, IDable, ABC):
             if get_y:
                 return result, y
             return result
-
-    @property
-    def id(self) -> str:
-        return str(id(self))
 
 
 class NullLearner(LearningMachine):

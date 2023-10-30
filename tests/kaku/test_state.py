@@ -101,3 +101,30 @@ class TestState:
         state.log_assessment(obj, 'x', 'k', assessment)
         result = state.logs.as_assessment_dict()
         assert (result['x_k'].value == assessment.value).all()
+
+
+class TestMyState:
+
+    def test_my_state_sets_value_in_state(self):
+
+        x = X()
+        state = core.State()
+        my_state = state.mine(x)
+        my_state.x = 2
+        assert state.get(x, 'x') is my_state.x
+
+    def test_my_state_gets_correct_value_in_state(self):
+
+        x = X()
+        state = core.State()
+        state[x, 'x'] = 2
+        my_state = state.mine(x)
+        assert my_state.x is state[x, 'x']
+
+    def test_my_state_gets_correct_sub_state(self):
+        x = X()
+        
+        state = core.State()
+        state.add_sub(x, "sub")
+        mine = state.mine(x)
+        assert mine.subs['sub'] is state.sub(x, 'sub')

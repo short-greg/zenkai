@@ -28,7 +28,6 @@ class Divider(ABC):
         pass
 
 
-# Change the name to take any selector
 class ProbDivider(Divider):
     """Divide the population into two based on the fitness proportionality
     """
@@ -42,10 +41,8 @@ class ProbDivider(Divider):
         super().__init__()
         self.divide_start = divide_start
         self.selector = selector
-        # if divide_start < 1:
-        #     raise ValueError(f'Divide start must be greater than 1')
-        # self._divide_start = divide_start
-        # self.n_divisions = n_divisions
+        if divide_start < 1:
+            raise ValueError(f'Divide start must be greater than 1')
 
     def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
