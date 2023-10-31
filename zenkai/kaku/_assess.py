@@ -23,10 +23,10 @@ class Reduction(Enum):
     none = "none"
     batchmean = "batchmean"
     # calculate the mean of each sample
-    samplemeans = "samplemeans"
     # 
+    samplemeans = "samplemeans"
     samplesums = "samplesums"
-    NA = "NA"
+    # NA = "NA"
 
     @classmethod
     def is_torch(cls, reduction: str) -> bool:
@@ -56,7 +56,7 @@ class Reduction(Enum):
             torch.Tensor: The reduced tensor
         """
         view = torch.Size([loss.size(0), -1])
-        if self == Reduction.mean:
+        if self == Reduction.mean or self == Reduction.batchmean:
             return loss.view(view).mean(1)
         if self == Reduction.sum:
             return loss.view(view).sum(1)
@@ -83,7 +83,7 @@ class Reduction(Enum):
             torch.Tensor: The reduced loss
         """
 
-        if self == self.NA:
+        if self == self.none:
             return loss
         if self == self.mean and dim is None:
             return loss.mean()
@@ -105,8 +105,8 @@ class Reduction(Enum):
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).sum(dim=1, keepdim=keepdim)
-        if self == self.none:
-            return loss
+        # if self == self.none:
+        #     return loss
         raise ValueError(f"{self.value} cannot be reduced.")
 
 
@@ -207,21 +207,21 @@ class Assessment(object):
         """
         return Assessment(self.value * val, self.maximize)
 
-    def batch_mean(self) -> "Assessment":
-        """Calculate the mean of the assessment for each sample
+    # def batch_mean(self) -> "Assessment":
+    #     """Calculate the mean of the assessment for each sample
 
-        Returns:
-            Assessment: The resulting assessment
-        """
-        return Assessment(self.value.view(self.shape[0], -1).mean(dim=-1))
+    #     Returns:
+    #         Assessment: The resulting assessment
+    #     """
+    #     return Assessment(self.value.view(self.shape[0], -1).mean(dim=-1))
 
-    def batch_sum(self) -> "Assessment":
-        """Calculate the sum of the assessment for each sample
+    # def batch_sum(self) -> "Assessment":
+    #     """Calculate the sum of the assessment for each sample
 
-        Returns:
-            Assessment: The resulting assessment
-        """
-        return Assessment(self.value.view(self.shape[0], -1).sum(dim=-1))
+    #     Returns:
+    #         Assessment: The resulting assessment
+    #     """
+    #     return Assessment(self.value.view(self.shape[0], -1).sum(dim=-1))
 
     def __getattr__(self, key: str):
 
@@ -233,67 +233,67 @@ class Assessment(object):
         except KeyError:
             raise KeyError(f'No key named {key} in AssessmentDict')
 
-    def expand_population(self, population_size: int) -> "Assessment":
-        """Convert the assessment so that the first dimension is the population dimension
+    # def expand_population(self, population_size: int) -> "Assessment":
+    #     """Convert the assessment so that the first dimension is the population dimension
 
-        Args:
-            population_size (int): The number of elements in the population
+    #     Args:
+    #         population_size (int): The number of elements in the population
 
-        Returns:
-            Assessment: The assessment with the first dimension expanded
-        """
-        return Assessment(
-            self.value.view(
-                population_size, self.shape[0] // population_size, *self.shape[1:]
-            ),
-            self.maximize,
-        )
+    #     Returns:
+    #         Assessment: The assessment with the first dimension expanded
+    #     """
+    #     return Assessment(
+    #         self.value.view(
+    #             population_size, self.shape[0] // population_size, *self.shape[1:]
+    #         ),
+    #         self.maximize,
+    #     )
 
-    def _extract_dim_greater_than_2(self, x: torch.Tensor, best_idx: torch.LongTensor) -> typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]:
-        """
+    # def _extract_dim_greater_than_2(self, x: torch.Tensor, best_idx: torch.LongTensor) -> typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]:
+    #     """
 
-        Args:
-            x (torch.Tensor): The tensor to extract from
-            best_idx (torch.LongTensor): _description_
+    #     Args:
+    #         x (torch.Tensor): The tensor to extract from
+    #         best_idx (torch.LongTensor): _description_
 
-        Returns:
-            typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]: 
-        """
+    #     Returns:
+    #         typing.Union[torch.Tensor, 'Assessment', torch.LongTensor]: 
+    #     """
     
-        x_reshaped = x.view(x.size(0), x.size(1), -1)
-        x_reshaped_index = best_idx[:, :, None].repeat(1, 1, x_reshaped.size(2))
+    #     x_reshaped = x.view(x.size(0), x.size(1), -1)
+    #     x_reshaped_index = best_idx[:, :, None].repeat(1, 1, x_reshaped.size(2))
 
-        best_x = x_reshaped.gather(dim=0, index=x_reshaped_index)
-        best_x = best_x.view(*x.shape[1:])
+    #     best_x = x_reshaped.gather(dim=0, index=x_reshaped_index)
+    #     best_x = best_x.view(*x.shape[1:])
 
-        # TODO: Possible to improve performance by not doing gather when creating batch assessment
-        batch_assessment = Assessment(
-            self.value.gather(dim=0, index=best_idx).flatten(), maximize=self.maximize
-        )
-        return best_x, batch_assessment, best_idx.flatten()
+    #     # TODO: Possible to improve performance by not doing gather when creating batch assessment
+    #     batch_assessment = Assessment(
+    #         self.value.gather(dim=0, index=best_idx).flatten(), maximize=self.maximize
+    #     )
+    #     return best_x, batch_assessment, best_idx.flatten()
 
-    def _extract_dim_is_2(self, x: torch.Tensor, best_idx: torch.LongTensor):
-        assert best_idx.dim() == 1
-        best_idx = best_idx[0]
-        return (
-            x[best_idx],
-            Assessment(self.value[best_idx].flatten(), maximize=self.maximize),
-            best_idx,
-        )
+    # def _extract_dim_is_2(self, x: torch.Tensor, best_idx: torch.LongTensor):
+    #     assert best_idx.dim() == 1
+    #     best_idx = best_idx[0]
+    #     return (
+    #         x[best_idx],
+    #         Assessment(self.value[best_idx].flatten(), maximize=self.maximize),
+    #         best_idx,
+    #     )
 
-    def extract_best(
-        self, x: torch.Tensor
-    ) -> typing.Tuple[torch.Tensor, "Assessment", torch.Tensor]:
-        """Extract the best in each group value indices of the best in each batch of the population"""
-        best_value, best_idx = (
-            self.value.max(dim=0, keepdim=True)
-            if self.maximize
-            else self.value.min(dim=0, keepdim=True)
-        )
-        if x.dim() > 2:
-            return self._extract_dim_greater_than_2(x, best_idx)
+    # def extract_best(
+    #     self, x: torch.Tensor
+    # ) -> typing.Tuple[torch.Tensor, "Assessment", torch.Tensor]:
+    #     """Extract the best in each group value indices of the best in each batch of the population"""
+    #     best_value, best_idx = (
+    #         self.value.max(dim=0, keepdim=True)
+    #         if self.maximize
+    #         else self.value.min(dim=0, keepdim=True)
+    #     )
+    #     if x.dim() > 2:
+    #         return self._extract_dim_greater_than_2(x, best_idx)
 
-        return self._extract_dim_is_2(x, best_idx)
+    #     return self._extract_dim_is_2(x, best_idx)
 
     def best(
         self, dim: int = 0, keepdim: bool = False
@@ -310,6 +310,20 @@ class Assessment(object):
         if self.maximize:
             return self.value.max(dim=dim, keepdim=keepdim)
         return self.value.min(dim=dim, keepdim=keepdim)
+
+    def bestk(
+        self, dim: int = 0
+    ) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+        """Get the best value in the assessment for a dimension
+
+        Args:
+            dim (int, optional): The dimension to get the best for. Defaults to 0.
+            keepdim (bool, optional): Whether to keepdim. Defaults to False.
+
+        Returns:
+            typing.Tuple[torch.Tensor, torch.LongTensor]: 
+        """
+        return self.value.topk(dim=dim, largest=self.maximize)
 
     def reduce(self, reduction: str = "mean", dim: int = None, keepdim: bool = False):
         """
@@ -380,6 +394,7 @@ class Assessment(object):
 
         if divide_start < 1:
             raise ValueError(f'Divide start must be greater than or equal to 1 not {divide_start}')
+        
         shape = self.value.shape
         size_dim1 = shape[:divide_start]
         # size_dim2 = shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
@@ -562,7 +577,7 @@ class Criterion(nn.Module):
         """
         reduction = (
             self.reduction 
-            if self.reduction == 'NA' or reduction_override is None 
+            if self.reduction == 'none' or reduction_override is None 
             else reduction_override
         )
         
@@ -632,17 +647,6 @@ class XCriterion(nn.Module):
 
 
 LOSS_MAP = {
-    "mse": nn.MSELoss,
-    "bce": nn.BCELoss,
-    "bce_with_logits": nn.BCEWithLogitsLoss,
-    "cross_entropy": nn.CrossEntropyLoss,
-    "l1": nn.L1Loss,
-    "nll": nn.NLLLoss,
-    "nll_poisson": nn.PoissonNLLLoss,
-    "nll_gaussian": nn.GaussianNLLLoss,
-    "kl": nn.KLDivLoss,
-    "soft_margin": nn.SoftMarginLoss,
-    "cosine_embedding": nn.CosineEmbeddingLoss
 }
 
 
@@ -669,6 +673,7 @@ class ThLoss(Criterion):
         reduction: str = "mean",
         weight: float = None,
         loss_kwargs: typing.Dict = None,
+        maximize: bool=False
     ):
         """Wrap a torch loss
 
@@ -681,7 +686,7 @@ class ThLoss(Criterion):
         Raises:
             KeyError: if there is no loss named with the name passed in
         """
-        super().__init__(reduction)
+        super().__init__(reduction, maximize)
         if isinstance(base_criterion, str):
             try:
                 base_criterion = lookup_loss(base_criterion)
@@ -698,7 +703,7 @@ class ThLoss(Criterion):
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         
         if self.reduction == 'NA':
-            reduction = 'NA'
+            reduction = 'none'
         else:
             reduction = reduction_override or self.reduction
 
@@ -708,7 +713,7 @@ class ThLoss(Criterion):
                 self.base_criterion(reduction=reduction, **self._loss_kwargs).forward(x.f, t.f)
             )
 
-        if reduction == 'NA':
+        if reduction == 'none':
             return self.reduce(
                 self.base_criterion(**self._loss_kwargs).forward(x.f, t.f)
             )

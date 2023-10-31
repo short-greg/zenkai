@@ -251,7 +251,7 @@ class LeastSquaresLearner(LearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = Criterion("mse", "mean")
+        self._loss = Criterion("MSELoss", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
@@ -300,7 +300,7 @@ class GradLeastSquaresLearner(AccLearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = loss or Criterion("mse", "mean")
+        self._loss = loss or Criterion("MSELoss", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )

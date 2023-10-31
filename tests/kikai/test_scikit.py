@@ -103,7 +103,7 @@ class TestSklearnMachine(object):
             SGDRegressor(), 3, 2, True, False
         )
         machine = ScikitMachine(
-            regressor, NullStepX(), Criterion("mse")
+            regressor, NullStepX(), Criterion("MSELoss")
         )
         x1 = IO(torch.randn(8, 3))
         t1 = IO(torch.randn(8, 2))

@@ -29,7 +29,7 @@ class BackTarget(LearningMachine):
     def __init__(self, module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]], criterion: Criterion=None) -> None:
         super().__init__()
         self.module = module if isinstance(module, nn.Module) else Lambda(module)
-        self.criterion = criterion or ThLoss('mse')
+        self.criterion = criterion or ThLoss('MSELoss')
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)

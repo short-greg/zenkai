@@ -36,7 +36,7 @@ class FALinearLearner(LearningMachine):
 
     def __init__(
         self, in_features: int, out_features: int, 
-        optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='mse'
+        optim_factory: OptimFactory, criterion: typing.Union[Criterion, str]='MSELoss'
     ) -> None:
         """Linear network for implementing feedback alignment
 
@@ -128,7 +128,7 @@ class FALearner(AccLearningMachine):
     """Learner for implementing feedback alignment
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='MSELoss') -> None:
         """Wraps a module to create an FALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 
@@ -215,7 +215,7 @@ class FALearner(AccLearningMachine):
         return self._grad_updater.update(x, state, self.net)
     
     @classmethod
-    def builder(cls, net=UNDEFINED, netB=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['FALearner']:
+    def builder(cls, net=UNDEFINED, netB=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="MSELoss") -> Builder['FALearner']:
 
         """
         
@@ -237,7 +237,7 @@ class DFALearner(AccLearningMachine):
     """Learner for implementing feedback alignment.
     """
 
-    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='mse') -> None:
+    def __init__(self, net: nn.Module, netB: nn.Module, out_features: int, t_features: int, optim_factory: OptimFactory, activation: nn.Module=None, criterion: typing.Union[Criterion, str]='MSELoss') -> None:
         """Wraps a network to create a DFALearner. 
         It flexible but somewhat computationally wasteful because it executes forward on netB
 
@@ -329,7 +329,7 @@ class DFALearner(AccLearningMachine):
         return self._grad_updater.update(x, state, self.net)
 
     @classmethod
-    def builder(cls, net=UNDEFINED, netB=UNDEFINED, out_features=UNDEFINED, t_features=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="mse") -> Builder['DFALearner']:
+    def builder(cls, net=UNDEFINED, netB=UNDEFINED, out_features=UNDEFINED, t_features=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="MSELoss") -> Builder['DFALearner']:
 
         """
         

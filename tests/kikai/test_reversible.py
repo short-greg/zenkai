@@ -14,7 +14,7 @@ class TestReversibleMachine:
     def test_step_x_reverses(self):
 
         machine = ReversibleMachine(
-            _reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('MSELoss')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -23,7 +23,7 @@ class TestReversibleMachine:
     def test_step_x_results_in_valid_values(self):
 
         machine = ReversibleMachine(
-            _reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('MSELoss')
         )
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
@@ -33,7 +33,7 @@ class TestReversibleMachine:
     def test_forward_converts_to_correct_value(self):
 
         machine = ReversibleMachine(
-            _reversible.Neg1ToZero(), Criterion('mse')
+            _reversible.Neg1ToZero(), Criterion('MSELoss')
         )
         x = IO(torch.randn(4, 3).sign())
         t = (x.f + 1) / 2

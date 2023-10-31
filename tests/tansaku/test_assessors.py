@@ -19,7 +19,7 @@ class SimpleLearner3(LearningMachine):
         self.weight = torch.nn.parameter.Parameter(
             torch.rand(in_groups, in_features, out_features)
         )
-        self.loss = ThLoss('mse')
+        self.loss = ThLoss('MSELoss')
 
     def step(self, x: IO, t: IO, state: State):
         pass

@@ -2,7 +2,49 @@ import pytest
 import torch
 import torch.nn as nn
 
-from zenkai.kaku import _assess as _evaluation, ThLoss, IO
+
+from zenkai.kaku import (
+    _assess as _evaluation, 
+    ThLoss, IO, 
+    Reduction, reduce_assessment
+)
+
+
+class TestReduction:
+
+    def test_is_torch_checks_if_it_is_torch(self):
+        assert Reduction.is_torch('mean')
+
+    def test_reduction_with_mean_calculates_the_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.mean.reduce(x)
+        assert x.mean() == reduction
+
+    def test_reduction_with_sum_calculates_the_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.sum.reduce(x)
+        assert x.sum() == reduction
+
+    def test_reduction_batchmean_returns_batch_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.sum.reduce(x)
+        assert x.sum() == reduction
+
+    def test_reduction_batchmean_returns_batchmean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.batchmean.reduce(x)
+        assert x.sum() / len(x) == reduction
+
+    def test_reduction_batchmean_returns_samplemeans(self):
+
+        x = torch.rand(2, 4)
+        reduction = Reduction.samplemeans.reduce(x)
+        assert (x.mean(dim=1) == reduction).all()
+
 
 
 class TestAssessment:
@@ -67,6 +109,66 @@ class TestAssessment:
         with pytest.raises(RuntimeError):
             assessment.backward()
 
+    def test_add_adds_two_assessments(self):
+        t1 = torch.rand([4, 3])
+        t2 = torch.rand([4, 3])
+        assessment1 = _evaluation.Assessment(t1)
+        assessment2 = _evaluation.Assessment(t2)
+        assert ((assessment1 + assessment2).value == t1 + t2).all()
+
+    def test_batch_mean_calculates(self):
+        t1 = torch.rand([4, 3])
+        t2 = torch.rand([4, 3])
+        assessment1 = _evaluation.Assessment(t1)
+        assessment2 = _evaluation.Assessment(t2)
+        assert ((assessment1 + assessment2).value == t1 + t2).all()
+
+    def test_view_changes_view_of_assessment(self):
+        t1 = torch.rand([4, 3])
+        assessment1 = _evaluation.Assessment(t1)
+        assert ((assessment1.view(-1)).value == t1.view(-1)).all()
+
+    def test_best_gets_max_value(self):
+        t1 = torch.rand([4, 3]).cumsum(dim=1)
+        assessment1 = _evaluation.Assessment(t1, maximize=True)
+        best, ind = assessment1.best()
+        val, ind = t1.max(dim=0)
+        assert (val == best).all()
+
+    def test_best_gets_min_value(self):
+        t1 = torch.rand([4, 3]).cumsum(dim=1)
+        assessment1 = _evaluation.Assessment(t1, maximize=False)
+        best, ind = assessment1.best()
+        val, ind = t1.min(dim=0)
+        assert (val == best).all()
+
+    def test_stack_stacks_all_tensors(self):
+        t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+        t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+        assessment1 = _evaluation.Assessment.stack([t1, t2])
+        assert len(assessment1) == 2
+
+    def test_stack_raises_error_if_not_all_same_direction(self):
+        t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+        t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=True)
+        with pytest.raises(ValueError):
+            _evaluation.Assessment.stack([t1, t2])
+
+    def test_to_image(self):
+        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+        t1_2d = t1.reduce_image(reduction='mean')
+        assert (t1_2d.value == t1.view(4, 12).mean(1).value).all()
+
+    def test_to_image_raises_error_if_invalid(self):
+        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+        with pytest.raises(ValueError):
+            t1.reduce_image(divide_start=0, reduction='mean')
+        
+    def test_to_2d(self):
+        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+        t1_2d, _, _ = t1.to_2d()
+        assert t1_2d.size(1) == 12
+
 
 class TestAssessmentDict:
     
@@ -114,7 +216,7 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("mse", 'none')
+        loss = ThLoss("MSELoss", 'none')
         evaluation = loss(IO(x), IO(t))
         assert (evaluation == nn.MSELoss(reduction='none')(x, t)).all()
 
@@ -122,14 +224,61 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("mse", 'mean')
+        loss = ThLoss("MSELoss", 'mean')
         evaluation = loss(IO(x), IO(t))
         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
     
+    def test_th_loss_outputs_correct_loss_with_mseloss_and_mean_reduction(self):
+
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("MSELoss", 'mean')
+        evaluation = loss(IO(x), IO(t))
+        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+    
+    def test_th_loss_fails_with_invalid_reduction(self):
+
+        with pytest.raises(KeyError):
+            ThLoss("XLoss", 'mean')
+
     def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("mse", 'none')
+        loss = ThLoss("MSELoss", 'none')
         evaluation = loss(IO(x), IO(t), 'mean')
         assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+
+    def test_assess_returns_assessment(self):
+
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("MSELoss", 'none')
+        evaluation = loss.assess(IO(x), IO(t), 'mean')
+        assert isinstance(evaluation, _evaluation.Assessment)
+
+    def test_assess_returns_assessment(self):
+
+        x = torch.rand(4, 2)
+        t = torch.rand(4, 2)
+        loss = ThLoss("MSELoss", 'none')
+        evaluation = loss.assess(IO(x), IO(t), 'mean')
+        assert isinstance(evaluation, _evaluation.Assessment)
+
+    def test_maximize_returns_true_if_maximize(self):
+
+        loss = ThLoss("MSELoss", 'mean', maximize=True)
+        assert loss.maximize == True
+
+
+class TestLookup:
+
+    def test_lookup_gets_mse_loss(self):
+
+        mse_loss = _evaluation.lookup_loss('MSELoss')
+        assert mse_loss == nn.MSELoss
+    
+    def test_lookup_returns_error_if_invalid(self):
+
+        with pytest.raises(KeyError):
+            _evaluation.lookup_loss('XLoss')
