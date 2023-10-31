@@ -56,7 +56,7 @@ from ._optimize import (
     OptimFactory,
     optimf
 )
-from ._state import IDable, MyState, State, StateKeyError, EmissionStack
+from ._state import IDable, MyState, State, StateKeyError, AssessmentLog
 from ._populate import (
     Population, PopulationIndexer, Individual, TensorDict
 )

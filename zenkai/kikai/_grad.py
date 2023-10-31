@@ -257,7 +257,7 @@ class GradStepX(StepX):
         return x_prime
 
 
-class CriterionGrad(StepX, Criterion):
+class CriterionGrad(AccLearningMachine, Criterion):
     """Use to calculate x_prime for a criterion
     """
 
@@ -273,6 +273,12 @@ class CriterionGrad(StepX, Criterion):
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.criterion(x, t, reduction_override)
+    
+    def step(self, x: IO, t: IO, state: State):
+        pass
+
+    def accumulate(self, x: IO, t: IO, state: State):
+        pass
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         

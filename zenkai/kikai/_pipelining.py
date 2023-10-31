@@ -69,6 +69,21 @@ class PipeStep(AccLearningMachine):
         return f'Node({self._learning_machine})'
 
 
+def pipe_steps(steps: typing.List[LearningMachine], step_priority: bool=False) -> typing.List[PipeStep]:
+    """
+
+    Args:
+        steps (typing.List[LearningMachine]): 
+        step_priority (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        typing.List[PipeStep]: _description_
+    """
+    return  [
+        PipeStep(step, step_priority) for step in steps
+    ]
+
+
 @dataclass
 class PipeConn:
 

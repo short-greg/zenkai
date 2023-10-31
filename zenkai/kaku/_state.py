@@ -2,28 +2,32 @@
 import typing
 from abc import abstractproperty
 from dataclasses import dataclass
-from collections import deque
+from collections import deque, OrderedDict
 
 # local
 from ._io import IO
 from ._assess import Assessment, AssessmentDict
+from uuid import uuid4
+
 
 
 class IDable(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._id = id(self)
+        self._id = str(uuid4())
 
     def load_state_dict(self, state_dict: typing.Dict):
         # Assumes that the 
-
+        
         try:
-            super().load_state_dict(state_dict)
+            super().load_state_dict(state_dict['params'])
         except KeyError:
             # Not required for the super to have this method
             pass
-        self._id = state_dict.get('id', id(self))
+        self._id = state_dict.get('id')
+        if self._id is None:
+            self._id = str(uuid4())
 
     def state_dict(self) -> typing.Dict:
 
@@ -32,8 +36,9 @@ class IDable(object):
         except KeyError:
             # Not required for the super to have this method
             pass
-        state_dict['id'] = self._id
+        return OrderedDict(id=self._id, params=state_dict)
 
+    @property
     def id(self) -> str:
         return self._id
 
@@ -53,11 +58,11 @@ class AssessmentLog(object):
 
         self._log: typing.Dict[typing.Any, typing.Dict[str, typing.Dict[str, Assessment]]] = {}
 
-    def update(self, key, obj_name: str, assessment_name: str, assessment: Assessment, replace: bool=False, to_cpu: bool=True):
+    def update(self, id, obj_name: str, assessment_name: str, assessment: Assessment, replace: bool=False, to_cpu: bool=True):
         """Update the AssessmentLog with a new Assessment. detach() will automatically be called to prevent storing grads
 
         Args:
-            key : The unique identifier for the layer
+            id : The unique identifier for the layer
             name (str): The name of the layer/operation. Can also include time step info etc
             assessment (Assessment): The assessment dict to update with
             replace (bool, optional): Whether to replace the current assessment dict for the key/name. Defaults to False.
@@ -67,16 +72,29 @@ class AssessmentLog(object):
         if to_cpu:
             assessment = assessment.cpu()
 
-        if key not in self._log:
-            self._log[key] = {}
+        if id not in self._log:
+            self._log[id] = {}
         if isinstance(assessment, typing.Dict):
             cur = assessment
         else:        
             cur = {assessment_name: assessment}
-        if obj_name not in self._log[key] or replace:
-            self._log[key][obj_name] = cur
+        if obj_name not in self._log[id] or replace:
+            self._log[id][obj_name] = cur
         else:
-            self._log[key][obj_name].update(cur)
+            self._log[id][obj_name].update(cur)
+
+    @property
+    def dict(self) -> typing.Dict:
+        return self._log
+    
+    def clear(self, key=None):
+
+        if key is not None:
+            if key not in self._log:
+                return
+            del self._log[key]
+        else:
+            self._log.clear()
     
     def as_assessment_dict(self) -> AssessmentDict:
         """
@@ -116,11 +134,13 @@ class State(object):
         Returns:
             str: The key
         """
+        if isinstance(obj, IDable):
+            return obj.id
         if isinstance(obj, tuple):
-            return tuple(id(el) for el in obj)
+            return tuple(id(el) if not isinstance(el, IDable) else el.id for el in obj)
         return id(obj)
 
-    def store(self, obj: IDable, key: typing.Hashable, value, keep: bool=False) -> typing.Any:
+    def set(self, obj: IDable, key: typing.Hashable, value, to_keep: bool=False) -> typing.Any:
         """Store data in the state
 
         Args:
@@ -134,8 +154,8 @@ class State(object):
         obj_data, keep, _ = self._get_obj(obj)
         
         obj_data[key] = value
-        keep[key] = keep
-        return value
+        keep[key] = to_keep
+        return value 
 
     def get(self, obj: IDable, key: typing.Hashable, default=None) -> typing.Any:
         """Retrieve the value for a key
@@ -181,7 +201,6 @@ class State(object):
         except KeyError:
             obj_data[key] = default
             return default
-
 
     def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]) -> typing.Any:
         """Retrieve an item from the state
@@ -285,13 +304,13 @@ class State(object):
         """
         _, _, sub_data = self._get_obj(obj, to_add)
         if to_add and key not in sub_data:
+            print('Adding')
             state = sub_data[key] = State()
             return state
         return sub_data[key]
     
     def subs(self, obj: IDable):
-
-        sub = self._subs.get(id(obj))
+        sub = self._subs.get(self.id(obj))
         return sub if sub is not None else None
 
     def keep(self, obj: IDable, key: str, keep: bool=True):
@@ -299,33 +318,39 @@ class State(object):
         id = self.id(obj)
         self._keep[id][key] = keep
 
-    def clear(self, obj: IDable, clear_keep: bool=False):
+    def clear_obj(self, obj: IDable=None, clear_keep: bool=False, is_id: bool=False):
+
+        id = self.id(obj) if not is_id else obj
+            
+        if id in self._data:
+            self._data[id] = {
+                k: v
+                for k, v in self._data[id].items() if (not clear_keep and self._keep[id][k])
+            }
+            self._logs.clear(id)
+        if id in self._subs:
+            for v in self._subs[id].values():
+                v.clear(clear_keep=clear_keep)
+        if id in self._keep and clear_keep:
+            self._keep[id] = {
+                k: v
+                for k, v in self._keep[id].items() if (not clear_keep and v)
+            }
+
+    def clear(self, clear_keep: bool=False):
         """Remove values in the state for an object
 
         Args:
             obj (IDable): the object to clear the state for
         """
-        # TODO: Add idable for the state
-        id = self.id(obj)
-            
-        if id in self._data:
-            self._data[id] = {
-                k: v
-                for k, v in self._data[id].items() if (not clear_keep and not self._keep[id])
-            }
-        if id in self._subs:
-            if clear_keep:
-                self._subs[id].clear()
-            else:
-                self._subs[id] = {
-                    k: v.spawn()
-                    for k, v in self._subs[id].items() if (not clear_keep and not self._keep[id])
-                }
-        if id in self._keep and clear_keep:
-            self._keep[id] = {
-                k: v
-                for k, v in self._keep[id].items() if (not clear_keep and not v)
-            }
+        if clear_keep:
+            self._data.clear()
+            self._keep.clear()
+            self._logs.clear()
+            self._subs.clear()
+        else:
+            for key, obj in self._data.items():
+                self.clear_obj(key, False, True)
 
     def sub_iter(self, obj) -> typing.Iterator[typing.Tuple[str, "State"]]:
         """Iterator over all sub states
@@ -402,14 +427,21 @@ class State(object):
                     if k not in data:
                         data[k] = {}
                         keep[k] = {}
+                        subs[k] = {}
                     data[k][k2] = self._data[k][k2]
-                    keep[k][k2] = k
+                    keep[k][k2] = True
         for k, v in self._subs.items():
+            print('Spawning sub')
             cur_sub = {}
+
+            if k not in data:
+                data[k] = {}
+                keep[k] = {}
+                subs[k] = {}
             for k2, v2 in v.items():
+                
                 cur_sub[k2] = v2.spawn()
             subs[k] = cur_sub
-        
         state = State()
         state._subs = subs
         state._data = {**data}
@@ -449,18 +481,6 @@ class MyState(object):
         """
         return self.state.subs(self.obj)
 
-    def add_sub(self, key: str, state: State = None, ignore_exists: bool=True) -> "State":
-        """Add a substate to the state
-
-        Args:
-            key (str): Name of the sub state
-            state (State): The substate to add
-
-        Raises:
-            KeyError: The key already exists in the sub states
-        """
-        self.state.add_sub(self.obj, key, state, ignore_exists=ignore_exists)
-
     def my_sub(self, key: str, to_add: bool = True) -> "MyState":
         """Get the sub state for a key
 
@@ -494,7 +514,7 @@ class MyState(object):
             self.state[self.obj, key] = default
             return default
 
-    def store(self, key: str, value, keep: bool=False) -> typing.Any:
+    def set(self, key: str, value, keep: bool=False) -> typing.Any:
         """Get the value at a key
 
         Args:
@@ -504,7 +524,7 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
-        self.state.store(self.obj, key, value, keep)
+        self.state.set(self.obj, key, value, keep)
 
     def __getitem__(self, key: str) -> typing.Any:
         """Get the value at a key
@@ -554,72 +574,74 @@ class MyState(object):
         return (self.obj, key) in self.state
 
 
-class EmissionStack(object):
-    """Class to use for recording the state of emissions"""
+# TODO: Remove
 
-    def __init__(self, *emissions: IO):
-        """Convenience wrapper for deque to simplify recording emissions for the step method
+# class EmissionStack(object):
+#     """Class to use for recording the state of emissions"""
 
-        usage:
-        def forward(self, x) -> IO:
-            ...
-            emissions = EmissionStack()
-            x = emissions(layer(x))
-            state[self, 'emissions'] = emissions
-            ...
+#     def __init__(self, *emissions: IO):
+#         """Convenience wrapper for deque to simplify recording emissions for the step method
 
-        def step(self, ...):
-            ...
-            layer.step(conn, state, from_=state[self, 'emissions'].pop())
+#         usage:
+#         def forward(self, x) -> IO:
+#             ...
+#             emissions = EmissionStack()
+#             x = emissions(layer(x))
+#             state[self, 'emissions'] = emissions
+#             ...
 
-        """
-        self._stack = deque(emissions)
+#         def step(self, ...):
+#             ...
+#             layer.step(conn, state, from_=state[self, 'emissions'].pop())
 
-    def __call__(self, io: IO) -> IO:
-        """Add an element to the stack
+#         """
+#         self._stack = deque(emissions)
 
-        Args:
-            io (IO): Element to add
+#     def __call__(self, io: IO) -> IO:
+#         """Add an element to the stack
 
-        Returns:
-            IO: the element that was added
-        """
-        self._stack.append(io)
-        return io
+#         Args:
+#             io (IO): Element to add
 
-    def __len__(self) -> int:
-        return len(self._stack)
+#         Returns:
+#             IO: the element that was added
+#         """
+#         self._stack.append(io)
+#         return io
 
-    def stack_on(self, io: IO):
-        """Restack the stack by placing it on another vlaue
+#     def __len__(self) -> int:
+#         return len(self._stack)
 
-        Args:
-            io (IO): the io to stack the current stack onto
-        """
-        self._stack.insert(0, io)
+#     def stack_on(self, io: IO):
+#         """Restack the stack by placing it on another vlaue
 
-    def pop(self) -> typing.Union[IO, None]:
-        """Pop off the last element in the stack. Returns None if empty
+#         Args:
+#             io (IO): the io to stack the current stack onto
+#         """
+#         self._stack.insert(0, io)
 
-        Raises:
-            IndexError: If there are no elements left in the stack
+#     def pop(self) -> typing.Union[IO, None]:
+#         """Pop off the last element in the stack. Returns None if empty
 
-        Returns:
-            IO: the last element
-        """
+#         Raises:
+#             IndexError: If there are no elements left in the stack
 
-        try:
-            return self._stack.pop()
-        except IndexError:
-            return None
+#         Returns:
+#             IO: the last element
+#         """
 
-    def __iter__(self):
-        """
-        LIFO Iteration over the stack
-        """
+#         try:
+#             return self._stack.pop()
+#         except IndexError:
+#             return None
 
-        for io in reversed(self._stack):
-            yield io
+#     def __iter__(self):
+#         """
+#         LIFO Iteration over the stack
+#         """
+
+#         for io in reversed(self._stack):
+#             yield io
     
-    def __getitem__(self, key) -> IO:
-        return self._stack[key]
+#     def __getitem__(self, key) -> IO:
+#         return self._stack[key]
