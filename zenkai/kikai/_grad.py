@@ -244,7 +244,6 @@ class GradStepX(StepX):
         x = x.f
         if x.grad is None:
             raise RuntimeError(f"Grad has not been set. Must backpropagate first")
-        
 
         grad = x.grad if self.x_lr is None else self.x_lr * x.grad
         x = x - grad
@@ -421,7 +420,7 @@ class GradLearner(AccLearningMachine):
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
+        y = IO(self._net(*x), detach=False)
         return y.out(release)
     
     def step(self, x: IO, t: IO, state: State):

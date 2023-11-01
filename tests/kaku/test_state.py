@@ -185,39 +185,39 @@ class TestState:
         state.get_or_set(obj, 'y', 3)
         assert state.get(obj, 'y') == 3
 
-    def test_clear_removes_all_data_from_state(self):
+    # def test_clear_removes_all_data_from_state(self):
 
-        obj = 'x'
-        state = core.State()
-        state.set(obj, 'y', 3)
-        state.clear_obj(obj)
-        assert state.get(obj, 'y') is None
+    #     obj = 'x'
+    #     state = core.State()
+    #     state.set(obj, 'y', 3)
+    #     state.clear_obj(obj)
+    #     assert state.get(obj, 'y') is None
 
-    def test_clear_does_not_remove_item_in_keep(self):
+    # def test_clear_does_not_remove_item_in_keep(self):
 
-        obj = 'x'
-        state = core.State()
-        state.set(obj, 'y', 3, to_keep=True)
-        state.clear_obj(obj)
-        assert state.get(obj, 'y') == 3
+    #     obj = 'x'
+    #     state = core.State()
+    #     state.set(obj, 'y', 3, to_keep=True)
+    #     state.clear_obj(obj)
+    #     assert state.get(obj, 'y') == 3
 
-    def test_clear_removes_item_not_in_keep_for_sub(self):
+    # def test_clear_removes_item_not_in_keep_for_sub(self):
 
-        obj = 'x'
-        state = core.State()
-        sub = state.sub(obj, 'sub')
-        sub.set(obj, 'z', 2)
-        state.clear_obj(obj)
-        assert sub.get(obj, 'z') is None
+    #     obj = 'x'
+    #     state = core.State()
+    #     sub = state.sub(obj, 'sub')
+    #     sub.set(obj, 'z', 2)
+    #     state.clear_obj(obj)
+    #     assert sub.get(obj, 'z') is None
 
-    def test_clear_does_not_remove_item_in_keep_for_sub(self):
+    # def test_clear_does_not_remove_item_in_keep_for_sub(self):
 
-        obj = 'x'
-        state = core.State()
-        sub = state.sub(obj, 'sub')
-        sub.set(obj, 'z', 2, True)
-        state.clear_obj(obj)
-        assert sub.get(obj, 'z') == 2
+    #     obj = 'x'
+    #     state = core.State()
+    #     sub = state.sub(obj, 'sub')
+    #     sub.set(obj, 'z', 2, True)
+    #     state.clear_obj(obj)
+    #     assert sub.get(obj, 'z') == 2
 
     def test_sub_iter_loops_over_all_subs(self):
         

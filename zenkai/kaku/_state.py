@@ -318,39 +318,39 @@ class State(object):
         id = self.id(obj)
         self._keep[id][key] = keep
 
-    def clear_obj(self, obj: IDable=None, clear_keep: bool=False, is_id: bool=False):
+    # def clear_obj(self, obj: IDable=None, clear_keep: bool=False, is_id: bool=False):
 
-        id = self.id(obj) if not is_id else obj
+    #     id = self.id(obj) if not is_id else obj
             
-        if id in self._data:
-            self._data[id] = {
-                k: v
-                for k, v in self._data[id].items() if (not clear_keep and self._keep[id][k])
-            }
-            self._logs.clear(id)
-        if id in self._subs:
-            for v in self._subs[id].values():
-                v.clear(clear_keep=clear_keep)
-        if id in self._keep and clear_keep:
-            self._keep[id] = {
-                k: v
-                for k, v in self._keep[id].items() if (not clear_keep and v)
-            }
+    #     if id in self._data:
+    #         self._data[id] = {
+    #             k: v
+    #             for k, v in self._data[id].items() if (not clear_keep and self._keep[id][k])
+    #         }
+    #         self._logs.clear(id)
+    #     if id in self._subs:
+    #         for v in self._subs[id].values():
+    #             v.clear(clear_keep=clear_keep)
+    #     if id in self._keep and clear_keep:
+    #         self._keep[id] = {
+    #             k: v
+    #             for k, v in self._keep[id].items() if (not clear_keep and v)
+    #         }
 
-    def clear(self, clear_keep: bool=False):
-        """Remove values in the state for an object
+    # def clear(self, clear_keep: bool=False):
+    #     """Remove values in the state for an object
 
-        Args:
-            obj (IDable): the object to clear the state for
-        """
-        if clear_keep:
-            self._data.clear()
-            self._keep.clear()
-            self._logs.clear()
-            self._subs.clear()
-        else:
-            for key, obj in self._data.items():
-                self.clear_obj(key, False, True)
+    #     Args:
+    #         obj (IDable): the object to clear the state for
+    #     """
+    #     if clear_keep:
+    #         self._data.clear()
+    #         self._keep.clear()
+    #         self._logs.clear()
+    #         self._subs.clear()
+    #     else:
+    #         for key, obj in self._data.items():
+    #             self.clear_obj(key, False, True)
 
     def sub_iter(self, obj) -> typing.Iterator[typing.Tuple[str, "State"]]:
         """Iterator over all sub states

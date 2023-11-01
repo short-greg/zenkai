@@ -1,5 +1,8 @@
 import torch
-from zenkai.kaku import IO
+from zenkai.kaku import IO, Idx
+import pytest
+import numpy as np
+import typing
 
 
 class TestIO:
@@ -84,3 +87,162 @@ class TestIO:
         x = IO(val).detach()
         y = IO(val)
         assert not x.f is y.f
+
+    def test_f_returns_first(self):
+
+        val = torch.rand(3, 2)
+        x = IO(val)
+        assert x.f is val
+
+    def test_l_returns_last(self):
+
+        val = torch.rand(3, 2)
+        val2 = torch.rand(3, 2)
+        x = IO(val, val2)
+        assert x.l is val2
+
+    def test_l_returns_first_if_one_element(self):
+
+        val = torch.rand(3, 2)
+        x = IO(val)
+        assert x.l is val
+
+    def test_u_returns_both(self):
+
+        val = torch.rand(3, 2)
+        val2 = torch.rand(3, 2)
+        x = IO(val, val2)
+        assert x.u[0] is val
+        assert x.u[1] is val2
+
+    def test_cat_concatenates_two_ios_with_one_element(self):
+
+        val = torch.rand(3, 2)
+        x = IO(val)
+        val2 = torch.rand(3, 2)
+        x2 = IO(val2)
+        io = IO.cat([x, x2])
+        assert (io.f == torch.cat([val, val2])).all()
+    
+    def test_cat_concatenates_two_ios_with_two_elements(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        x = IO(vala, valb)
+        val2a = torch.rand(3, 2)
+        val2b = torch.rand(3, 4)
+        x2 = IO(val2a, val2b)
+        io = IO.cat([x, x2])
+        assert (io.l == torch.cat([valb, val2b])).all()
+
+    def test_cat_concatenates_two_ios_with_two_elements(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        x = IO(vala, valb)
+        val2a = torch.rand(3, 2)
+        val2b = torch.rand(3, 4)
+        x2 = IO(val2a, val2b)
+        io = IO.cat([x, x2])
+        assert (io.l == torch.cat([valb, val2b])).all()
+
+    def test_cat_concatenates_two_ios_with_two_elements_of_arrays(self):
+
+        vala = np.random.randn(3, 2)
+        valb = np.random.randn(3, 4)
+        x = IO(vala, valb)
+        val2a = np.random.randn(3, 2)
+        val2b = np.random.randn(3, 4)
+        x2 = IO(val2a, val2b)
+        io = IO.cat([x, x2])
+        assert (io.l == np.concatenate([valb, val2b])).all()
+
+    def test_cat_raises_error_if_incompatible_lengths(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        x = IO(vala, valb)
+        val2a = torch.rand(3, 2)
+        x2 = IO(val2a)
+        with pytest.raises(ValueError): 
+            IO.cat([x, x2])
+
+    def test_join_adsd_multiple_ios_to_one(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        x = IO(vala, valb)
+        val2a = torch.rand(3, 2)
+        x2 = IO(val2a)
+        joined = IO.join([x, x2])
+        assert (joined.u[0] == vala).all()
+        assert (joined.u[2] == val2a).all()
+
+    def test_agg_aggregates_the_ios(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        x = IO(vala, valb)
+        val2a = torch.randn(3, 2)
+        val2b = torch.randn(3, 4)
+        x2 = IO(val2a, val2b)
+        io = IO.agg([x, x2])
+        assert (io.l == ((valb + val2b) / 2)).all()
+
+    def test_range_returns_subset_of_io_with_low_at_one(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        valc = torch.rand(3, 4)
+        x = IO(vala, valb, valc)
+        y = x.range(1)
+        assert (x.u[1] == y.f).all()
+        assert (x.u[2] == y.l).all()
+
+    def test_range_returns_subset_of_io_with_high_at_one(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        valc = torch.rand(3, 4)
+        x = IO(vala, valb, valc)
+        y = x.range(high=2)
+        assert (x.u[0] == y.f).all()
+        assert (x.u[1] == y.l).all()
+
+    def test_totuple_converts_to_tuple(self):
+
+        vala = torch.rand(3, 2)
+        valb = torch.rand(3, 4)
+        valc = torch.rand(3, 4)
+        x = IO(vala, valb, valc)
+        y = x.totuple()
+        assert isinstance(y, typing.Tuple)
+        assert len(y) == len(x)
+
+
+class TestIdx:
+
+    def test_idx_th_works_with_one_tensor(self):
+
+        idx = Idx(torch.randint(0, 4, (3,)))
+        x = torch.rand(4, 3)
+        x_idx, = idx.idx_th(x)
+        assert (x_idx == x[idx.idx]).all()
+
+    def test_idx_th_works_with_two_tensors(self):
+
+        idx = Idx(torch.randint(0, 4, (3,)))
+        x = torch.rand(4, 3)
+        x2 = torch.rand(4, 3)
+        x_idx, x2_idx = idx.idx_th(x, x2)
+        assert (x_idx == x[idx.idx]).all()
+        assert (x2_idx == x2[idx.idx]).all()
+
+    # def test_update_updates(self):
+
+    #     idx = Idx(torch.randint(0, 4, (3,)))
+    #     x = torch.rand(3, 3)
+    #     x2 = torch.rand(4, 3)
+    #     idx.update(x, x2)
+    #     assert (x2[idx] == x).all()
+

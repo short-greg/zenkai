@@ -194,6 +194,14 @@ class IO(object):
         """
         # TODO: Seems there is a bug here so fix
         results = []
+
+        sz = None
+        for io in ios:
+            if sz is None:
+                sz = len(io)
+            elif len(io) != sz:
+                raise ValueError(f'All ios passed in must be of the same length')
+        
         for elements in zip(*ios):
             if isinstance(elements[0], torch.Tensor):
                 results.append(torch.cat(elements))
@@ -202,9 +210,9 @@ class IO(object):
             else:
                 # TODO: revisit if i want to do it like this
                 results.append(elements)
-        return IO(*results, ios[0].names)
+        
+        return IO(*results, names=ios[0].names)
     
-
     @classmethod
     def join(cls, ios: typing.Iterable['IO'], detach: bool=True) -> 'IO':
 
@@ -214,7 +222,7 @@ class IO(object):
         return IO(*results, detach=detach)
 
     @classmethod
-    def agg(cls, ios: typing.Iterable['IO'], f=statistics.mean) -> typing.List:
+    def agg(cls, ios: typing.Iterable['IO'], f=torch.mean) -> typing.List:
 
         length = None
         for io in ios:
@@ -222,7 +230,7 @@ class IO(object):
                 length = len(io)
             if length != len(io):
                 raise ValueError('All ios must be the same length to aggregate')
-        return IO(*[f(xs) for xs in zip(*ios)], detach=True) 
+        return IO(*[f(torch.stack(xs), dim=0) if isinstance(xs[0], torch.Tensor) else f(np.stack(xs), axis=0) for xs in zip(*ios)], detach=True) 
 
     def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
         return IO(*self._x[low:high], detach=detach)
