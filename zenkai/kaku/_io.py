@@ -337,7 +337,10 @@ class Idx(object):
             if self.idx is not None:
                 if idx_both:
                     source_i = source_i[self.idx]
+                print('Setting destination')
                 destination_i.data[self.idx] = source_i
+                print(source_i)
+                print(destination_i[self.idx])
             else:
                 destination_i.data = source_i
             if requires_grad:
@@ -353,7 +356,7 @@ class Idx(object):
         if self.idx is not None:
             destination[self.idx] = source
         else:
-            destination[:] = source
+            destination.data[:] = source
 
     def sub(self, idx: "Idx") -> "Idx":
         """Get a sub index of the index
