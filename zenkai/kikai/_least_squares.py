@@ -19,8 +19,7 @@ from ..kaku import (
     Criterion,
     Criterion,
     update_io,
-    OptimFactory,
-    AccLearningMachine
+    OptimFactory
 )
 from ..utils import to_np, to_th_as
 from ._grad import GradStepTheta
@@ -273,7 +272,7 @@ class LeastSquaresLearner(LearningMachine):
         return IO(self._linear(x.f), detach=release)
 
 
-class GradLeastSquaresLearner(AccLearningMachine):
+class GradLeastSquaresLearner(LearningMachine):
     """Learner that uses grad to optimize theta and least squares to optimize x. It wraps a standard linear model. 
     Uses a ridge regresion solver"""
 

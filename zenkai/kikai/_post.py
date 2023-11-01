@@ -5,12 +5,11 @@ from abc import abstractmethod
 from ..kaku import (
     IO,
     StepTheta,
-    AccStepTheta,
     State,
 )
 
 
-class StackPostStepTheta(AccStepTheta):
+class StackPostStepTheta(StepTheta):
 
     def __init__(self, base_step_theta: StepTheta):
         """Save the inputs and outputs to a network

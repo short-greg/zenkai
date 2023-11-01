@@ -19,9 +19,7 @@ from ..kaku import (
     idx_io,
     Assessment,
     OptimFactory,
-    AccLearningMachine,
-    AccStepTheta,
-    BatchIdxAccStepTheta,
+    # BatchIdxAccStepTheta,
     Criterion,
     acc_dep,
     step_dep,
@@ -100,7 +98,7 @@ class GradUpdater(object):
         return x, False
         
 
-class GradStepTheta(AccStepTheta):
+class GradStepTheta(StepTheta):
     """Update theta with the loss between y and t on the forward pass"""
 
     def __init__(
@@ -163,7 +161,7 @@ def grad_assess(x: IO, y: IO, t: IO, learner: LearningMachine, criterion: typing
     return criterion.assess(y, t, reduction_override)
 
 
-class GradLoopStepTheta(AccStepTheta, BatchIdxStepTheta):
+class GradLoopStepTheta(BatchIdxStepTheta):
     """Update theta with the objective between y and t after passing forward again"""
 
     def __init__(
@@ -256,7 +254,7 @@ class GradStepX(StepX):
         return x_prime
 
 
-class CriterionGrad(AccLearningMachine, Criterion):
+class CriterionGrad(LearningMachine, Criterion):
     """Use to calculate x_prime for a criterion
     """
 
@@ -274,9 +272,6 @@ class CriterionGrad(AccLearningMachine, Criterion):
         return self.criterion(x, t, reduction_override)
     
     def step(self, x: IO, t: IO, state: State):
-        pass
-
-    def accumulate(self, x: IO, t: IO, state: State):
         pass
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
@@ -353,7 +348,7 @@ class GradLoopStepX(BatchIdxStepX):
         return x
 
 
-class GradLearner(AccLearningMachine):
+class GradLearner(LearningMachine):
     """Standard gradient learner"""
 
     Y_NAME = "y"
@@ -427,7 +422,7 @@ class GradLearner(AccLearningMachine):
         return self._theta_step.step(x, t, state)
 
 
-class GradLoopLearner(AccLearningMachine, BatchIdxStepX, BatchIdxAccStepTheta):
+class GradLoopLearner(LearningMachine, BatchIdxStepX):
     """Gradient learner designed for multiple loops"""
 
     LOSS_NAME = "loss"

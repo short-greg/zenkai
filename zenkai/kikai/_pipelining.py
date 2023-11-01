@@ -6,28 +6,27 @@ from abc import abstractmethod
 # local
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
-    acc_dep, step_dep, 
-    AccLearningMachine, Criterion, OptimFactory
+    acc_dep, step_dep, Criterion, OptimFactory
 )
 from ._grad import grad
 from ._reversible import reverse
 
 
-class PipeStep(AccLearningMachine):
+class PipeStep(LearningMachine):
     """Defines a step in a pipeline
     """
 
-    def __init__(self, learning_machine: typing.Union[LearningMachine, AccLearningMachine], step_priority: bool=False):
+    def __init__(self, learning_machine: LearningMachine, step_priority: bool=False, accumulate: bool=True):
         """Create a step in the pipeline
 
         Args:
-            learning_machine (typing.Union[LearningMachine, AccLearningMachine]): The learning machine
+            learning_machine (LearningMachine): The learning machine
             step_priority (bool, optional): Whether to prioritize step before step_x. Defaults to False.
         """
         super().__init__()
         self._learning_machine = learning_machine
         self.step_priority = step_priority
-        self._accumulate = isinstance(self._learning_machine, AccLearningMachine)
+        self._accumulate = accumulate
     
     @property
     def to_accumulate(self) -> bool:
@@ -300,7 +299,7 @@ class PipelineLearner(LearningMachine):
         raise NotImplementedError
 
 
-class AccPipelineLearner(AccLearningMachine):
+class AccPipelineLearner(LearningMachine):
     """Defines a Pipeline that implements the accumulate method
     """
 

@@ -1,13 +1,13 @@
 import zenkai
 import torch.nn as nn
-from zenkai import Assessment, State, IO, AccLearningMachine, ThLoss, acc_dep
+from zenkai import Assessment, State, IO, ThLoss, acc_dep, LearningMachine
 from zenkai.kikai import _pipelining
 from ..kaku.test_machine import SimpleLearner
 import torch
 from zenkai.utils import get_model_parameters, get_model_grads
 
 
-class AccSimpleLearner(AccLearningMachine):
+class AccSimpleLearner(LearningMachine):
 
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
@@ -46,7 +46,7 @@ class AccSimpleLearner(AccLearningMachine):
         return y.out(release)
 
 
-class AccSimpleLearner3(AccLearningMachine):
+class AccSimpleLearner3(LearningMachine):
 
     def __init__(self, in_features: int, out_features: int):
         super().__init__()

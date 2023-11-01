@@ -13,7 +13,7 @@
 # def learner():
 #     return GradLearner(
 #         [nn.Linear(3, 3)], ThLoss("mse"), 
-#         optimf.sgd(lr=1e-2)
+#         optimf.SGD(lr=1e-2)
 #     )
     
 

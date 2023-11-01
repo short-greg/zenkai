@@ -107,7 +107,7 @@ class SimpleLearner(core.LearningMachine):
         return y.out(release)
 
 
-class SimpleAccLearner(core.AccLearningMachine):
+class SimpleAccLearner(core.LearningMachine):
 
     def __init__(self, in_features: int, out_features: int):
         super().__init__()

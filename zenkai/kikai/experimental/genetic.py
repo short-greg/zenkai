@@ -5,18 +5,18 @@ import typing
 import torch.nn as nn
 import torch
 
+from ...tansaku import NNLinearObjective
+
 # Local
 from ...kaku import (
     IO,
     State,
     idx_io,
     Assessment,
-    AccLearningMachine,
     LearningMachine,
     acc_dep,
     forward_dep,
     ThLoss,
-    NNLinearObjective,
     Individual,
     Criterion
 )
@@ -25,7 +25,7 @@ from ... import tansaku
 
 # TODO: How to Simplify this?
 
-class GeneticNNLearner(AccLearningMachine):
+class GeneticNNLearner(LearningMachine):
 
     def __init__(self, in_features: int, out_features: int, activation: bool=True,  criterion: Criterion=None, reduce_from: int=2, reduction: str='mean'):
 

@@ -8,7 +8,7 @@ import torch
 # local
 from ..kaku import (
     IO, State, LearningMachine, Assessment,
-    OptimFactory, StepX, Criterion, ThLoss, AccLearningMachine,
+    OptimFactory, StepX, Criterion, ThLoss,
     Builder, UNDEFINED, Var, Factory
 )
 from ._grad import GradUpdater
@@ -124,7 +124,7 @@ class BStepX(StepX):
         return IO(x.f - output_error, detach=True)
 
 
-class FALearner(AccLearningMachine):
+class FALearner(LearningMachine):
     """Learner for implementing feedback alignment
     """
 
@@ -233,7 +233,7 @@ class FALearner(AccLearningMachine):
 
 
 
-class DFALearner(AccLearningMachine):
+class DFALearner(LearningMachine):
     """Learner for implementing feedback alignment.
     """
 

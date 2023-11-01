@@ -136,6 +136,9 @@ class StepTheta(ABC):
         self._base_step = self.step
         self.step = self._step_hook_runner
 
+    def accumulate(self, x: IO, t: IO, state: State):
+        pass
+
     @abstractmethod
     def step(self, x: IO, t: IO, state: State):
         pass
@@ -188,6 +191,9 @@ class NullStepX(StepX):
 
 class NullStepTheta(StepTheta):
 
+    def accumulate(self, x: IO, t: IO, state: State):
+        pass
+
     def step(self, x: IO, t: IO, state: State, *args, **kwargs):
         return
 
@@ -198,6 +204,11 @@ class BatchIdxStepTheta(StepTheta):
 
     @abstractmethod
     def step(
+        self, x: IO, t: IO, state: State, batch_idx: Idx = None
+    ):
+        pass
+
+    def accumulate(
         self, x: IO, t: IO, state: State, batch_idx: Idx = None
     ):
         pass
@@ -423,19 +434,37 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             return assessment, y
         return assessment
 
-    def backward(
-        self, x: IO, t: IO, state: State, step: bool=False
-    ) -> IO:
-        """Convenience function to execute step and step_x
+    # def backward(
+    #     self, x: IO, t: IO, state: State, step: bool=False
+    # ) -> IO:
+    #     """Convenience function to execute step and step_x
+
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The target
+    #         state (State): The learning state
+    
+    #     Returns:
+    #         IO: the result of step_x
+    #     """
+    #     if step:
+    #         self.step(x, t, state)
+    #     return self.step_x(x, t, state)
+
+    def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
+        """
+        Go backward through the network
 
         Args:
-            x (IO): The input
-            t (IO): The target
-            state (State): The learning state
-    
+            x (IO): the input
+            t (IO): the target
+            state (State): State
+            step (bool, optional): Whether to execute step or not. Defaults to True.
+
         Returns:
-            IO: the result of step_x
+            IO: The result of step_x
         """
+        self.accumulate(x, t, state)
         if step:
             self.step(x, t, state)
         return self.step_x(x, t, state)
@@ -504,56 +533,56 @@ class InDepStepX(StepX):
         pass
 
 
-class AccStepTheta(StepTheta):
-    """
-    A StepTheta used for when you want to accumulate updates to the parameters before stepping
-    """
+# class AccStepTheta(StepTheta):
+#     """
+#     A StepTheta used for when you want to accumulate updates to the parameters before stepping
+#     """
     
-    @abstractmethod
-    def accumulate(self, x: IO, t: IO, state: State):
-        pass
+#     @abstractmethod
+#     def accumulate(self, x: IO, t: IO, state: State):
+#         pass
 
 
-class BatchIdxAccStepTheta(AccStepTheta):
-    """Mixin for when only to update based on a limited set of indexes in the minibatch
-    """
+# class BatchIdxAccStepTheta(AccStepTheta):
+#     """Mixin for when only to update based on a limited set of indexes in the minibatch
+#     """
 
-    @abstractmethod
-    def step(
-        self, x: IO, t: IO, state: State, batch_idx: Idx = None
-    ):
-        pass
+#     @abstractmethod
+#     def step(
+#         self, x: IO, t: IO, state: State, batch_idx: Idx = None
+#     ):
+#         pass
 
-    @abstractmethod
-    def accumulate(
-        self, x: IO, t: IO, state: State, batch_idx: Idx = None
-    ):
-        pass
+#     @abstractmethod
+#     def accumulate(
+#         self, x: IO, t: IO, state: State, batch_idx: Idx = None
+#     ):
+#         pass
 
 
-class AccLearningMachine(LearningMachine, AccStepTheta):
-    """
-    LearningMachine that includes the accumulate method
-    """
+# class AccLearningMachine(LearningMachine, AccStepTheta):
+#     """
+#     LearningMachine that includes the accumulate method
+#     """
     
-    def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
-        """
-        Go backward through the network
+#     def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
+#         """
+#         Go backward through the network
 
-        Args:
-            x (IO): the input
-            t (IO): the target
-            state (State): State
-            step (bool, optional): Whether to execute step or not. Defaults to True.
+#         Args:
+#             x (IO): the input
+#             t (IO): the target
+#             state (State): State
+#             step (bool, optional): Whether to execute step or not. Defaults to True.
 
-        Returns:
-            IO: The result of step_x
-        """
+#         Returns:
+#             IO: The result of step_x
+#         """
         
-        self.accumulate(x, t, state)
-        if step:
-            self.step(x, t, state)
-        return self.step_x(x, t, state)
+#         self.accumulate(x, t, state)
+#         if step:
+#             self.step(x, t, state)
+#         return self.step_x(x, t, state)
 
 
 def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
@@ -568,7 +597,7 @@ def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
     def inner(func):
 
         @wraps(func)
-        def _(self: AccLearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
             if x_key:
                 key = (self, x)
