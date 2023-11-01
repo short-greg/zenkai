@@ -39,13 +39,7 @@ class NullOptim(torch.optim.Optimizer):
 
 
 OPTIM_MAP = {
-    "sgd": torch.optim.SGD,
-    "adam": torch.optim.Adam,
-    "adadelta": torch.optim.Adadelta,
-    "adagrad": torch.optim.Adagrad,
-    "rmsprop": torch.optim.RMSprop,
-    "null": NullOptim,
-    "asgd": torch.optim.ASGD
+    "NullOptim": NullOptim,
 }
 
 
