@@ -215,7 +215,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         self._grad_updater.accumulate(x, state)
         state[self, 'accumulated'] = True
 
-    @acc_dep('accumulated', False, True)
+    @acc_dep('accumulated', False)
     def step(self, x: IO, t: typing.Union[IO, None], state: State, batch_idx: Idx = None) -> bool:
         """Advance the optimizer
 
@@ -476,7 +476,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
     ):
         return self._theta_step.step(x, t, state, batch_idx)
 
-    @acc_dep('accumulated', False, True)
+    @acc_dep('accumulated', False)
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return self._x_step.step_x(x, t, state, batch_idx)
 

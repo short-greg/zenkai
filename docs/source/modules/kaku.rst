@@ -107,14 +107,14 @@ LearningMachine: Show how to implement with gradient descent
          return self.loss(x, t, reduction_override)
 
       # forward will be called if it hasn't already
-      @forward_dep('y', exec=True)
+      @forward_dep('y')
       def step(self, x: IO, t: IO, state: State):
          self.optim.zero_grad() # implement a method to update the parameters
          self.assess_y(state[(self, x), 'y'], t)['loss'].backward()
          self.optim.step()
 
       # step will be called if it hasn't already
-      @step_dep('stepped', exec=True)
+      @step_dep('stepped')
       def step_x(self, x: IO, t: IO, state: State) -> IO:
          # implement a method to update x
          return IO(x.f - self.x_lr * x.f.grad, detach=True)

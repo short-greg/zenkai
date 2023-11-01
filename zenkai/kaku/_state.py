@@ -431,7 +431,6 @@ class State(object):
                     data[k][k2] = self._data[k][k2]
                     keep[k][k2] = True
         for k, v in self._subs.items():
-            print('Spawning sub')
             cur_sub = {}
 
             if k not in data:

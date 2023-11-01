@@ -286,7 +286,7 @@ class PipelineLearner(LearningMachine):
             machine, step_priority
         )
     
-    @step_dep('stepped', False, True)
+    @step_dep('stepped')
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         pipeline = self.get_pipeline(x, state)

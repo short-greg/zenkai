@@ -86,7 +86,7 @@ class GeneticNNLearner(LearningMachine):
         y = state[(self, x), 'y'] = IO(self.network(x.f))
         return y.out(release)
 
-    @forward_dep('y', True, True)
+    @forward_dep('y', True)
     def accumulate(self, x: IO, t: IO, state: State):
 
         y = state.get((self, x), 'y')
@@ -97,7 +97,7 @@ class GeneticNNLearner(LearningMachine):
         assessment = self.assess_y(y, t, reduction_override=self.reduction)
         assessment.value.backward()
     
-    @acc_dep('y', True, True)
+    @acc_dep('y', True)
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         x_prime = IO(x.f - x.f.grad, True)

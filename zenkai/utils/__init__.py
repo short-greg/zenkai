@@ -36,7 +36,8 @@ from ._convert import (
     module_factory,
     decay,
     collapse_k,
-    expand_k
+    expand_k,
+    unsqueeze_to
 )
 from ._sampling import (
     gather_idx_from_population, 

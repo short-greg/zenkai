@@ -585,7 +585,7 @@ class InDepStepX(StepX):
 #         return self.step_x(x, t, state)
 
 
-def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
+def acc_dep(check_field: str, x_key: bool=True):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called
 
@@ -604,16 +604,16 @@ def acc_dep(check_field: str, x_key: bool=True, exec: bool=True):
             else:
                 key = self
             val = state.get(key, check_field)
-            if val is None and exec:
-                self.accumulate(x, t, state)
-            elif val is None:
+            #if val is None and exec:
+            #    self.accumulate(x, t, state)
+            if val is None:
                 raise RuntimeError('Method depends on Step but step has not been called')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
 
 
-def step_dep(check_field: str, x_key: bool=True, exec: bool=True):
+def step_dep(check_field: str, x_key: bool=True):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called
 
@@ -632,16 +632,22 @@ def step_dep(check_field: str, x_key: bool=True, exec: bool=True):
             else:
                 key = self
             val = state.get(key, check_field)
-            if val is None and exec:
-                self.step(x, t, state)
-            elif val is None:
+            print('-xs-')
+            print(*state._data.keys())
+            print('-x-')
+            print((self.id, id(x)))
+            print('-!!!-')
+            print(*state._data[(self.id, id(x))].keys())
+            # if val is None and exec:
+            #   self.step(x, t, state)
+            if val is None:
                 raise RuntimeError('Method depends on Step but step has not been called')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
 
 
-def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bool=False):
+def forward_dep(check_field: str, x_key: bool=True):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
@@ -659,9 +665,9 @@ def forward_dep(check_field: str, x_key: bool=True, exec: bool=True, release: bo
             else:
                 key = self
             val = state.get(key, check_field)
-            if val is None and exec:
-                self(x, state, release=release)
-            elif val is None:
+            #if val is None and exec:
+            #    self(x, state, release=release)
+            if val is None:
                 raise RuntimeError('Method depends on forward but forward has not been executed')
             return func(self, x, t, state, *args, **kwargs)
         return _

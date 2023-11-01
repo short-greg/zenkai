@@ -317,7 +317,7 @@ class DependentLearner(core.LearningMachine):
     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
         return self.loss.assess(y, t, reduction_override)
     
-    @core.step_dep('stepped', exec=False)
+    @core.step_dep('stepped')
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
         if ((self, x), 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
@@ -325,7 +325,7 @@ class DependentLearner(core.LearningMachine):
             
         return IO(x.f - x.f.grad)
 
-    @core.forward_dep('y', exec=True)
+    @core.forward_dep('y')
     def step(self, x: IO, t: IO, state: core.State):
         y = state[(self, x), 'y']
         self.optim.zero_grad()
@@ -348,6 +348,7 @@ class TestDependencies:
         t = IO(torch.rand(2, 3))
         state = core.State()
         dependent = DependentLearner(2, 3)
+        dependent(x, state=state)
         dependent.step(x, t, state)
         assert state[(dependent, x), 'y'] is not None
 
@@ -377,6 +378,7 @@ class TestDependencies:
         t = IO(torch.rand(2, 3))
         state = core.State()
         dependent = DependentLearner(2, 3)
+        dependent(x, state=state)
         dependent.step(x, t, state)
         x_prime = dependent.step_x(x, t, state)
         assert x_prime is not None

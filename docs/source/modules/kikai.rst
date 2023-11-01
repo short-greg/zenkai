@@ -51,7 +51,7 @@ Kikai implements  LearningMachines.
             t1 = my_state.t1 = self.layer2.step_x(my_state.layer1, t, state)
             self.layer1.step(x, t, state)
 
-         @step_dep('t1', exec=True)
+         @step_dep('t1')
          def step_x(self, x: IO, t: IO, state: State) -> IO:
             # implement a method to update x
             return self.step_x(x, t, state)

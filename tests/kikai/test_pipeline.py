@@ -106,10 +106,10 @@ class SamplePipeline2(_pipelining.PipelineLearner):
     def __init__(self, step_priority: bool=True):
         super().__init__()
         self._node = _pipelining.PipeStep(
-            SimpleLearner(3, 3), step_priority
+            SimpleLearner(3, 3), step_priority, accumulate=False
         )
         self._node2 = _pipelining.PipeStep(
-            SimpleLearner(3, 3), step_priority
+            SimpleLearner(3, 3), step_priority, accumulate=False
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -238,6 +238,7 @@ class TestPipeline:
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
+        network.accumulate(x, t, state)
         network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
@@ -250,6 +251,7 @@ class TestPipeline:
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
+        network.accumulate(x, t, state)
         network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
@@ -261,6 +263,8 @@ class TestPipeline:
         t = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
+        network.accumulate(x, t, state)
+        network.step(x, t, state)
         x_prime = network.step_x(x, t, state)
         assert (x.f != x_prime.f).any()
 
@@ -307,6 +311,7 @@ class TestAccPipelineLearner:
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
+        network.accumulate(x, t, state)
         network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
@@ -318,6 +323,7 @@ class TestAccPipelineLearner:
         t = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
+        network.accumulate(x, t, state)
         x_prime = network.step_x(x, t, state)
         assert (x.f != x_prime.f).any()
 
@@ -330,6 +336,8 @@ class TestAccPipelineLearner:
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
+        
+        network.accumulate(x, t, state)
         x_prime = network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
 
@@ -342,5 +350,6 @@ class TestAccPipelineLearner:
         state = zenkai.State()
         y = network(x, state)
         before = get_model_parameters(network)
+        network.accumulate(x, t, state)
         x_prime = network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()
