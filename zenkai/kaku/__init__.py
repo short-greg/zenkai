@@ -63,15 +63,8 @@ from ._populate import (
 from ._objective import (
     Itadaki,
     Objective,
+    Constraint,
     impose,
     # TODO: keep only the core modules (i.e. the base classes)
-    FuncObjective,
-    CriterionObjective,
-    ValueConstraint,
-    LTE,
-    LT,
-    GT,
-    GTE,
-    NNLinearObjective,
-    NullConstraint,
+
 )

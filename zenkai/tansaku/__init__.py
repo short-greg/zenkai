@@ -58,3 +58,14 @@ from ._select import (
     IndexMap
 )
 from . import utils
+from ._constraints import (
+    FuncObjective,
+    CriterionObjective,
+    ValueConstraint,
+    LTE,
+    LT,
+    GT,
+    GTE,
+    NNLinearObjective,
+    NullConstraint,
+)
