@@ -6,6 +6,7 @@ from abc import abstractmethod
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
+import numpy as np
 
 # local
 from ..utils import get_model_parameters, update_model_parameters, expand_dim0
@@ -29,7 +30,7 @@ class TensorDict(dict):
         
         super().__init__(**results)
 
-    def loop_over(self, *others: 'TensorDict', only_my_k: bool=False, union: bool=True) -> typing.Iterator[typing.Tuple[str, torch.Tensor]]:
+    def loop_over(self, others: typing.Union['TensorDict', typing.List['TensorDict']], only_my_k: bool=False, union: bool=True) -> typing.Iterator[typing.Tuple[str, torch.Tensor]]:
         """Loop over the tensor dict and other tensor dicts
 
         Args:
@@ -41,7 +42,8 @@ class TensorDict(dict):
         Yields:
             typing.Tuple: The key followed by the tensors
         """
-
+        if isinstance(others, TensorDict):
+            others = [others]
         keys = set(self.keys())
         if not only_my_k:
             for other in others:
@@ -55,7 +57,7 @@ class TensorDict(dict):
             yield tuple([key, *result])        
 
     # perhaps have this be separate
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'TensorDict':
+    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None, filter_keys: bool=False) -> 'TensorDict':
         """Apply a function to he individual to generate a new individual
 
         Args:
@@ -75,7 +77,7 @@ class TensorDict(dict):
         for k, v in self.items():
             if k in keys:
                 results[k] = f(v)
-            else:
+            elif not filter_keys:
                 results[k] = torch.clone(v)
         return self.__class__(**results)
     
@@ -186,12 +188,22 @@ class TensorDict(dict):
         return self.binary_op(torch.equal, other, union=False)
 
     @abstractmethod
-    def spawn(self) -> 'TensorDict':
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'TensorDict':
         pass
 
     def copy(self) -> 'TensorDict':
 
         return self.__class__(**super().copy())
+
+    def clone(self) -> 'TensorDict':
+
+        result = {}
+        for k, v in self.items():
+            if isinstance(v, torch.Tensor):
+                result[k] = v.clone()
+            elif isinstance(v, np.ndarray):
+                result[k] = v.copy()
+        return self.__class__(**result)
 
 
 class Individual(TensorDict):
@@ -297,6 +309,17 @@ class Individual(TensorDict):
             **tensor_dict
         )
 
+    def clone(self) -> 'Individual':
+        """Create an exact copy of the individual
+
+        Returns:
+            Individual: The cloned individual
+        """
+
+        clone = super().clone()
+        clone._assessment = self._assessment
+        return clone
+
 
 class Population(TensorDict):
     """
@@ -355,7 +378,10 @@ class Population(TensorDict):
 
         result = {}
         for name in names:
-            result[name] = self[name]
+            try:
+                result[name] = self[name]
+            except KeyError as e:
+                raise KeyError(f'{name} not in the population') from e
         return Population(**result)
 
     def get_assessment(self, i: int) -> Assessment:
@@ -654,6 +680,18 @@ class Population(TensorDict):
         return Population(
             **tensor_dict
         )
+
+    def clone(self) -> 'Population':
+        """Create an exact copy of the individual
+
+        Returns:
+            Population: The cloned individual
+        """
+
+        clone = super().clone()
+        clone._assessments = self._assessments
+        clone._assessment_size = self._assessment_size
+        return clone
 
 
 class PopulationIndexer(object):

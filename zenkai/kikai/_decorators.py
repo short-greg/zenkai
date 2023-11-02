@@ -5,7 +5,7 @@ from abc import ABC
 import torch
 
 # local
-from ..kaku import LearningMachine, State, IO, Criterion
+from ..kaku import LearningMachine, State, IO, Criterion, forward_dep
 from ..utils import unsqueeze_to
 
 
@@ -77,3 +77,7 @@ class FDecorateStepX(DecorateStepX):
         
         y = state[(self, x), 'y'] = y
         return self.f(x, x_prime, y, t)
+
+    @forward_dep('y')
+    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+        return super().step_x(x, t, state, *args, **kwargs)

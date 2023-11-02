@@ -104,6 +104,84 @@ class TestIndividual:
         
         assert (individual1 == individual2)['x'].all()
 
+    def test_loop_over_loops_over_both_individuals(self, individual1: Individual, individual2: Individual):
+        
+        keys = ('x', 'x1', 'x2')
+        for key, mine, other in individual1.loop_over(individual2):
+            if key == 'x':
+                assert other is None
+            if key == 'x1' or key == 'x2':
+                assert mine is None
+            assert key in keys
+
+    def test_loop_over_loops_over_both_individuals_intersection(self, individual1: Individual, individual2: Individual):
+        
+        keys = ('x')
+        individual2['x'] = individual1['x']
+        for key, mine, other in individual1.loop_over([individual2], False, False):
+            if key == 'x':
+                assert other is not None and mine is not None
+            assert key in keys
+
+    def test_loop_over_loops_over_only_mine(self, individual1: Individual, individual2: Individual):
+        
+        keys = ('x')
+        for key, mine, other in individual1.loop_over([individual2], True, True):
+            if key == 'x':
+                assert other is None and mine is not None
+            assert key in keys
+
+    def test_apply_creates_rand_tensors_like(self, individual1: Individual, individual2: Individual):
+        
+        individual2 = individual1.apply(torch.rand_like, ['x'])
+        assert 'x' in individual2
+
+    def test_apply_filters_out_y(self, individual1: Individual, individual2: Individual):
+        
+        individual1['y'] = torch.rand(4)
+        individual2 = individual1.apply(torch.rand_like, ['x'], filter_keys=True)
+        assert 'y' not in individual2
+
+    def test_apply_does_not_filter_out_y(self, individual1: Individual, individual2: Individual):
+        
+        individual1['y'] = torch.rand(4)
+        individual2 = individual1.apply(torch.rand_like, ['x'], filter_keys=True)
+        assert 'y' not in individual2
+
+    def test_binary_op_adds_two(self, individual1: Individual, individual2: Individual):
+        
+        individual1['x'] = torch.rand(4)
+        individual2 = individual1.apply(torch.rand_like, ['x'], filter_keys=True)
+        assert 'y' not in individual2
+
+    def test_validate_keys_returns_false_if_different(self, individual1: Individual, individual2: Individual):
+        
+        assert not individual1.validate_keys(individual2)
+
+    def test_validate_keys_returns_true_if_same(self, individual1: Individual):
+        
+        assert individual1.validate_keys(individual1)
+
+    def test_spawn_returns_item_of_same_type(self, individual1: Individual, individual2: Individual):
+        
+        individual3 = individual1.spawn(individual2)
+        assert (individual3['x1'] is individual2['x1'])
+
+    def test_copy_copys_the_individual(self, individual1: Individual):
+        
+        individual3 = individual1.copy()
+        assert (individual3['x'] is individual1['x'])
+
+    def test_clone_creates_copy_of_the_data(self, individual1: Individual):
+        
+        individual3 = individual1.clone()
+        assert (not individual3['x'] is individual1['x'])
+
+    def test_clone_creates_copy_of_the_data_that_is_equal(self, individual1: Individual):
+        
+        individual3 = individual1.clone()
+        assert (individual3['x'] == individual1['x']).all()
+
 
 class TestPopulation:
 
@@ -205,3 +283,40 @@ class TestPopulation:
         population2 = population.apply(lambda x: torch.add(x, 1), keys=['x'])
         
         assert (population2['x'] == population['x'] + 1).all()
+
+    def test_k_returns_size_of_population(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        assert population.k == 3
+
+    def test_individuals_returns_three_individuals(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        assert len(list(population.individuals())) == 3
+
+    def test_individuals_returns_correct_individual(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        individuals = list(population.individuals())
+        assert (individuals[1]['x'] == population['x'][1]).all()
+        assert (individuals[2]['x'] == population['x'][2]).all()
+
+    def test_get_i_returns_correct_individual(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        individual = population.get_i(2)
+        assert (individual['x'] == population['x'][2]).all()
+
+    def test_select_gets_correct(self):
+        population = Population(x=torch.rand(3, 2, 2), y=torch.rand(3, 3, 2), z=torch.rand(3, 3, 2))
+        sub_population = population.select(['x', 'y'])
+        assert 'z' not in sub_population
+        assert (population['x'] is sub_population['x'])
+
+    def test_select_raises_error_if_name_not_in_population(self):
+        population = Population(x=torch.rand(3, 2, 2), y=torch.rand(3, 3, 2), z=torch.rand(3, 3, 2))
+        with pytest.raises(KeyError):
+            population.select(['t'])
+
+    def test_sub_gets_a_sub_population(self):
+        population = Population(x=torch.rand(3, 2, 2))
+        sub = population.sub[[1, 0]]
+        assert (sub['x'][0] == population['x'][1]).all()
+        assert (sub['x'][1] == population['x'][0]).all()
+

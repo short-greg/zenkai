@@ -271,6 +271,25 @@ class TestLearningMachineWithComplexLearner:
         target = nn.MSELoss(reduction='sum')(*y, *t)
         assert result.item() == target.item()
 
+    def test_assess_y_uses_default_reduction(self):
+
+        learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
+        y = IO(torch.rand(2, 3))
+        t = IO(torch.rand(2, 3))
+        result = learner.assess_y(y, t)
+        target = nn.MSELoss(reduction='mean')(*y, *t)
+        assert result.item() == target.item()
+
+    def test_assess_uses_default_reduction(self):
+
+        learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
+        x = IO(torch.rand(3, 2))
+        t = IO(torch.rand(3, 3))
+        result = learner.assess(x, t)
+        y = learner(x)
+        target = nn.MSELoss(reduction='mean')(y.f, t.f)
+        assert result.item() == target.item()
+
     def test_excite_detaches_y(self):
 
         torch.manual_seed(1)
@@ -382,3 +401,31 @@ class TestDependencies:
         dependent.step(x, t, state)
         x_prime = dependent.step_x(x, t, state)
         assert x_prime is not None
+
+
+class TestNullLearner:
+
+    def test_assess_y_uses_correct_reduction(self):
+
+        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        y = IO(torch.rand(2, 3))
+        t = IO(torch.rand(2, 3))
+        result = learner.assess_y(y, t, 'sum')
+        target = nn.MSELoss(reduction='sum')(*y, *t)
+        assert result.item() == target.item()
+
+    def test_null_learner_returns_y_for_step_x(self):
+
+        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        y = IO(torch.rand(2, 3))
+        t = IO(torch.rand(2, 3))
+        x_prime = learner.step_x(y, t, state=State())
+        assert (x_prime.f == y.f).all()
+
+    def test_null_learner_outputs_x_for_forward(self):
+
+        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        x = IO(torch.rand(2, 3))
+        t = IO(torch.rand(2, 3))
+        y = learner.forward(x, state=State())
+        assert y is x

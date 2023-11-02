@@ -434,23 +434,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             return assessment, y
         return assessment
 
-    # def backward(
-    #     self, x: IO, t: IO, state: State, step: bool=False
-    # ) -> IO:
-    #     """Convenience function to execute step and step_x
-
-    #     Args:
-    #         x (IO): The input
-    #         t (IO): The target
-    #         state (State): The learning state
-    
-    #     Returns:
-    #         IO: the result of step_x
-    #     """
-    #     if step:
-    #         self.step(x, t, state)
-    #     return self.step_x(x, t, state)
-
     def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
         """
         Go backward through the network
@@ -488,6 +471,23 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             if get_y:
                 return result, y
             return result
+
+    # def backward(
+    #     self, x: IO, t: IO, state: State, step: bool=False
+    # ) -> IO:
+    #     """Convenience function to execute step and step_x
+
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The target
+    #         state (State): The learning state
+    
+    #     Returns:
+    #         IO: the result of step_x
+    #     """
+    #     if step:
+    #         self.step(x, t, state)
+    #     return self.step_x(x, t, state)
 
 
 class NullLearner(LearningMachine):
@@ -531,6 +531,84 @@ class InDepStepX(StepX):
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
         pass
+
+def acc_dep(check_field: str, x_key: bool=True):
+    """Wrap step_x by requiring step to have been called. 
+    Will raise an error if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            #if val is None and exec:
+            #    self.accumulate(x, t, state)
+            if val is None:
+                raise RuntimeError('Method depends on Step but step has not been called')
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
+
+
+def step_dep(check_field: str, x_key: bool=True):
+    """Wrap step_x by requiring step to have been called. 
+    Will raise an error if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            if val is None:
+                raise RuntimeError('Method depends on Step but step has not been called')
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
+
+
+def forward_dep(check_field: str, x_key: bool=True):
+    """Wrap step or step_x by automatically calling forward if it has not been called
+
+    Args:
+        check_field (str): The field to check if forward has been called
+        x_key (bool, optional): Whether x is used in the key. Defaults to True.
+    """
+
+    def inner(func):
+
+        @wraps(func)
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+
+            if x_key:
+                key = (self, x)
+            else:
+                key = self
+            val = state.get(key, check_field)
+            if val is None:
+                raise RuntimeError('Method depends on forward but forward has not been executed')
+            return func(self, x, t, state, *args, **kwargs)
+        return _
+    return inner
 
 
 # class AccStepTheta(StepTheta):
@@ -584,91 +662,3 @@ class InDepStepX(StepX):
 #             self.step(x, t, state)
 #         return self.step_x(x, t, state)
 
-
-def acc_dep(check_field: str, x_key: bool=True):
-    """Wrap step_x by requiring step to have been called. 
-    Will raise an error if it has not been called
-
-    Args:
-        check_field (str): The field to check if forward has been called
-        x_key (bool, optional): Whether x is used in the key. Defaults to True.
-    """
-
-    def inner(func):
-
-        @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
-            #if val is None and exec:
-            #    self.accumulate(x, t, state)
-            if val is None:
-                raise RuntimeError('Method depends on Step but step has not been called')
-            return func(self, x, t, state, *args, **kwargs)
-        return _
-    return inner
-
-
-def step_dep(check_field: str, x_key: bool=True):
-    """Wrap step_x by requiring step to have been called. 
-    Will raise an error if it has not been called
-
-    Args:
-        check_field (str): The field to check if forward has been called
-        x_key (bool, optional): Whether x is used in the key. Defaults to True.
-    """
-
-    def inner(func):
-
-        @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
-            print('-xs-')
-            print(*state._data.keys())
-            print('-x-')
-            print((self.id, id(x)))
-            print('-!!!-')
-            print(*state._data[(self.id, id(x))].keys())
-            # if val is None and exec:
-            #   self.step(x, t, state)
-            if val is None:
-                raise RuntimeError('Method depends on Step but step has not been called')
-            return func(self, x, t, state, *args, **kwargs)
-        return _
-    return inner
-
-
-def forward_dep(check_field: str, x_key: bool=True):
-    """Wrap step or step_x by automatically calling forward if it has not been called
-
-    Args:
-        check_field (str): The field to check if forward has been called
-        x_key (bool, optional): Whether x is used in the key. Defaults to True.
-    """
-
-    def inner(func):
-
-        @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
-            #if val is None and exec:
-            #    self(x, state, release=release)
-            if val is None:
-                raise RuntimeError('Method depends on forward but forward has not been executed')
-            return func(self, x, t, state, *args, **kwargs)
-        return _
-    return inner
