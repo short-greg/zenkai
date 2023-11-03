@@ -532,6 +532,7 @@ class InDepStepX(StepX):
     def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
         pass
 
+
 def acc_dep(check_field: str, x_key: bool=True):
     """Wrap step_x by requiring step to have been called. 
     Will raise an error if it has not been called

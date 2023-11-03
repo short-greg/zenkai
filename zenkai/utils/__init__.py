@@ -37,7 +37,8 @@ from ._convert import (
     decay,
     collapse_k,
     expand_k,
-    unsqueeze_to
+    unsqueeze_to,
+    align_to
 )
 from ._sampling import (
     gather_idx_from_population, 

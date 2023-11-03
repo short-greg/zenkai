@@ -43,6 +43,14 @@ class TestBinaryRandCrossOver:
         new_population = mixer(population1, population2)
         assert ((new_population['x'] == -1) | (new_population['x'] == 1)).all()
 
+    def test_binary_rand_crossover_with_real_values(self):
+        
+        mixer = tansaku.BinaryRandCrossOver(0.5)
+        population1 = Population(x=torch.randn(4, 4, 2))
+        population2 = Population(x=torch.randn(4, 4, 2))
+        new_population = mixer(population1, population2)
+        assert ((new_population['x'] == population1['x']) | (new_population['x'] == population2['x'])).all()
+
 
 class TestSmoothCrossOver:
 
@@ -54,3 +62,15 @@ class TestSmoothCrossOver:
         population2 = Population(x=torch.rand(4, 4, 2))
         new_population = mixer(population1, population2)
         assert new_population['x'].shape == population1['x'].shape
+
+    def test_rand_crossover_produces_values_in_between(self):
+        
+        mixer = tansaku.SmoothCrossOver()
+        population1 = Population(x=torch.randn(4, 4, 2).sign())
+        population2 = Population(x=torch.randn(4, 4, 2).sign())
+        new_population = mixer(population1, population2)
+        assert (
+            (new_population['x'] >= population1['x']) & (new_population['x'] <= population2['x']) |
+            (new_population['x'] <= population1['x']) & (new_population['x'] >= population2['x'])
+        
+        ).all()

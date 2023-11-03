@@ -12,64 +12,10 @@ import torch.nn as nn
 
 # local
 from ..kaku import TensorDict
-from ..utils import gather_idx_from_population
+from ..utils import gather_idx_from_population, unsqueeze_to, align_to
 
 from ..kaku import IO, Assessment
 
-
-# class RepeatSpawner(object):
-#     """Repeat the samples in the batch k times
-#     """
-
-#     def __init__(self, k: int):
-#         """initializer
-
-#         Args:
-#             k (int): the population size
-#         """
-#         self.k = k
-
-#     def __call__(self, x: torch.Tensor):
-
-#         return (
-#             x[None]
-#             .repeat(self.k, *([1] * len(x.shape)))
-#             .reshape(self.k * x.shape[0], *x.shape[1:])
-#         )
-
-#     def spawn_io(self, io: IO):
-#         """
-#         Args:
-#             io (IO): the io to spawn
-
-#         Returns:
-#             IO: The spawned IO
-#         """
-#         xs = []
-#         for x in io:
-#             if isinstance(x, torch.Tensor):
-#                 x = self(x)
-#             xs.append(x)
-#         return IO(*xs)
-
-#     def select(self, assessment: Assessment) -> typing.Tuple[Assessment, 'Indexer']:
-#         """Select the best assessment from the tensor
-
-#         Args:
-#             assessment (Assessment): the assessment
-
-#         Returns:
-#             typing.Tuple[Assessment, Indexer]: The best assessment and the tensor
-#         """
-#         assert assessment.value.dim() == 1
-#         expanded = expand_k(assessment.value, self.k, False)
-#         if assessment.maximize:
-#             value, idx = expanded.max(dim=0, keepdim=True)
-#         else:
-#             value, idx = expanded.min(dim=0, keepdim=True)
-#         return Assessment(value, assessment.maximize), Indexer(
-#             idx, self.k, assessment.maximize
-#         )
 
 
 # TODO: Remove
@@ -147,6 +93,7 @@ class IndexMap(object):
 
     def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int=0):
         super().__init__()
+        print(index)
         self.index = index
         self.dim = dim
         self._assessment = assessment
@@ -160,11 +107,14 @@ class IndexMap(object):
         index = self.index[i].clone()
         if index.dim() > x.dim():
             raise ValueError(f'Gather By dim must be less than or equal to the value dimension')
-        shape = [1] * index.dim()
-        for i in range(index.dim(), x.dim()):
-            index = index.unsqueeze(i)
-            shape.append(x.shape[i])
-        index = index.repeat(*shape)
+        
+        index = align_to(index, x)
+        # shape = [1] * index.dim()
+        # for i in range(index.dim(), x.dim()):
+        #     index = index.unsqueeze(i)
+        #     shape.append(x.shape[i])
+        # index = index.repeat(*shape)
+        print(x.gather(self.dim, index))
         return x.gather(self.dim, index)
     
     def __len__(self) -> int:
@@ -237,13 +187,13 @@ class TopKSelector(Selector):
         """
         
         _, topk = assessment.value.topk(self.k, dim=self.dim, largest=assessment.maximize)
-        return IndexMap(assessment, topk, dim=0)
+        return IndexMap(assessment, topk, dim=self.dim)
 
 
 class BestSelector(Selector):
 
-    def __init__(self, k: int, dim: int = 0):
-        super().__init__(k)
+    def __init__(self, dim: int = 0):
+        super().__init__(1)
         self.dim = dim
 
     def select(self, assessment: Assessment) -> IndexMap:
@@ -260,7 +210,7 @@ class BestSelector(Selector):
             _, best = assessment.value.max(dim=self.dim, keepdim=True)
         else:
             _, best = assessment.value.min(dim=self.dim, keepdim=True)
-        return IndexMap(assessment, best, dim=0)
+        return IndexMap(assessment, best, dim=self.dim)
 
 
 class FitnessParentSelector(Selector):
@@ -302,7 +252,6 @@ class FitnessParentSelector(Selector):
         prob = prob.repeat(self.k, *[1] * len(prob.shape))
         # (n_divisions * ..., population)
         prob = prob.reshape(-1, prob.shape[-1])
-        print(prob.shape)
         parents1, parents2 = torch.multinomial(
             prob, 2, False
         ).transpose(1, 0)
@@ -357,3 +306,59 @@ class RankParentSelector(Selector):
 
         print(parents1.shape)
         return IndexMap(assessment, parents1, parents2, dim=0)
+
+
+
+# class RepeatSpawner(object):
+#     """Repeat the samples in the batch k times
+#     """
+
+#     def __init__(self, k: int):
+#         """initializer
+
+#         Args:
+#             k (int): the population size
+#         """
+#         self.k = k
+
+#     def __call__(self, x: torch.Tensor):
+
+#         return (
+#             x[None]
+#             .repeat(self.k, *([1] * len(x.shape)))
+#             .reshape(self.k * x.shape[0], *x.shape[1:])
+#         )
+
+#     def spawn_io(self, io: IO):
+#         """
+#         Args:
+#             io (IO): the io to spawn
+
+#         Returns:
+#             IO: The spawned IO
+#         """
+#         xs = []
+#         for x in io:
+#             if isinstance(x, torch.Tensor):
+#                 x = self(x)
+#             xs.append(x)
+#         return IO(*xs)
+
+#     def select(self, assessment: Assessment) -> typing.Tuple[Assessment, 'Indexer']:
+#         """Select the best assessment from the tensor
+
+#         Args:
+#             assessment (Assessment): the assessment
+
+#         Returns:
+#             typing.Tuple[Assessment, Indexer]: The best assessment and the tensor
+#         """
+#         assert assessment.value.dim() == 1
+#         expanded = expand_k(assessment.value, self.k, False)
+#         if assessment.maximize:
+#             value, idx = expanded.max(dim=0, keepdim=True)
+#         else:
+#             value, idx = expanded.min(dim=0, keepdim=True)
+#         return Assessment(value, assessment.maximize), Indexer(
+#             idx, self.k, assessment.maximize
+#         )
