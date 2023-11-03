@@ -359,7 +359,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             self._test_posthooks.append(hook)
 
     def _learn_hook_runner(
-        self, x: IO, t: IO, state: State, 
+        self, x: IO, t: IO, state: State=None, 
         clear_state: bool=False, reduction_override: str=None, 
         get_y: bool=False,
     ):
@@ -370,6 +370,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             t (IO): The target IO
             state (State): The current state
         """
+        state = state or State()
         assessment, y = self._base_learn(x, t, state, clear_state, reduction_override, True)
 
         for posthook in self._learn_posthooks:
@@ -379,7 +380,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         return assessment
 
     def _test_hook_runner(
-        self, x: IO, t: IO, state: State, 
+        self, x: IO, t: IO, state: State=None, 
         reduction_override: str=None, 
         get_y: bool=False,
     ):
@@ -390,6 +391,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             t (IO): The target IO
             state (State): The current state
         """
+        state = state or State()
         assessment, y = self._base_test(x, t, state, reduction_override, True)
 
         for posthook in self._test_posthooks:
