@@ -41,14 +41,21 @@ class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
 
     @abstractmethod
-    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+    def __call__(self, step_x: 'StepX', x: IO, x_prime: IO, t: IO, state: State) -> typing.Tuple[IO, IO]:
         pass
 
 
 class StepHook(ABC):
 
     @abstractmethod
-    def __call__(self, x: IO, t: IO, state: State, **kwargs) -> typing.Tuple[IO, IO]:
+    def __call__(self, step: 'StepTheta', x: IO, t: IO, state: State) -> typing.Tuple[IO, IO]:
+        pass
+
+
+class ForwardHook(ABC):
+
+    @abstractmethod
+    def __call__(self, learner: 'LearningMachine', x: IO, y: IO, state: State) -> IO:
         pass
 
 
@@ -69,7 +76,6 @@ class StepX(ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._step_x_hook_initialized = True
-        self._step_x_prehooks = []
         self._step_x_posthooks = []
         self._base_step_x = self.step_x
         self.step_x = self._step_x_hook_runner
@@ -90,25 +96,22 @@ class StepX(ABC):
             IO: the updated x
         """
 
-        for prehook in self._step_x_prehooks:
-            x, t = prehook(x, t, state)
-
         x_prime = self._base_step_x(x, t, state, *args, **kwargs)
 
         for posthook in self._step_x_posthooks:
-            x_prime, t = posthook(x_prime, t, state)
+            x_prime, t = posthook(self, x, x_prime, t, state)
 
         return x_prime
 
-    def step_x_prehook(self, hook: StepXHook):
-        """Add hook to call before StepX
+    # def step_x_prehook(self, hook: StepXHook):
+    #     """Add hook to call before StepX
 
-        Args:
-            hook (StepXHook): The hook to add
-        """
-        if not hasattr(self, "_step_x_hook_initialized"):
-            self.__init__()
-        self._step_x_prehooks.append(hook)
+    #     Args:
+    #         hook (StepXHook): The hook to add
+    #     """
+    #     if not hasattr(self, "_step_x_hook_initialized"):
+    #         self.__init__()
+    #     self._step_x_prehooks.append(hook)
 
     def step_x_posthook(self, hook: StepXHook):
         """Add hook to call after StepX
@@ -153,24 +156,24 @@ class StepTheta(ABC):
             t (IO): The target IO
             state (State): The current state
         """
-        for prehook in self._step_prehooks:
-            x, t = prehook(x, t, state)
+        # for prehook in self._step_prehooks:
+        #     x, t = prehook(x, t, state)
 
         result = self._base_step(x, t, state, *args, **kwargs)
 
         for posthook in self._step_posthooks:
-            x, t = posthook(x, t, state)
+            x, t = posthook(self, x, t, state)
         return result
 
-    def step_prehook(self, hook: StepHook):
-        """Add hook to call before StepTheta
+    # def step_prehook(self, hook: StepHook):
+    #     """Add hook to call before StepTheta
 
-        Args:
-            hook (StepHook): The hook to add
-        """
-        if not hasattr(self, "_step_hook_initialized"):
-            self.__init__()
-        self._step_prehooks.append(hook)
+    #     Args:
+    #         hook (StepHook): The hook to add
+    #     """
+    #     if not hasattr(self, "_step_hook_initialized"):
+    #         self.__init__()
+    #     self._step_prehooks.append(hook)
 
     def step_posthook(self, hook: StepHook):
         """Add hook to call after StepTheta
@@ -250,9 +253,12 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         super().__init__()
         self._test_posthooks = []
         self._learn_posthooks = []
+        self._forward_hooks = []
         self._base_learn = self.learn
         self._base_test = self.test
         self.learn = self._learn_hook_runner
+        self._base_forward = self.forward
+        self.forward = self._forward_hook_runner
         self.test = self._test_hook_runner
 
     def device(self) -> torch.device:
@@ -347,7 +353,15 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         """
         return super().__call__(x, state or State(), release, *args, **kwargs)
 
-    def learner_posthook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True):
+    def forward_hook(self, hook: ForwardHook):
+        """_summary_
+
+        Args:
+            hook (ForwardHook): _description_
+        """
+        self._forward_hooks.append(hook)
+
+    def learner_hook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True):
         """Add hook to call after learn
 
         Args:
@@ -378,6 +392,21 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         if get_y:
             return assessment, y
         return assessment
+    
+    def _forward_hook_runner(
+            self, x: IO, state: State, *args, **kwargs
+    ):
+        """_summary_
+
+        Args:
+            x (IO): The input to the module
+            t (IO): The target
+            state (State, optional): The state at the timestep. Defaults to None.
+        """
+        y = self._base_forward(x, state, *args, **kwargs)
+        for hook in self._forward_hooks:
+            y = hook(self, x, y, state)
+        return y
 
     def _test_hook_runner(
         self, x: IO, t: IO, state: State=None, 

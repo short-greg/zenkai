@@ -207,7 +207,7 @@ class TestLearningMachineWithSimpleLearner:
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         hook = DummyHook()
-        learner.learner_posthook(hook, True, False)
+        learner.learner_hook(hook, True, False)
         state = State()
         learner.learn(x, t, state)
         assert state[hook, 'hi'] == 'hi'
@@ -217,7 +217,7 @@ class TestLearningMachineWithSimpleLearner:
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         hook = DummyHook()
-        learner.learner_posthook(hook, True, False)
+        learner.learner_hook(hook, True, False)
         state = State()
         learner.test(x, t, state)
         assert (hook, 'hi') not in state
@@ -227,7 +227,7 @@ class TestLearningMachineWithSimpleLearner:
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         hook = DummyHook()
-        learner.learner_posthook(hook, True, True)
+        learner.learner_hook(hook, True, True)
         state = State()
         learner.test(x, t, state)
         assert state[hook, 'hi'] == 'hi'
