@@ -113,7 +113,7 @@ class StepX(ABC):
     #         self.__init__()
     #     self._step_x_prehooks.append(hook)
 
-    def step_x_posthook(self, hook: StepXHook):
+    def step_x_hook(self, hook: StepXHook) -> 'StepX':
         """Add hook to call after StepX
 
         Args:
@@ -122,6 +122,7 @@ class StepX(ABC):
         if not hasattr(self, "_step_x_hook_initialized"):
             self.__init__()
         self._step_x_posthooks.append(hook)
+        return self
 
 
 class StepTheta(ABC):
@@ -175,7 +176,7 @@ class StepTheta(ABC):
     #         self.__init__()
     #     self._step_prehooks.append(hook)
 
-    def step_posthook(self, hook: StepHook):
+    def step_posthook(self, hook: StepHook) -> 'StepTheta':
         """Add hook to call after StepTheta
 
         Args:
@@ -184,6 +185,7 @@ class StepTheta(ABC):
         if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
         self._step_posthooks.append(hook)
+        return self
 
 
 class NullStepX(StepX):
@@ -353,15 +355,16 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         """
         return super().__call__(x, state or State(), release, *args, **kwargs)
 
-    def forward_hook(self, hook: ForwardHook):
+    def forward_hook(self, hook: ForwardHook) -> 'LearningMachine':
         """_summary_
 
         Args:
             hook (ForwardHook): _description_
         """
         self._forward_hooks.append(hook)
+        return self
 
-    def learner_hook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True):
+    def learner_hook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True) -> 'LearningMachine':
         """Add hook to call after learn
 
         Args:
@@ -371,6 +374,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             self._learn_posthooks.append(hook)
         if test:
             self._test_posthooks.append(hook)
+        return self
 
     def _learn_hook_runner(
         self, x: IO, t: IO, state: State=None, 
