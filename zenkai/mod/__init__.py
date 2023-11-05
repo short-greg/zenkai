@@ -45,3 +45,10 @@ from ._ensemble import (
     weighted_votes,
     
 )
+
+from ._grad import (
+    HookWrapper,
+    GradHook,
+    GaussianGradHook
+
+)

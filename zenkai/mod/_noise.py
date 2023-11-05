@@ -344,3 +344,4 @@ class NoiseReplace2(torch.autograd.Function):
         direction = torch.sign(grad_input)
         magnitude = torch.min(grad_output.abs(), grad_input.abs())
         return direction * magnitude, None
+
