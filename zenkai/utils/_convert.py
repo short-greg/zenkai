@@ -166,6 +166,30 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
 
     return parameters_to_vector(model.parameters())
 
+from itertools import chain
+
+
+# apply_to_parameters(module_parameters([linear1, linear2, linear3]))
+
+def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
+
+    return chain(
+        model.parameters() for model in models
+    )
+
+
+def apply_to_parameters(parameters: typing.Iterator[torch.nn.parameter.Parameter], f):
+    """Apply a function to the parameters
+
+    Args:
+        parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
+        f : The function to apply
+    """
+    if isinstance(parameters, typing.List):
+        parameters = chain(*parameters)
+    for p in parameters:
+        p.data = f(p.data)
+
 
 def update_model_parameters(model: nn.Module, theta: torch.Tensor):
     """Convenience function to update the parameters of a model
@@ -174,7 +198,6 @@ def update_model_parameters(model: nn.Module, theta: torch.Tensor):
         model (nn.Module): Model to update parameters for
         theta (torch.Tensor): The new parameters for the model
     """
-
     vector_to_parameters(theta, model.parameters())
 
 
