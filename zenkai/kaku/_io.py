@@ -251,6 +251,36 @@ class IO(object):
         """
         return tuple(self._x)
 
+    def grad_update(
+        self, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
+    ) -> 'IO':
+        """Updates x by subtracting the gradient from x times the learning rate
+
+        Args:
+            x (IO): the IO to update. Grad must not be 0
+            lr (float, optional): multipler to multiple the gradient by. Defaults to 1.0.
+            detach (bool, optional): whether to detach the output. Defaults to False.
+            zero_grad (bool, optional): whether the gradient should be set to none. Defaults to True.
+
+        Returns:
+            IO: updated x
+        """
+        updated = []
+        lr = lr if lr is not None else 1.0
+        for x_i in self:
+            if x_i.grad is None:
+                next
+            if isinstance(x_i, torch.Tensor):
+                if x_i.grad is None:
+                    x_i = x_i.clone()
+                else:
+                    print(x_i, x_i.grad, lr)
+                    x_i = x_i - lr * x_i.grad
+                    if zero_grad:
+                        x_i.grad = None
+            updated.append(x_i)
+        return IO(*updated, detach=detach)
+
 
 class Idx(object):
     """
@@ -328,6 +358,7 @@ class Idx(object):
             destination (IO): The io to update
             idx_both (bool): Whether only the destination is indexed or both are indexed
         """
+        destination = destination.clone().detach()
         for source_i, destination_i in zip(source, destination):
             if destination_i.requires_grad:
                 requires_grad = True
@@ -337,14 +368,12 @@ class Idx(object):
             if self.idx is not None:
                 if idx_both:
                     source_i = source_i[self.idx]
-                print('Setting destination')
                 destination_i.data[self.idx] = source_i
-                print(source_i)
-                print(destination_i[self.idx])
             else:
                 destination_i.data = source_i
             if requires_grad:
                 destination_i.requires_grad_(True).retain_grad()
+        return destination
 
     def update_th(self, source: torch.Tensor, destination: torch.Tensor):
         """Update a torch.Tensor with the idx
@@ -353,10 +382,12 @@ class Idx(object):
             source (torch.Tensor): The tensor to update wtih
             destination (torch.Tensor): The tensor to update
         """
+        destination = destination.clone().detach()
         if self.idx is not None:
             destination[self.idx] = source
         else:
             destination.data[:] = source
+        return destination
 
     def sub(self, idx: "Idx") -> "Idx":
         """Get a sub index of the index
@@ -461,7 +492,7 @@ def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True, i
 
     if idx is None:
         idx = Idx()
-    idx.update(source, destination, idx_both)
+    destination = idx.update(source, destination, idx_both)
     if detach:
         return destination.detach()
     return destination
@@ -482,7 +513,7 @@ def update_tensor(
     """
     if idx is None:
         idx = Idx()
-    idx.update_th(source, destination)
+    destination = idx.update_th(source, destination)
     if detach:
         return destination.detach()
     return destination

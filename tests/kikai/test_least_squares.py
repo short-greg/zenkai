@@ -6,6 +6,7 @@ import torch.nn as nn
 # local
 from zenkai.kaku import IO, State
 from zenkai.kikai import _least_squares
+from zenkai.utils import get_model_parameters
 
 
 @pytest.fixture
@@ -102,3 +103,26 @@ class TestLeastSquaresStepX:
         before = torch.clone(x.f)
         x = step_x.step_x(x, t, State())
         assert (before != x.f).any()
+
+
+class TestLeastSquaresGrad:
+
+    def test_step_with_optimize(self, linear2, conn2):
+        x, t, y = conn2
+        learner = _least_squares.GradLeastSquaresLearner(
+            3, 2, False, True
+        )
+        before = get_model_parameters(learner)
+        state = State()
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
+        assert (before != get_model_parameters(learner)).any()
+
+    def test_step_x(self, linear2, conn2):
+        x, t, y = conn2
+        learner = _least_squares.GradLeastSquaresLearner(
+            3, 2, False, True
+        )
+        state = State()
+        x_prime = learner.step_x(x, t, state)
+        assert (x.f != x_prime.f).any()

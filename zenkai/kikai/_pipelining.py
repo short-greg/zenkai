@@ -2,6 +2,7 @@
 import typing
 from dataclasses import dataclass
 from abc import abstractmethod
+from collections import OrderedDict
 
 # local
 from ..kaku import (
@@ -10,6 +11,35 @@ from ..kaku import (
 )
 from ._grad import grad
 from ._reversible import reverse
+
+
+# @dataclass
+# class SequenceStep:
+
+#     machine: LearningMachine
+#     step_priority: bool=False
+#     target: typing.Union[str, int]=None
+
+
+# # sequential(self.linear1,  step_priority=[self.linear1], target_map=)
+
+# class Sequential(LearningMachine):
+
+#     def __init__(self, learning_machines: typing.List[LearningMachine]):
+#         super().__init__()
+#         self._learning_machines = [SequenceStep(learning_machine) for learning_machine in learning_machines]
+
+#     def forward(self, x: IO, state: State, release: bool = True) -> IO:
+#         return super().forward(x, state, release)
+    
+#     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+#         return super().assess_y(y, t, reduction_override)
+    
+#     def step(self, x: IO, t: IO, state: State):
+#         return super().step(x, t, state)
+    
+#     def step_x(self, x: IO, t: IO, state: State) -> IO:
+#         return super().step_x(x, t, state)
 
 
 class PipeStep(LearningMachine):

@@ -102,8 +102,10 @@ class IterStepTheta(StepTheta):
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
                 if isinstance(self.base_step, BatchIdxStepTheta):
+                    self.base_step.accumulate(x, t, state, batch_idx=idx)
                     self.base_step.step(x, t, state, batch_idx=idx)
                 else:
+                    self.base_step.accumulate(idx(x), idx(t), state)
                     self.base_step.step(idx(x), idx(t), state)
 
 
@@ -141,7 +143,7 @@ class IterStepX(StepX):
                 else:
                     updated_x = self.base_step.step_x(idx(x, detach=True), idx(t, detach=True), state)
                 
-                update_io(updated_x, x, idx)
+                x = update_io(updated_x, x, idx)
         return x
 
 
@@ -217,7 +219,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
                             # BUG: FIX HERE. It is doing a step_x
                             # without going forward
                             x_idx = self.outgoing.step_x(idx(outgoing_x), idx(outgoing_t), state)
-                        update_io(x_idx, outgoing_x, idx, detach=True)
+                        outgoing_x = update_io(x_idx, outgoing_x, idx, detach=True)
 
                 t = outgoing_x
 
@@ -225,8 +227,10 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
                     if isinstance(self.update, BatchIdxStepTheta):
+                        self.update.accumulate(x, t, state, batch_idx=idx)
                         self.update.step(x, t, state, batch_idx=idx)
                     else:
+                        self.update.accumulate(idx(x), idx(t), state)
                         self.update.step(idx(x), idx(t), state)
 
             if self.tie_in_t and i < (self.n_epochs - 1):

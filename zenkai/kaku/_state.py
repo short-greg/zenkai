@@ -217,7 +217,6 @@ class State(object):
         obj, key = index
 
         obj_id = self.id(obj)
-        
         try:
             if isinstance(key, typing.List):
                 result = []
@@ -246,7 +245,7 @@ class State(object):
 
     def _get_obj(self, obj, to_add: bool = True):
         id = self.id(obj)
-
+        
         if to_add and id not in self._data:
             self._data[id] = {}
             self._subs[id] = {}
@@ -304,7 +303,6 @@ class State(object):
         """
         _, _, sub_data = self._get_obj(obj, to_add)
         if to_add and key not in sub_data:
-            print('Adding')
             state = sub_data[key] = State()
             return state
         return sub_data[key]

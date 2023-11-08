@@ -103,16 +103,6 @@ class StepX(ABC):
 
         return x_prime
 
-    # def step_x_prehook(self, hook: StepXHook):
-    #     """Add hook to call before StepX
-
-    #     Args:
-    #         hook (StepXHook): The hook to add
-    #     """
-    #     if not hasattr(self, "_step_x_hook_initialized"):
-    #         self.__init__()
-    #     self._step_x_prehooks.append(hook)
-
     def step_x_hook(self, hook: StepXHook) -> 'StepX':
         """Add hook to call after StepX
 
@@ -135,10 +125,12 @@ class StepTheta(ABC):
 
         super().__init__(*args, **kwargs)
         self._step_hook_initialized = True
-        self._step_prehooks = []
-        self._step_posthooks = []
+        self._step_hooks = []
         self._base_step = self.step
+        self._base_accumulate = self.accumulate
         self.step = self._step_hook_runner
+        self.accumulate = self._accumulate_hook_runner
+        self._accumulate_hooks = []
 
     def accumulate(self, x: IO, t: IO, state: State):
         pass
@@ -146,6 +138,33 @@ class StepTheta(ABC):
     @abstractmethod
     def step(self, x: IO, t: IO, state: State):
         pass
+
+    def _accumulate_hook_runner(
+        self, x: IO, t: IO, state: State, *args, **kwargs
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+            state (State): The current state
+        """
+
+        self._base_accumulate(x, t, state, *args, **kwargs)
+
+        for posthook in self._accumulate_hooks:
+            posthook(x, t, state)
+
+    def accumulate_posthook(self, hook: StepHook) -> 'StepTheta':
+        """Add hook to call after StepTheta
+
+        Args:
+            hook (StepHook): The hook to add
+        """
+        if not hasattr(self, "_step_hook_initialized"):
+            self.__init__()
+        self._accumulate_hooks.append(hook)
+        return self
 
     def _step_hook_runner(
         self, x: IO, t: IO, state: State, *args, **kwargs
@@ -157,24 +176,28 @@ class StepTheta(ABC):
             t (IO): The target IO
             state (State): The current state
         """
-        # for prehook in self._step_prehooks:
-        #     x, t = prehook(x, t, state)
+
+        self._base_step(x, t, state, *args, **kwargs)
+
+        for posthook in self._step_hooks:
+            posthook(x, t, state)
+
+    def _step_hook_runner(
+        self, x: IO, t: IO, state: State, *args, **kwargs
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+            state (State): The current state
+        """
 
         result = self._base_step(x, t, state, *args, **kwargs)
 
-        for posthook in self._step_posthooks:
+        for posthook in self._step_hooks:
             x, t = posthook(self, x, t, state)
         return result
-
-    # def step_prehook(self, hook: StepHook):
-    #     """Add hook to call before StepTheta
-
-    #     Args:
-    #         hook (StepHook): The hook to add
-    #     """
-    #     if not hasattr(self, "_step_hook_initialized"):
-    #         self.__init__()
-    #     self._step_prehooks.append(hook)
 
     def step_posthook(self, hook: StepHook) -> 'StepTheta':
         """Add hook to call after StepTheta
@@ -184,7 +207,7 @@ class StepTheta(ABC):
         """
         if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
-        self._step_posthooks.append(hook)
+        self._step_hooks.append(hook)
         return self
 
 
@@ -353,7 +376,9 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Returns:
             IO: The output fo the machine
         """
-        return super().__call__(x, state or State(), release, *args, **kwargs)
+        if state is None:
+            state = State()
+        return super().__call__(x, state, release, *args, **kwargs)
 
     def forward_hook(self, hook: ForwardHook) -> 'LearningMachine':
         """_summary_
@@ -431,6 +456,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             posthook(x, t, state, y, assessment)
         if get_y:
             return assessment, y
+        
         return assessment
 
     def learn(
@@ -455,13 +481,13 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Returns:
             Assessment: _description_
         """
-        if not self.training:
-            self.train()
+        # if not self.training:
+        self.train()
         x, t = self.to_my_device(x, t)
-        state = State()
+        state = state or State()
         y = self(x, state)
         assessment = self.assess_y(y, t, reduction_override=reduction_override)
-
+        self.accumulate(x, t, state)
         self.step(x, t, state)
         if clear_state:
             state.clear(self)
@@ -497,8 +523,9 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Returns:
             Assessment: The assessment
         """
-        if self.training:
-            self.eval()
+        # if self.training:
+        self.eval()
+        state = state or State()
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
             y = self(x, state=state)
@@ -506,23 +533,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             if get_y:
                 return result, y
             return result
-
-    # def backward(
-    #     self, x: IO, t: IO, state: State, step: bool=False
-    # ) -> IO:
-    #     """Convenience function to execute step and step_x
-
-    #     Args:
-    #         x (IO): The input
-    #         t (IO): The target
-    #         state (State): The learning state
-    
-    #     Returns:
-    #         IO: the result of step_x
-    #     """
-    #     if step:
-    #         self.step(x, t, state)
-    #     return self.step_x(x, t, state)
 
 
 class NullLearner(LearningMachine):

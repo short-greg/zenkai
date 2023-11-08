@@ -86,5 +86,5 @@ def reverse(f, criterion: Criterion=None) -> typing.Union[ReversibleMachine, Bac
     if not isinstance(f, nn.Module):
         f = Lambda(f)
     return BackTarget(
-        f, criterion, reduction='sum'
+        f, criterion
     )

@@ -41,8 +41,6 @@ from ._machine import (
     InDepStepX,
     OutDepStepTheta,
     NullStepTheta,
-    # AccStepTheta,
-    # BatchIdxAccStepTheta,
     NullStepX,
     acc_dep,
     forward_dep,

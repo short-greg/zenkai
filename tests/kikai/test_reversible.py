@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from zenkai import IO, State, Criterion
-from zenkai.kikai._reversible import ReversibleMachine, BackTarget
+from zenkai.kikai._reversible import ReversibleMachine, reverse
+from zenkai.kikai._backtarget import BackTarget
 from zenkai.mod import _reversible
 import torch
 import torch.nn as nn
@@ -41,24 +42,24 @@ class TestReversibleMachine:
         assert (y == t).all()
 
 
-class TestBackTarget:
+class TestReverse:
 
-    def test_back_target_reverses_view(self):
+    def test_reverse_produces_backtarget(self):
 
-        x = IO(torch.rand(2, 4, 2))
-        t = IO(torch.rand(2, 8))
+        machine = reverse(lambda x: x.view(2, 4))
+        x = IO(torch.randn(8))
+        assert isinstance(machine, BackTarget)
+
+    def test_backtarget_reverses_input(self):
+
         state = State()
-        view = BackTarget(lambda x: x.view(2, 8))
-        y = view(x, state)
-        x_prime = view.step_x(x, t, state)
-        assert (x_prime.f == t.f.view(2, 4, 2)).all()
+        machine = reverse(lambda x: x.view(2, 4))
+        x = IO(torch.randn(8))
+        y = machine(x, state)
+        x_prime = machine.step_x(x, y, state)
+        assert (x_prime.f == x.f).all()
 
-    def test_back_target_reverses_index(self):
+    def test_reverse_produces_reversible(self):
 
-        x = IO(torch.rand(2, 4, 2))
-        t = IO(torch.rand(2, 4))
-        state = State()
-        view = BackTarget(lambda x: x[:,:,0])
-        y = view(x, state)
-        x_prime = view.step_x(x, t, state)
-        assert (x_prime.f[:, :, 0] == t.f).all()
+        machine = reverse(_reversible.Neg1ToZero())
+        assert isinstance(machine, ReversibleMachine)

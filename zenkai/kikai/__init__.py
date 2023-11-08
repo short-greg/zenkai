@@ -65,8 +65,7 @@ from ._grad import (
     GradStepX,
     GradUpdater,
     CriterionGrad,
-    grad,
-    grad_update
+    grad
 )
 from ._backtarget import (
     BackTarget,

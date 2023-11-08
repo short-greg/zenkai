@@ -6,7 +6,7 @@ from zenkai.utils import get_model_parameters
 from zenkai.kikai import _feedback_alignment
 
 
-class TestFA:
+class TestFALinearLearner:
 
     def test_fa_linear_updates_the_parameters(self):
         

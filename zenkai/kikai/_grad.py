@@ -31,6 +31,7 @@ from ..kaku._state import State
 from ..mod import Lambda
 from ..utils import get_model_grads, set_model_grads
 from ..mod import Null
+from ._null import NullStepTheta
 
 
 class GradUpdater(object):
@@ -131,6 +132,7 @@ class GradStepTheta(StepTheta):
         if stepped or y is None:
             x.freshen(False)
             y = self._learner(x, release=False)
+
         self._learner.zero_grad()
         assessment = grad_assess(x, y, t, self._learner, self.criterion, self.reduction)
         assessment.backward()
@@ -143,13 +145,6 @@ class GradStepTheta(StepTheta):
             bool: False if unable to advance (already advanced or not stepped yet)
         """
         return self._grad_updater.update(x, state)
-
-
-class NullStepTheta(StepTheta):
-    """Step that does not update theta"""
-
-    def step(self, x: IO, t: IO, state: State):
-        pass
 
 
 def grad_assess(x: IO, y: IO, t: IO, learner: LearningMachine, criterion: typing.Union[XCriterion, Criterion]=None, reduction_override: str=None) -> Assessment:
@@ -261,15 +256,19 @@ class CriterionGrad(LearningMachine, Criterion):
     def __init__(self, criterion: typing.Union[Criterion, str], x_lr: float=None, reduction: str=None):
 
         super().__init__()
-        if isinstance(criterion, nn.Module):
+        if not isinstance(criterion, Criterion):
             criterion = ThLoss(criterion)
         self.reduction = reduction
             
         self.criterion = criterion
         self.x_lr = x_lr
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        print(y.f.shape, t.f.shape)
+        return self.criterion.assess(y, t, reduction_override)
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        return self.criterion(x, t, reduction_override)
+        return x
     
     def step(self, x: IO, t: IO, state: State):
         pass
@@ -278,13 +277,15 @@ class CriterionGrad(LearningMachine, Criterion):
         
         x.freshen()
         result = self.assess_y(x, t, self.reduction)
-        result.value.backward()
+        result.backward()
 
-        x_prime = []
-        for x_i in x:
-            grad = x_i.grad if self.x_lr is None else x_i.grad * self.x_lr
-            x_prime.append(x - grad)
-        return IO(*x_prime, detach=True)
+        return x.grad_update(self.x_lr, True, True)
+        # x_prime = []
+        # for x_i in x:
+    
+        #     grad = x_i.grad if self.x_lr is None else x_i.grad * self.x_lr
+        #     x_prime.append(x - grad)
+        
 
 
 class GradLoopStepX(BatchIdxStepX):
@@ -484,30 +485,6 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
         x.freshen(False)
         y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
-
-
-def grad_update(
-    x: IO, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
-) -> IO:
-    """Updates x by subtracting the gradient from x times the learning rate
-
-    Args:
-        x (IO): the IO to update. Grad must not be 0
-        lr (float, optional): multipler to multiple the gradient by. Defaults to 1.0.
-        detach (bool, optional): whether to detach the output. Defaults to False.
-        zero_grad (bool, optional): whether the gradient should be set to none. Defaults to True.
-
-    Returns:
-        IO: updated x
-    """
-    updated = []
-    for x_i in x:
-        if isinstance(x_i, torch.Tensor):
-            x_i = x_i - lr * x_i.grad
-            if zero_grad:
-                x_i.grad = None
-        updated.append(x_i)
-    return IO(*updated, detach=detach)
 
 
 def grad(f, optim: OptimFactory=None, criterion: typing.Union[XCriterion, Criterion]=None) -> GradLearner:

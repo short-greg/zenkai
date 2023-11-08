@@ -34,7 +34,7 @@ class THGradLearnerT2(_grad.GradLoopLearner):
         )
 
 
-class TestTHGradMachine1:
+class TestGradLearner1:
 
     def test_assess_y_uses_correct_reduction(self):
 
@@ -79,7 +79,7 @@ class TestTHGradMachine1:
         assert (before != after).any()
 
 
-class TestTHGradMachine2:
+class TestTHGradLoopLearner:
 
     def test_assess_y_uses_correct_reduction(self):
 
@@ -144,3 +144,19 @@ class TestTHGradMachine2:
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
+
+
+class TestCriterionGrad:
+
+    def test_criterion_grad_step_produces_correct_shape(self):
+        
+        learner = _grad.CriterionGrad(ThLoss('CrossEntropyLoss'))
+        learner.step(IO(torch.rand(3, 4)), IO(torch.randint(0, 4, (3,))), State())
+        assert True
+
+    def test_criterion_grad_step_x_produces_correct_shape(self):
+        
+        learner = _grad.CriterionGrad(ThLoss('CrossEntropyLoss'))
+        x = IO(torch.rand(3, 4))
+        x_prime = learner.step_x(x, IO(torch.randint(0, 4, (3,))), State())
+        assert (x.f != x_prime.f).any()

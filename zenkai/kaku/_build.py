@@ -343,7 +343,7 @@ class Builder(BuilderFunctor, Generic[T]):
 
     def vars(self) -> typing.List[Var]:
         return self._builder_kwargs.vars()
-
+    
     def __call__(self, **kwargs) -> T:
         
         args, kwargs = self._builder_kwargs(**kwargs)

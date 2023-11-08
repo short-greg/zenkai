@@ -17,7 +17,7 @@ from ..kaku import (
     StepTheta,
     StepX,
     Criterion,
-    Criterion,
+    ThLoss,
     update_io,
     OptimFactory
 )
@@ -223,8 +223,8 @@ class LeastSquaresStepX(StepX):
             Conn: The connection with x updated
         """
         x_prime = self._optimize(x.f, t.f)
-        update_io(IO(x_prime), x)
-        return x
+
+        return update_io(IO(x_prime), x)
 
 
 class LeastSquaresLearner(LearningMachine):
@@ -299,17 +299,18 @@ class GradLeastSquaresLearner(LearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = loss or Criterion("MSELoss", "mean")
+        self._loss = loss or ThLoss("MSELoss", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
-        optim_factory = optim_factory or OptimFactory('adam', lr=1e-3)
+        optim_factory = optim_factory or OptimFactory('Adam', lr=1e-3)
         self._step_theta = GradStepTheta(
             self, optim_factory, "mean"
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return self._loss.assess(y, t, reduction_override=reduction_override)
+        assessment = self._loss.assess(y, t, reduction_override=reduction_override)
+        return assessment
 
     def accumulate(self, x: IO, t: IO, state: State):
         self._step_theta.accumulate(x, t, state)
@@ -318,7 +319,6 @@ class GradLeastSquaresLearner(LearningMachine):
         return self._step_x.step_x(x, t, state)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        x.freshen(False)
         return IO(self._linear(x.f), detach=release)
 
     def step(self, x: IO, t: typing.Union[IO, None], state: State):

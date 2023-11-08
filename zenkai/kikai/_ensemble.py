@@ -89,7 +89,6 @@ class EnsembleLearnerVoter(nn.Module):
         return y.f
 
 
-# TODO: Find a better place for this
 class VoterPopulator(object):
     """Populator that uses multiple outputs from votes
     """

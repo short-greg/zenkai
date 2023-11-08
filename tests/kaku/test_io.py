@@ -219,6 +219,14 @@ class TestIO:
         assert isinstance(y, typing.Tuple)
         assert len(y) == len(x)
 
+    def test_grad_update_updates_grad(self):
+
+        vala = torch.rand(3, 2)
+        vala.grad = torch.randn(3, 2) * 0.05
+        x = IO(vala)
+        updated = x.grad_update()
+        assert (updated.f == vala - vala.grad).all()
+
 
 class TestIdx:
 
@@ -243,7 +251,7 @@ class TestIdx:
         idx = Idx(torch.tensor([0, 2, 1]).long())
         x = IO(torch.rand(3, 3))
         x2 = IO(torch.rand(4, 3))
-        idx.update(x, x2)
+        x2 = idx.update(x, x2)
         assert (x2.f[idx.idx] == x.f).all()
 
     def test_update_updates_with_both(self):
@@ -251,7 +259,7 @@ class TestIdx:
         idx = Idx(torch.tensor([0, 2, 1]).long())
         x = IO(torch.rand(4, 3))
         x2 = IO(torch.rand(4, 3))
-        idx.update(x, x2, True)
+        x2 = idx.update(x, x2, True)
         assert (x2.f[idx.idx] == x.f[idx.idx]).all()
 
     def test_update_doesnt_change_if_idx_is_null(self):
@@ -259,7 +267,7 @@ class TestIdx:
         idx = Idx()
         x = IO(torch.rand(4, 3))
         x2 = IO(torch.rand(4, 3))
-        idx.update(x, x2)
+        x2 = idx.update(x, x2)
         assert (x2.f == x.f).all()
 
     def test_update_th_updates(self):
@@ -267,7 +275,7 @@ class TestIdx:
         idx = Idx(torch.tensor([0, 2, 1]).long())
         x = torch.rand(3, 3)
         x2 = torch.rand(4, 3)
-        idx.update_th(x, x2)
+        x2 = idx.update_th(x, x2)
         assert (x2[idx.idx] == x).all()
 
     def test_update_th_updates_with_null(self):
@@ -275,7 +283,7 @@ class TestIdx:
         idx = Idx()
         x = torch.rand(3, 3)
         x2 = torch.rand(3, 3)
-        idx.update_th(x, x2)
+        x2 = idx.update_th(x, x2)
         assert (x2 == x).all()
 
     def test_sub_returns_subindex(self):

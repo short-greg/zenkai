@@ -10,6 +10,7 @@ import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 
+from itertools import chain
 # TODO: Organize better
 
 def to_np(x: torch.Tensor) -> np.ndarray:
@@ -163,10 +164,10 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
     Returns:
         torch.Tensor: _description_
     """
-
-    return parameters_to_vector(model.parameters())
-
-from itertools import chain
+    try:
+        return parameters_to_vector(model.parameters())
+    except NotImplementedError as e:
+        return None
 
 
 # apply_to_parameters(module_parameters([linear1, linear2, linear3]))

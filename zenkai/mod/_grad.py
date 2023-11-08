@@ -1,6 +1,7 @@
 # 1st party
 from abc import abstractmethod
 import typing
+from functools import partial
 
 # 3rd party
 import torch
@@ -55,6 +56,11 @@ class GaussianGradHook(GradHook):
         grad = (grad.unsqueeze(-1) + grad_out).mean(dim=-1)
         return grad
 
+    @classmethod
+    def factory(self, weight: float=1.0) -> typing.Callable[[], 'GaussianGradHook']:
+
+        return partial(GaussianGradHook, weight=weight)
+
 
 class HookWrapper(nn.Module):
 
@@ -72,7 +78,10 @@ class HookWrapper(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         grad_hook = self.grad_hook_factory()
-        x.register_hook(grad_hook.grad_hook)
-        x = self.wrapped(x)
-        x.register_hook(grad_hook.grad_out_hook)
+        if self.training:
+            x.register_hook(grad_hook.grad_hook)
+            x = self.wrapped(x)
+            x.register_hook(grad_hook.grad_out_hook)
+        else:
+            x = self.wrapped(x)
         return x
