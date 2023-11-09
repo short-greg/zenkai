@@ -147,3 +147,78 @@ class TestScikitWrapperWithClass:
 
         y = classifier_wrapper(torch.from_numpy(test_data[0]))
         assert y.shape == torch.Size([4, 4])
+
+
+# class TestSklearnBinary(object):
+
+#     def test_fit_fits_binary_classifier(self):
+#         torch.manual_seed(1)
+
+#         binary = ScikitWrapper(
+#             LogisticRegression(), 3, 2, True, False
+#         )
+
+#         binary.fit(
+#             torch.randn(8, 3), torch.randn(8, 2).sign()
+#         )
+#         y = binary(torch.rand(8, 3))
+#         assert y.shape == torch.Size([8, 2])
+
+#     def test_fit_fits_binary_classifier_with_limit(self):
+#         torch.manual_seed(1)
+
+#         binary = ScikitBinary(
+#             LogisticRegression(), 3, 2, True, False
+#         )
+
+#         binary.fit(
+#             torch.randn(8, 3), torch.randn(8, 2).sign()
+#         )
+#         binary.fit(
+#             torch.randn(8, 3), torch.randn(8, 2).sign(), limit=[1]
+#         )
+#         y = binary(torch.rand(8, 3))
+#         assert y.shape == torch.Size([8, 2])
+
+
+# class TestSklearnRegressor(object):
+
+#     def test_fit_fits_regressor(self):
+#         torch.manual_seed(1)
+
+#         regressor = ScikitRegressor(
+#             SGDRegressor(), 3, 2, True, False
+#         )
+
+#         regressor.fit(
+#             torch.randn(8, 3), torch.randn(8, 2).sign()
+#         )
+#         y = regressor(torch.rand(8, 3))
+#         assert y.shape == torch.Size([8, 2])
+
+#     def test_fit_fits_regressor_with_limit(self):
+
+#         torch.manual_seed(1)
+#         regressor = ScikitRegressor(
+#             SGDRegressor(), 3, 2, True, False
+#         )
+
+#         regressor.fit(
+#             torch.randn(8, 3), torch.randn(8, 2)
+#         )
+#         regressor.fit(
+#             torch.randn(8, 3), torch.randn(8, 2), limit=[1]
+#         )
+#         y = regressor(torch.rand(8, 3))
+#         assert y.shape == torch.Size([8, 2])
+
+#     def test_fit_raises_error_with_limit_set_on_first_iteration(self):
+
+#         torch.manual_seed(1)
+#         regressor = ScikitRegressor(
+#             SGDRegressor(), 3, 2, True, False
+#         )
+#         with pytest.raises(RuntimeError):
+#             regressor.fit(
+#                 torch.randn(8, 3), torch.randn(8, 2), limit=[1]
+#             )

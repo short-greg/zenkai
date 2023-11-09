@@ -44,7 +44,8 @@ from ._ensemble import EnsembleLearner, EnsembleLearnerVoter
 from ._scikit import (
     ScikitLimitGen,
     ScikitMachine,
-    ScikitStepTheta, SciClone
+    ScikitMultiMachine,
+    SciClone
 
 )
 from .utils._assess import (

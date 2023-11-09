@@ -8,9 +8,10 @@ from sklearn.linear_model import LogisticRegression, SGDRegressor
 from zenkai.kaku import IO, State, StepX, Criterion
 from zenkai.kikai._scikit import (
     ScikitLimitGen,
-    ScikitMachine
+    ScikitMachine,
+    ScikitMultiMachine
 )
-from zenkai.mod._scikit import ScikitBinary, ScikitRegressor
+from zenkai.mod._scikit import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kikai.utils import RandomFeatureIdxGen
 
 
@@ -20,90 +21,16 @@ class NullStepX(StepX):
         return super().step_x(x, t, state)
 
 
-class TestSklearnBinary(object):
-
-    def test_fit_fits_binary_classifier(self):
-        torch.manual_seed(1)
-
-        binary = ScikitBinary(
-            LogisticRegression(), 3, 2, True, False
-        )
-
-        binary.fit(
-            torch.randn(8, 3), torch.randn(8, 2).sign()
-        )
-        y = binary(torch.rand(8, 3))
-        assert y.shape == torch.Size([8, 2])
-
-    def test_fit_fits_binary_classifier_with_limit(self):
-        torch.manual_seed(1)
-
-        binary = ScikitBinary(
-            LogisticRegression(), 3, 2, True, False
-        )
-
-        binary.fit(
-            torch.randn(8, 3), torch.randn(8, 2).sign()
-        )
-        binary.fit(
-            torch.randn(8, 3), torch.randn(8, 2).sign(), limit=[1]
-        )
-        y = binary(torch.rand(8, 3))
-        assert y.shape == torch.Size([8, 2])
-
-
-class TestSklearnRegressor(object):
+# 
+class TestSklearnMultiMachine(object):
 
     def test_fit_fits_regressor(self):
         torch.manual_seed(1)
-
-        regressor = ScikitRegressor(
-            SGDRegressor(), 3, 2, True, False
-        )
-
-        regressor.fit(
-            torch.randn(8, 3), torch.randn(8, 2).sign()
-        )
-        y = regressor(torch.rand(8, 3))
-        assert y.shape == torch.Size([8, 2])
-
-    def test_fit_fits_regressor_with_limit(self):
-
-        torch.manual_seed(1)
-        regressor = ScikitRegressor(
-            SGDRegressor(), 3, 2, True, False
-        )
-
-        regressor.fit(
-            torch.randn(8, 3), torch.randn(8, 2)
-        )
-        regressor.fit(
-            torch.randn(8, 3), torch.randn(8, 2), limit=[1]
-        )
-        y = regressor(torch.rand(8, 3))
-        assert y.shape == torch.Size([8, 2])
-
-    def test_fit_raises_error_with_limit_set_on_first_iteration(self):
-
-        torch.manual_seed(1)
-        regressor = ScikitRegressor(
-            SGDRegressor(), 3, 2, True, False
-        )
-        with pytest.raises(RuntimeError):
-            regressor.fit(
-                torch.randn(8, 3), torch.randn(8, 2), limit=[1]
-            )
-
-
-class TestSklearnMachine(object):
-
-    def test_fit_fits_regressor(self):
-        torch.manual_seed(1)
-        regressor = ScikitRegressor(
-            SGDRegressor(), 3, 2, True, False
+        regressor = MultiOutputScikitWrapper.regressor(
+            SGDRegressor(), 3, 2
         )
         machine = ScikitMachine(
-            regressor, NullStepX(), Criterion("MSELoss")
+            regressor, NullStepX(), Criterion("MSELoss"), partial=True
         )
         x1 = IO(torch.randn(8, 3))
         t1 = IO(torch.randn(8, 2))
@@ -115,6 +42,28 @@ class TestSklearnMachine(object):
         machine.step(x2, t2, State())
         y = machine(IO(torch.rand(8, 3)))
         assert y.f.shape == torch.Size([8, 2])
+
+
+class TestSklearnMachine(object):
+
+    def test_fit_fits_regressor(self):
+        torch.manual_seed(1)
+        regressor = ScikitWrapper.regressor(
+            SGDRegressor(), 3
+        )
+        machine = ScikitMachine(
+            regressor, NullStepX(), Criterion("MSELoss")
+        )
+        x1 = IO(torch.randn(8, 3))
+        t1 = IO(torch.randn(8))
+        x2 = IO(torch.randn(8, 3))
+        t2 = IO(torch.randn(8))
+
+        machine.step(x1, t1, State())
+        # TODO: add Limit
+        machine.step(x2, t2, State())
+        y = machine(IO(torch.rand(8, 3)))
+        assert y.f.shape == torch.Size([8])
 
 
 class TestScikitLimitGen(object):
