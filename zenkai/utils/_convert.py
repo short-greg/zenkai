@@ -1,17 +1,15 @@
 # 1st Party
 import math
 import typing
-from functools import singledispatch
 
 # 3rd party
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-
-
 from itertools import chain
 # TODO: Organize better
+
 
 def to_np(x: torch.Tensor) -> np.ndarray:
     return x.detach().cpu().numpy()
@@ -342,38 +340,19 @@ def binary_encoding(
     return results.permute(*shape)
 
 
-def calc_stride2d(x: torch.Tensor, stride) -> typing.Tuple[int, int, int, int, int, int]:
-    """Calculate the stride when collapsing an image to a twod tensor
-
-    Args:
-        x (torch.Tensor): the image
-        stride (Tuple[int, int]): the stride to collapse with
-
-    Returns:
-        typing.Tuple: The resulting shape to collapse with
-    """
-    return (x.stride(0), x.stride(1), x.stride(2), stride[0], x.stride(2), stride[1])
 
 
-def calc_size2d(x: torch.Tensor, stride, kernel_size) -> typing.Tuple[int, int, int, int, int, int]:
-    """Calculate the size 2d
+def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.Module:
 
-    Args:
-        x (torch.Tensor): image
-        stride (int): The amount to stride by
-        kernel_size (Tuple[int, int]): the kernel used
+    if isinstance(module, nn.Module):
+        if len(args) != 0:
+            raise ValueError(f'Cannot set args if module is already defined')
+        if len(kwargs) != 0:
+            raise ValueError(f'Cannot set kwargs if module is already defined')
 
-    Returns:
-        Tuple: The 
-    """
-    return (
-        x.size(0),
-        x.size(1),
-        (x.size(2) - (kernel_size[0] - 1)) // stride[0],
-        (x.size(3) - (kernel_size[1] - 1)) // stride[1],
-        kernel_size[0],
-        kernel_size[1],
-    )
+        return module
+    
+    return getattr(nn, module)(*args, **kwargs)
 
 
 def unsqueeze_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
@@ -412,27 +391,6 @@ def align_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     source = source.repeat(*shape)
     return source
 
-@singledispatch
-def to_2dtuple(value: int) -> typing.Tuple[int, int]:
-    return (value, value)
-
-
-@to_2dtuple.register
-def _(value: tuple) -> typing.Tuple[int, int]:
-    return value
-
-
-def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.Module:
-
-    if isinstance(module, nn.Module):
-        if len(args) != 0:
-            raise ValueError(f'Cannot set args if module is already defined')
-        if len(kwargs) != 0:
-            raise ValueError(f'Cannot set kwargs if module is already defined')
-
-        return module
-    
-    return getattr(nn, module)(*args, **kwargs)
 
 
 def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=None, decay: float=0.1) -> torch.Tensor:
@@ -449,6 +407,65 @@ def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=No
     if cur_v is None or decay == 0.0:
         return new_v
     return decay * cur_v + (1 - decay) * new_v
+
+
+class SignSTE(torch.autograd.Function):
+    """Use to clip the grad between two values
+    Useful for smooth maximum/smooth minimum
+    """
+
+    @staticmethod
+    def forward(ctx, x):
+        """
+        Forward pass of the Binary Step function.
+        """
+        ctx.save_for_backward(x)
+        return torch.sign(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        """
+        Backward pass of the Binary Step function using the Straight-Through Estimator.
+        """
+        x, = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        # return grad_input.clamp(-1, 1)
+        grad_input[(x < -1) | (x > 1)] = 0
+        return grad_input
+
+
+class BinarySTE(torch.autograd.Function):
+    """Use to clip the grad between two values
+    Useful for smooth maximum/smooth minimum
+    """
+
+    @staticmethod
+    def forward(ctx, x):
+        """
+        Forward pass of the Binary Step function.
+        """
+        ctx.save_for_backward(x)
+        return torch.clamp(x, 0, 1).round()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        """
+        Backward pass of the Binary Step function using the Straight-Through Estimator.
+        """
+        x, = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        # return grad_input.clamp(-1, 1)
+        grad_input[(x < -1) | (x > 1)] = 0
+        return grad_input
+
+
+def binary_ste(x: torch.Tensor) -> torch.Tensor:
+    return BinarySTE.apply(x)
+
+
+def sign_ste(x: torch.Tensor) -> torch.Tensor:
+    return SignSTE.apply(x)
+
 
 
 # def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:

@@ -85,3 +85,18 @@ class HookWrapper(nn.Module):
         else:
             x = self.wrapped(x)
         return x
+
+
+class Lambda(nn.Module):
+    """
+    A generic function
+    """
+
+    def __init__(self, f, *args, **kwargs):
+        super().__init__()
+        self._f = f
+        self._args = args
+        self._kwargs = kwargs
+
+    def forward(self, *x: torch.Tensor):
+        return self._f(*x, *self._args, **self._kwargs)

@@ -6,12 +6,11 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional
 from abc import abstractmethod, abstractproperty
+from ..utils import binary_ste, sign_ste
 
 # 3rd party
 from torch.nn.functional import one_hot
 
-# local
-from ._classify import sign_ste, binary_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:
@@ -293,7 +292,7 @@ class StochasticVoter(Voter):
     
     @property
     def max_votes(self) -> int:
-        return self._max_votes
+        return self._n_votes
     
     @max_votes.setter
     def max_votes(self, max_votes: int):

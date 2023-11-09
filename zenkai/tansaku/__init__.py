@@ -54,7 +54,6 @@ from ._select import (
     select_best_individual,
     select_best_sample,
     FitnessParentSelector,
-    # RepeatSpawner,
     IndexMap
 )
 from . import utils

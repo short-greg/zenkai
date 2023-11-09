@@ -2,11 +2,13 @@ import pytest
 import torch
 import torch.nn as nn
 
-from zenkai import IO, Assessment
+from zenkai import Assessment
 from zenkai.mod._noise import (
     GaussianNoiser, NoiseReplace,
-    RandSelector, EqualsAssessmentDist, ModuleNoise
+    RandSelector, EqualsAssessmentDist, ModuleNoise,
+    FreezeDropout, ExplorerNoiser, Explorer
 )
+
 
 
 def g(seed: int):
@@ -53,12 +55,16 @@ class TestNoiseReplace:
         assert noise.grad is None
 
 
-class TestExplorerGaussian:
+class TestGaussianNoiser:
 
     def test_explore_gaussian_returns_correct_size(self, x: torch.Tensor):
         explorer = GaussianNoiser()
         noise = explorer(x)
         assert (noise.size() == x.size())
+
+    def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
+        with pytest.raises(ValueError):
+            GaussianNoiser(-1)
 
 
 class TestRandSelector:
@@ -68,32 +74,77 @@ class TestRandSelector:
         selected = selector(x, noise)
         assert (selected.size() == x.size())
 
+    def test_select_noise_prob_is_correct(self):
+        selector = RandSelector(0.1)
+        assert selector.select_noise_prob == 0.1
 
-# class TestRepeatSpawner:
+    def test_raises_error_if_sizes_are_incompatible(self, x: torch.Tensor):
+        selector = RandSelector(0.1)
+        with pytest.raises(RuntimeError):
+            selector(x, torch.rand(2, 8))
 
-#     def test_select_chooses_the_best_assessment(self):
 
-#         assessment = torch.rand(N_TRIALS, N_SAMPLES)
-#         sorted, _ = assessment.sort(0, True)
-#         spawner = RepeatSpawner(N_TRIALS)
-#         _, idx = spawner.select(Assessment(sorted.flatten()))
-#         assert (idx.idx == 3).all()
+class TestFreezeDropout:
 
-#     def test_spawn_repeats_along_trial_dimension(self, x: torch.Tensor):
+    def test_freeze_dropout_outputs_same_value(self):
 
-#         spawner = RepeatSpawner(N_TRIALS)
-#         spawned = expand_k(spawner(x), N_TRIALS)
-#         assert (spawned[0] == x).all()
-#         assert (spawned[0] == spawned[1]).all()
+        torch.manual_seed(1)
+        dropout = FreezeDropout(0.1, True)
+        x = torch.rand(2, 2)
+        y = dropout(x)
+        y2 = dropout(x)
+        assert (y == y2).all()
 
-#     def test_spawn_io_spawns_correctly(self, x: torch.Tensor):
+    def test_freeze_dropout_outputs_same_value_when_testing(self):
 
-#         x = IO(x)
-#         spawner = RepeatSpawner(N_TRIALS)
-#         spawned = expand_k(spawner.spawn_io(x).f, N_TRIALS)
+        torch.manual_seed(1)
+        dropout = FreezeDropout(0.1, True)
+        dropout.eval()
+        x = torch.rand(2, 2)
+        y = dropout(x)
+        y2 = dropout(x)
+        assert (y == y2).all()
 
-#         assert (spawned[0] == x.f).all()
-#         assert (spawned[0] == spawned[1]).all()
+    def test_freeze_dropout_outputs_different_values_with_unfrozen(self):
+
+        torch.manual_seed(1)
+        dropout = FreezeDropout(0.1, False)
+        x = torch.rand(2, 2)
+        y2 = dropout(x)
+        y = dropout(x)
+        assert (y != y2).any()
+
+    def test_freeze_dropout_outputs_different_value_after_unfreezing(self):
+
+        torch.manual_seed(1)
+        dropout = FreezeDropout(0.1, True)
+        x = torch.rand(2, 2)
+        y = dropout(x)
+        dropout.freeze = False
+        y2 = dropout(x)
+        assert (y != y2).any()
+
+
+class TestExplorer:
+
+    def test_forward_outputs_noisy_version(self, x, noise):
+
+        torch.manual_seed(1)
+        noiser = GaussianNoiser(0.025)
+        explorer = Explorer(noiser, selector=RandSelector(0.1))
+        assert explorer(x).shape == x.shape
+        assert (explorer(x) != x).any()
+
+    def test_backward_repalces_with_nose(self):
+        
+        x = torch.rand(2, 4)
+        torch.manual_seed(1)
+        x.requires_grad_(True)
+        x.retain_grad()
+        noiser = GaussianNoiser(0.025)
+        explorer = Explorer(noiser, selector=RandSelector(0.1))
+        explorer(x).mean().backward()
+        assert (x.grad is not None)
 
 
 class TestEqualAssessmentDist:

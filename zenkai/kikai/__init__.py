@@ -43,7 +43,6 @@ from ._ensemble import EnsembleLearner, EnsembleLearnerVoter
 
 from ._scikit import (
     ScikitLimitGen,
-    ScikitEstimator,
     ScikitMachine,
     ScikitStepTheta, SciClone
 

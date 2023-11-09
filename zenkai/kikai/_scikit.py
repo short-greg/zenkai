@@ -17,13 +17,13 @@ from ..kaku import (
     Criterion,
     State,
 )
-from ..mod import ScikitEstimator
+from ..mod import ScikitWrapper, MultiOutputScikitWrapper, LinearBackup
 from .utils import FeatureLimitGen
 
 
 class ScikitStepTheta(FeatureIdxStepTheta):
 
-    def __init__(self, estimator: ScikitEstimator):
+    def __init__(self, estimator: ScikitWrapper):
         super().__init__()
         self.estimator = estimator
 
@@ -46,7 +46,7 @@ class ScikitMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
 
     def __init__(
         self,
-        module: ScikitEstimator,
+        module: ScikitWrapper,
         step_x: FeatureIdxStepX,
         criterion: Criterion,
         preprocessor: nn.Module = None,
@@ -164,7 +164,7 @@ class SciClone(object):
     Factory that clones an estimator based on the estimator passed in
     """
 
-    def __init__(self, estimator: ScikitEstimator):
+    def __init__(self, estimator: ScikitWrapper):
         """Instantiate a scikit estimator cloner
 
         Args:

@@ -1,13 +1,13 @@
 from ._scikit import (
-    ScikitBinary,
-    ScikitEstimator,
-    ScikitMulticlass,
-    ScikitRegressor,
+    ScikitWrapper,
+    MultiOutputScikitWrapper,
+    LinearBackup, MulticlassBackup, BinaryBackup
 )
-from ._filtering import Stride2D, TargetStride, UndoStride2D
-from ._classify import (
-    Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout,
-    binary_ste, sign_ste, Clamp
+from ._filtering import (
+    Stride2D, TargetStride, UndoStride2D,
+    to_2dtuple, 
+    calc_size2d,
+    calc_stride2d
 )
 from ._noise import (
     NoiseReplace,
@@ -19,7 +19,8 @@ from ._noise import (
     EqualsAssessmentDist,
     RandSelector,
     remove_noise,
-    AssessmentDist
+    AssessmentDist,
+    FreezeDropout,
 )
 from ._reversible import (
     Reversible,
@@ -30,9 +31,8 @@ from ._reversible import (
     SoftMaxReversible,
     BatchNorm1DReversible,
     LeakyReLUInvertable,
-    ReLUReversible,
-    ZeroToNeg1,
-    Neg1ToZero
+    BoolToSigned,
+    SignedToBool
 )
 from ._ensemble import (
     EnsembleVoter,
@@ -45,10 +45,9 @@ from ._ensemble import (
     weighted_votes,
     
 )
-
-from ._grad import (
+from ._wrappers import (
     HookWrapper,
     GradHook,
-    GaussianGradHook
-
+    GaussianGradHook,
+    Lambda
 )

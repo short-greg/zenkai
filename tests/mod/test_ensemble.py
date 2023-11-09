@@ -97,7 +97,7 @@ class TestEnsembleVoter:
 
 class TestStochasticVoter:
     
-    def test_ensemble(self):
+    def test_ensemble_shape_is_correct(self):
 
         base = nn.Sequential(
             nn.Dropout(0.2), nn.Linear(3, 4)
@@ -106,3 +106,34 @@ class TestStochasticVoter:
             base, 4
         )
         assert mod(torch.rand(3, 3)).shape == torch.Size([4, 3, 4])
+
+    def test_n_votes_is_correct(self):
+
+        base = nn.Sequential(
+            nn.Dropout(0.2), nn.Linear(3, 4)
+        )
+        mod = modules.StochasticVoter(
+            base, 4
+        )
+        assert mod.n_votes == 4
+
+    def test_max_votes_is_correct(self):
+
+        base = nn.Sequential(
+            nn.Dropout(0.2), nn.Linear(3, 4)
+        )
+        mod = modules.StochasticVoter(
+            base, 4
+        )
+        assert mod.max_votes == 4
+
+    def test_n_votes_updated_after_changing(self):
+
+        base = nn.Sequential(
+            nn.Dropout(0.2), nn.Linear(3, 4)
+        )
+        mod = modules.StochasticVoter(
+            base, 4
+        )
+        mod.max_votes = 6
+        assert mod.n_votes == 6

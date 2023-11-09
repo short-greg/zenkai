@@ -39,6 +39,25 @@ class TestNull:
         assert x1 is y1
 
 
+class TestSoftmaxReversible:
+
+    def test_softmax_reversible_produces_correct_size_for_forward(self):
+
+        torch.manual_seed(1)
+        x = torch.randn(2, 3)
+        reverser = _reversible.SoftMaxReversible()
+        y = reverser(x)
+        assert y.shape == x.shape
+
+    def test_softmax_reversible_reverses_the_output_to_correct_shape(self):
+
+        torch.manual_seed(1)
+        x = torch.randn(2, 3)
+        reverser = _reversible.SoftMaxReversible()
+        y = reverser.reverse(reverser(x))
+        assert y.shape == x.shape
+
+
 class TestSequenceReversible:
 
     def test_sequence_reversible_reverses_process(self):
@@ -106,3 +125,33 @@ class TestLeakyReLUReverses:
         reverser = _reversible.LeakyReLUInvertable(4)
         x_prime = reverser.reverse(reverser(x))
         assert (x_prime == x).all()
+
+
+class TestSignedToBool:
+
+    def test_forward_changes_to_bool(self):
+        torch.manual_seed(1)
+        x = torch.randn(2, 2).sign()
+        y = _reversible.SignedToBool()(x)
+        assert (y == (x + 1) / 2).all()
+
+    def test_reverse_reproduces_x(self):
+        torch.manual_seed(1)
+        x = torch.randn(2, 2).sign()
+        reverser =  _reversible.SignedToBool()
+        assert (reverser.reverse(reverser(x)) == x).all()
+
+
+class TestBoolToSigned:
+
+    def test_forward_changes_to_bool(self):
+        torch.manual_seed(1)
+        x = torch.rand(2, 2).round()
+        y = _reversible.BoolToSigned()(x)
+        assert (y == (x * 2) - 1).all()
+
+    def test_reverse_reproduces_x(self):
+        torch.manual_seed(1)
+        x = torch.rand(2, 2).round()
+        reverser =  _reversible.BoolToSigned()
+        assert (reverser.reverse(reverser(x)) == x).all()

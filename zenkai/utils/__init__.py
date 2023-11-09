@@ -1,24 +1,7 @@
 # flake8: noqa
 
-# from ..mod.filtering import Stride2D, TargetStride, UndoStride2D
-# from ..mod.classify import (
-#     Argmax, Lambda, Sign, SignSTE, BinarySTE, FreezeDropout,
-#     binary_ste, sign_ste, Clamp
-# )
-# from ..contain.modules import (
-#     weighted_votes,
-#     VoteAggregator,
-#     MeanVoteAggregator,
-#     MulticlassVoteAggregator,
-#     BinaryVoteAggregator,
-#     Voter,
-#     EnsembleVoter,
-#     StochasticVoter
-# )
 from ._convert import (
     binary_encoding,
-    calc_size2d,
-    calc_stride2d,
     expand_dim0,
     flatten_dim0,
     deflatten_dim0,
@@ -38,7 +21,11 @@ from ._convert import (
     collapse_k,
     expand_k,
     unsqueeze_to,
-    align_to
+    align_to,
+    binary_ste,
+    sign_ste,
+    BinarySTE,
+    SignSTE
 )
 from ._sampling import (
     gather_idx_from_population, 
