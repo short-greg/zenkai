@@ -421,6 +421,8 @@ class State(object):
             # loop over all keys
             for k2, v2 in v.items():
                 # add the data if it is supposed to be kept
+                if k not in self._keep or k2 not in self._keep[k]:
+                    continue
                 if self._keep[k][k2]:
                     if k not in data:
                         data[k] = {}

@@ -75,7 +75,6 @@ class ObjectivePopAssessor(Assessor):
 
         sub_population = population.select(self.names)
         assessment = self.objective('none', **sub_population)
-        print(type(assessment))
         assessment = self.reduce(
             assessment,
         )
@@ -181,7 +180,6 @@ class XPopAssessor(Assessor):
         #     assessment = reduce_assessment_dim1(assessment, population.k, True)
         # assessment = assessment.reshape(population.k, -1)
 
-        # print(assessment.value[:,0])
         population.report(assessment)
 
         return population

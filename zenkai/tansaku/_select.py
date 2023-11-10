@@ -93,7 +93,6 @@ class IndexMap(object):
 
     def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int=0):
         super().__init__()
-        print(index)
         self.index = index
         self.dim = dim
         self._assessment = assessment
@@ -114,7 +113,6 @@ class IndexMap(object):
         #     index = index.unsqueeze(i)
         #     shape.append(x.shape[i])
         # index = index.repeat(*shape)
-        print(x.gather(self.dim, index))
         return x.gather(self.dim, index)
     
     def __len__(self) -> int:
@@ -291,7 +289,6 @@ class RankParentSelector(Selector):
         ranks_prob = ranks / ranks.sum(dim=0, keepdim=True)
         if feat_total > 0:
             ranks_prob = ranks_prob[:, None].repeat(1, feat_total)
-            print('R: ', ranks_prob.shape, sorted_indices.shape)
             ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
             ranks_prob = ranks_prob.transpose(1, 0)
             ranks_prob = ranks_prob[None,:,:].repeat(k, 1, 1).reshape(-1, len(ranks))
@@ -304,5 +301,4 @@ class RankParentSelector(Selector):
         parents1 = parents1.reshape(k, *base_shape[1:])
         parents2 = parents2.reshape(k, *base_shape[1:])
 
-        print(parents1.shape)
         return IndexMap(assessment, parents1, parents2, dim=0)

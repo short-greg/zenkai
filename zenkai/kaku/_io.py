@@ -274,7 +274,6 @@ class IO(object):
                 if x_i.grad is None:
                     x_i = x_i.clone()
                 else:
-                    print(x_i, x_i.grad, lr)
                     x_i = x_i - lr * x_i.grad
                     if zero_grad:
                         x_i.grad = None

@@ -184,9 +184,7 @@ class MultiOutputScikitWrapper(nn.Module):
         if limit is not None and len(limit) == 1:
             self._estimator.partial_fit(X, y.flatten(), **kwargs)
         elif not self._fitted:
-            print('FITTING')
             self._estimator.partial_fit(X, y, **kwargs)
-
         else:
             self._estimator.partial_fit(X, y, **kwargs)
 

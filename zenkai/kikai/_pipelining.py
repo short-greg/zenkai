@@ -13,33 +13,71 @@ from ._grad import grad
 from ._reversible import reverse
 
 
-# @dataclass
-# class SequenceStep:
+@dataclass
+class SequenceStep:
 
-#     machine: LearningMachine
-#     step_priority: bool=False
-#     target: typing.Union[str, int]=None
+    machine: LearningMachine
+    step_priority: bool=False
+    target: typing.Union[str, int]=None
 
 
 # # sequential(self.linear1,  step_priority=[self.linear1], target_map=)
 
-# class Sequential(LearningMachine):
+class Sequential(LearningMachine):
 
-#     def __init__(self, learning_machines: typing.List[LearningMachine]):
-#         super().__init__()
-#         self._learning_machines = [SequenceStep(learning_machine) for learning_machine in learning_machines]
+    def __init__(self, learning_machines: typing.List[LearningMachine], step_priority: typing.List[int]=None, target_map: typing.Dict[int, typing.Union[str, int]]=None):
+        super().__init__()
+        self._step_priority: typing.Set[int] = set()
+        self._target_map: typing.Dict[int, int] = dict()
+        self._learning_machines = [*learning_machines]
+        self.set_targets(target_map)
+        self.set_step_priority(step_priority)
+        
+    def set_targets(self, target_map: typing.Dict[typing.Union[LearningMachine, int], typing.Union[LearningMachine, int]]):
+        
+        for k, v in target_map.items():
 
-#     def forward(self, x: IO, state: State, release: bool = True) -> IO:
-#         return super().forward(x, state, release)
+            if isinstance(k, LearningMachine):
+                k = self._learning_machines.index(k)
+            if isinstance(v, LearningMachine):
+                v = self._learning_machines.index(v)
+            
+            if isinstance(v, int) and v <= k:
+                raise ValueError(f'Trying to set the target of a learning machine {k} to a machine earlier in the sequence {v}')
+
+            self._target_map[k] = v
+
+    def set_step_priority(self, step_priorities: typing.List[typing.Union[LearningMachine, int]]):
+        
+        for step_priority in step_priorities:
+            if isinstance(step_priority, LearningMachine):
+                step_priority = self._learning_machines[step_priority]
+            else:
+                if step_priority >= len(self._learning_machines):
+                    raise ValueError(f'Step priority {step_priority} is out of bounds')
+            self._step_priority.add(step_priority)
+
+    def set_step_x_priority(self, step_x_priorities: typing.List[typing.Union[LearningMachine, int]]):
     
-#     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-#         return super().assess_y(y, t, reduction_override)
+        for step_x_priority in step_x_priorities:
+            if isinstance(step_x_priority, LearningMachine):
+                step_x_priority = self._learning_machines[step_x_priority]
+            else:
+                if step_x_priority >= len(self._learning_machines):
+                    raise ValueError(f'Step priority {step_x_priority} is out of bounds')
+            self._step_priority.remove(step_x_priority)
+
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        return super().forward(x, state, release)
     
-#     def step(self, x: IO, t: IO, state: State):
-#         return super().step(x, t, state)
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return super().assess_y(y, t, reduction_override)
     
-#     def step_x(self, x: IO, t: IO, state: State) -> IO:
-#         return super().step_x(x, t, state)
+    def step(self, x: IO, t: IO, state: State):
+        return super().step(x, t, state)
+    
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return super().step_x(x, t, state)
 
 
 class PipeStep(LearningMachine):

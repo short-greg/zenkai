@@ -264,7 +264,6 @@ class CriterionGrad(LearningMachine, Criterion):
         self.x_lr = x_lr
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        print(y.f.shape, t.f.shape)
         return self.criterion.assess(y, t, reduction_override)
     
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:

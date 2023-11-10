@@ -326,6 +326,7 @@ class DFALearner(LearningMachine):
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
+        
         return self._grad_updater.update(x, state, self.net)
 
     @classmethod
