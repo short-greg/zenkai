@@ -234,19 +234,21 @@ class GradStepX(StepX):
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        x = x.f
-        if x.grad is None:
-            raise RuntimeError(f"Grad has not been set. Must backpropagate first")
+        # x = x.f
+        # if x.grad is None:
+        #     raise RuntimeError(f"Grad has not been set. Must backpropagate first")
 
-        grad = x.grad if self.x_lr is None else self.x_lr * x.grad
-        x = x - grad
-        x.grad = None
+        return x.grad_update(self.x_lr, True, True)
+        # grad = x.grad if self.x_lr is None else self.x_lr * x.grad
+        # x = x - grad
+        # x.grad = None
 
-        # TODO: Debug. This is causing problems in backpropagation
-        # due to the inplace operation
-        # update_io(IO(x), conn.step_x.x)
-        x_prime = IO(x, detach=True)
-        return x_prime
+        # # TODO: Debug. This is causing problems in backpropagation
+        # # due to the inplace operation
+        # # update_io(IO(x), conn.step_x.x)
+        # x_prime = IO(x, detach=True)
+
+        # return x_prime
 
 
 class CriterionGrad(LearningMachine, Criterion):
