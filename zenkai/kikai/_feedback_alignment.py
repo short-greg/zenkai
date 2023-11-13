@@ -318,7 +318,6 @@ class DFALearner(LearningMachine):
         """
         x_prime, _ = self._grad_updater.update_x(x, state)
         return x_prime
-    
 
     def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
         """Advance the optimizer

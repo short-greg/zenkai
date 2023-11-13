@@ -13,25 +13,13 @@ from ._grad import grad
 from ._reversible import reverse
 
 
-@dataclass
-class SequenceStep:
+class BaseSequential(LearningMachine):
 
-    machine: LearningMachine
-    step_priority: bool=False
-    target: typing.Union[str, int]=None
-
-
-# # sequential(self.linear1,  step_priority=[self.linear1], target_map=)
-
-class Sequential(LearningMachine):
-
-    def __init__(self, learning_machines: typing.List[LearningMachine], step_priority: typing.List[int]=None, target_map: typing.Dict[int, typing.Union[str, int]]=None):
+    def __init__(self, learning_machines: typing.List[LearningMachine], target_map: typing.Dict[int, typing.Union[str, int]]=None):
         super().__init__()
-        self._step_priority: typing.Set[int] = set()
         self._target_map: typing.Dict[int, int] = dict()
         self._learning_machines = [*learning_machines]
         self.set_targets(target_map)
-        self.set_step_priority(step_priority)
         
     def set_targets(self, target_map: typing.Dict[typing.Union[LearningMachine, int], typing.Union[LearningMachine, int]]):
         
@@ -41,11 +29,80 @@ class Sequential(LearningMachine):
                 k = self._learning_machines.index(k)
             if isinstance(v, LearningMachine):
                 v = self._learning_machines.index(v)
+            if v == 't':
+                v = len(self._learning_machines) - 1
             
             if isinstance(v, int) and v <= k:
                 raise ValueError(f'Trying to set the target of a learning machine {k} to a machine earlier in the sequence {v}')
 
             self._target_map[k] = v
+
+    def _get_target(self, i: int, ts: typing.List[IO]) -> IO:
+
+        return ts[self._target_map.get(i, i)]
+    
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        
+        ins = []
+        for learning_machine in self._learning_machines:
+            ins.append(x)
+            x = learning_machine(x, state)
+        
+        state[(self, x), 'ins'] = ins
+        return x.out(release)
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self._learning_machines[-1].assess_y(y, t, reduction_override)
+    
+    def __len__(self) -> int:
+        return len(self._learning_machines)
+    
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+
+        t_i = self._get_target(0, state[(self, x), 'ts'])
+        return self._learning_machines[0].step_x(x, t_i, state)
+
+
+class AccSequential(BaseSequential):
+    
+    def accumulate(self, x: IO, t: IO, state: State):
+        
+        ts = [None] * len(self)
+        ts[-1] = t
+
+        ins = state[(self, x), 'ins']
+        i = len(self) - 1
+        for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
+            t_i = self._get_target(i, ts)
+            learning_machine.accumulate(x_i, t_i, state)
+            ts[i] = learning_machine.step_x(x_i, t_i, state)
+            i -= 1
+        ts = list(reversed(ts))
+        t_i = self._get_target(0, ts)
+
+        self._learning_machines[0].accumulate(x, t_i, state)
+
+    def step(self, x: IO, t: IO, state: State):
+        ts = state[(self, x), 'ts']
+
+        ins = state[(self, x), 'ins']
+        i = len(self) - 1
+        for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
+            self._get_target(i, ts)
+            learning_machine.step(x_i, t_i, state)
+            i -= 1
+        t_i = self._get_target(0, ts)
+        self._learning_machines[0].step(x, t_i, state)
+
+
+class Sequential(BaseSequential):
+
+    def __init__(self, learning_machines: typing.List[LearningMachine], step_priority: typing.List[int]=None, target_map: typing.Dict[int, typing.Union[str, int]]=None):
+        super().__init__(
+            learning_machines, target_map
+        )
+        self._step_priority = set()
+        self.set_step_priority(step_priority)
 
     def set_step_priority(self, step_priorities: typing.List[typing.Union[LearningMachine, int]]):
         
@@ -67,17 +124,27 @@ class Sequential(LearningMachine):
                     raise ValueError(f'Step priority {step_x_priority} is out of bounds')
             self._step_priority.remove(step_x_priority)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        return super().forward(x, state, release)
-    
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return super().assess_y(y, t, reduction_override)
-    
     def step(self, x: IO, t: IO, state: State):
-        return super().step(x, t, state)
-    
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        return super().step_x(x, t, state)
+        ts = [None] * len(self)
+        ts[-1] = t
+
+        ins = state[(self, x), 'ins']
+        i = len(self) - 1
+        for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
+
+            t_i = self._get_target(i, ts)
+            if i in self._step_priority:
+                learning_machine.step(x_i, t_i, state)
+                ts[i] = learning_machine.step_x(x_i, t_i, state)
+            else:
+                learning_machine.step_x(x_i, t_i, state)
+                ts[i] = learning_machine.step(x_i, t_i, state)
+
+            i -= 1
+        state[(self, x), 'ts'] = ts
+
+        t_i = self._get_target(0, ts)
+        self._learning_machines[0].accumulate(x, t_i, state)
 
 
 class PipeStep(LearningMachine):

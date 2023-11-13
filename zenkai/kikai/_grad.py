@@ -281,12 +281,6 @@ class CriterionGrad(LearningMachine, Criterion):
         result.backward()
 
         return x.grad_update(self.x_lr, True, True)
-        # x_prime = []
-        # for x_i in x:
-    
-        #     grad = x_i.grad if self.x_lr is None else x_i.grad * self.x_lr
-        #     x_prime.append(x - grad)
-        
 
 
 class GradLoopStepX(BatchIdxStepX):
