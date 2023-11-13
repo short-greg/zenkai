@@ -6,8 +6,8 @@ from torch import nn
 
 # local
 from zenkai.kaku import IO, Assessment
-from zenkai.kaku import _machine as core
-from zenkai.kaku import IDable, MyState, AssessmentLog
+from zenkai.kaku import _state_old as core
+from zenkai.kaku._state_old import IDable, MyState, AssessmentLog
 
 
 class Base:

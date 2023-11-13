@@ -37,8 +37,8 @@ class Graph(LearningMachine):
         ordered_steps = OrderedDict()
         for step in steps:
             ordered_steps[step.machine] = step
-        state[(self, x), 'steps'] = steps
-        state[(self, x), 'step_dict'] = ordered_steps
+        state[self, x, 'steps'] = steps
+        state[self, x, 'step_dict'] = ordered_steps
         return y
 
     def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
@@ -60,8 +60,8 @@ class Graph(LearningMachine):
     
     def step(self, x: IO, t: IO, state: State):
         
-        steps: typing.List[SStep] = state[(self, x), 'steps']
-        step_dict: typing.Dict[LearningMachine, SStep] = state[(self, x), 'step_dict']
+        steps: typing.List[SStep] = state[self, x, 'steps']
+        step_dict: typing.Dict[LearningMachine, SStep] = state[self, x, 'step_dict']
 
         prev_t = t
         for step in reversed(steps):
@@ -80,7 +80,7 @@ class Graph(LearningMachine):
             prev_t = step.x_prime
     
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-        step: SStep = state[(self, x), 'steps'][0]
+        step: SStep = state[self, x, 'steps'][0]
         return step.x_prime
 
 
@@ -97,8 +97,8 @@ class AccGraph(LearningMachine):
         ordered_steps = OrderedDict()
         for step in steps:
             ordered_steps[step.machine] = step
-        state[(self, x), 'steps'] = steps
-        state[(self, x), 'step_dict'] = ordered_steps
+        state[self, x, 'steps'] = steps
+        state[self, x, 'step_dict'] = ordered_steps
         return y
 
     def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
@@ -120,8 +120,8 @@ class AccGraph(LearningMachine):
     
     def accumulate(self, x: IO, t: IO, state: State):
         
-        steps: typing.List[SStep] = state[(self, x), 'steps']
-        step_dict: typing.Dict[LearningMachine, SStep] = state[(self, x), 'step_dict']
+        steps: typing.List[SStep] = state[self, x, 'steps']
+        step_dict: typing.Dict[LearningMachine, SStep] = state[self, x, 'step_dict']
 
         prev_t = t
         for step in reversed(steps[1:]):
@@ -136,8 +136,8 @@ class AccGraph(LearningMachine):
     
     def step(self, x: IO, t: IO, state: State):
         
-        steps: typing.List[SStep] = state[(self, x), 'steps']
-        step_dict: typing.Dict[LearningMachine, SStep] = state[(self, x), 'step_dict']
+        steps: typing.List[SStep] = state[self, x, 'steps']
+        step_dict: typing.Dict[LearningMachine, SStep] = state[self, x, 'step_dict']
 
         prev_t = t
         for step in reversed(steps):
@@ -147,8 +147,7 @@ class AccGraph(LearningMachine):
             prev_t = step.x_prime
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-        steps: typing.List[SStep] = state[(self, x), 'steps']
+        steps: typing.List[SStep] = state[self, x, 'steps']
         prev_t = t if len(steps) == 1 else steps[1].x_prime
-        t_i = self.get_t(steps[0], state[(self, x), 'step_dict'], prev_t, t)
-        print(steps[0].machine)
+        t_i = self.get_t(steps[0], state[self, x, 'step_dict'], prev_t, t)
         return steps[0].machine.step_x(x, t_i, state)

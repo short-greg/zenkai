@@ -70,12 +70,12 @@ class FDecorateStepX(DecorateStepX):
 
     def forward(self, x: IO, state: State, release: bool = True, **kwargs) -> IO:
         y = self.decorated(x, state, False)
-        state[(self, x), 'y'] = y
+        state[self, x, 'y'] = y
         return y
 
     def post_step_x(self, x: IO, t: IO, x_prime: IO, state: State) -> IO:
         
-        y = state[(self, x), 'y'] = y
+        y = state[self, x, 'y'] = y
         return self.f(x, x_prime, y, t)
 
     @forward_dep('y')

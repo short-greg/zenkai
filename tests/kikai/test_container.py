@@ -173,7 +173,6 @@ class TestAccGraph:
         graph(x, state)
         graph.accumulate(x, t, state)
         x_prime = graph.step_x(x, t, state)
-        print(x_prime)
         assert (x.f != x_prime.f).any()
 
     def test_step_updates_the_parameters_with_output_as_target(self):

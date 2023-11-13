@@ -591,16 +591,17 @@ def acc_dep(check_field: str, x_key: bool=True):
 
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
-            #if val is None and exec:
-            #    self.accumulate(x, t, state)
+            
+            print('Checking ', check_field, func)
+            try:
+                print(state[self, x, check_field])
+                print('FUOND!')
+            except Exception:
+                pass
+            val = state.get(self, check_field, sub_obj=x if x_key else None)
+            print(val)
             if val is None:
-                raise RuntimeError('Method depends on Step but step has not been called')
+                raise RuntimeError('Method depends on accumulate() but accumulate has not been called')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
@@ -620,13 +621,9 @@ def step_dep(check_field: str, x_key: bool=True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
+            val = state.get(self, check_field, sub_obj=x if x_key else None)
             if val is None:
-                raise RuntimeError('Method depends on Step but step has not been called')
+                raise RuntimeError('Method depends on step() but step has not been called')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
@@ -645,66 +642,10 @@ def forward_dep(check_field: str, x_key: bool=True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            if x_key:
-                key = (self, x)
-            else:
-                key = self
-            val = state.get(key, check_field)
+            val = state.get(self, check_field, sub_obj=x if x_key else None)
             if val is None:
                 raise RuntimeError('Method depends on forward but forward has not been executed')
             return func(self, x, t, state, *args, **kwargs)
         return _
     return inner
-
-
-# class AccStepTheta(StepTheta):
-#     """
-#     A StepTheta used for when you want to accumulate updates to the parameters before stepping
-#     """
-    
-#     @abstractmethod
-#     def accumulate(self, x: IO, t: IO, state: State):
-#         pass
-
-
-# class BatchIdxAccStepTheta(AccStepTheta):
-#     """Mixin for when only to update based on a limited set of indexes in the minibatch
-#     """
-
-#     @abstractmethod
-#     def step(
-#         self, x: IO, t: IO, state: State, batch_idx: Idx = None
-#     ):
-#         pass
-
-#     @abstractmethod
-#     def accumulate(
-#         self, x: IO, t: IO, state: State, batch_idx: Idx = None
-#     ):
-#         pass
-
-
-# class AccLearningMachine(LearningMachine, AccStepTheta):
-#     """
-#     LearningMachine that includes the accumulate method
-#     """
-    
-#     def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
-#         """
-#         Go backward through the network
-
-#         Args:
-#             x (IO): the input
-#             t (IO): the target
-#             state (State): State
-#             step (bool, optional): Whether to execute step or not. Defaults to True.
-
-#         Returns:
-#             IO: The result of step_x
-#         """
-        
-#         self.accumulate(x, t, state)
-#         if step:
-#             self.step(x, t, state)
-#         return self.step_x(x, t, state)
 

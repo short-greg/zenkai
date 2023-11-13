@@ -20,16 +20,16 @@ class AccSimpleLearner(LearningMachine):
         return self.loss.assess(y, t, reduction_override)
     
     def accumulate(self, x: IO, t: IO, state: State):
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             y = self(x, state, release=False)
-        else: y = state[(self, x), 'y']
+        else: y = state[self, x, 'y']
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
-        state[(self, x), 'accumulated'] = True
+        state[self, x, 'accumulated'] = True
 
     @acc_dep('accumulated')
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment.backward()
             
@@ -42,47 +42,47 @@ class AccSimpleLearner(LearningMachine):
 
     def forward(self, x: IO, state: State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
         return y.out(release)
 
 
-class AccSimpleLearner3(LearningMachine):
+# class AccSimpleLearner3(LearningMachine):
 
-    def __init__(self, in_features: int, out_features: int):
-        super().__init__()
-        self.linear = nn.Linear(in_features, out_features)
-        self.loss = ThLoss(nn.MSELoss, reduction='mean')
-        self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
-        self.optim.zero_grad()
+#     def __init__(self, in_features: int, out_features: int):
+#         super().__init__()
+#         self.linear = nn.Linear(in_features, out_features)
+#         self.loss = ThLoss(nn.MSELoss, reduction='mean')
+#         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
+#         self.optim.zero_grad()
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> Assessment:
-        return self.loss.assess(y, t, reduction_override)
+#     def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> Assessment:
+#         return self.loss.assess(y, t, reduction_override)
     
-    def accumulate(self, x: IO, t: IO, state: State):
-        if ((self, x), 'y') not in state:
-            y = self(x, state, release=False)
-        else: y = state[(self, x), 'y']
-        assessment = self.assess_y(y, t.detach())
-        assessment.backward()
-        state[(self, x), 'accumulated'] = True
+#     def accumulate(self, x: IO, t: IO, state: State):
+#         if (self, x, 'y') not in state:
+#             y = self(x, state, release=False)
+#         else: y = state[self, x, 'y']
+#         assessment = self.assess_y(y, t.detach())
+#         assessment.backward()
+#         state[self, x, 'accumulated'] = True
 
-    @acc_dep('accumulated')
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        if ((self, x), 'y') not in state:
-            assessment = self.assess(x,  t.detach(), state=state, release=False)
-            assessment.backward()
+#     @acc_dep('accumulated')
+#     def step_x(self, x: IO, t: IO, state: State) -> IO:
+#         if (self, x, 'y') not in state:
+#             assessment = self.assess(x,  t.detach(), state=state, release=False)
+#             assessment.backward()
             
-        return IO(x.f - x.f.grad, x.u[1] - x.u[1].grad)
+#         return IO(x.f - x.f.grad, x.u[1] - x.u[1].grad)
 
-    @acc_dep('accumulated')
-    def step(self, x: IO, t: IO, state: State):
-        self.optim.step()
-        self.optim.zero_grad()
+#     @acc_dep('accumulated')
+#     def step(self, x: IO, t: IO, state: State):
+#         self.optim.step()
+#         self.optim.zero_grad()
 
-    def forward(self, x: IO, state: State, release: bool=True) -> torch.Tensor:
-        x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x.u[0] + x.u[1])) 
-        return y.out(release)
+#     def forward(self, x: IO, state: State, release: bool=True) -> torch.Tensor:
+#         x.freshen(False)
+#         y = state[self, x, 'y'] = IO(self.linear(x.u[0] + x.u[1])) 
+#         return y.out(release)
 
 
 class SamplePipeline(_pipelining.PipelineLearner):
@@ -205,7 +205,7 @@ class TestPipeline:
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
-        assert ((network, x), 'pipeline') in state
+        assert (network, x, 'pipeline') in state
 
     def test_zen_forward_outputs_correct_value(self):
 
@@ -278,7 +278,7 @@ class TestAccPipelineLearner:
         x = zenkai.IO(torch.rand(2, 3))
         state = zenkai.State()
         y = network(x, state)
-        assert ((network, x), 'pipeline') in state
+        assert (network, x, 'pipeline') in state
 
     def test_zen_forward_outputs_correct_value(self):
 
@@ -351,5 +351,6 @@ class TestAccPipelineLearner:
         y = network(x, state)
         before = get_model_parameters(network)
         network.accumulate(x, t, state)
+        # print(state[network, x, 'accumulated'])
         x_prime = network.step(x, t, state)
         assert (get_model_parameters(network) != before).any()

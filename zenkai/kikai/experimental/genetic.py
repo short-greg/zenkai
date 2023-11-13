@@ -83,7 +83,7 @@ class GeneticNNLearner(LearningMachine):
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
-        y = state[(self, x), 'y'] = IO(self.network(x.f))
+        y = state[self, x, 'y'] = IO(self.network(x.f))
         return y.out(release)
 
     @forward_dep('y', True)

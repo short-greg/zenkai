@@ -56,8 +56,8 @@ class GradUpdater(object):
             x (IO): The input 
             state (State): The state
         """
-        my_state = state.mine((self, x))
-        grads = state.get((self, x), 'grad')
+        my_state = state.mine(self, x)
+        grads = state.get(self, 'grad', sub_obj=x)
 
         if grads is None:
             if self.to_update_theta: my_state.grad = get_model_grads(self.net)
@@ -78,7 +78,7 @@ class GradUpdater(object):
         Returns:
             bool: Whether the update was successful. Will return false if no grads have been set
         """
-        grad = state.get((self, x), 'grad')
+        grad = state.get(self, 'grad', sub_obj=x)
 
         if grad is not None:     
             net = net_override or self.net
@@ -91,7 +91,7 @@ class GradUpdater(object):
     
     def update_x(self, x: IO, state: State) -> IO:
 
-        x_grad = state.get((self, x), 'x_grad')
+        x_grad = state.get(self, 'x_grad', sub_obj=x)
         if x_grad is not None:
 
             return IO(x.f - x_grad, detach=True), True

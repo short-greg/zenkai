@@ -86,16 +86,16 @@ class SimpleLearner(core.LearningMachine):
         return self.loss.assess(y, t, reduction_override)
     
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment.backward()
             
         return IO(x.f - x.f.grad)
 
     def step(self, x: IO, t: IO, state: core.State):
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             y = self(x, state, release=False)
-        else: y = state[(self, x), 'y']
+        else: y = state[self, x, 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
@@ -103,7 +103,7 @@ class SimpleLearner(core.LearningMachine):
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
         return y.out(release)
 
 
@@ -119,7 +119,7 @@ class SimpleAccLearner(core.LearningMachine):
         return self.loss.assess(y, t, reduction_override)
     
     def accumulate(self, x: IO, t: IO, state: core.State) -> IO:
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             y = self(x, state, release=False)
         else: y = state[(self, x), 'y']
         self.optim.zero_grad()
@@ -127,7 +127,7 @@ class SimpleAccLearner(core.LearningMachine):
         assessment.backward()
 
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment.backward()
             
@@ -138,7 +138,7 @@ class SimpleAccLearner(core.LearningMachine):
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
         return y.out(release)
 
 # # # # # # # TODO: UPdate simplelearner
@@ -338,7 +338,7 @@ class DependentLearner(core.LearningMachine):
     
     @core.step_dep('stepped')
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if ((self, x), 'y') not in state:
+        if (self, x, 'y') not in state:
             assessment = self.assess(x,  t.detach(), state=state, release=False)
             assessment.backward()
             
@@ -346,16 +346,16 @@ class DependentLearner(core.LearningMachine):
 
     @core.forward_dep('y')
     def step(self, x: IO, t: IO, state: core.State):
-        y = state[(self, x), 'y']
+        y = state[self, x, 'y']
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
         self.optim.step()
-        state[(self, x), 'stepped'] = True
+        state[self, x, 'stepped'] = True
 
     def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
         x.freshen(False)
-        y = state[(self, x), 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
         return y.out(release)
 
 
@@ -369,7 +369,7 @@ class TestDependencies:
         dependent = DependentLearner(2, 3)
         dependent(x, state=state)
         dependent.step(x, t, state)
-        assert state[(dependent, x), 'y'] is not None
+        assert state[dependent, x, 'y'] is not None
 
     def test_step_does_not_execute_forward_if_already_called(self):
 
@@ -378,9 +378,9 @@ class TestDependencies:
         state = core.State()
         dependent = DependentLearner(2, 3)
         dependent(x, state)
-        prev = state[(dependent, x), 'y']
+        prev = state[dependent, x, 'y']
         dependent.step(x, t, state)
-        assert state[(dependent, x), 'y'] is prev
+        assert state[dependent, x, 'y'] is prev
 
     def test_step_x_if_not_stepped(self):
 

@@ -6,8 +6,8 @@ from torch import nn
 
 # local
 from zenkai.kaku import IO, Assessment
-from zenkai.kaku import _state2 as state2
-from zenkai.kaku._state2 import IDable, MyState, AssessmentLog
+from zenkai.kaku import _state as state2
+from zenkai.kaku._state import IDable, MyState, AssessmentLog
 
 
 class Base:
@@ -263,7 +263,6 @@ class TestMyState:
         x = X()
         state = state2.State()
         my_state = state.mine(x)
-        print('Set x')
         my_state.x = 2
         assert state.get(x, 'x') is my_state.x
 

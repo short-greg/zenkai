@@ -48,7 +48,7 @@ class BaseSequential(LearningMachine):
             ins.append(x)
             x = learning_machine(x, state)
         
-        state[(self, x), 'ins'] = ins
+        state[self, x, 'ins'] = ins
         return x.out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -59,7 +59,7 @@ class BaseSequential(LearningMachine):
     
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        t_i = self._get_target(0, state[(self, x), 'ts'])
+        t_i = self._get_target(0, state[self, x, 'ts'])
         return self._learning_machines[0].step_x(x, t_i, state)
 
 
@@ -70,7 +70,7 @@ class AccSequential(BaseSequential):
         ts = [None] * len(self)
         ts[-1] = t
 
-        ins = state[(self, x), 'ins']
+        ins = state[self, x, 'ins']
         i = len(self) - 1
         for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
             t_i = self._get_target(i, ts)
@@ -83,9 +83,9 @@ class AccSequential(BaseSequential):
         self._learning_machines[0].accumulate(x, t_i, state)
 
     def step(self, x: IO, t: IO, state: State):
-        ts = state[(self, x), 'ts']
+        ts = state[self, x, 'ts']
 
-        ins = state[(self, x), 'ins']
+        ins = state[self, x, 'ins']
         i = len(self) - 1
         for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
             self._get_target(i, ts)
@@ -128,7 +128,7 @@ class Sequential(BaseSequential):
         ts = [None] * len(self)
         ts[-1] = t
 
-        ins = state[(self, x), 'ins']
+        ins = state[self, x, 'ins']
         i = len(self) - 1
         for x_i, learning_machine in zip(ins[1:], self._learning_machines[1:]):
 
@@ -141,7 +141,7 @@ class Sequential(BaseSequential):
                 ts[i] = learning_machine.step(x_i, t_i, state)
 
             i -= 1
-        state[(self, x), 'ts'] = ts
+        state[self, x, 'ts'] = ts
 
         t_i = self._get_target(0, ts)
         self._learning_machines[0].accumulate(x, t_i, state)
@@ -387,12 +387,12 @@ class PipelineLearner(LearningMachine):
     def set_pipeline(self, x: IO, state: State) -> 'Pipeline':
 
         pipeline = Pipeline()
-        state[(self, x), 'pipeline'] = pipeline
+        state[self, x, 'pipeline'] = pipeline
         return pipeline
     
     def get_pipeline(self, x: IO, state: State) -> 'Pipeline':
         
-        pipeline = state.get((self, x), 'pipeline')
+        pipeline = state.get(self, 'pipeline', sub_obj=x)
         
         if pipeline is None:
             raise RuntimeError('The pipeline has not been set in the forward method')
@@ -412,7 +412,7 @@ class PipelineLearner(LearningMachine):
                 node.step(x, t, state, **pipeline.get_step_kwargs(node))
             pipeline.set_x_prime(node, x_prime)
 
-        state[(self, x), 'stepped'] = True
+        state[self, x, 'stepped'] = True
         return x_prime
     
     def node(self, machine: LearningMachine, step_priority: bool=False) -> PipeStep:
@@ -425,7 +425,7 @@ class PipelineLearner(LearningMachine):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         pipeline = self.get_pipeline(x, state)
-        pipeline: Pipeline = state[(self, x), 'pipeline']
+        pipeline: Pipeline = state[self, x, 'pipeline']
         x, _, node, t = pipeline.first()
         return node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
 
@@ -463,7 +463,7 @@ class AccPipelineLearner(LearningMachine):
             Pipeline: The pipeline to retrieve
         """
         
-        pipeline = state.get((self, x), 'pipeline')
+        pipeline = state.get(self, 'pipeline', sub_obj=x)
         
         if pipeline is None:
             raise RuntimeError('The pipeline has not been set in the forward method')
@@ -481,7 +481,7 @@ class AccPipelineLearner(LearningMachine):
         """
 
         pipeline = Pipeline()
-        state[(self, x), 'pipeline'] = pipeline
+        state[self, x, 'pipeline'] = pipeline
         return pipeline
 
     def accumulate(self, x: IO, t: IO, state: State):
@@ -499,7 +499,7 @@ class AccPipelineLearner(LearningMachine):
             x_prime = node.step_x(x, t, state, **pipeline.get_step_x_kwargs(node))
             pipeline.set_x_prime(node, x_prime)
         
-        state[self, 'accumulated'] = True
+        state[self, x, 'accumulated'] = True
 
     def node(self, machine: LearningMachine, step_priority: bool=False) -> PipeStep:
         """
@@ -515,7 +515,7 @@ class AccPipelineLearner(LearningMachine):
             machine, step_priority
         )
     
-    @acc_dep('accumulated', False)
+    @acc_dep('accumulated')
     def step(self, x: IO, t: IO, state: State):
         """
 
@@ -529,7 +529,7 @@ class AccPipelineLearner(LearningMachine):
         for x, _, node, t  in pipeline.reverse():
             node.step(x, t, state, **pipeline.get_step_kwargs(node))
 
-    @acc_dep('accumulated', False)
+    @acc_dep('accumulated')
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """
 
