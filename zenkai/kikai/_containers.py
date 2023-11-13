@@ -27,12 +27,12 @@ class SStep:
 class Graph(LearningMachine):
 
     @abstractmethod
-    def forward_step(self, x: IO, state: State, release: bool=True) -> typing.Iterator[SStep]:
+    def forward_step(self, x: IO, state: State, release: bool=True, *args, **kwargs) -> typing.Iterator[SStep]:
         pass
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
         
-        steps = [step for step in self.forward_step(x, state, release)]
+        steps = [step for step in self.forward_step(x, state, release, *args, **kwargs)]
         y = steps[-1].y
         ordered_steps = OrderedDict()
         for step in steps:
@@ -87,12 +87,12 @@ class Graph(LearningMachine):
 class AccGraph(LearningMachine):
 
     @abstractmethod
-    def forward_step(self, x: IO, state: State, release: bool=True) -> typing.Iterator[SStep]:
+    def forward_step(self, x: IO, state: State, release: bool=True, *args, **kwargs) -> typing.Iterator[SStep]:
         pass
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
         
-        steps = [step for step in self.forward_step(x, state, release)]
+        steps = [step for step in self.forward_step(x, state, release, *args, **kwargs)]
         y = steps[-1].y
         ordered_steps = OrderedDict()
         for step in steps:

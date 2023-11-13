@@ -27,8 +27,6 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 
 """
 
-# from ..kikai.hill import HillClimbBinaryStepX, HillClimbStepX
-
 
 from ._iterable import (
     IterStepTheta, 
