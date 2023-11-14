@@ -23,10 +23,11 @@ class Sampler(ABC):
 
 
 class GaussianSampler(Sampler):
-    """Calculate the Gaussian parameters based on the population and sample values based on them
-    """
+    """Calculate the Gaussian parameters based on the population and sample values based on them"""
 
-    def __init__(self, k: int, decay: float=0.1, mu0: float=None, std0: float=None):
+    def __init__(
+        self, k: int, decay: float = 0.1, mu0: float = None, std0: float = None
+    ):
         """initializer
 
         Args:
@@ -43,7 +44,7 @@ class GaussianSampler(Sampler):
         self._std = {}
 
     def __call__(self, tensor_dict: TensorDict) -> TensorDict:
-        """Calculate the Gaussian parameters and sample a population using them 
+        """Calculate the Gaussian parameters and sample a population using them
 
         Args:
             population (Population): The initial population
@@ -53,28 +54,32 @@ class GaussianSampler(Sampler):
         """
 
         samples = {}
-        
+
         for k, v in tensor_dict.items():
-            self._mean[k] = decay(v.mean(dim=0, keepdim=True), self._mean.get(k, self._mu0), self.decay)
-            self._std[k] = decay(v.std(dim=0, keepdim=True), self._std.get(k, self._std0))
+            self._mean[k] = decay(
+                v.mean(dim=0, keepdim=True), self._mean.get(k, self._mu0), self.decay
+            )
+            self._std[k] = decay(
+                v.std(dim=0, keepdim=True), self._std.get(k, self._std0)
+            )
             samples[k] = (
-                gen_like(torch.randn, self.k, self._mean[k]) * self._std[k] + self._mean[k]
+                gen_like(torch.randn, self.k, self._mean[k]) * self._std[k]
+                + self._mean[k]
             )
         return tensor_dict.spawn(samples)
 
-    def spawn(self) -> 'GaussianSampler':
-        return GaussianSampler(
-            self.k, self.decay, self._mu0, self._std0
-        )
+    def spawn(self) -> "GaussianSampler":
+        return GaussianSampler(self.k, self.decay, self._mu0, self._std0)
 
 
 # TODO ALTER SO IT DOES NOT NEED STATE
 # CREATE  population -> probability -> mixer
 class BinarySampler(Sampler):
-    """Calculate the Bernoulli parameters and sample from them
-    """
+    """Calculate the Bernoulli parameters and sample from them"""
 
-    def __init__(self, k: int, decay: float=0.9, p0: float=None, sign_neg: bool=False):
+    def __init__(
+        self, k: int, decay: float = 0.9, p0: float = None, sign_neg: bool = False
+    ):
         """initializer
 
         Args:
@@ -91,7 +96,7 @@ class BinarySampler(Sampler):
         self._p = {}
 
     def __call__(self, tensor_dict: TensorDict) -> TensorDict:
-        """Calculate the bernoulli paramter and sample a population using them 
+        """Calculate the bernoulli paramter and sample a population using them
 
         Args:
             population (Population): The initial population
@@ -104,7 +109,9 @@ class BinarySampler(Sampler):
         for k, v in tensor_dict.items():
             if self._sign_neg:
                 v = (v + 1) / 2
-            self._p[k] = decay(v.mean(dim=0, keepdim=True), self._p.get(k, self._p0), self.decay)
+            self._p[k] = decay(
+                v.mean(dim=0, keepdim=True), self._p.get(k, self._p0), self.decay
+            )
             cur_samples = (
                 gen_like(torch.rand, self.k, self._p[k]) < self._p[k]
             ).float()
@@ -114,7 +121,5 @@ class BinarySampler(Sampler):
             samples[k] = cur_samples
         return tensor_dict.spawn(samples)
 
-    def spawn(self) -> 'BinarySampler':
-        return BinarySampler(
-            self.k, self.decay, self._p0, self._sign_neg
-        )
+    def spawn(self) -> "BinarySampler":
+        return BinarySampler(self.k, self.decay, self._p0, self._sign_neg)

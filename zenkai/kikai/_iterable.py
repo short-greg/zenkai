@@ -15,14 +15,13 @@ from ..kaku import (
     State,
     OutDepStepTheta,
     StepX,
-    Idx
+    Idx,
 )
 from torch.utils import data as torch_data
 
 
 class StepLoop(object):
-
-    def __init__(self, batch_size: int=None, shuffle: bool = True):
+    def __init__(self, batch_size: int = None, shuffle: bool = True):
         """Loop over a connection by indexing
 
         Args:
@@ -41,9 +40,7 @@ class StepLoop(object):
             DataLoader: The data loader to loop over
         """
 
-        batch_size = (
-            self.batch_size if self.batch_size is not None else len(io[0])
-        )
+        batch_size = self.batch_size if self.batch_size is not None else len(io[0])
 
         # TODO: Change so 0 is not indexed
         indices = torch_data.TensorDataset(torch.arange(0, len(io.f)).long())
@@ -56,7 +53,7 @@ class StepLoop(object):
             io (IO): The io to iterate over
 
         Returns:
-            typing.Iterator[Idx]: Return 
+            typing.Iterator[Idx]: Return
 
         Yields:
             Iterator[typing.Iterator[Conn]]: _description_
@@ -68,13 +65,10 @@ class StepLoop(object):
                 yield Idx(idx.to(io.f.device), dim=0)
 
 
-
 class IterStepTheta(StepTheta):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(
-        self, base_step: StepTheta, n_epochs: int = 1, batch_size: int = None
-    ):
+    def __init__(self, base_step: StepTheta, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -112,9 +106,7 @@ class IterStepTheta(StepTheta):
 class IterStepX(StepX):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(
-        self, base_step: StepX, n_epochs: int = 1, batch_size: int = None
-    ):
+    def __init__(self, base_step: StepX, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -141,8 +133,10 @@ class IterStepX(StepX):
                 if isinstance(self.base_step, BatchIdxStepX):
                     updated_x = self.base_step.step_x(x, t, state, idx)
                 else:
-                    updated_x = self.base_step.step_x(idx(x, detach=True), idx(t, detach=True), state)
-                
+                    updated_x = self.base_step.step_x(
+                        idx(x, detach=True), idx(t, detach=True), state
+                    )
+
                 x = update_io(updated_x, x, idx)
         return x
 
@@ -154,7 +148,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self,
         update: StepTheta,
         net: nn.Module,
-        outgoing: StepX=None,
+        outgoing: StepX = None,
         n_epochs: int = 1,
         x_iterations: int = 1,
         theta_iterations: int = 1,
@@ -186,16 +180,18 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self.batch_size = batch_size
         self.tie_in_t = tie_in_t
 
-    def step(self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None) -> IO:
+    def step(
+        self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
+    ) -> IO:
         """
 
         Args:
-            x (IO): Input 
+            x (IO): Input
             t (IO): Target
-            state (State): The state 
-            outgoing_t (IO, optional): The target of the outgoing layer. 
+            state (State): The state
+            outgoing_t (IO, optional): The target of the outgoing layer.
             If none, will not do step_x for the outgoing layer. Defaults to None.
-            outgoing_x (IO, optional): The x value for the outgoing layer. 
+            outgoing_x (IO, optional): The x value for the outgoing layer.
             If none, will use the t of the incoming layer Defaults to None.
 
         Returns:
@@ -209,16 +205,20 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
         for i in range(self.n_epochs):
 
-            if outgoing_t is not None and not self.outgoing is None:
+            if outgoing_t is not None and self.outgoing is not None:
 
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):
-                            x_idx = self.outgoing.step_x(outgoing_x, outgoing_t, state, batch_idx=idx)
+                            x_idx = self.outgoing.step_x(
+                                outgoing_x, outgoing_t, state, batch_idx=idx
+                            )
                         else:
                             # BUG: FIX HERE. It is doing a step_x
                             # without going forward
-                            x_idx = self.outgoing.step_x(idx(outgoing_x), idx(outgoing_t), state)
+                            x_idx = self.outgoing.step_x(
+                                idx(outgoing_x), idx(outgoing_t), state
+                            )
                         outgoing_x = update_io(x_idx, outgoing_x, idx, detach=True)
 
                 t = outgoing_x

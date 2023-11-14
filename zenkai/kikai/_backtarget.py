@@ -6,37 +6,31 @@ import torch.nn as nn
 import torch
 
 # Local
-from ..kaku import IO, State
 from ..mod import Lambda
-from ..utils import module_factory
-from ..kaku import (
-    IO,
-    LearningMachine,
-    State,
-    Criterion,
-    Assessment,
-    Criterion,
-    ThLoss
-)
+from ..kaku import IO, LearningMachine, State, Criterion, Assessment, ThLoss
 
 
 class BackTarget(LearningMachine):
-    """Use this in general for modules that reshape or 
+    """Use this in general for modules that reshape or
     select elements from the input or when the grad function
     simply reverses the forward operation
     """
 
-    def __init__(self, module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]], criterion: Criterion=None) -> None:
+    def __init__(
+        self,
+        module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]],
+        criterion: Criterion = None,
+    ) -> None:
         super().__init__()
         self.module = module if isinstance(module, nn.Module) else Lambda(module)
-        self.criterion = criterion or ThLoss('MSELoss')
+        self.criterion = criterion or ThLoss("MSELoss")
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
-        y = state[self, x, 'y'] = self.module(*x.u)
+        y = state[self, x, "y"] = self.module(*x.u)
         return IO(y).out(release=release)
 
     def step(self, x: IO, t: IO, state: State) -> IO:
@@ -44,7 +38,7 @@ class BackTarget(LearningMachine):
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        y = state[self, x, 'y']
+        y = state[self, x, "y"]
         y.grad = None
         y.backward(*t.u)
         xs = []

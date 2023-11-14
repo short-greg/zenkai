@@ -1,10 +1,9 @@
+# flake8: noqa
+
 from ._assess import (
     LayerAssessor,
     StepFullLayerAssessor,
     StepAssessHook,
-    StepXLayerAssessor
+    StepXLayerAssessor,
 )
-from ._limit import (
-    FeatureLimitGen,
-    RandomFeatureIdxGen
-)
+from ._limit import FeatureLimitGen, RandomFeatureIdxGen

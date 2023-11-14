@@ -15,10 +15,7 @@ from ..mod._noise import EqualsAssessmentDist
 from .utils import (
     binary_prob,
 )
-from ._select import (
-    select_best_sample,
-    select_best_individual
-)
+from ._select import select_best_sample, select_best_individual
 
 
 def keep_original(
@@ -45,7 +42,7 @@ def keep_original(
 
 class Reducer(ABC):
     """Base class for Reducer. A Reducer reduces a population to an Individual
-    or does an aggregation or other operation on the population to convert 
+    or does an aggregation or other operation on the population to convert
     the population to an individual
     """
 
@@ -53,7 +50,7 @@ class Reducer(ABC):
     def reduce(self, population: Population, state: State) -> Individual:
         pass
 
-    def __call__(self, population: Population, state: State=None) -> Individual:
+    def __call__(self, population: Population, state: State = None) -> Individual:
         return self.reduce(population, state or State())
 
     @abstractmethod
@@ -65,7 +62,6 @@ class StandardReducer(Reducer):
     """Standard reducer. Loops over all of the fields in the population and reduces them
     Override only be writing the select method
     """
-
 
     @abstractmethod
     def reduce_field(
@@ -96,8 +92,7 @@ class StandardReducer(Reducer):
 
 
 class ReducerDecorator(Reducer):
-    """Decorates the result of a reduction
-    """
+    """Decorates the result of a reduction"""
 
     def __init__(self, base_reducer: Reducer):
         """initializer
@@ -145,7 +140,7 @@ class ReducerDecorator(Reducer):
         """
 
         Returns:
-            ReducerDecorator: 
+            ReducerDecorator:
         """
         pass
 
@@ -174,8 +169,7 @@ class BestIndividualReducer(StandardReducer):
 
 
 class BestSampleReducer(StandardReducer):
-    """Selects the best individual in the population
-    """
+    """Selects the best individual in the population"""
 
     def reduce_field(
         self, key: str, pop_val: torch.Tensor, assessment: Assessment, state: State
@@ -197,8 +191,7 @@ class BestSampleReducer(StandardReducer):
 
 
 class MomentumReducer(ReducerDecorator):
-    """Reduces the population using momentum
-    """
+    """Reduces the population using momentum"""
 
     def __init__(self, best_reducer: Reducer, momentum: float = None):
         """initializer
@@ -229,9 +222,9 @@ class MomentumReducer(ReducerDecorator):
             torch.Tensor: The decorated reducer
         """
         my_state = state.mine(self)
-        diff = my_state.get('diff')
-        cur = my_state.get('cur')
-        
+        diff = my_state.get("diff")
+        cur = my_state.get("cur")
+
         if diff is None and cur is None:
             my_state.cur = individual
         elif self.diff is None:
@@ -248,8 +241,7 @@ class MomentumReducer(ReducerDecorator):
 
 
 class BinaryProbReducer(Reducer):
-    """
-    """
+    """ """
 
     neg_count = "neg_count"
     pos_count = "pos_count"

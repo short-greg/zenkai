@@ -2,11 +2,13 @@ import os
 
 initialized = False
 
+
 def _initialize():
 
     global initialized
     if not initialized:
         initialized = True
-        os.chdir('../')
+        os.chdir("../")
+
 
 _initialize()

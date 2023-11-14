@@ -17,23 +17,15 @@ Loop - Loop over data
 # 1st party
 from abc import ABC, abstractmethod
 import typing
-from dataclasses import dataclass
-from typing import Any
 
 # 3rd party
 import torch
 import torch.nn as nn
 
-from zenkai.kaku._io import IO
-from zenkai.kaku._state import State
-
 # local
 from ._assess import Assessment, Criterion
 from ._state import IDable, State
-from ._io import (
-    IO,
-    Idx 
-)
+from ._io import IO, Idx
 from functools import wraps
 
 
@@ -41,21 +33,23 @@ class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
 
     @abstractmethod
-    def __call__(self, step_x: 'StepX', x: IO, x_prime: IO, t: IO, state: State) -> typing.Tuple[IO, IO]:
+    def __call__(
+        self, step_x: "StepX", x: IO, x_prime: IO, t: IO, state: State
+    ) -> typing.Tuple[IO, IO]:
         pass
 
 
 class StepHook(ABC):
-
     @abstractmethod
-    def __call__(self, step: 'StepTheta', x: IO, t: IO, state: State) -> typing.Tuple[IO, IO]:
+    def __call__(
+        self, step: "StepTheta", x: IO, t: IO, state: State
+    ) -> typing.Tuple[IO, IO]:
         pass
 
 
 class ForwardHook(ABC):
-
     @abstractmethod
-    def __call__(self, learner: 'LearningMachine', x: IO, y: IO, state: State) -> IO:
+    def __call__(self, learner: "LearningMachine", x: IO, y: IO, state: State) -> IO:
         pass
 
 
@@ -63,7 +57,9 @@ class LearnerPostHook(ABC):
     """Use to add additional processing after test has been called"""
 
     @abstractmethod
-    def __call__(self, x: IO, t: IO, state: State, y: IO, assessment: Assessment) -> typing.Tuple[IO, IO]:
+    def __call__(
+        self, x: IO, t: IO, state: State, y: IO, assessment: Assessment
+    ) -> typing.Tuple[IO, IO]:
         pass
 
 
@@ -103,7 +99,7 @@ class StepX(ABC):
 
         return x_prime
 
-    def step_x_hook(self, hook: StepXHook) -> 'StepX':
+    def step_x_hook(self, hook: StepXHook) -> "StepX":
         """Add hook to call after StepX
 
         Args:
@@ -139,9 +135,7 @@ class StepTheta(ABC):
     def step(self, x: IO, t: IO, state: State):
         pass
 
-    def _accumulate_hook_runner(
-        self, x: IO, t: IO, state: State, *args, **kwargs
-    ):
+    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -155,7 +149,7 @@ class StepTheta(ABC):
         for posthook in self._accumulate_hooks:
             posthook(x, t, state)
 
-    def accumulate_posthook(self, hook: StepHook) -> 'StepTheta':
+    def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -166,25 +160,7 @@ class StepTheta(ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(
-        self, x: IO, t: IO, state: State, *args, **kwargs
-    ):
-        """Call step wrapped with the hooks
-
-        Args:
-            x (IO): the incoming IO
-            t (IO): The target IO
-            state (State): The current state
-        """
-
-        self._base_step(x, t, state, *args, **kwargs)
-
-        for posthook in self._step_hooks:
-            posthook(x, t, state)
-
-    def _step_hook_runner(
-        self, x: IO, t: IO, state: State, *args, **kwargs
-    ):
+    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -199,7 +175,7 @@ class StepTheta(ABC):
             x, t = posthook(self, x, t, state)
         return result
 
-    def step_posthook(self, hook: StepHook) -> 'StepTheta':
+    def step_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -212,13 +188,11 @@ class StepTheta(ABC):
 
 
 class NullStepX(StepX):
-
     def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
         return x
-    
+
 
 class NullStepTheta(StepTheta):
-
     def accumulate(self, x: IO, t: IO, state: State):
         pass
 
@@ -227,35 +201,26 @@ class NullStepTheta(StepTheta):
 
 
 class BatchIdxStepTheta(StepTheta):
-    """Mixin for when only to update based on a limited set of indexes in the minibatch
-    """
+    """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step(
-        self, x: IO, t: IO, state: State, batch_idx: Idx = None
-    ):
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         pass
 
-    def accumulate(
-        self, x: IO, t: IO, state: State, batch_idx: Idx = None
-    ):
+    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         pass
 
 
 class FeatureIdxStepTheta(StepTheta):
-    """Mixin for when only to train on a limited set of neurons
-    """
+    """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step(
-        self, x: IO, t: IO, state: State, feature_idx: Idx = None
-    ):
+    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None):
         pass
 
 
 class BatchIdxStepX(StepX):
-    """Mixin for when only to update based on a limited set of indexes in the minibatch
-    """
+    """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
@@ -263,8 +228,7 @@ class BatchIdxStepX(StepX):
 
 
 class FeatureIdxStepX(StepX):
-    """Mixin for when only to train on a limited set of neurons
-    """
+    """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
@@ -272,7 +236,6 @@ class FeatureIdxStepX(StepX):
 
 
 class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
-    
     def __init__(self) -> None:
 
         super().__init__()
@@ -366,7 +329,9 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, x: IO, state: State = None, release: bool = True, *args, **kwargs) -> IO:
+    def __call__(
+        self, x: IO, state: State = None, release: bool = True, *args, **kwargs
+    ) -> IO:
         """
         Args:
             x (IO): The input to the machine
@@ -380,7 +345,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             state = State()
         return super().__call__(x, state, release, *args, **kwargs)
 
-    def forward_hook(self, hook: ForwardHook) -> 'LearningMachine':
+    def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
         """_summary_
 
         Args:
@@ -389,7 +354,9 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         self._forward_hooks.append(hook)
         return self
 
-    def learner_hook(self, hook: LearnerPostHook, learn: bool=True, test: bool=True) -> 'LearningMachine':
+    def learner_hook(
+        self, hook: LearnerPostHook, learn: bool = True, test: bool = True
+    ) -> "LearningMachine":
         """Add hook to call after learn
 
         Args:
@@ -402,9 +369,13 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         return self
 
     def _learn_hook_runner(
-        self, x: IO, t: IO, state: State=None, 
-        clear_state: bool=False, reduction_override: str=None, 
-        get_y: bool=False,
+        self,
+        x: IO,
+        t: IO,
+        state: State = None,
+        clear_state: bool = False,
+        reduction_override: str = None,
+        get_y: bool = False,
     ):
         """Call step wrapped with the hooks
 
@@ -414,17 +385,17 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             state (State): The current state
         """
         state = state or State()
-        assessment, y = self._base_learn(x, t, state, clear_state, reduction_override, True)
+        assessment, y = self._base_learn(
+            x, t, state, clear_state, reduction_override, True
+        )
 
         for posthook in self._learn_posthooks:
             posthook(x, t, state, y, assessment)
         if get_y:
             return assessment, y
         return assessment
-    
-    def _forward_hook_runner(
-            self, x: IO, state: State, *args, **kwargs
-    ):
+
+    def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
         """_summary_
 
         Args:
@@ -438,9 +409,12 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         return y
 
     def _test_hook_runner(
-        self, x: IO, t: IO, state: State=None, 
-        reduction_override: str=None, 
-        get_y: bool=False,
+        self,
+        x: IO,
+        t: IO,
+        state: State = None,
+        reduction_override: str = None,
+        get_y: bool = False,
     ):
         """Call step wrapped with the hooks
 
@@ -456,7 +430,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             posthook(x, t, state, y, assessment)
         if get_y:
             return assessment, y
-        
+
         return assessment
 
     def learn(
@@ -466,7 +440,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         state: State = None,
         clear_state: bool = False,
         reduction_override: str = None,
-        get_y: bool=False
+        get_y: bool = False,
     ) -> Assessment:
         """Learn method . This includes cleanup and initialization so it is easier to use in practice
         than step
@@ -495,7 +469,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             return assessment, y
         return assessment
 
-    def backward(self, x: IO, t: IO, state: State, step: bool=False) -> IO:
+    def backward(self, x: IO, t: IO, state: State, step: bool = False) -> IO:
         """
         Go backward through the network
 
@@ -513,7 +487,14 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             self.step(x, t, state)
         return self.step_x(x, t, state)
 
-    def test(self, x: IO, t: IO, state: State=None, reduction_override: str=None, get_y: bool=False) -> Assessment:
+    def test(
+        self,
+        x: IO,
+        t: IO,
+        state: State = None,
+        reduction_override: str = None,
+        get_y: bool = False,
+    ) -> Assessment:
         """Assess the machine in "testing" mode
 
         Args:
@@ -529,7 +510,11 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
             y = self(x, state=state)
-            result = self.assess_y(y, t, reduction_override=reduction_override).cpu().detach()
+            result = (
+                self.assess_y(y, t, reduction_override=reduction_override)
+                .cpu()
+                .detach()
+            )
             if get_y:
                 return result, y
             return result
@@ -566,7 +551,9 @@ class OutDepStepTheta(StepTheta):
     """StepTheta that optionally depends on the outgoing module if outgoing_t is specified"""
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, outgoing_t: IO=None, outgoing_x: IO=None) -> IO:
+    def step(
+        self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
+    ) -> IO:
         pass
 
 
@@ -574,12 +561,14 @@ class InDepStepX(StepX):
     """StepX that optionally depends on the incoming module if incoming_x is specified"""
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, incoming_x: IO=None, incoming_t: IO=None) -> IO:
+    def step_x(
+        self, x: IO, t: IO, state: State, incoming_x: IO = None, incoming_t: IO = None
+    ) -> IO:
         pass
 
 
-def acc_dep(check_field: str, x_key: bool=True):
-    """Wrap step_x by requiring step to have been called. 
+def acc_dep(check_field: str, x_key: bool = True):
+    """Wrap step_x by requiring step to have been called.
     Will raise an error if it has not been called
 
     Args:
@@ -588,20 +577,23 @@ def acc_dep(check_field: str, x_key: bool=True):
     """
 
     def inner(func):
-
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-            
+
             val = state.get((self, x if x_key else None, check_field))
             if val is None:
-                raise RuntimeError('Method depends on accumulate() but accumulate has not been called')
+                raise RuntimeError(
+                    "Method depends on accumulate() but accumulate has not been called"
+                )
             return func(self, x, t, state, *args, **kwargs)
+
         return _
+
     return inner
 
 
-def step_dep(check_field: str, x_key: bool=True):
-    """Wrap step_x by requiring step to have been called. 
+def step_dep(check_field: str, x_key: bool = True):
+    """Wrap step_x by requiring step to have been called.
     Will raise an error if it has not been called
 
     Args:
@@ -610,19 +602,22 @@ def step_dep(check_field: str, x_key: bool=True):
     """
 
     def inner(func):
-
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            val = state.get((self,x if x_key else None, check_field))
+            val = state.get((self, x if x_key else None, check_field))
             if val is None:
-                raise RuntimeError('Method depends on step() but step has not been called')
+                raise RuntimeError(
+                    "Method depends on step() but step has not been called"
+                )
             return func(self, x, t, state, *args, **kwargs)
+
         return _
+
     return inner
 
 
-def forward_dep(check_field: str, x_key: bool=True):
+def forward_dep(check_field: str, x_key: bool = True):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
@@ -631,14 +626,16 @@ def forward_dep(check_field: str, x_key: bool=True):
     """
 
     def inner(func):
-
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
             val = state.get((self, x if x_key else None, check_field))
             if val is None:
-                raise RuntimeError('Method depends on forward but forward has not been executed')
+                raise RuntimeError(
+                    "Method depends on forward but forward has not been executed"
+                )
             return func(self, x, t, state, *args, **kwargs)
-        return _
-    return inner
 
+        return _
+
+    return inner

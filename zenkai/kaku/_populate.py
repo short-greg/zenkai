@@ -27,10 +27,15 @@ class TensorDict(dict):
             elif not isinstance(v, torch.Tensor):
                 v = torch.tensor(v)
             results[k] = v
-        
+
         super().__init__(**results)
 
-    def loop_over(self, others: typing.Union['TensorDict', typing.List['TensorDict']], only_my_k: bool=False, union: bool=True) -> typing.Iterator[typing.Tuple[str, torch.Tensor]]:
+    def loop_over(
+        self,
+        others: typing.Union["TensorDict", typing.List["TensorDict"]],
+        only_my_k: bool = False,
+        union: bool = True,
+    ) -> typing.Iterator[typing.Tuple[str, torch.Tensor]]:
         """Loop over the tensor dict and other tensor dicts
 
         Args:
@@ -54,10 +59,15 @@ class TensorDict(dict):
         all_ = [self, *others]
         for key in keys:
             result = [d[key] if key in d else None for d in all_]
-            yield tuple([key, *result])        
+            yield tuple([key, *result])
 
     # perhaps have this be separate
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None, filter_keys: bool=False) -> 'TensorDict':
+    def apply(
+        self,
+        f: typing.Callable[[torch.Tensor], torch.Tensor],
+        keys: typing.Union[typing.List[str], str] = None,
+        filter_keys: bool = False,
+    ) -> "TensorDict":
         """Apply a function to he individual to generate a new individual
 
         Args:
@@ -80,8 +90,10 @@ class TensorDict(dict):
             elif not filter_keys:
                 results[k] = torch.clone(v)
         return self.__class__(**results)
-    
-    def binary_op(self, f, other: 'TensorDict', only_my_k: bool=True, union: bool=True) -> 'TensorDict':
+
+    def binary_op(
+        self, f, other: "TensorDict", only_my_k: bool = True, union: bool = True
+    ) -> "TensorDict":
         """Executes a binary op if key defined for self and other. Otherwise sets the key to the value
 
 
@@ -106,7 +118,7 @@ class TensorDict(dict):
             for k, v in self.items():
                 result[k] = f(v, other)
             return self.spawn(result)
-        
+
         result = {}
         for k, v1, v2 in self.loop_over(other, only_my_k=only_my_k, union=union):
             if v1 is not None and v2 is not None:
@@ -116,10 +128,8 @@ class TensorDict(dict):
             else:
                 result[k] = v2
 
-        return self.__class__(
-            **result
-        )
-    
+        return self.__class__(**result)
+
     def validate_keys(self, *others) -> bool:
 
         keys = set(self.keys())
@@ -128,74 +138,79 @@ class TensorDict(dict):
                 return False
         return True
 
-    def __add__(self, other: 'TensorDict') -> 'TensorDict':
+    def __add__(self, other: "TensorDict") -> "TensorDict":
         return self.binary_op(torch.add, other, False, True)
 
-    def __sub__(self, other: 'TensorDict') -> 'TensorDict':
+    def __sub__(self, other: "TensorDict") -> "TensorDict":
 
         return self.binary_op(torch.sub, other, True, True)
 
-    def __mul__(self, other: 'TensorDict') -> 'TensorDict':
+    def __mul__(self, other: "TensorDict") -> "TensorDict":
 
         return self.binary_op(torch.mul, other, True, False)
-    
-    def __truediv__(self, other: 'TensorDict') -> 'TensorDict':
+
+    def __truediv__(self, other: "TensorDict") -> "TensorDict":
         return self.binary_op(torch.true_divide, other, True, False)
-    
-    def __and__(self, other: 'TensorDict') -> 'TensorDict':
+
+    def __and__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
             return False
 
         return self.binary_op(torch.__and__, other, union=False)
 
-    def __or__(self, other: 'TensorDict') -> 'TensorDict':
-        if not self.validate_keys(other):
-            return False
-        return self.binary_op(torch.__or__, other, union=False)
-    
-    def __or__(self, other: 'TensorDict') -> 'TensorDict':
+    def __or__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
             return False
         return self.binary_op(torch.__or__, other, union=False)
 
-    def __le__(self, other: 'TensorDict') -> 'TensorDict':
+    def __le__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
-            raise ValueError('All keys must be same in self and other to compute less than')
+            raise ValueError(
+                "All keys must be same in self and other to compute less than"
+            )
 
         return self.binary_op(torch.less_equal, other, union=False)
 
-    def __ge__(self, other: 'TensorDict') -> 'TensorDict':
+    def __ge__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
-            raise ValueError('All keys must be same in self and other to compute greater than')
+            raise ValueError(
+                "All keys must be same in self and other to compute greater than"
+            )
 
         return self.binary_op(torch.greater_equal, other, union=False)
 
-    def __lt__(self, other: 'TensorDict') -> 'TensorDict':
+    def __lt__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
-            raise ValueError('All keys must be same in self and other to compute less than')
+            raise ValueError(
+                "All keys must be same in self and other to compute less than"
+            )
 
         return self.binary_op(torch.less, other, union=False)
 
-    def __gt__(self, other: 'TensorDict') -> 'TensorDict':
+    def __gt__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
-            raise ValueError('All keys must be same in self and other to compute greater than')
+            raise ValueError(
+                "All keys must be same in self and other to compute greater than"
+            )
 
         return self.binary_op(torch.greater, other, union=False)
 
-    def __eq__(self, other: 'TensorDict') -> 'TensorDict':
+    def __eq__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
-            raise ValueError('All keys must be same in self and other to compute greater than')
+            raise ValueError(
+                "All keys must be same in self and other to compute greater than"
+            )
         return self.binary_op(torch.equal, other, union=False)
 
     @abstractmethod
-    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'TensorDict':
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> "TensorDict":
         pass
 
-    def copy(self) -> 'TensorDict':
+    def copy(self) -> "TensorDict":
 
         return self.__class__(**super().copy())
 
-    def clone(self) -> 'TensorDict':
+    def clone(self) -> "TensorDict":
 
         result = {}
         for k, v in self.items():
@@ -222,12 +237,12 @@ class Individual(TensorDict):
         """
         super().__init__(**values)
         if len(self) == 0:
-            raise ValueError(f'Must pass tensors into the population')
+            raise ValueError("Must pass tensors into the population")
         self._assessment = assessment
         self._id = None
         self._population = None
 
-    def set_model(self, model: nn.Module, key: str) -> "Individual":
+    def set_model(self, model: nn.Module, key: str) -> 'Individual':
         """Update the parameters in a module
 
         Args:
@@ -252,17 +267,15 @@ class Individual(TensorDict):
         """
         parameter.data = self[key]
         return self
-    
-    def populate(self, k: int=1) -> 'Population':
+
+    def populate(self, k: int = 1) -> "Population":
         """convert an individual to a solitary population
 
         Returns:
             Population: population with one member
         """
 
-        return Population(
-            **{key: expand_dim0(v, k, False) for key, v in self.items()}
-        )    
+        return Population(**{key: expand_dim0(v, k, False) for key, v in self.items()})
 
     def join(self, population: "Population", individual_idx: int) -> "Individual":
         """Set the population for the individual
@@ -303,13 +316,11 @@ class Individual(TensorDict):
         """
         return self._assessment
 
-    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'Individual':
-        
-        return Individual(
-            **tensor_dict
-        )
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> "Individual":
 
-    def clone(self) -> 'Individual':
+        return Individual(**tensor_dict)
+
+    def clone(self) -> "Individual":
         """Create an exact copy of the individual
 
         Returns:
@@ -335,12 +346,10 @@ class Population(TensorDict):
             ValueError: If dimension is 0 for any
             ValueError: If the population size is not the same as all
         """
-        super().__init__(
-            **kwargs
-        )
+        super().__init__(**kwargs)
         self._k = None
         if len(self) == 0:
-            raise ValueError(f'Must pass tensors into the population')
+            raise ValueError("Must pass tensors into the population")
         for _, v in self.items():
             if self._k is None:
                 self._k = len(v)
@@ -353,14 +362,6 @@ class Population(TensorDict):
         self._individuals = {}
         self._assessments: typing.List[Assessment] = [None] * self._k
         self._assessment_size = None
-
-    @property
-    def k(self) -> typing.Union[None, int]:
-        """
-        Returns:
-            int: Batch size for the population if batch population else None
-        """
-        return self._k
 
     def authenticate(self, individual: Individual, index: int) -> bool:
         """
@@ -381,7 +382,7 @@ class Population(TensorDict):
             try:
                 result[name] = self[name]
             except KeyError as e:
-                raise KeyError(f'{name} not in the population') from e
+                raise KeyError(f"{name} not in the population") from e
         return Population(**result)
 
     def get_assessment(self, i: int) -> Assessment:
@@ -428,7 +429,9 @@ class Population(TensorDict):
             Population: self
         """
         if not isinstance(assessment, Assessment):
-            raise ValueError(f'Argument assessment must be of type Assessment not {type(assessment)}')
+            raise ValueError(
+                f"Argument assessment must be of type Assessment not {type(assessment)}"
+            )
         if len(assessment) != self._k:
             raise ValueError(
                 "Length of assessment must be same "
@@ -489,7 +492,7 @@ class Population(TensorDict):
 
     @property
     def assessments(self) -> typing.List[Assessment]:
-        """"
+        """ "
 
         Returns:
             typing.List[Assessment]:"The assessments for the population
@@ -499,7 +502,7 @@ class Population(TensorDict):
     def assessments_reported(self) -> bool:
         """
         Returns:
-            bool: Whether the assessments have been reported 
+            bool: Whether the assessments have been reported
         """
         for assessment in self._assessments:
             if assessment is None:
@@ -522,8 +525,8 @@ class Population(TensorDict):
                 raise ValueError(f"Assessment {i} has not been set.")
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
-    
-    def gather_sub(self, gather_by: torch.LongTensor) -> 'Population':
+
+    def gather_sub(self, gather_by: torch.LongTensor) -> "Population":
         """Gather on the population dimension
 
         Args:
@@ -536,18 +539,18 @@ class Population(TensorDict):
         result = {}
         for k, v in self.items():
             if gather_by.dim() > v.dim():
-                raise ValueError(f'Gather By dim must be less than or equal to the value dimension')
+                raise ValueError(
+                    "Gather By dim must be less than or equal to the value dimension"
+                )
             shape = [1] * gather_by.dim()
             for i in range(gather_by.dim(), v.dim()):
                 gather_by = gather_by.unsqueeze(i)
                 shape.append(v.shape[i])
             gather_by = gather_by.repeat(*shape)
             result[k] = v.gather(0, gather_by)
-        return Population(
-            **result
-        )
+        return Population(**result)
 
-    def pstack(self, others: typing.Iterable['Population']) -> 'Population':
+    def pstack(self, others: typing.Iterable["Population"]) -> "Population":
         """Stack the populations on top of one another
 
         Args:
@@ -557,8 +560,11 @@ class Population(TensorDict):
             Population: The resulting population
         """
         result = {}
-        
-        others = [other.populate() if isinstance(other, Individual) else other for other in others]
+
+        others = [
+            other.populate() if isinstance(other, Individual) else other
+            for other in others
+        ]
 
         for v in self.loop_over(*others, only_my_k=False, union=False):
             k = v[0]
@@ -568,9 +574,7 @@ class Population(TensorDict):
             else:
                 result[k] = torch.vstack(tensors)
 
-        return Population(
-            **result
-        )
+        return Population(**result)
 
     @property
     def sub(self):
@@ -632,12 +636,10 @@ class Population(TensorDict):
         if isinstance(key, tuple):
             field, i = key
             return self[field][i]
-        
+
         return super().__getitem__(key)
 
-    def __setitem__(
-        self, key: str, value: torch.Tensor
-    ) -> torch.Tensor:
+    def __setitem__(self, key: str, value: torch.Tensor) -> torch.Tensor:
         """
         Args:
             key (Union[str, typing.Tuple[str, int]]): _description_
@@ -646,12 +648,18 @@ class Population(TensorDict):
             torch.Tensor: The value at key
         """
         if self.k != value.shape[0]:
-            raise ValueError(f'Batch size of {value.shape[0]} does not equal population batch size {self.k}')
+            raise ValueError(
+                f"Batch size of {value.shape[0]} does not equal population batch size {self.k}"
+            )
         self[key] = value
-        
+
         return value
 
-    def apply(self, f: typing.Callable[[torch.Tensor], torch.Tensor], keys: typing.Union[typing.List[str], str]=None) -> 'Population':
+    def apply(
+        self,
+        f: typing.Callable[[torch.Tensor], torch.Tensor],
+        keys: typing.Union[typing.List[str], str] = None,
+    ) -> "Population":
         """Apply a function to he individual to generate a new individual
 
         Args:
@@ -675,13 +683,11 @@ class Population(TensorDict):
                 results[k] = torch.clone(v)
         return Population(**results)
 
-    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> 'Population':
-        
-        return Population(
-            **tensor_dict
-        )
+    def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> "Population":
 
-    def clone(self) -> 'Population':
+        return Population(**tensor_dict)
+
+    def clone(self) -> "Population":
         """Create an exact copy of the individual
 
         Returns:
@@ -695,7 +701,6 @@ class Population(TensorDict):
 
 
 class PopulationIndexer(object):
-
     def __init__(self, population: Population):
 
         self._population = population

@@ -10,8 +10,7 @@ from ..kaku import Assessment, Criterion, impose, Reduction, IO, Constraint, Obj
 
 
 class NullConstraint(Constraint):
-    """Defines a constraint that does not constrain any value
-    """
+    """Defines a constraint that does not constrain any value"""
 
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         """
@@ -23,14 +22,20 @@ class NullConstraint(Constraint):
 
 
 class ValueConstraint(Constraint):
-    """Defines a constraint on a value
-    """
+    """Defines a constraint on a value"""
 
-    def __init__(self, f: typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor], reduce_dim: bool=None, keepdim: bool=False, **constraints) -> None:
+    def __init__(
+        self,
+        f: typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor],
+        reduce_dim: bool = None,
+        keepdim: bool = False,
+        **constraints,
+    ) -> None:
         """Defines a value constraint
 
         Args:
-            f (typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor]): The function to check if a constraint is violated
+            f (typing.Callable[[torch.Tensor, typing.Any], torch.BoolTensor]): The function 
+             to check if a constraint is violated
             reduce_dim (bool, optional): The dimension to reduce upon. Defaults to None.
             keepdim (bool, optional): Whether to keep the dimension. Defaults to False.
         """
@@ -52,7 +57,7 @@ class ValueConstraint(Constraint):
         """
 
         Returns:
-            typing.Dict[str, torch.BoolTensor]: 
+            typing.Dict[str, torch.BoolTensor]:
         """
         result = {}
         for k, v in kwargs.items():
@@ -60,50 +65,53 @@ class ValueConstraint(Constraint):
             if k in self._constraints:
                 result[k] = self.f(v, self._constraints[k])
                 if self.reduce_dim is not None:
-                    result[k] = torch.any(result[k], dim=self.reduce_dim, keepdim=self.keepdim)
+                    result[k] = torch.any(
+                        result[k], dim=self.reduce_dim, keepdim=self.keepdim
+                    )
 
         return result
 
 
 class LT(ValueConstraint):
-    """Place a constraint that the tensor must be less than a value
-    """
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
+    """Place a constraint that the tensor must be less than a value"""
+
+    def __init__(self, reduce_dim: bool = None, **constraints) -> None:
 
         super().__init__(lambda x, c: x >= c, reduce_dim=reduce_dim, **constraints)
 
 
 class LTE(ValueConstraint):
-    """Place a constraint that the tensor must be less than or equal to a value
-    """
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
+    """Place a constraint that the tensor must be less than or equal to a value"""
+
+    def __init__(self, reduce_dim: bool = None, **constraints) -> None:
 
         super().__init__(lambda x, c: x > c, reduce_dim, **constraints)
 
 
 class GT(ValueConstraint):
-    """Place a constraint that the tensor must be greater than to a value
-    """
-    
-    def __init__(self, reduce_dim: bool=None, **constraints) -> None:
+    """Place a constraint that the tensor must be greater than to a value"""
+
+    def __init__(self, reduce_dim: bool = None, **constraints) -> None:
 
         super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
 
 
 class GTE(ValueConstraint):
-    """Place a constraint that the tensor must be greater than or equal to a value
-    """
-    
-    def __init__(self,reduce_dim: bool=None, **constraints) -> None:
+    """Place a constraint that the tensor must be greater than or equal to a value"""
+
+    def __init__(self, reduce_dim: bool = None, **constraints) -> None:
 
         super().__init__(lambda x, c: x < c, reduce_dim, **constraints)
 
 
 class FuncObjective(Objective):
-
-    def __init__(self, f: typing.Callable[[typing.Any], torch.Tensor], constraint: Constraint=None, penalty: float=torch.inf, maximize: bool=False):
+    def __init__(
+        self,
+        f: typing.Callable[[typing.Any], torch.Tensor],
+        constraint: Constraint = None,
+        penalty: float = torch.inf,
+        maximize: bool = False,
+    ):
         """Define an objective based on a function
 
         Args:
@@ -116,26 +124,34 @@ class FuncObjective(Objective):
             ValueError: _description_
         """
         if penalty < 0:
-            raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
+            raise ValueError(
+                f"Penalty must be greater than or equal to 0 not {penalty}"
+            )
         self._f = f
         self._constraint = constraint or NullConstraint()
         self._maximize = maximize
         self._penalty = penalty if maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
-        
+
         value = self._f(**kwargs)
         constraint = self._constraint(**kwargs)
         value = impose(value, constraint, self._penalty)
-        
-        return Assessment(Reduction[reduction].reduce(
-            value
-        ), self._maximize)
+
+        return Assessment(Reduction[reduction].reduce(value), self._maximize)
 
 
 class NNLinearObjective(Objective):
-
-    def __init__(self, linear: nn.Linear, net: nn.Module, criterion: Criterion, x: IO, t: IO, constraint: Constraint=None, penalty: float=torch.inf):
+    def __init__(
+        self,
+        linear: nn.Linear,
+        net: nn.Module,
+        criterion: Criterion,
+        x: IO,
+        t: IO,
+        constraint: Constraint = None,
+        penalty: float = torch.inf,
+    ):
         """Create an objective for optimizing a linear network
 
         Args:
@@ -151,7 +167,9 @@ class NNLinearObjective(Objective):
             ValueError: If the penalty is less than 0
         """
         if penalty < 0:
-            raise ValueError(f'Penalty must be greater than or equal to 0 not {penalty}')
+            raise ValueError(
+                f"Penalty must be greater than or equal to 0 not {penalty}"
+            )
         self._linear = linear
         self._net = net
         self._criterion = criterion
@@ -161,29 +179,30 @@ class NNLinearObjective(Objective):
         self._penalty = penalty if self._criterion.maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
-        
-        w = kwargs['w']
-        b = kwargs.get('b', [None] * len(w))
+
+        w = kwargs["w"]
+        b = kwargs.get("b", [None] * len(w))
         assessments = []
         for w_i, b_i in zip(w, b):
             self._linear.weight.data = w_i
             if b_i is not None:
                 self._linear.bias.data = b_i
             with torch.no_grad():
-                assessments.append(self._criterion.assess(IO(self._net(self.x.f)), self.t, reduction_override=reduction))
+                assessments.append(
+                    self._criterion.assess(
+                        IO(self._net(self.x.f)), self.t, reduction_override=reduction
+                    )
+                )
         assessment = Assessment.stack(assessments)
         constraint = self._constraint(**kwargs)
         value = impose(assessment.value, constraint, self._penalty)
         if value.dim() == 3:
             value = value.transpose(2, 1)
-        return Assessment(Reduction[reduction].reduce(
-            value
-        ), self._criterion.maximize)
-    
+        return Assessment(Reduction[reduction].reduce(value), self._criterion.maximize)
+
 
 class CriterionObjective(Objective):
-    """Create an objective to optimize based on a criterion
-    """
+    """Create an objective to optimize based on a criterion"""
 
     def __init__(self, criterion: Criterion):
 
@@ -191,7 +210,7 @@ class CriterionObjective(Objective):
         self.criterion = criterion
 
     def __call__(self, reduction: str, **kwargs) -> Assessment:
-        
-        x = IO(kwargs[x])
-        t = IO(kwargs[t])
+
+        x = IO(kwargs['x'])
+        t = IO(kwargs['t'])
         return self.criterion.assess(x, t, reduction)

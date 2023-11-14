@@ -9,7 +9,6 @@ import typing
 import torch
 import numpy as np
 from torch import nn
-import statistics
 
 # local
 from .. import utils as base_utils
@@ -21,7 +20,7 @@ class IO(object):
     """
 
     def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
-        """Wrap the inputs 
+        """Wrap the inputs
 
         Args:
             detach (bool, optional): The values making up the IO. Defaults to False.
@@ -35,15 +34,17 @@ class IO(object):
         )
         self._freshened = False
         self._singular = len(x) == 1
-        
+
         if names is not None:
             if len(names) != len(x):
-                raise ValueError(f'Number of names, {len(names)}, must be the same as the number of elements {len(x)}')
+                raise ValueError(
+                    f"Number of names, {len(names)}, must be the same as the number of elements {len(x)}"
+                )
             self._names = {name: i for i, name in enumerate(names)}
         else:
             self._names = None
 
-    def freshen(self, inplace: bool = False) -> 'IO':
+    def freshen(self, inplace: bool = False) -> "IO":
         """Set the values of the IO
 
         Args:
@@ -88,9 +89,10 @@ class IO(object):
         Returns:
             typing.List[str]: The names of all of the fields
         """
-        if self._names is None: return None
+        if self._names is None:
+            return None
         return list(self._names.keys())
-    
+
     def __len__(self) -> int:
         """
         Returns:
@@ -115,7 +117,11 @@ class IO(object):
             IO: The cloned IO
         """
         x = [torch.clone(x_i) for x_i in self._x]
-        result = IO(*x, detach=detach, names=list(self._names.keys()) if self._names is not None else None)
+        result = IO(
+            *x,
+            detach=detach,
+            names=list(self._names.keys()) if self._names is not None else None,
+        )
         if not detach:
             result._freshened = self._freshened
         return result
@@ -133,7 +139,7 @@ class IO(object):
         """
 
         Returns:
-            IO: The 
+            IO: The
         """
         return self.clone().detach()
 
@@ -148,32 +154,34 @@ class IO(object):
             bool: True if no elements in the IO
         """
         return len(self) == 0
-    
-    def sub(self, idx, detach: bool=False) -> 'IO':
+
+    def sub(self, idx, detach: bool = False) -> "IO":
 
         if isinstance(idx, int):
             return IO(self._x[idx], detach=detach)
 
         return IO(*self._x[idx], detach=detach)
-    
+
     @property
     def f(self) -> typing.Any:
         """
         Returns:
             typing.Any: The first element in the IO
         """
-        if len(self) == 0: return None
+        if len(self) == 0:
+            return None
         return self._x[0]
 
     @property
-    def l(self) -> typing.Any:
+    def r(self) -> typing.Any:
         """
         Returns:
             typing.Any: The last element in the IO
         """
-        if len(self) == 0: return None
+        if len(self) == 0:
+            return None
         return self._x[-1]
-    
+
     @property
     def u(self) -> typing.Tuple:
         """
@@ -183,7 +191,7 @@ class IO(object):
         return self._x
 
     @classmethod
-    def cat(cls, ios: typing.Iterable['IO']) -> 'IO':
+    def cat(cls, ios: typing.Iterable["IO"]) -> "IO":
         """Concatenate
 
         Args:
@@ -200,8 +208,8 @@ class IO(object):
             if sz is None:
                 sz = len(io)
             elif len(io) != sz:
-                raise ValueError(f'All ios passed in must be of the same length')
-        
+                raise ValueError("All ios passed in must be of the same length")
+
         for elements in zip(*ios):
             if isinstance(elements[0], torch.Tensor):
                 results.append(torch.cat(elements))
@@ -210,11 +218,11 @@ class IO(object):
             else:
                 # TODO: revisit if i want to do it like this
                 results.append(elements)
-        
+
         return IO(*results, names=ios[0].names)
-    
+
     @classmethod
-    def join(cls, ios: typing.Iterable['IO'], detach: bool=True) -> 'IO':
+    def join(cls, ios: typing.Iterable["IO"], detach: bool = True) -> "IO":
 
         results = []
         for io in ios:
@@ -222,17 +230,25 @@ class IO(object):
         return IO(*results, detach=detach)
 
     @classmethod
-    def agg(cls, ios: typing.Iterable['IO'], f=torch.mean) -> typing.List:
+    def agg(cls, ios: typing.Iterable["IO"], f=torch.mean) -> typing.List:
 
         length = None
         for io in ios:
             if length is None:
                 length = len(io)
             if length != len(io):
-                raise ValueError('All ios must be the same length to aggregate')
-        return IO(*[f(torch.stack(xs), dim=0) if isinstance(xs[0], torch.Tensor) else f(np.stack(xs), axis=0) for xs in zip(*ios)], detach=True) 
+                raise ValueError("All ios must be the same length to aggregate")
+        return IO(
+            *[
+                f(torch.stack(xs), dim=0)
+                if isinstance(xs[0], torch.Tensor)
+                else f(np.stack(xs), axis=0)
+                for xs in zip(*ios)
+            ],
+            detach=True,
+        )
 
-    def range(self, low: int=None, high: int=None, detach: bool=False) -> 'IO':
+    def range(self, low: int = None, high: int = None, detach: bool = False) -> "IO":
         return IO(*self._x[low:high], detach=detach)
 
     def tolist(self) -> typing.List:
@@ -242,7 +258,7 @@ class IO(object):
             list: The values in the IO
         """
         return list(self._x)
-    
+
     def totuple(self) -> typing.Tuple:
         """Convert to a list
 
@@ -253,7 +269,7 @@ class IO(object):
 
     def grad_update(
         self, lr: float = 1.0, detach: bool = False, zero_grad: bool = False
-    ) -> 'IO':
+    ) -> "IO":
         """Updates x by subtracting the gradient from x times the learning rate
 
         Args:
@@ -321,7 +337,7 @@ class Idx(object):
     def tolist(self) -> typing.Union[None, typing.List[int]]:
         """
         Returns:
-            typing.Union[None, typing.List[int]]: The index converted to a list. 
+            typing.Union[None, typing.List[int]]: The index converted to a list.
             None if the idx is None
         """
         if self.idx is None:
@@ -338,8 +354,8 @@ class Idx(object):
         for i in self.idx:
             result.append(self.idx[i.item()])
         return result
-    
-    def detach(self) -> 'Idx':
+
+    def detach(self) -> "Idx":
         """Remove the grad function from the index
 
         Returns:
@@ -349,7 +365,7 @@ class Idx(object):
             return Idx(dim=self.dim)
         return Idx(self.idx.detach(), dim=self.dim)
 
-    def update(self, source: IO, destination: IO, idx_both: bool=False):
+    def update(self, source: IO, destination: IO, idx_both: bool = False):
         """Update an io in place with the index
 
         Args:
@@ -413,7 +429,7 @@ class Idx(object):
         """
         return len(self.idx)
 
-    def to(self, device) -> 'Idx':
+    def to(self, device) -> "Idx":
         """Change the device of the index if specified
 
         Args:
@@ -437,7 +453,7 @@ class Idx(object):
 
 
 def idx_io(io: IO, idx: Idx = None, release: bool = False) -> IO:
-    """Use Idx on an IO. It is a convenience function for when you don't know if idx is 
+    """Use Idx on an IO. It is a convenience function for when you don't know if idx is
     specified
 
     Args:
@@ -456,7 +472,7 @@ def idx_io(io: IO, idx: Idx = None, release: bool = False) -> IO:
 
 
 def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tensor:
-    """Use the index on a tensor. It is a convenience function for when you don't know if idx is 
+    """Use the index on a tensor. It is a convenience function for when you don't know if idx is
     specified
 
     Args:
@@ -477,7 +493,13 @@ def idx_th(x: torch.Tensor, idx: Idx = None, detach: bool = False) -> torch.Tens
 
 
 # TODO: DEBUG. This is not working for some reason
-def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True, idx_both: bool=False) -> IO:
+def update_io(
+    source: IO,
+    destination: IO,
+    idx: Idx = None,
+    detach: bool = True,
+    idx_both: bool = False,
+) -> IO:
     """Update the IO in place
 
     Args:
@@ -498,7 +520,10 @@ def update_io(source: IO, destination: IO, idx: Idx = None, detach: bool=True, i
 
 
 def update_tensor(
-    source: torch.Tensor, destination: torch.Tensor, idx: Idx = None, detach: bool=True
+    source: torch.Tensor,
+    destination: torch.Tensor,
+    idx: Idx = None,
+    detach: bool = True,
 ) -> torch.Tensor:
     """Update the tensor in place
 
@@ -523,7 +548,7 @@ class ToIO(nn.Module):
     Module that converts a tensor or tuple of tensors to an IO
     """
 
-    def __init__(self, detach: bool=False):
+    def __init__(self, detach: bool = False):
         """Convert inputs to an IO
 
         Args:
@@ -532,7 +557,7 @@ class ToIO(nn.Module):
         super().__init__()
         self.detach = detach
 
-    def forward(self, *x: torch.Tensor, detach_override: bool=None) -> IO:
+    def forward(self, *x: torch.Tensor, detach_override: bool = None) -> IO:
         """Convert tensors to an IO
 
         Args:
@@ -553,7 +578,7 @@ class FromIO(nn.Module):
     Module that converts an IO to a tensor or a tuple of tensors
     """
 
-    def __init__(self, detach: bool=False):
+    def __init__(self, detach: bool = False):
         """Convert the IO to the elements of it. If only one element, will output a single value
 
         Args:
@@ -574,7 +599,7 @@ class FromIO(nn.Module):
 
         if self.detach:
             io = io.detach()
-    
+
         if len(io) == 1:
             return io.f
         return io.u

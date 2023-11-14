@@ -9,23 +9,11 @@ from ._assess import (
     AssessmentDict,
     Criterion,
     XCriterion,
-    reduce_assessment
+    reduce_assessment,
 )
 
-from ._io import (
-    IO,
-    Idx,
-    update_io,
-    update_tensor,
-    idx_io,
-    idx_th,
-    ToIO,
-    FromIO
-)
-from ._build import (
-    Builder, Factory, BuilderArgs, BuilderFunctor,
-    Var, UNDEFINED
-)
+from ._io import IO, Idx, update_io, update_tensor, idx_io, idx_th, ToIO, FromIO
+from ._build import Builder, Factory, BuilderArgs, BuilderFunctor, Var, UNDEFINED
 from ._machine import (
     # TODO: Separate out hooks
     BatchIdxStepTheta,
@@ -44,24 +32,15 @@ from ._machine import (
     NullStepX,
     acc_dep,
     forward_dep,
-    step_dep
+    step_dep,
 )
-from ._optimize import (
-    OPTIM_MAP,
-    ParamFilter,
-    NullOptim,
-    OptimFactory,
-    optimf
-)
+from ._optimize import OPTIM_MAP, ParamFilter, NullOptim, OptimFactory, optimf
 from ._state import IDable, MyState, State, StateKeyError, AssessmentLog
-from ._populate import (
-    Population, PopulationIndexer, Individual, TensorDict
-)
+from ._populate import Population, PopulationIndexer, Individual, TensorDict
 from ._objective import (
     Itadaki,
     Objective,
     Constraint,
     impose,
     # TODO: keep only the core modules (i.e. the base classes)
-
 )

@@ -21,7 +21,9 @@ def _(value: tuple) -> typing.Tuple[int, int]:
     return value
 
 
-def calc_stride2d(x: torch.Tensor, stride) -> typing.Tuple[int, int, int, int, int, int]:
+def calc_stride2d(
+    x: torch.Tensor, stride
+) -> typing.Tuple[int, int, int, int, int, int]:
     """Calculate the stride when collapsing an image to a twod tensor
 
     Args:
@@ -34,7 +36,9 @@ def calc_stride2d(x: torch.Tensor, stride) -> typing.Tuple[int, int, int, int, i
     return (x.stride(0), x.stride(1), x.stride(2), stride[0], x.stride(2), stride[1])
 
 
-def calc_size2d(x: torch.Tensor, stride, kernel_size) -> typing.Tuple[int, int, int, int, int, int]:
+def calc_size2d(
+    x: torch.Tensor, stride, kernel_size
+) -> typing.Tuple[int, int, int, int, int, int]:
     """Calculate the size 2d
 
     Args:
@@ -43,7 +47,7 @@ def calc_size2d(x: torch.Tensor, stride, kernel_size) -> typing.Tuple[int, int, 
         kernel_size (Tuple[int, int]): the kernel used
 
     Returns:
-        Tuple: The 
+        Tuple: The
     """
     return (
         x.size(0),

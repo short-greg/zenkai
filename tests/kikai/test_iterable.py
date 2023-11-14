@@ -7,12 +7,11 @@ from ..kaku.test_machine import SimpleLearner
 
 
 class TestIterStepTheta:
-    
     def test_iter_hiddenstep_updates_the_parameters_with_one_iteration(self):
 
         torch.manual_seed(3)
         learner1 = SimpleLearner(2, 3)
-        learner2 = SimpleLearner(3, 3)    
+        learner2 = SimpleLearner(3, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         iter_step = IterHiddenStepTheta(learner1, learner1, learner2, 1, 1, 1)
@@ -30,7 +29,7 @@ class TestIterStepTheta:
 
         torch.manual_seed(3)
         learner1 = SimpleLearner(2, 3)
-        learner2 = SimpleLearner(3, 3)    
+        learner2 = SimpleLearner(3, 3)
         x = IO(torch.rand(4, 2))
         t = IO(torch.rand(4, 3))
         iter_step = IterHiddenStepTheta(learner1, learner1, learner2, 2, 1, 1)
@@ -46,15 +45,14 @@ class TestIterStepTheta:
 
 
 class TestIterStepX:
-    
     def test_iter_step_x_updates_x_with_one_iteration(self):
 
         torch.manual_seed(3)
         learner1 = SimpleLearner(2, 3)
-        learner2 = SimpleLearner(3, 3)    
+        learner2 = SimpleLearner(3, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-    
+
         iter_step = IterStepX(learner2, 1, 128)
         state = State()
         y1 = learner1(x, state)
@@ -69,10 +67,10 @@ class TestIterStepX:
 
         torch.manual_seed(3)
         learner1 = SimpleLearner(2, 3)
-        learner2 = SimpleLearner(3, 3)    
+        learner2 = SimpleLearner(3, 3)
         x = IO(torch.rand(4, 2))
         t = IO(torch.rand(4, 3))
-    
+
         iter_step = IterStepX(learner2, 2, 128)
         state = State()
         y1 = learner1(x, state)
@@ -85,11 +83,10 @@ class TestIterStepX:
 
 
 class TestIterStepHidden:
-
     def test_iter_outstep_updates_the_parameters_with_one_iteration(self):
 
         torch.manual_seed(1)
-        learner1 = SimpleLearner(2, 3)  
+        learner1 = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         iter_step = IterStepTheta(learner1, 1, 128)

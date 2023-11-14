@@ -1,21 +1,16 @@
-
 # 1st party
 import typing
 from abc import ABC, abstractmethod
-import typing
 import math
-from copy import deepcopy
 
 # 3rd party
 import torch
-import torch.nn as nn
 
 # local
 from ..kaku import TensorDict
-from ..utils import gather_idx_from_population, unsqueeze_to, align_to
+from ..utils import gather_idx_from_population, align_to
 
 from ..kaku import IO, Assessment
-
 
 
 # TODO: Remove
@@ -30,8 +25,8 @@ def select_best_individual(
     Returns:
         Tensor: the best individual in the population
     """
-    if (assessment.value.dim() != 1):
-        raise ValueError('Expected one assessment for each individual')
+    if assessment.value.dim() != 1:
+        raise ValueError("Expected one assessment for each individual")
     _, idx = assessment.best(0, True)
     return pop_val[idx[0]]
 
@@ -53,8 +48,8 @@ def select_best_sample(pop_val: torch.Tensor, assessment: Assessment) -> torch.T
     else:
         idx = value.argmin(0, True)
 
-    if (assessment.value.dim() != 2):
-        raise ValueError('Expected assessment for each sample for each individual')
+    if assessment.value.dim() != 2:
+        raise ValueError("Expected assessment for each sample for each individual")
     if pop_val.dim() > 2:
         pop_val = pop_val.view(value.shape[0], value.shape[1], -1)
         idx = idx[:, :, None].repeat(1, 1, pop_val.shape[2])
@@ -88,33 +83,29 @@ class Indexer(object):
 
 
 class IndexMap(object):
-    """Use to select indices from a multidimensional tensor. Only works for dimension 0
-    """
+    """Use to select indices from a multidimensional tensor. Only works for dimension 0"""
 
-    def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int=0):
+    def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int = 0):
         super().__init__()
         self.index = index
         self.dim = dim
         self._assessment = assessment
-    
-    def __getitem__(self, i: int) -> 'IndexMap':
+
+    def __getitem__(self, i: int) -> "IndexMap":
 
         return IndexMap(self.index[i], dim=self.dim)
-    
+
     def index_for(self, i: int, x: torch.Tensor) -> torch.Tensor:
 
         index = self.index[i].clone()
         if index.dim() > x.dim():
-            raise ValueError(f'Gather By dim must be less than or equal to the value dimension')
-        
+            raise ValueError(
+                "Gather By dim must be less than or equal to the value dimension"
+            )
+
         index = align_to(index, x)
-        # shape = [1] * index.dim()
-        # for i in range(index.dim(), x.dim()):
-        #     index = index.unsqueeze(i)
-        #     shape.append(x.shape[i])
-        # index = index.repeat(*shape)
         return x.gather(self.dim, index)
-    
+
     def __len__(self) -> int:
         return len(self.index)
 
@@ -125,8 +116,10 @@ class IndexMap(object):
             return result[0]
         return result
 
-    def select_index(self, tensor_dict: TensorDict) -> typing.Union['TensorDict', typing.Tuple['TensorDict']]:
-        
+    def select_index(
+        self, tensor_dict: TensorDict
+    ) -> typing.Union["TensorDict", typing.Tuple["TensorDict"]]:
+
         if len(self) == 1:
             result = {}
             for k, v in tensor_dict.items():
@@ -143,13 +136,13 @@ class IndexMap(object):
 
     @property
     def assessment(self) -> torch.Tensor:
-        
+
         return self._assessment
 
 
 class Selector(ABC):
-    """Use to select indices from a multidimensional tensor. Only works for dimension 0 so must be reshaped
-    """
+    """Use to select indices from a multidimensional tensor. Only works for dimension 0 so must be reshaped"""
+
     def __init__(self, k: int):
         """Select the best
 
@@ -160,16 +153,15 @@ class Selector(ABC):
         self.k = k
 
     @abstractmethod
-    def select(self, assessment: Assessment) -> 'IndexMap':
+    def select(self, assessment: Assessment) -> "IndexMap":
         pass
 
-    def __call__(self, assessment: Assessment) -> 'IndexMap':
-        
+    def __call__(self, assessment: Assessment) -> "IndexMap":
+
         return self.select(assessment)
 
 
 class TopKSelector(Selector):
-    
     def __init__(self, k: int, dim: int = 0):
         super().__init__(k)
         self.dim = dim
@@ -183,13 +175,14 @@ class TopKSelector(Selector):
         Returns:
             IndexMap: The resulting index map
         """
-        
-        _, topk = assessment.value.topk(self.k, dim=self.dim, largest=assessment.maximize)
+
+        _, topk = assessment.value.topk(
+            self.k, dim=self.dim, largest=assessment.maximize
+        )
         return IndexMap(assessment, topk, dim=self.dim)
 
 
 class BestSelector(Selector):
-
     def __init__(self, dim: int = 0):
         super().__init__(1)
         self.dim = dim
@@ -203,7 +196,7 @@ class BestSelector(Selector):
         Returns:
             IndexMap: The resulting index map
         """
-        
+
         if assessment.maximize:
             _, best = assessment.value.max(dim=self.dim, keepdim=True)
         else:
@@ -212,9 +205,8 @@ class BestSelector(Selector):
 
 
 class FitnessParentSelector(Selector):
-    
     def select(self, assessment: Assessment) -> IndexMap:
-        """Select parents from the assessment. It calculates a probability based on the 
+        """Select parents from the assessment. It calculates a probability based on the
         population dimension currently
 
         Args:
@@ -226,16 +218,18 @@ class FitnessParentSelector(Selector):
         Returns:
             IndexMap: The resulting index map containing two indices
         """
-        
+
         base_shape = assessment.shape
         loss = assessment.value
 
         if not assessment.maximize:
             loss = 1 / (0.01 + loss)
-        prob = (loss / loss.sum(dim=0, keepdim=True))
+        prob = loss / loss.sum(dim=0, keepdim=True)
         if (prob < 0.0).any():
-            raise ValueError('All assessments must be greater than 0 to use this divider')
-        
+            raise ValueError(
+                "All assessments must be greater than 0 to use this divider"
+            )
+
         # (population, ...)
         if prob.dim() > 1:
             r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
@@ -248,9 +242,7 @@ class FitnessParentSelector(Selector):
         prob = prob.repeat(self.k, *[1] * len(prob.shape))
         # (n_divisions * ..., population)
         prob = prob.reshape(-1, prob.shape[-1])
-        parents1, parents2 = torch.multinomial(
-            prob, 2, False
-        ).transpose(1, 0)
+        parents1, parents2 = torch.multinomial(prob, 2, False).transpose(1, 0)
 
         parents1 = parents1.reshape(self.k, *base_shape[1:])
         parents2 = parents2.reshape(self.k, *base_shape[1:])
@@ -260,7 +252,6 @@ class FitnessParentSelector(Selector):
 
 
 class RankParentSelector(Selector):
-    
     def select(self, assessment: Assessment) -> IndexMap:
         """Select parents from the assessments using ranks
 
@@ -273,7 +264,7 @@ class RankParentSelector(Selector):
         Returns:
             IndexMap: The resulting index map containing two indices
         """
-        
+
         base_shape = assessment.shape
 
         value = assessment.value
@@ -289,13 +280,15 @@ class RankParentSelector(Selector):
             ranks_prob = ranks_prob[:, None].repeat(1, feat_total)
             ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
             ranks_prob = ranks_prob.transpose(1, 0)
-            ranks_prob = ranks_prob[None,:,:].repeat(k, 1, 1).reshape(-1, len(ranks))
+            ranks_prob = ranks_prob[None, :, :].repeat(k, 1, 1).reshape(-1, len(ranks))
         else:
             ranks_prob = ranks_prob.gather(dim=0, index=sorted_indices)
-            ranks_prob = ranks_prob[None,:].repeat(k, 1).reshape(-1, len(ranks))
+            ranks_prob = ranks_prob[None, :].repeat(k, 1).reshape(-1, len(ranks))
 
-        parents1, parents2 = torch.multinomial(ranks_prob, num_samples=2, replacement=False).transpose(1, 0)
-        
+        parents1, parents2 = torch.multinomial(
+            ranks_prob, num_samples=2, replacement=False
+        ).transpose(1, 0)
+
         parents1 = parents1.reshape(k, *base_shape[1:])
         parents2 = parents2.reshape(k, *base_shape[1:])
 

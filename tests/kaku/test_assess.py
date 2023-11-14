@@ -3,17 +3,12 @@ import torch
 import torch.nn as nn
 
 
-from zenkai.kaku import (
-    _assess as _evaluation, 
-    ThLoss, IO, 
-    Reduction, reduce_assessment
-)
+from zenkai.kaku import _assess as _evaluation, ThLoss, IO, Reduction
 
 
 class TestReduction:
-
     def test_is_torch_checks_if_it_is_torch(self):
-        assert Reduction.is_torch('mean')
+        assert Reduction.is_torch("mean")
 
     def test_reduction_with_mean_calculates_the_mean(self):
 
@@ -46,9 +41,7 @@ class TestReduction:
         assert (x.mean(dim=1) == reduction).all()
 
 
-
 class TestAssessment:
-
     def test_mean_computes_correct_mean_for_dim_of_None(self):
         t = torch.rand([4])
         assessment = _evaluation.Assessment(t)
@@ -59,7 +52,7 @@ class TestAssessment:
         assessment = _evaluation.Assessment(t)
         assert (assessment.mean(dim=0).value == t.mean(dim=0)).all()
 
-    def test_mean_computes_correct_mean_for_dim_of_None(self):
+    def test_mean_computes_correct_mean_for_dim_of_None_with_sum(self):
         t = torch.rand([4])
         assessment = _evaluation.Assessment(t)
         assert assessment.sum().item() == t.sum().item()
@@ -86,7 +79,7 @@ class TestAssessment:
 
         x = torch.tensor(2)
         assessment = _evaluation.Assessment(x)
-        assert (assessment.item() == 2)
+        assert assessment.item() == 2
 
     def test_item_raises_error_if_not_dim_of_0(self):
 
@@ -156,14 +149,14 @@ class TestAssessment:
 
     def test_to_image(self):
         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
-        t1_2d = t1.reduce_image(reduction='mean')
+        t1_2d = t1.reduce_image(reduction="mean")
         assert (t1_2d.value == t1.view(4, 12).mean(1).value).all()
 
     def test_to_image_raises_error_if_invalid(self):
         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
         with pytest.raises(ValueError):
-            t1.reduce_image(divide_start=0, reduction='mean')
-        
+            t1.reduce_image(divide_start=0, reduction="mean")
+
     def test_to_2d(self):
         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
         t1_2d, _, _ = t1.to_2d()
@@ -171,114 +164,92 @@ class TestAssessment:
 
 
 class TestAssessmentDict:
-    
     def test_getitem_retrieves_all_items(self):
         assessment = _evaluation.Assessment(torch.rand(2))
-        assessment_dict = _evaluation.AssessmentDict(
-            t=assessment
-        )
-        assert assessment_dict['t'] == assessment
-    
+        assessment_dict = _evaluation.AssessmentDict(t=assessment)
+        assert assessment_dict["t"] == assessment
+
     def test_items_retrieves_all_items(self):
         assessment = _evaluation.Assessment(torch.rand(2))
-        d_ = dict(_evaluation.AssessmentDict(
-            t=assessment
-        ).items())
-        assert d_['t'] == assessment
+        d_ = dict(_evaluation.AssessmentDict(t=assessment).items())
+        assert d_["t"] == assessment
 
     def test_values_retrieves_all_values(self):
         assessment = _evaluation.Assessment(torch.rand(2))
-        d_ = list(_evaluation.AssessmentDict(
-            t=assessment
-        ).values())
+        d_ = list(_evaluation.AssessmentDict(t=assessment).values())
         assert d_[0] == assessment
 
     def test_mean_computes_all_means(self):
         assessment = _evaluation.Assessment(torch.rand(2))
         assessment2 = _evaluation.Assessment(torch.rand(2))
-        result = _evaluation.AssessmentDict(
-            t=assessment, t2=assessment2
-        ).mean().sub(['t', 't2'])
-        assert result['t'].value == assessment.value.mean()
-        assert result['t2'].value == assessment2.value.mean()
-
-    def test_values_retrieves_all_values(self):
-        assessment = _evaluation.Assessment(torch.rand(2))
-        d_ = list(_evaluation.AssessmentDict(
-            t=assessment
-        ).values())
-        assert d_[0] == assessment
+        result = (
+            _evaluation.AssessmentDict(t=assessment, t2=assessment2)
+            .mean()
+            .sub(["t", "t2"])
+        )
+        assert result["t"].value == assessment.value.mean()
+        assert result["t2"].value == assessment2.value.mean()
 
 
 class TestThLoss:
-
     def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'none')
+        loss = ThLoss("MSELoss", "none")
         evaluation = loss(IO(x), IO(t))
-        assert (evaluation == nn.MSELoss(reduction='none')(x, t)).all()
+        assert (evaluation == nn.MSELoss(reduction="none")(x, t)).all()
 
     def test_th_loss_outputs_correct_loss_with_mse_and_mean_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'mean')
+        loss = ThLoss("MSELoss", "mean")
         evaluation = loss(IO(x), IO(t))
-        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
-    
+        assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
+
     def test_th_loss_outputs_correct_loss_with_mseloss_and_mean_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'mean')
+        loss = ThLoss("MSELoss", "mean")
         evaluation = loss(IO(x), IO(t))
-        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
-    
+        assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
+
     def test_th_loss_fails_with_invalid_reduction(self):
 
         with pytest.raises(KeyError):
-            ThLoss("XLoss", 'mean')
+            ThLoss("XLoss", "mean")
 
     def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'none')
-        evaluation = loss(IO(x), IO(t), 'mean')
-        assert (evaluation == nn.MSELoss(reduction='mean')(x, t)).all()
+        loss = ThLoss("MSELoss", "none")
+        evaluation = loss(IO(x), IO(t), "mean")
+        assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
     def test_assess_returns_assessment(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'none')
-        evaluation = loss.assess(IO(x), IO(t), 'mean')
-        assert isinstance(evaluation, _evaluation.Assessment)
-
-    def test_assess_returns_assessment(self):
-
-        x = torch.rand(4, 2)
-        t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", 'none')
-        evaluation = loss.assess(IO(x), IO(t), 'mean')
+        loss = ThLoss("MSELoss", "none")
+        evaluation = loss.assess(IO(x), IO(t), "mean")
         assert isinstance(evaluation, _evaluation.Assessment)
 
     def test_maximize_returns_true_if_maximize(self):
 
-        loss = ThLoss("MSELoss", 'mean', maximize=True)
-        assert loss.maximize == True
+        loss = ThLoss("MSELoss", "mean", maximize=True)
+        assert loss.maximize is True
 
 
 class TestLookup:
-
     def test_lookup_gets_mse_loss(self):
 
-        mse_loss = _evaluation.lookup_loss('MSELoss')
+        mse_loss = _evaluation.lookup_loss("MSELoss")
         assert mse_loss == nn.MSELoss
-    
+
     def test_lookup_returns_error_if_invalid(self):
 
         with pytest.raises(KeyError):
-            _evaluation.lookup_loss('XLoss')
+            _evaluation.lookup_loss("XLoss")

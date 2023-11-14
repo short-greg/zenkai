@@ -1,7 +1,6 @@
 # 1st party
 import typing
 from abc import abstractmethod, abstractproperty
-from copy import deepcopy
 
 # 3rd party
 import torch.nn as nn
@@ -12,7 +11,7 @@ from torch.nn.functional import one_hot
 from ..utils import binary_ste, sign_ste
 
 
-def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:
+def weighted_votes(votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
     """Weight the votes
 
     Args:
@@ -31,11 +30,18 @@ def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Ten
     if weights is None:
         return votes.mean(dim=0)
     if weights.dim() != 1:
-        raise ValueError(f"Argument weights must be one dimensional not {weights.dim()} dimensional")
+        raise ValueError(
+            f"Argument weights must be one dimensional not {weights.dim()} dimensional"
+        )
     if weights.size(0) != votes.size(0):
-        raise ValueError(f"Argument weight must have the same dimension size as the number of voters {votes.size(1)} not {weights.size(0)}")
-    
-    return (votes * weights[:,None,None]).sum(dim=0) / ((weights[:,None,None] + 1e-7).sum(dim=0))
+        raise ValueError(
+            "Argument weight must have the same dimension size as the "
+            f"number of voters {votes.size(1)} not {weights.size(0)}"
+        )
+
+    return (votes * weights[:, None, None]).sum(dim=0) / (
+        (weights[:, None, None] + 1e-7).sum(dim=0)
+    )
 
 
 class VoteAggregator(nn.Module):
@@ -87,7 +93,7 @@ class BinaryVoteAggregator(VoteAggregator):
             n_classes (int, optional): Whether the inputs are . Defaults to None.
 
         Raises:
-            ValueError: 
+            ValueError:
         """
 
         # TODO: Add support for LongTensors by using one_hot encoding
@@ -109,7 +115,7 @@ class BinaryVoteAggregator(VoteAggregator):
             torch.Tensor: The aggregated result
         """
         chosen = weighted_votes(votes, weights)
-        
+
         if self._use_sign:
             return sign_ste(chosen)
 
@@ -119,7 +125,12 @@ class BinaryVoteAggregator(VoteAggregator):
 class MulticlassVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def __init__(self, n_classes: int = None, input_one_hot: bool=False, output_mean: bool=False):
+    def __init__(
+        self,
+        n_classes: int = None,
+        input_one_hot: bool = False,
+        output_mean: bool = False,
+    ):
         """initializer
 
         Args:
@@ -129,7 +140,7 @@ class MulticlassVoteAggregator(VoteAggregator):
             output_one_hot (bool): Whether to output a one hot vector
 
         Raises:
-            ValueError: 
+            ValueError:
         """
         super().__init__()
         self._n_classes = n_classes
@@ -149,7 +160,6 @@ class MulticlassVoteAggregator(VoteAggregator):
             torch.Tensor: The aggregated result
         """
         # (voters, batch, ) -> (voters, batch, vote) -> (batch, votes)
-        n_votes = votes.shape[0]
         if not self.input_one_hot:
             votes = one_hot(votes, self._n_classes)
         votes = votes.float()
@@ -161,7 +171,6 @@ class MulticlassVoteAggregator(VoteAggregator):
 
 
 class Voter(nn.Module):
-
     @abstractproperty
     def n_votes(self) -> int:
         """
@@ -186,9 +195,9 @@ class EnsembleVoter(Voter):
         self,
         spawner: typing.Callable[[], nn.Module],
         n_keep: int,
-        temporary: nn.Module=None,
-        spawner_args: typing.List=None,
-        spawner_kwargs: typing.Dict=None
+        temporary: nn.Module = None,
+        spawner_args: typing.List = None,
+        spawner_kwargs: typing.Dict = None,
     ):
         """
         Args:
@@ -206,7 +215,9 @@ class EnsembleVoter(Voter):
         self._spawner_args = spawner_args or []
         self._spawner_kwargs = spawner_kwargs or {}
         if self._temporary is None:
-            self._estimators.append(spawner(*self._spawner_args, **self._spawner_kwargs))
+            self._estimators.append(
+                spawner(*self._spawner_args, **self._spawner_kwargs)
+            )
         self._n_votes = n_keep
 
     @property
@@ -243,8 +254,7 @@ class EnsembleVoter(Voter):
         return self._estimators[-1]
 
     def adv(self):
-        """Spawn a new voter. If exceeds n_keep will remove the first voter
-        """
+        """Spawn a new voter. If exceeds n_keep will remove the first voter"""
         spawned = self._spawner(*self._spawner_args, **self._spawner_kwargs)
         if len(self._estimators) == self._n_votes:
             self._estimators = self._estimators[1:]
@@ -258,7 +268,6 @@ class EnsembleVoter(Voter):
 
 
 class StochasticVoter(Voter):
-
     def __init__(self, stochastic_model: nn.Module, n_votes: int):
         """initializer
 
@@ -284,14 +293,12 @@ class StochasticVoter(Voter):
             self._n_votes * x.shape[0], *x.shape[1:]
         )
         y = self.stochastic_model(y)
-        return y.reshape(
-            self._n_votes, x.shape[0], *y.shape[1:]
-        )
-    
+        return y.reshape(self._n_votes, x.shape[0], *y.shape[1:])
+
     @property
     def max_votes(self) -> int:
         return self._n_votes
-    
+
     @max_votes.setter
     def max_votes(self, max_votes: int):
         if max_votes <= 0 or not isinstance(max_votes, int):

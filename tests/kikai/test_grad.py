@@ -11,38 +11,35 @@ from zenkai.kikai import _grad
 
 
 class THGradLearnerT1(_grad.GradLearner):
-
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             [linear],
-            criterion=ThLoss(nn.MSELoss), 
-            optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2)
+            criterion=ThLoss(nn.MSELoss),
+            optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
         )
         self.linear = linear
 
 
 class THGradLearnerT2(_grad.GradLoopLearner):
-
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             linear,
-            criterion=ThLoss(nn.MSELoss), 
+            criterion=ThLoss(nn.MSELoss),
             theta_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
-            x_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2)
+            x_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
         )
 
 
 class TestGradLearner1:
-
     def test_assess_y_uses_correct_reduction(self):
 
         learner = THGradLearnerT1(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')
-        target = nn.MSELoss(reduction='sum')(y.f, t.f)
+        result = learner.assess_y(y, t, "sum")
+        target = nn.MSELoss(reduction="sum")(y.f, t.f)
         assert result.item() == target.item()
 
     def test_forward_detaches_y(self):
@@ -80,14 +77,13 @@ class TestGradLearner1:
 
 
 class TestTHGradLoopLearner:
-
     def test_assess_y_uses_correct_reduction(self):
 
         learner = THGradLearnerT2(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')
-        target = nn.MSELoss(reduction='sum')(y.f, t.f)
+        result = learner.assess_y(y, t, "sum")
+        target = nn.MSELoss(reduction="sum")(y.f, t.f)
         assert result.item() == target.item()
 
     def test_step_x_updates_x(self):
@@ -138,7 +134,7 @@ class TestTHGradLoopLearner:
         t = IO(torch.rand(2, 3))
         state = State()
         before = utils.get_model_parameters(learner)
-        y = learner.forward(x, state)
+        learner.forward(x, state)
         learner.accumulate(x, t, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
@@ -147,16 +143,15 @@ class TestTHGradLoopLearner:
 
 
 class TestCriterionGrad:
-
     def test_criterion_grad_step_produces_correct_shape(self):
-        
-        learner = _grad.CriterionGrad(ThLoss('CrossEntropyLoss'))
+
+        learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
         learner.step(IO(torch.rand(3, 4)), IO(torch.randint(0, 4, (3,))), State())
         assert True
 
     def test_criterion_grad_step_x_produces_correct_shape(self):
-        
-        learner = _grad.CriterionGrad(ThLoss('CrossEntropyLoss'))
+
+        learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
         x = IO(torch.rand(3, 4))
         x_prime = learner.step_x(x, IO(torch.randint(0, 4, (3,))), State())
         assert (x.f != x_prime.f).any()

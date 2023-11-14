@@ -5,9 +5,8 @@ import typing
 import torch.nn as nn
 
 # local
-from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
+from ..kaku import IO, Assessment, LearningMachine, State, Criterion, ThLoss
 from ..mod import Reversible, SequenceReversible
-from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
 from ..mod import Lambda
 from ._backtarget import BackTarget
 
@@ -61,7 +60,7 @@ class ReversibleMachine(LearningMachine):
         return IO(self.reversible(x.f)).out(release)
 
 
-def reverse(f, criterion: Criterion=None) -> typing.Union[ReversibleMachine, BackTarget]:
+def reverse(f, criterion: Criterion = None) -> typing.Union[ReversibleMachine, BackTarget]:
     """Convenicence function to create a reverse for cases where
     not much customization is needed. Especially for operations that do not
     have parameters and they can either be reversed through the backward operation or

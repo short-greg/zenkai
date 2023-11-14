@@ -1,31 +1,22 @@
 import torch
-import torch.nn as nn
 
 from zenkai import IO, State, Criterion
 from zenkai.kikai._reversible import ReversibleMachine, reverse
 from zenkai.kikai._backtarget import BackTarget
 from zenkai.mod import _reversible
-import torch
-import torch.nn as nn
-from zenkai.kaku import IO, State, Criterion
 
 
 class TestReversibleMachine:
-
     def test_step_x_reverses(self):
 
-        machine = ReversibleMachine(
-            _reversible.SignedToBool(), Criterion('MSELoss')
-        )
+        machine = ReversibleMachine(_reversible.SignedToBool(), Criterion("MSELoss"))
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
         assert (machine.step_x(x, t, State()).f == x.f).all()
 
     def test_step_x_results_in_valid_values(self):
 
-        machine = ReversibleMachine(
-            _reversible.SignedToBool(), Criterion('MSELoss')
-        )
+        machine = ReversibleMachine(_reversible.SignedToBool(), Criterion("MSELoss"))
         x = IO(torch.randn(4, 3).sign())
         t = IO((x.f + 1) / 2)
         reversed = machine.step_x(x, t, State()).f
@@ -33,9 +24,7 @@ class TestReversibleMachine:
 
     def test_forward_converts_to_correct_value(self):
 
-        machine = ReversibleMachine(
-            _reversible.SignedToBool(), Criterion('MSELoss')
-        )
+        machine = ReversibleMachine(_reversible.SignedToBool(), Criterion("MSELoss"))
         x = IO(torch.randn(4, 3).sign())
         t = (x.f + 1) / 2
         y = machine(x, State()).f
@@ -43,11 +32,10 @@ class TestReversibleMachine:
 
 
 class TestReverse:
-
     def test_reverse_produces_backtarget(self):
 
         machine = reverse(lambda x: x.view(2, 4))
-        x = IO(torch.randn(8))
+        IO(torch.randn(8))
         assert isinstance(machine, BackTarget)
 
     def test_backtarget_reverses_input(self):

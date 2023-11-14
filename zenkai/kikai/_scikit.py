@@ -4,7 +4,6 @@ import torch.nn.functional
 
 # 3rd party
 from sklearn.base import BaseEstimator
-from torch.nn.functional import one_hot
 
 # local
 from ..kaku import (
@@ -13,7 +12,6 @@ from ..kaku import (
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     StepX,
-    StepTheta,
     Idx,
     LearningMachine,
     Criterion,
@@ -21,7 +19,6 @@ from ..kaku import (
 )
 from ..mod import ScikitWrapper, MultiOutputScikitWrapper
 from .utils import FeatureLimitGen
-
 
 
 class ScikitMachine(LearningMachine):
@@ -33,7 +30,7 @@ class ScikitMachine(LearningMachine):
         step_x: StepX,
         criterion: Criterion,
         preprocessor: nn.Module = None,
-        partial: bool=False,
+        partial: bool = False,
     ):
         """initializer
 
@@ -53,9 +50,7 @@ class ScikitMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(
-        self, x: IO, t: IO, state: State, **kwargs
-    ):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the estimator
 
         Args:
@@ -69,14 +64,10 @@ class ScikitMachine(LearningMachine):
             x = IO(self._preprocessor(*x))
 
         if self._partial:
-            self._module.partial_fit(
-                x.f, t.f, **kwargs
-            )
+            self._module.partial_fit(x.f, t.f, **kwargs)
         else:
-            self._module.fit(
-                x.f, t.f, **kwargs
-            )
-        
+            self._module.fit(x.f, t.f, **kwargs)
+
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update the estimator
 
@@ -128,7 +119,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         step_x: FeatureIdxStepX,
         criterion: Criterion,
         preprocessor: nn.Module = None,
-        partial: bool=False
+        partial: bool = False,
     ):
         """initializer
 
@@ -148,9 +139,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(
-        self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs
-    ):
+    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
         """Update the estimator
 
         Args:
@@ -165,11 +154,17 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
 
         if self._partial:
             self._module.partial_fit(
-                x.f, t.f, feature_idx.tolist() if feature_idx is not None else None, **kwargs
+                x.f,
+                t.f,
+                feature_idx.tolist() if feature_idx is not None else None,
+                **kwargs
             )
         else:
             self._module.fit(
-                x.f, t.f, feature_idx.tolist() if feature_idx is not None else None, **kwargs
+                x.f,
+                t.f,
+                feature_idx.tolist() if feature_idx is not None else None,
+                **kwargs
             )
 
     def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
@@ -212,7 +207,6 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             bool: Whether or not the estimator has been fitted
         """
         return self._module.fitted
-
 
 
 class ScikitLimitGen(FeatureLimitGen):

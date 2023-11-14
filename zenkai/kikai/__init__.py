@@ -28,27 +28,17 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 """
 
 
-from ._iterable import (
-    IterStepTheta, 
-    IterHiddenStepTheta,
-    IterStepX
-)
+from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX
 from ._post import StackPostStepTheta
 from ._ensemble import EnsembleLearner, EnsembleLearnerVoter
 
-from ._scikit import (
-    ScikitLimitGen,
-    ScikitMachine,
-    ScikitMultiMachine,
-    SciClone
-
-)
+from ._scikit import ScikitLimitGen, ScikitMachine, ScikitMultiMachine, SciClone
 from .utils._assess import (
-    LayerAssessor, 
-    StepAssessHook, 
+    LayerAssessor,
+    StepAssessHook,
     StepXLayerAssessor,
     StepFullLayerAssessor,
-) 
+)
 from . import utils
 from ._grad import (
     GradLearner,
@@ -59,16 +49,17 @@ from ._grad import (
     GradStepX,
     GradUpdater,
     CriterionGrad,
-    grad
+    grad,
 )
 from ._backtarget import (
     BackTarget,
 )
-from ._reversible import (
-    ReversibleMachine,
-    reverse
-)
+from ._reversible import ReversibleMachine, reverse
 from ._feedback_alignment import (
-    FALearner, FALinearLearner, LinearFABuilder,
-    DFALearner, LinearDFABuilder, fa_target
+    FALearner,
+    FALinearLearner,
+    LinearFABuilder,
+    DFALearner,
+    LinearDFABuilder,
+    fa_target,
 )

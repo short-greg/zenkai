@@ -23,8 +23,7 @@ class FeatureLimitGen(ABC):
 
 
 class RandomFeatureIdxGen(FeatureLimitGen):
-    """Limit the features that get updated
-    """
+    """Limit the features that get updated"""
 
     def __init__(self, n_features: int, choose_count: int):
         """Limit the features that get updated
@@ -58,7 +57,8 @@ class RandomFeatureIdxGen(FeatureLimitGen):
         if n_features < self._choose_count:
             raise ValueError(
                 "n_features must be greater than "
-                f"the number of features to choose from, {self._choose_count}")
+                f"the number of features to choose from, {self._choose_count}"
+            )
         self._n_features = n_features
 
     @property
@@ -90,4 +90,4 @@ class RandomFeatureIdxGen(FeatureLimitGen):
         Returns:
             Idx: Generate a sample limit
         """
-        return torch.randperm(self.n_features)[: self.choose_count] # , 1)
+        return torch.randperm(self.n_features)[: self.choose_count]  # , 1)

@@ -4,7 +4,6 @@ import torch.nn as nn
 
 
 class TestGaussianGradHook:
-
     def test_gaussian_grad_hook_modifies_gradient(self):
 
         x = torch.randn(2, 4, requires_grad=True)
@@ -23,7 +22,6 @@ class TestGaussianGradHook:
 
 
 class TestGradHookWrapper:
-
     def test_gaussian_grad_hook_modifies_gradient(self):
 
         x = torch.randn(2, 4, requires_grad=True)
@@ -42,7 +40,6 @@ class TestGradHookWrapper:
 
 
 class TestLambda:
-
     def test_lambda_outputs_same_result(self):
 
         torch.manual_seed(1)

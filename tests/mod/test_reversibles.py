@@ -5,13 +5,12 @@ from zenkai.mod import _reversible
 
 
 class TestNull:
-
     def test_null_forward(self):
-        
+
         null = _reversible.Null()
         x = torch.randn(2, 2)
         y = null(x)
-        assert (x is y)
+        assert x is y
 
     def test_null_forward_with_multi(self):
 
@@ -23,11 +22,11 @@ class TestNull:
         assert x1 is y1
 
     def test_null_reverse(self):
-        
+
         null = _reversible.Null()
         x = torch.randn(2, 2)
         y = null.reverse(x)
-        assert (x is y)
+        assert x is y
 
     def test_null_reverse_with_multi(self):
 
@@ -40,7 +39,6 @@ class TestNull:
 
 
 class TestSoftmaxReversible:
-
     def test_softmax_reversible_produces_correct_size_for_forward(self):
 
         torch.manual_seed(1)
@@ -59,21 +57,18 @@ class TestSoftmaxReversible:
 
 
 class TestSequenceReversible:
-
     def test_sequence_reversible_reverses_process(self):
 
         torch.manual_seed(1)
         x = torch.randn(2, 2)
         reverser = _reversible.SequenceReversible(
-            _reversible.SigmoidInvertable(),
-            _reversible.SigmoidInvertable()
+            _reversible.SigmoidInvertable(), _reversible.SigmoidInvertable()
         )
         y = reverser(x)
         assert torch.isclose(reverser.reverse(y), x).all()
 
 
 class TestSigmoidInvertable:
-
     def test_sigmoid_invertable_forward_is_same_as_sigmoid(self):
 
         inverter = _reversible.SigmoidInvertable()
@@ -90,7 +85,6 @@ class TestSigmoidInvertable:
 
 
 class TestBatchNorm1dReversible:
-
     def test_batchnorm_reverser_is_same_as_batchnorm(self):
         torch.manual_seed(2)
         batchnorm = nn.BatchNorm1d(4)
@@ -110,7 +104,6 @@ class TestBatchNorm1dReversible:
 
 
 class TestLeakyReLUReverses:
-
     def test_leaky_reverser_is_same_as_leaky_relu(self):
         reverser = _reversible.LeakyReLUInvertable(0.1)
         leakyrelu = nn.LeakyReLU(0.1)
@@ -128,7 +121,6 @@ class TestLeakyReLUReverses:
 
 
 class TestSignedToBool:
-
     def test_forward_changes_to_bool(self):
         torch.manual_seed(1)
         x = torch.randn(2, 2).sign()
@@ -138,12 +130,11 @@ class TestSignedToBool:
     def test_reverse_reproduces_x(self):
         torch.manual_seed(1)
         x = torch.randn(2, 2).sign()
-        reverser =  _reversible.SignedToBool()
+        reverser = _reversible.SignedToBool()
         assert (reverser.reverse(reverser(x)) == x).all()
 
 
 class TestBoolToSigned:
-
     def test_forward_changes_to_bool(self):
         torch.manual_seed(1)
         x = torch.rand(2, 2).round()
@@ -153,5 +144,5 @@ class TestBoolToSigned:
     def test_reverse_reproduces_x(self):
         torch.manual_seed(1)
         x = torch.rand(2, 2).round()
-        reverser =  _reversible.BoolToSigned()
+        reverser = _reversible.BoolToSigned()
         assert (reverser.reverse(reverser(x)) == x).all()

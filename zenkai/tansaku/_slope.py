@@ -2,7 +2,6 @@
 import torch
 
 # local
-from ..utils import to_signed_neg, to_zero_neg
 from ._keep import Individual, Population
 
 
@@ -21,9 +20,7 @@ class SlopeCalculator(object):
         self._slope = None
         self._slopes = {}
 
-    def __call__(
-        self, population: Population
-    ) -> torch.Tensor:
+    def __call__(self, population: Population) -> torch.Tensor:
         # TODO: Add in momentum for slope (?)
 
         slopes = {}
@@ -49,7 +46,6 @@ class SlopeCalculator(object):
 
 
 class SlopeUpdater(object):
-
     def __init__(
         self, momentum: float, lr: float = 0.1, x: str = "x", maximize: bool = False
     ):

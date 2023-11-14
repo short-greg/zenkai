@@ -7,10 +7,11 @@ from zenkai.kikai import _feedback_alignment
 
 
 class TestFALinearLearner:
-
     def test_fa_linear_updates_the_parameters(self):
-        
-        learner = _feedback_alignment.FALinearLearner(3, 4, optim_factory=OptimFactory('SGD', lr=1e-2), criterion='MSELoss')
+
+        learner = _feedback_alignment.FALinearLearner(
+            3, 4, optim_factory=OptimFactory("SGD", lr=1e-2), criterion="MSELoss"
+        )
         t = _feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
         before = get_model_parameters(learner)
@@ -18,8 +19,10 @@ class TestFALinearLearner:
         assert (get_model_parameters(learner) != before).any()
 
     def test_fa_linear_backpropagates_the_target(self):
-    
-        learner = _feedback_alignment.FALinearLearner(3, 4, optim_factory=OptimFactory('SGD', lr=1e-2), criterion='MSELoss')
+
+        learner = _feedback_alignment.FALinearLearner(
+            3, 4, optim_factory=OptimFactory("SGD", lr=1e-2), criterion="MSELoss"
+        )
         t = _feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
         x2 = learner.step_x(x, t, State())
@@ -27,19 +30,20 @@ class TestFALinearLearner:
         assert (x2.f != x.f).any()
 
     def test_fa_linear_outputs_correct_value_forward(self):
-        
-        learner = _feedback_alignment.FALinearLearner(3, 4, optim_factory=OptimFactory('SGD', lr=1e-2), criterion='MSELoss')
-        t = _feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
+
+        learner = _feedback_alignment.FALinearLearner(
+            3, 4, optim_factory=OptimFactory("SGD", lr=1e-2), criterion="MSELoss"
+        )
+        _feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
 
         y = learner(x)
-        assert (y.f.shape[1] == 4)
+        assert y.f.shape[1] == 4
 
 
 class TestBStepX:
-
     def test_bstepx_backpropagates_the_target(self):
-    
+
         step_x = _feedback_alignment.BStepX(3, 4)
         t = _feedback_alignment.fa_target(IO(torch.rand(3, 4)), IO(torch.rand(3, 4)))
         x = IO(torch.rand(3, 3))
@@ -49,13 +53,15 @@ class TestBStepX:
 
 
 class TestFALearner:
-
     def test_fa_learner_updates_the_parameters(self):
-        
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss'
+            net,
+            nn.Linear(3, 4),
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -66,11 +72,14 @@ class TestFALearner:
         assert (get_model_parameters(net) != before).any()
 
     def test_fa_learner_does_not_auto_adv_if_false(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('SGD', lr=1e-2), criterion='MSELoss', activation=nn.Sigmoid()
+            net,
+            nn.Linear(3, 4),
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            criterion="MSELoss",
+            activation=nn.Sigmoid(),
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -79,11 +88,14 @@ class TestFALearner:
         assert (get_model_parameters(net) == before).all()
 
     def test_fa_learner_adv_when_adv_called(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss'
+            net,
+            nn.Linear(3, 4),
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -94,11 +106,14 @@ class TestFALearner:
         assert (get_model_parameters(net) != before).any()
 
     def test_fa_learner_updates_x_with_correct_size(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.FALearner(
-            net, nn.Linear(3, 4), 
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss'
+            net,
+            nn.Linear(3, 4),
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
@@ -109,13 +124,17 @@ class TestFALearner:
 
 
 class TestDFALearner:
-
     def test_dfa__learner_updates_the_parameters(self):
-        
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss'
+            net,
+            nn.Linear(3, 4),
+            4,
+            3,
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
@@ -126,11 +145,16 @@ class TestDFALearner:
         assert (get_model_parameters(net) != before).any()
 
     def test_dfa_learner_does_not_auto_adv_if_false(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss',
+            net,
+            nn.Linear(3, 4),
+            4,
+            3,
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
@@ -139,11 +163,16 @@ class TestDFALearner:
         assert (get_model_parameters(net) == before).all()
 
     def test_dfa_learner_adv_when_adv_called(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(), criterion='MSELoss',
+            net,
+            nn.Linear(3, 4),
+            4,
+            3,
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
@@ -154,11 +183,16 @@ class TestDFALearner:
         assert (get_model_parameters(net) != before).any()
 
     def test_dfa_learner_updates_x_with_correct_size(self):
-    
+
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.DFALearner(
-            net, nn.Linear(3, 4), 4, 3,
-            optim_factory=OptimFactory('SGD', lr=1e-2), activation=nn.Sigmoid(),  criterion='MSELoss'
+            net,
+            nn.Linear(3, 4),
+            4,
+            3,
+            optim_factory=OptimFactory("SGD", lr=1e-2),
+            activation=nn.Sigmoid(),
+            criterion="MSELoss",
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))

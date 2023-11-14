@@ -9,14 +9,12 @@ from zenkai.utils import get_model_parameters
 
 
 class TestParamFilter:
-
     def test_filter_optim_updates_parameters_with_meta_step(self):
 
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
         optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2),
-            OptimFactory("SGD", 1e-3)
+            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
         )
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
@@ -32,8 +30,7 @@ class TestParamFilter:
         linear = nn.Linear(2, 2)
         before = get_model_parameters(linear)
         optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2),
-            OptimFactory("SGD", 1e-3)
+            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
         )
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
@@ -50,8 +47,7 @@ class TestParamFilter:
         linear_test = nn.Linear(2, 2)
         before = get_model_parameters(linear_test)
         optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2),
-            OptimFactory("SGD", 1e-3)
+            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
         )
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
@@ -64,12 +60,11 @@ class TestParamFilter:
     def test_copy_meta_to_copies_to_new_tensor(self):
 
         x = torch.rand(2, 3, requires_grad=True)
-        
+
         x_test = torch.rand(2, 3)
         before = torch.clone(x_test)
         optim = ParamFilter(
-            [x], OptimFactory("SGD", lr=1e-2),
-            OptimFactory("SGD", 1e-3)
+            [x], OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
         )
         optim.zero_grad()
         x.sum().backward()
@@ -80,7 +75,6 @@ class TestParamFilter:
 
 
 class TestNullOptim:
-
     def test_null_optim_does_not_update_parameters(self):
 
         mod = nn.Linear(2, 2)
@@ -96,11 +90,10 @@ class TestNullOptim:
         optim = NullOptim(mod.parameters())
         state_dict = optim.state_dict()
         optim.load_state_dict(state_dict)
-        assert (optim.state_dict() == state_dict)
+        assert optim.state_dict() == state_dict
 
 
 class TestOptimf:
-
     def test_null_optimf_creates_null_optim(self):
 
         mod = nn.Linear(2, 2)

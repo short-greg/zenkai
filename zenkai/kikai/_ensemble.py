@@ -3,30 +3,24 @@
 from abc import abstractmethod
 
 # 3rd party
-from torch.nn.functional import one_hot
 import torch.nn as nn
 import torch
 
 # local
-from ..kaku import IO, State
 from ..kaku import (
     IO,
     LearningMachine,
     State,
 )
-from ..kaku import (
-    Individual, Population
-)
-from ..kaku import State
+from ..kaku import Individual, Population
 from ..mod import Voter
 
 
 class EnsembleLearner(LearningMachine):
-    """Base class for A LearningMachine that optimizes over an ensemble of otehr machines
-    """
+    """Base class for A LearningMachine that optimizes over an ensemble of otehr machines"""
 
     @abstractmethod
-    def vote(self, x: IO, state: State, release: bool=True) -> IO:
+    def vote(self, x: IO, state: State, release: bool = True) -> IO:
         """Get all of the votes
 
         Args:
@@ -40,7 +34,7 @@ class EnsembleLearner(LearningMachine):
         pass
 
     @abstractmethod
-    def reduce(self, x: IO, state: State, release: bool=True) -> IO:
+    def reduce(self, x: IO, state: State, release: bool = True) -> IO:
         """Aggregate the votes
 
         Args:
@@ -68,8 +62,7 @@ class EnsembleLearner(LearningMachine):
 
 
 class EnsembleLearnerVoter(nn.Module):
-    """Wraps a learner in order to collect its votes
-    """
+    """Wraps a learner in order to collect its votes"""
 
     def __init__(self, ensemble_learner: EnsembleLearner):
         """Wrap an ensemble_learner within a module
@@ -90,9 +83,8 @@ class EnsembleLearnerVoter(nn.Module):
 
 
 class VoterPopulator(object):
-    """Populator that uses multiple outputs from votes
-    """
-    
+    """Populator that uses multiple outputs from votes"""
+
     def __init__(self, voter: Voter, x_name: str):
         """initializer
 
@@ -116,8 +108,6 @@ class VoterPopulator(object):
         y = self.voter(x)
         result = {self.x_name: y}
         return Population(**result)
-    
-    def spawn(self) -> 'VoterPopulator':
-        return VoterPopulator(
-            self.voter, self.x_name
-        )
+
+    def spawn(self) -> "VoterPopulator":
+        return VoterPopulator(self.voter, self.x_name)

@@ -4,32 +4,40 @@ import torch.nn as nn
 
 from zenkai import Assessment
 from zenkai.mod._noise import (
-    GaussianNoiser, NoiseReplace,
-    RandSelector, EqualsAssessmentDist, ModuleNoise,
-    FreezeDropout, ExplorerNoiser, Explorer
+    GaussianNoiser,
+    NoiseReplace,
+    RandSelector,
+    EqualsAssessmentDist,
+    ModuleNoise,
+    FreezeDropout,
+    Explorer,
 )
-
 
 
 def g(seed: int):
     g = torch.Generator()
     g.manual_seed(seed)
 
+
 N_TRIALS = 4
 
 N_SAMPLES = 3
+
 
 @pytest.fixture
 def x():
     return torch.rand(N_SAMPLES, 2, generator=g(2))
 
+
 @pytest.fixture
 def x_trial():
     return torch.rand(N_TRIALS, N_SAMPLES, 2, generator=g(2))
 
+
 @pytest.fixture
 def x_trial_collapsed():
     return torch.rand(N_TRIALS * N_SAMPLES, 2, generator=g(2))
+
 
 @pytest.fixture
 def noise():
@@ -37,7 +45,6 @@ def noise():
 
 
 class TestNoiseReplace:
-
     def test_explore_returns_correct_grad(self, x: torch.Tensor, noise):
         x.requires_grad_(True)
         y = NoiseReplace.apply(x, noise)
@@ -46,7 +53,9 @@ class TestNoiseReplace:
         target = (noise + grad_output) - x
         assert (x.grad == target).all()
 
-    def test_noise_replace_sets_grad_to_none_for_noise(self, x: torch.Tensor, noise: torch.Tensor):
+    def test_noise_replace_sets_grad_to_none_for_noise(
+        self, x: torch.Tensor, noise: torch.Tensor
+    ):
         x.requires_grad_(True)
         noise.requires_grad_(True)
         y = NoiseReplace.apply(x, noise)
@@ -56,11 +65,10 @@ class TestNoiseReplace:
 
 
 class TestGaussianNoiser:
-
     def test_explore_gaussian_returns_correct_size(self, x: torch.Tensor):
         explorer = GaussianNoiser()
         noise = explorer(x)
-        assert (noise.size() == x.size())
+        assert noise.size() == x.size()
 
     def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
         with pytest.raises(ValueError):
@@ -68,11 +76,12 @@ class TestGaussianNoiser:
 
 
 class TestRandSelector:
-
-    def test_rand_selector_returns_correct_size(self, x: torch.Tensor, noise: torch.Tensor):
+    def test_rand_selector_returns_correct_size(
+        self, x: torch.Tensor, noise: torch.Tensor
+    ):
         selector = RandSelector(0.1)
         selected = selector(x, noise)
-        assert (selected.size() == x.size())
+        assert selected.size() == x.size()
 
     def test_select_noise_prob_is_correct(self):
         selector = RandSelector(0.1)
@@ -85,7 +94,6 @@ class TestRandSelector:
 
 
 class TestFreezeDropout:
-
     def test_freeze_dropout_outputs_same_value(self):
 
         torch.manual_seed(1)
@@ -126,7 +134,6 @@ class TestFreezeDropout:
 
 
 class TestExplorer:
-
     def test_forward_outputs_noisy_version(self, x, noise):
 
         torch.manual_seed(1)
@@ -136,7 +143,7 @@ class TestExplorer:
         assert (explorer(x) != x).any()
 
     def test_backward_repalces_with_nose(self):
-        
+
         x = torch.rand(2, 4)
         torch.manual_seed(1)
         x.requires_grad_(True)
@@ -144,17 +151,14 @@ class TestExplorer:
         noiser = GaussianNoiser(0.025)
         explorer = Explorer(noiser, selector=RandSelector(0.1))
         explorer(x).mean().backward()
-        assert (x.grad is not None)
+        assert x.grad is not None
 
 
 class TestEqualAssessmentDist:
-
     def test_equal_assessment_dist_gets_mean_and_std(self):
 
         x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(
-            1.0
-        )
+        equals_assessment = EqualsAssessmentDist(1.0)
         assessment = Assessment(torch.rand(4, 4))
         mean, std = equals_assessment(assessment, x)
         assert mean.shape == torch.Size([4, 2])
@@ -163,21 +167,16 @@ class TestEqualAssessmentDist:
     def test_equal_assessment_dist_gets_mean_and_std_for_neg_1(self):
 
         x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4, 4))
         mean, std = equals_assessment(assessment, x)
         assert mean.shape == torch.Size([4, 2])
         assert std.shape == torch.Size([4, 2])
 
-
     def test_equal_assessment_dist_raises_error_if_assessment_invalid_shape(self):
 
         x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4))
         with pytest.raises(ValueError):
             equals_assessment(assessment, x)
@@ -185,9 +184,7 @@ class TestEqualAssessmentDist:
     def test_equal_assessment_dist_raises_error_if_x_invalid_shape(self):
 
         x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4))
         with pytest.raises(ValueError):
             equals_assessment(assessment, x)
@@ -195,9 +192,7 @@ class TestEqualAssessmentDist:
     def test_equal_assessment_dist_gets_mean_and_std_for_neg_1_and_dim_2(self):
 
         x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4, 4))
         mean, std = equals_assessment(assessment, x)
         assert mean.shape == torch.Size([4])
@@ -205,25 +200,20 @@ class TestEqualAssessmentDist:
 
     def test_sample_returns_value_of_correct_size(self):
         x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4, 4))
         x2 = equals_assessment.sample(assessment, x)
         assert x2.shape == x.shape[1:]
 
     def test_mean_returns_value_of_correct_size(self):
         x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(
-            -1.0
-        )
+        equals_assessment = EqualsAssessmentDist(-1.0)
         assessment = Assessment(torch.rand(4, 4))
         x2 = equals_assessment.mean(assessment, x)
         assert x2.shape == x.shape[1:]
 
 
 class TestModuleNoise:
-
     def test_module_noise_outputs_correct_size(self):
 
         linear = nn.Linear(4, 2)

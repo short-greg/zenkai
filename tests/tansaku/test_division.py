@@ -7,13 +7,14 @@ from zenkai.tansaku import _division as dividers, _select
 
 
 class TestProbDivider:
-
     def test_divides_into_correct_sizes(self):
 
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
-        population.report(Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0])))
-        
+        population.report(
+            Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
+        )
+
         divider = dividers.ProbDivider(_select.FitnessParentSelector(3))
         child1, child2 = divider(population)
         assert child1.k == 3
@@ -23,8 +24,10 @@ class TestProbDivider:
 
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
-        population.report(Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0])))
-        
+        population.report(
+            Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
+        )
+
         divider = dividers.ProbDivider(_select.RankParentSelector(3))
         child1, child2 = divider(population)
         assert child1.k == 3
@@ -35,19 +38,19 @@ class TestProbDivider:
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
-        
+
         divider = dividers.ProbDivider(_select.FitnessParentSelector(3))
         child1, child2 = divider(population)
 
         assert child1.k == 3
         assert child2.k == 3
-    
+
     def test_divides_into_correct_sizes_when_div_start_is_two(self):
 
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
-        
+
         divider = dividers.ProbDivider(_select.FitnessParentSelector(3))
         child1, child2 = divider(population)
         assert child1.k == 3
@@ -58,29 +61,20 @@ class TestProbDivider:
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4))
         population.report(Assessment(torch.rand(8, 4)))
-        
+
         divider = dividers.ProbDivider(_select.FitnessParentSelector(3), 2)
         child1, child2 = divider(population)
         assert child1.k == 3
         assert child2.k == 3
 
-    def test_divides_into_correct_sizes_when_div_start_is_two_and_dim_is_1_with_rank(self):
+    def test_divides_into_correct_sizes_when_div_start_is_two_and_dim_is_1_with_rank(
+        self,
+    ):
 
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4))
         population.report(Assessment(torch.rand(8, 4)))
-        
-        divider = dividers.ProbDivider(_select.RankParentSelector(3), 2)
-        child1, child2 = divider(population)
-        assert child1.k == 3
-        assert child2.k == 3
 
-    def test_divides_into_correct_sizes_when_div_start_is_two_and_dim_is_1_with_rank(self):
-
-        torch.manual_seed(1)
-        population = Population(x=torch.rand(8, 4))
-        population.report(Assessment(torch.rand(8, 4)))
-        
         divider = dividers.ProbDivider(_select.RankParentSelector(3), 2)
         child1, child2 = divider(population)
         assert child1.k == 3
@@ -91,20 +85,21 @@ class TestProbDivider:
 
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.randn(8, 4)))
-        
+
         divider = dividers.ProbDivider(_select.FitnessParentSelector(3))
         with pytest.raises(ValueError):
             divider(population)
 
 
 class TestFitnessEqualDivider:
-
     def test_divides_into_correct_sizes(self):
 
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
-        population.report(Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0])))
-        
+        population.report(
+            Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
+        )
+
         divider = dividers.EqualDivider()
         child1, child2 = divider(population)
         assert child1.k == 8
@@ -115,7 +110,7 @@ class TestFitnessEqualDivider:
         torch.manual_seed(1)
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
-        
+
         divider = dividers.EqualDivider()
         child1, child2 = divider(population)
         assert child1.k == 8

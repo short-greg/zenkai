@@ -1,13 +1,19 @@
+# flake8: noqa
+
 from ._scikit import (
     ScikitWrapper,
     MultiOutputScikitWrapper,
-    LinearBackup, MulticlassBackup, BinaryBackup
+    LinearBackup,
+    MulticlassBackup,
+    BinaryBackup,
 )
 from ._filtering import (
-    Stride2D, TargetStride, UndoStride2D,
-    to_2dtuple, 
+    Stride2D,
+    TargetStride,
+    UndoStride2D,
+    to_2dtuple,
     calc_size2d,
-    calc_stride2d
+    calc_stride2d,
 )
 from ._noise import (
     NoiseReplace,
@@ -31,7 +37,7 @@ from ._reversible import (
     BatchNorm1DReversible,
     LeakyReLUInvertable,
     BoolToSigned,
-    SignedToBool
+    SignedToBool,
 )
 from ._ensemble import (
     EnsembleVoter,
@@ -42,11 +48,5 @@ from ._ensemble import (
     MulticlassVoteAggregator,
     StochasticVoter,
     weighted_votes,
-    
 )
-from ._wrappers import (
-    HookWrapper,
-    GradHook,
-    GaussianGradHook,
-    Lambda
-)
+from ._wrappers import HookWrapper, GradHook, GaussianGradHook, Lambda

@@ -9,7 +9,6 @@ from zenkai.utils import _convert
 
 
 class TestToTH:
-
     def test_to_th_converts_to_correct_dtype(self):
 
         x = np.random.randn(2, 4)
@@ -25,13 +24,14 @@ class TestToTH:
     def test_to_th_sets_retain_grad(self):
 
         x = np.random.randn(2, 4)
-        y = _convert.to_th(x, dtype=torch.float64, requires_grad=True, retains_grad=True)
+        y = _convert.to_th(
+            x, dtype=torch.float64, requires_grad=True, retains_grad=True
+        )
         (y).sum().backward()
         assert y.grad is not None
 
 
 class TestToTHAs:
-
     def test_to_th_converts_to_correct_dtype(self):
 
         x = np.random.randn(2, 4)
@@ -56,25 +56,24 @@ class TestToTHAs:
 
 
 class TestExpandDim0:
-
     def test_expand_dim0_returns_correct_size_without_reshape(self):
 
         x = torch.randn(2, 4)
         x = _convert.expand_dim0(x, 3)
         assert x.shape[0] == 3
-    
+
     def test_expand_dim0_returns_correct_values_without_reshape(self):
 
         x = torch.randn(2, 4)
         y = _convert.expand_dim0(x, 3)
         assert (x[None] == y).all()
-    
+
     def test_expand_dim0_returns_correct_size_with_reshape(self):
 
         x = torch.randn(2, 4)
         x = _convert.expand_dim0(x, 3, reshape=True)
         assert x.shape[0] == 6
-    
+
     def test_expand_dim0_raises_error_with_incorrect_k(self):
 
         x = torch.randn(2, 4)
@@ -83,13 +82,12 @@ class TestExpandDim0:
 
 
 class TestFlattenDim0:
-
     def test_flatten_dim0_combines_first_two_dimensions(self):
 
         x = torch.randn(2, 4, 2)
         x = _convert.flatten_dim0(x)
         assert x.shape[0] == 8
-    
+
     def test_flatten_dim0_leaves_tensor_same_if_one_dimensional(self):
 
         x = torch.randn(2)
@@ -98,7 +96,6 @@ class TestFlattenDim0:
 
 
 class TestDeflattenDim0:
-
     def test_deflatten_dim0_undoes_the_flattening(self):
 
         x = torch.randn(8, 2)
@@ -108,14 +105,13 @@ class TestDeflattenDim0:
 
 
 class TestFreshen:
-
     def test_freshen_retains_grad_if_require_grad_is_true(self):
 
         x = torch.randn(8, 2)
         x = _convert.freshen(x, True)
         (x).sum().backward()
         assert x.grad is not None
-    
+
     def test_freshen_detaches_grad_function(self):
 
         x_base = _convert.freshen(torch.rand(8, 2), True) * 2
@@ -129,7 +125,6 @@ class TestFreshen:
 
 
 class TestSetModelParameters:
-
     def test_set_parameters_makes_the_two_modules_the_same(self):
 
         mod1 = nn.Linear(2, 4)
@@ -141,7 +136,6 @@ class TestSetModelParameters:
 
 
 class TestSetModelGrads:
-
     def test_set_model_grads_sets_correctly(self):
 
         mod1 = nn.Linear(2, 4)
@@ -175,7 +169,6 @@ class TestSetModelGrads:
 
 
 class TestLR:
-
     def test_lr_update_interpolates_between_current_and_new(self):
 
         x = torch.rand(2, 4)
@@ -191,9 +184,7 @@ class TestLR:
         assert (z == y).all()
 
 
-
 class TestBinaryEncoding(object):
-
     def test_binary_encoding_outputs_correct_size_with_twod(self):
         torch.manual_seed(1)
 
@@ -217,7 +208,6 @@ class TestBinaryEncoding(object):
 
 
 class TestToSignedNeg:
-
     def test_to_signed_neg_converts_zero_to_neg1(self):
 
         x = torch.zeros(2, 4)
@@ -232,7 +222,6 @@ class TestToSignedNeg:
 
 
 class TestToZeroNeg:
-
     def test_to_zero_neg_converts_neg1_to_zero(self):
 
         x = -torch.ones(2, 4)
@@ -246,7 +235,6 @@ class TestToZeroNeg:
         assert (x == 1).all()
 
 
-
 N_TRIALS = 4
 
 N_SAMPLES = 3
@@ -256,13 +244,16 @@ def g(seed: int):
     g = torch.Generator()
     g.manual_seed(seed)
 
+
 @pytest.fixture
 def x():
     return torch.rand(N_SAMPLES, 2, generator=g(2))
 
+
 @pytest.fixture
 def x_trial():
     return torch.rand(N_TRIALS, N_SAMPLES, 2, generator=g(2))
+
 
 @pytest.fixture
 def x_trial_collapsed():
@@ -270,15 +261,15 @@ def x_trial_collapsed():
 
 
 class TestCollapseK:
-
     def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
         shape = _convert.collapse_k(x_trial).shape
         assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
 
 
 class TestExpandK:
-
-    def test_collapse_k_collapses_the_trial_dimension(self, x_trial_collapsed: torch.Tensor):
+    def test_collapse_k_collapses_the_trial_dimension(
+        self, x_trial_collapsed: torch.Tensor
+    ):
         shape = _convert.expand_k(x_trial_collapsed, N_TRIALS).shape
-        assert shape[0] == N_TRIALS 
+        assert shape[0] == N_TRIALS
         assert shape[1] == N_SAMPLES

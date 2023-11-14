@@ -7,24 +7,22 @@ from . import _select as selection
 
 
 class Elitism(ABC):
-
     @abstractmethod
     def __call__(self, population1: Population, population2: Population) -> Population:
         pass
 
 
 class KBestElitism(Elitism):
-    """Add the k best from the previous generation to the new generation
-    """
+    """Add the k best from the previous generation to the new generation"""
 
-    def __init__(self, k: int, divide_start: int=1):
+    def __init__(self, k: int, divide_start: int = 1):
         """initializer
 
         Args:
             k (int): The number to keep
         """
         if k <= 0:
-            raise ValueError(f'Argument k must be greater than 0 not {self.k}')
+            raise ValueError(f"Argument k must be greater than 0 not {self.k}")
         self.k = k
         self.divide_start = divide_start
 
@@ -46,5 +44,5 @@ class KBestElitism(Elitism):
 
         return population1.pstack([population2])
 
-    def spawn(self) -> 'KBestElitism':
+    def spawn(self) -> "KBestElitism":
         return KBestElitism(self.k)

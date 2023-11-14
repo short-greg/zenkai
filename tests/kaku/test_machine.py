@@ -14,20 +14,6 @@ from zenkai.kaku import _assess
 
 
 class Base:
-
-    def __init__(self) -> None:
-        pass
-
-
-class X(Base, core.IDable):
-
-    @property
-    def id(self):
-        return str(id(self))
-
-
-class Base:
-
     def __init__(self) -> None:
         pass
 
@@ -39,128 +25,89 @@ class X(Base, IDable):
         return str(id(self))
 
 
-@pytest.fixture
-def x():
-    return torch.randn(4, 2)
-
-@pytest.fixture
-def t():
-    return torch.randn(4, 2)
-
-@pytest.fixture
-def y():
-    return torch.randn(4, 2)
-
-@pytest.fixture
-def x2():
-    return torch.randn(4, 2)
-
-@pytest.fixture
-def t2():
-    return torch.randn(4, 2)
-
-@pytest.fixture
-def y2():
-    return torch.randn(4, 2)
-
-
-@pytest.fixture
-def idx():
-    return [1, 2]
-
-
-@pytest.fixture
-def idx2():
-    return [1, 2, 0]
-
-
 class SimpleLearner(core.LearningMachine):
-
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
         return self.loss.assess(y, t, reduction_override)
-    
+
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, 'y') not in state:
-            assessment = self.assess(x,  t.detach(), state=state, release=False)
+        if (self, x, "y") not in state:
+            assessment = self.assess(x, t.detach(), state=state, release=False)
             assessment.backward()
-            
+
         return IO(x.f - x.f.grad)
 
     def step(self, x: IO, t: IO, state: core.State):
-        if (self, x, 'y') not in state:
+        if (self, x, "y") not in state:
             y = self(x, state, release=False)
-        else: y = state[self, x, 'y']
+        else:
+            y = state[self, x, "y"]
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
         self.optim.step()
 
-    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+    def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, "y"] = IO(self.linear(x.f))
         return y.out(release)
 
 
 class SimpleAccLearner(core.LearningMachine):
-
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
         return self.loss.assess(y, t, reduction_override)
-    
+
     def accumulate(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, 'y') not in state:
+        if (self, x, "y") not in state:
             y = self(x, state, release=False)
-        else: y = state[(self, x), 'y']
+        else:
+            y = state[(self, x), "y"]
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
 
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, 'y') not in state:
-            assessment = self.assess(x,  t.detach(), state=state, release=False)
+        if (self, x, "y") not in state:
+            assessment = self.assess(x, t.detach(), state=state, release=False)
             assessment.backward()
-            
+
         return IO(x.f - x.f.grad)
 
     def step(self, x: IO, t: IO, state: core.State):
         self.optim.step()
 
-    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+    def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, "y"] = IO(self.linear(x.f))
         return y.out(release)
-
-# # # # # # # TODO: UPdate simplelearner
-# # # # # # # TODO: Update tests
-# # # # # # # TODO: write tests for LayeredLearner
 
 
 class DummyHook(core.LearnerPostHook):
-
-    def __call__(self, x: IO, t: IO, state: State, y: IO, assessment: Assessment) -> typing.Tuple[IO, IO]:
-        state[self, 'hi'] = 'hi'
+    def __call__(
+        self, x: IO, t: IO, state: State, y: IO, assessment: Assessment
+    ) -> typing.Tuple[IO, IO]:
+        state[self, "hi"] = "hi"
 
 
 class TestLearningMachineWithSimpleLearner:
-
     def test_assess_y_uses_correct_reduction(self):
 
         learner = SimpleLearner(2, 3)
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')
-        target = nn.MSELoss(reduction='sum')(*y, *t)
+        result = learner.assess_y(y, t, "sum")
+        target = nn.MSELoss(reduction="sum")(*y, *t)
         assert result.item() == target.item()
 
     def test_grad_will_not_be_available_in_trans(self):
@@ -197,7 +144,7 @@ class TestLearningMachineWithSimpleLearner:
         t = IO(torch.rand(2, 3))
         state = core.State()
         before = utils.get_model_parameters(learner)
-        y = learner(x, state)
+        learner(x, state)
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
@@ -210,7 +157,7 @@ class TestLearningMachineWithSimpleLearner:
         learner.learner_hook(hook, True, False)
         state = State()
         learner.learn(x, t, state)
-        assert state[hook, 'hi'] == 'hi'
+        assert state[hook, "hi"] == "hi"
 
     def test_learn_hook_not_called_after_testing_and_state_not_set_to_hi(self):
         learner = SimpleLearner(2, 3)
@@ -220,7 +167,7 @@ class TestLearningMachineWithSimpleLearner:
         learner.learner_hook(hook, True, False)
         state = State()
         learner.test(x, t, state)
-        assert (hook, 'hi') not in state
+        assert (hook, "hi") not in state
 
     def test_learn_hook_called_after_testing_and_state_set_to_hi(self):
         learner = SimpleLearner(2, 3)
@@ -230,45 +177,42 @@ class TestLearningMachineWithSimpleLearner:
         learner.learner_hook(hook, True, True)
         state = State()
         learner.test(x, t, state)
-        assert state[hook, 'hi'] == 'hi'
+        assert state[hook, "hi"] == "hi"
 
 
 class LayeredLearner(core.LearningMachine):
-
     def __init__(self, m1: SimpleLearner, m2: SimpleLearner):
         super().__init__()
         self.m1 = m1
         self.m2 = m2
-    
+
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
-        return self.m2.assess_y(
-            y, t, reduction_override=reduction_override)
-    
+        return self.m2.assess_y(y, t, reduction_override=reduction_override)
+
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        t = state[self, 'x_step_t']
+        t = state[self, "x_step_t"]
         return self.m1.step_x(x, t, state)
-        
+
     def step(self, x: IO, t: IO, state: core.State):
         self.m2.step(state[self, "y1"], t, state)
         t1 = self.m2.step_x(state[self, "y1"], t, state)
         self.m1.step(x, t1, state)
         state[self, "x_step_t"] = t1
 
-    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
-        y1 = state[self, 'y1'] = self.m1(x, state)
-        y2 = state[self, 'y2'] = self.m2(y1, state)
+    def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
+        y1 = state[self, "y1"] = self.m1(x, state)
+        y2 = state[self, "y2"] = self.m2(y1, state)
         return y2.out(release)
 
 
 class TestLearningMachineWithComplexLearner:
-
     def test_assess_y_uses_correct_reduction(self):
 
         learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')
-        target = nn.MSELoss(reduction='sum')(*y, *t)
+        result = learner.assess_y(y, t, "sum")
+        target = nn.MSELoss(reduction="sum")(*y, *t)
         assert result.item() == target.item()
 
     def test_assess_y_uses_default_reduction(self):
@@ -277,7 +221,7 @@ class TestLearningMachineWithComplexLearner:
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
         result = learner.assess_y(y, t)
-        target = nn.MSELoss(reduction='mean')(*y, *t)
+        target = nn.MSELoss(reduction="mean")(*y, *t)
         assert result.item() == target.item()
 
     def test_assess_uses_default_reduction(self):
@@ -287,7 +231,7 @@ class TestLearningMachineWithComplexLearner:
         t = IO(torch.rand(3, 3))
         result = learner.assess(x, t)
         y = learner(x)
-        target = nn.MSELoss(reduction='mean')(y.f, t.f)
+        target = nn.MSELoss(reduction="mean")(y.f, t.f)
         assert result.item() == target.item()
 
     def test_excite_detaches_y(self):
@@ -314,53 +258,51 @@ class TestLearningMachineWithComplexLearner:
     def test_step_updates_parameters(self):
         torch.manual_seed(1)
 
-        learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))        
+        learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         state = core.State()
         before = utils.get_model_parameters(learner)
-        y = learner.forward(x, state)
+        learner.forward(x, state)
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
 
 class DependentLearner(core.LearningMachine):
-
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
-        self.loss = _assess.ThLoss(nn.MSELoss, reduction='mean')
+        self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t:IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
         return self.loss.assess(y, t, reduction_override)
-    
-    @core.step_dep('stepped')
+
+    @core.step_dep("stepped")
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, 'y') not in state:
-            assessment = self.assess(x,  t.detach(), state=state, release=False)
+        if (self, x, "y") not in state:
+            assessment = self.assess(x, t.detach(), state=state, release=False)
             assessment.backward()
-            
+
         return IO(x.f - x.f.grad)
 
-    @core.forward_dep('y')
+    @core.forward_dep("y")
     def step(self, x: IO, t: IO, state: core.State):
-        y = state[self, x, 'y']
+        y = state[self, x, "y"]
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
         self.optim.step()
-        state[self, x, 'stepped'] = True
+        state[self, x, "stepped"] = True
 
-    def forward(self, x: IO, state: core.State, release: bool=True) -> torch.Tensor:
+    def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, 'y'] = IO(self.linear(x.f)) 
+        y = state[self, x, "y"] = IO(self.linear(x.f))
         return y.out(release)
 
 
 class TestDependencies:
-
     def test_step_executes_forward(self):
 
         x = IO(torch.rand(2, 2))
@@ -369,7 +311,7 @@ class TestDependencies:
         dependent = DependentLearner(2, 3)
         dependent(x, state=state)
         dependent.step(x, t, state)
-        assert state[dependent, x, 'y'] is not None
+        assert state[dependent, x, "y"] is not None
 
     def test_step_does_not_execute_forward_if_already_called(self):
 
@@ -378,9 +320,9 @@ class TestDependencies:
         state = core.State()
         dependent = DependentLearner(2, 3)
         dependent(x, state)
-        prev = state[dependent, x, 'y']
+        prev = state[dependent, x, "y"]
         dependent.step(x, t, state)
-        assert state[dependent, x, 'y'] is prev
+        assert state[dependent, x, "y"] is prev
 
     def test_step_x_if_not_stepped(self):
 
@@ -404,19 +346,18 @@ class TestDependencies:
 
 
 class TestNullLearner:
-
     def test_assess_y_uses_correct_reduction(self):
 
-        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        learner = core.NullLearner(loss=_assess.ThLoss("MSELoss"))
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
-        result = learner.assess_y(y, t, 'sum')
-        target = nn.MSELoss(reduction='sum')(*y, *t)
+        result = learner.assess_y(y, t, "sum")
+        target = nn.MSELoss(reduction="sum")(*y, *t)
         assert result.item() == target.item()
 
     def test_null_learner_returns_y_for_step_x(self):
 
-        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        learner = core.NullLearner(loss=_assess.ThLoss("MSELoss"))
         y = IO(torch.rand(2, 3))
         t = IO(torch.rand(2, 3))
         x_prime = learner.step_x(y, t, state=State())
@@ -424,8 +365,8 @@ class TestNullLearner:
 
     def test_null_learner_outputs_x_for_forward(self):
 
-        learner = core.NullLearner(loss=_assess.ThLoss('MSELoss'))
+        learner = core.NullLearner(loss=_assess.ThLoss("MSELoss"))
         x = IO(torch.rand(2, 3))
-        t = IO(torch.rand(2, 3))
+        IO(torch.rand(2, 3))
         y = learner.forward(x, state=State())
         assert y is x

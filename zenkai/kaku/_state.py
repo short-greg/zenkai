@@ -1,30 +1,28 @@
 # 1st party
 import typing
-from abc import abstractproperty
 from dataclasses import dataclass
-from collections import deque, OrderedDict
+from collections import OrderedDict
+from dataclasses import field
 
 # local
-from ._io import IO
 from ._assess import Assessment, AssessmentDict
 from uuid import uuid4
 
 
 class IDable(object):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._id = str(uuid4())
 
     def load_state_dict(self, state_dict: typing.Dict):
-        # Assumes that the 
-        
+        # Assumes that the
+
         try:
-            super().load_state_dict(state_dict['params'])
+            super().load_state_dict(state_dict["params"])
         except KeyError:
             # Not required for the super to have this method
             pass
-        self._id = state_dict.get('id')
+        self._id = state_dict.get("id")
         if self._id is None:
             self._id = str(uuid4())
 
@@ -44,28 +42,40 @@ class IDable(object):
 
 class StateKeyError(KeyError):
     """Used to make errors that state returns more explicit"""
+
     pass
 
 
-
 class AssessmentLog(object):
-    """Class to log assessments during training. Especially ones that may occur inside the network
-    """
+    """Class to log assessments during training. Especially ones that may occur 
+    inside the network"""
 
     def __init__(self):
-        """Instantiate the AssessmentLog
-        """
+        """Instantiate the AssessmentLog"""
 
-        self._log: typing.Dict[typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]] = {}
+        self._log: typing.Dict[
+            typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]
+        ] = {}
 
-    def update(self, id, obj_name: str, assessment_name: str, assessment: Assessment, sub_id=None, replace: bool=False, to_cpu: bool=True):
-        """Update the AssessmentLog with a new Assessment. detach() will automatically be called to prevent storing grads
+    def update(
+        self,
+        id,
+        obj_name: str,
+        assessment_name: str,
+        assessment: Assessment,
+        sub_id=None,
+        replace: bool = False,
+        to_cpu: bool = True,
+    ):
+        """Update the AssessmentLog with a new Assessment. detach() will automatically 
+        be called to prevent storing grads
 
         Args:
             id : The unique identifier for the layer
             name (str): The name of the layer/operation. Can also include time step info etc
             assessment (Assessment): The assessment dict to update with
-            replace (bool, optional): Whether to replace the current assessment dict for the key/name. Defaults to False.
+            replace (bool, optional): Whether to replace the current assessment 
+                dict for the key/name. Defaults to False.
             to_cpu (bool): Whether to convert to cpu or not
         """
         assessment = assessment.detach()
@@ -76,10 +86,10 @@ class AssessmentLog(object):
             self._log[id] = {}
         if sub_id not in self._log[id]:
             self._log[id][sub_id] = {}
-    
+
         if isinstance(assessment, typing.Dict):
             cur = assessment
-        else:        
+        else:
             cur = {assessment_name: assessment}
         if obj_name not in self._log[id][sub_id] or replace:
             self._log[id][sub_id][obj_name] = cur
@@ -89,15 +99,15 @@ class AssessmentLog(object):
     @property
     def dict(self) -> typing.Dict:
         return self._log
-    
+
     def clear(self, id=None, sub_id=None):
 
         if id is None:
             self._log.clear()
             return
-    
+
         self._log[id][sub_id].clear()
-    
+
     def as_assessment_dict(self) -> AssessmentDict:
         """
 
@@ -110,7 +120,10 @@ class AssessmentLog(object):
 
             for key2, val2 in val.items():
                 for key3, val3 in val2.items():
-                    cur = {f'{key3}_{name}': assessment for name, assessment in val3.items()}
+                    cur = {
+                        f"{key3}_{name}": assessment
+                        for name, assessment in val3.items()
+                    }
                     result.update(cur)
         return AssessmentDict(**result)
 
@@ -119,23 +132,21 @@ class AssessmentLog(object):
 class StateData:
 
     data: typing.Any
-    keep: bool=False
+    keep: bool = False
 
-
-from dataclasses import field
 
 @dataclass
 class DataContainer(object):
 
     info: typing.Dict[str, StateData] = field(default_factory=dict)
-    subs: typing.Dict[str, 'State'] = field(default_factory=dict)
+    subs: typing.Dict[str, "State"] = field(default_factory=dict)
 
-    def spawn(self, spawn_logs: bool=False) -> 'DataContainer':
+    def spawn(self, spawn_logs: bool = False) -> "DataContainer":
 
         subs = {}
         for k, sub in self.subs.items():
             subs[k] = sub.spawn(spawn_logs)
-        
+
         infos = {}
         for k, data in self.info.items():
             if data.keep:
@@ -144,12 +155,10 @@ class DataContainer(object):
 
 
 class State(object):
-    """Class to store the learning state for one learning iteration
-    """
+    """Class to store the learning state for one learning iteration"""
 
     def __init__(self):
-        """initializer
-        """
+        """initializer"""
         super().__init__()
         self._data: typing.Dict[str, typing.Dict[str, DataContainer]] = {}
         self._logs = AssessmentLog()
@@ -170,8 +179,10 @@ class State(object):
         if isinstance(obj, tuple):
             return tuple(id(el) if not isinstance(el, IDable) else el.id for el in obj)
         return id(obj)
-    
-    def _get_data_container(self, obj, sub_obj=None, to_add: bool=True) -> DataContainer:
+
+    def _get_data_container(
+        self, obj, sub_obj=None, to_add: bool = True
+    ) -> DataContainer:
 
         id = self.id(obj)
         sub_obj_id = self.id(sub_obj)
@@ -183,9 +194,9 @@ class State(object):
             if not to_add:
                 return None
             self._data[id][sub_obj_id] = DataContainer()
-        return self._data[id][sub_obj_id] 
+        return self._data[id][sub_obj_id]
 
-    def set(self, index, value, to_keep: bool=False) -> typing.Any:
+    def set(self, index, value, to_keep: bool = False) -> typing.Any:
         """Store data in the state
 
         Args:
@@ -199,7 +210,7 @@ class State(object):
         obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
         data_container.info[key] = StateData(value, to_keep)
-        return value 
+        return value
 
     def get(self, index, default=None) -> typing.Any:
         """Retrieve the value for a key
@@ -248,17 +259,17 @@ class State(object):
         except KeyError:
             data_container.info[key] = StateData(default)
             return default
-        
+
     def _split_index(self, index) -> typing.Tuple[IDable, IDable, str]:
 
         if len(index) == 2:
             obj, key = index
             return obj, None, key
         if len(index) != 3:
-            raise KeyError(f'Index length must be two or three not {index}')
+            raise KeyError(f"Index length must be two or three not {index}")
 
         return index
-        
+
     def __getitem__(self, index: typing.Tuple[IDable, typing.Hashable]) -> typing.Any:
         """Retrieve an item from the state
 
@@ -273,7 +284,7 @@ class State(object):
         """
         obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj, False)
-        
+
         if data_container is None:
             raise StateKeyError(
                 f"There is no recorded state for {obj} of type {type(obj)} and key {key}"
@@ -365,13 +376,15 @@ class State(object):
         mine = self.mine(obj, sub_obj, to_add)
         return mine.my_sub(key, to_add)
 
-    def keep(self, index, keep: bool=True):
-        
+    def keep(self, index, keep: bool = True):
+
         obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
         data_container.info[key].keep = keep
 
-    def sub_iter(self, obj, sub_obj=None) -> typing.Iterator[typing.Tuple[str, "State"]]:
+    def sub_iter(
+        self, obj, sub_obj=None
+    ) -> typing.Iterator[typing.Tuple[str, "State"]]:
         """Iterator over all sub states
 
         Yields:
@@ -383,7 +396,9 @@ class State(object):
         for key, value in data_container.subs.items():
             yield key, value
 
-    def mine(self, obj: IDable, sub_obj: IDable=None, to_add: bool = True) -> "MyState":
+    def mine(
+        self, obj: IDable, sub_obj: IDable = None, to_add: bool = True
+    ) -> "MyState":
         """Retrieve the state for a given object
 
         Args:
@@ -413,7 +428,14 @@ class State(object):
             return False
         return key in self._data[id_][sub_id].info
 
-    def log_assessment(self, obj: IDable, obj_name: str, log_name: str, assessment: Assessment, sub_obj: IDable=None):
+    def log_assessment(
+        self,
+        obj: IDable,
+        obj_name: str,
+        log_name: str,
+        assessment: Assessment,
+        sub_obj: IDable = None,
+    ):
         """Log an assessment
 
         Args:
@@ -421,7 +443,7 @@ class State(object):
             obj_name: The name of the object to log for (So it is clear who it is coming from)
             assessment (Assessment): the values to log
         """
-        
+
         obj_id = self.id(obj)
         sub_obj_id = self.id(sub_obj)
         self._logs.update(obj_id, obj_name, log_name, assessment, sub_obj_id)
@@ -430,7 +452,7 @@ class State(object):
     def logs(self) -> AssessmentLog:
         return self._logs
 
-    def spawn(self, spawn_logs: bool=False) -> 'State':
+    def spawn(self, spawn_logs: bool = False) -> "State":
         """Spawn the state to be used for another time step or another instance of the machine
         All data that is not to be kept will be cleared
 
@@ -454,13 +476,12 @@ class State(object):
 
 
 class MyState(object):
-
-    def __init__(self, obj: IDable, sub_obj: IDable, state: 'State'):
+    def __init__(self, obj: IDable, sub_obj: IDable, state: "State"):
 
         super().__init__()
-        object.__setattr__(self, '_obj', obj)
-        object.__setattr__(self, '_sub_obj', sub_obj)
-        object.__setattr__(self, '_state', state)
+        object.__setattr__(self, "_obj", obj)
+        object.__setattr__(self, "_sub_obj", sub_obj)
+        object.__setattr__(self, "_state", state)
         self._obj: IDable = obj
         self._sub_obj: IDable = sub_obj
         self._state: State = state
@@ -473,8 +494,8 @@ class MyState(object):
             typing.Dict[str, State]: The sub states
         """
         return {key: sub for key, sub in self._state.sub_iter(self._obj, self._sub_obj)}
-    
-    def switch(self, sub_obj: IDable) -> 'MyState':
+
+    def switch(self, sub_obj: IDable) -> "MyState":
 
         self._sub_obj = sub_obj
 
@@ -502,16 +523,16 @@ class MyState(object):
             typing.Any: The value at the key or the default
         """
         self._state.get((self._obj, self._sub_obj, key), default)
-    
+
     def get_or_set(self, key: typing.Hashable, default) -> typing.Any:
 
-        try: 
+        try:
             return self._state[self._obj, self._sub_obj, key]
         except KeyError:
             self._state[self._obj, self._sub_obj, key] = default
             return default
 
-    def set(self, key: str, value, keep: bool=False) -> typing.Any:
+    def set(self, key: str, value, keep: bool = False) -> typing.Any:
         """Get the value at a key
 
         Args:

@@ -25,9 +25,6 @@ from ._convert import (
     binary_ste,
     sign_ste,
     BinarySTE,
-    SignSTE
+    SignSTE,
 )
-from ._sampling import (
-    gather_idx_from_population, 
-    gaussian_sample
-)
+from ._sampling import gather_idx_from_population, gaussian_sample

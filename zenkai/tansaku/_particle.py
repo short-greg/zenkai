@@ -1,4 +1,3 @@
-import typing
 from abc import ABC, abstractmethod
 
 import torch
@@ -8,25 +7,21 @@ from .. import utils
 
 
 class GlobalParticle(ABC):
-
     @abstractmethod
     def __call__(self, population: Population) -> Individual:
         pass
 
 
-
 class LocalParticle(ABC):
-
     @abstractmethod
     def __call__(self, population: Population) -> Population:
         pass
 
 
 class GlobalParticleSmooth(GlobalParticle):
-    """Mix two tensors together by choosing one gene for each
-    """
+    """Mix two tensors together by choosing one gene for each"""
 
-    def __init__(self, dim: int=0):
+    def __init__(self, dim: int = 0):
         super().__init__()
         self.dim = dim
         self._dist = None
@@ -48,7 +43,7 @@ class GlobalParticleSmooth(GlobalParticle):
             key (str): The name of the field
             val1 (torch.Tensor): The first value to mix
             val2 (torch.Tensor): The second value to mix
-    
+
         Returns:
             torch.Tensor: The mixed result
         """
@@ -71,9 +66,7 @@ class GlobalParticleSmooth(GlobalParticle):
         selected = index_map.select_index(population)
 
         if self._dist is None:
-            self._dist = torch.distributions.Normal(
-                value, torch.ones_like(value)
-            )
+            self._dist = torch.distributions.Normal(value, torch.ones_like(value))
             self._global_best = selected
             self._global_value = value
         else:
@@ -82,39 +75,37 @@ class GlobalParticleSmooth(GlobalParticle):
             global_weight = self._dist.cdf(self._global_value) ** 4
             cur_weight = cur_weight / (cur_weight + global_weight)
             if assessment.maximize:
-                global_weight = 1 - weight
+                global_weight = 1 - cur_weight
             else:
-                global_weight = weight
-                weight = 1 - weight
+                global_weight = cur_weight
+                cur_weight = 1 - cur_weight
 
             # TODO: This won't work because the dimensions are not correct
             for k, v1, v2 in population.loop_over(self._global_best):
                 cur_weight_k = utils.unsqueeze_to(cur_weight, v1)
                 global_weight_k = utils.unsqueeze_to(global_weight, v1)
 
-                self._global_best[k] = (
-                    cur_weight_k * v1 + global_weight_k * v2
-                )
-            self._global_best = global_weight * self._global_best + weight * population  
-            self._global_value = global_weight * self._global_value + weight * value
+                self._global_best[k] = cur_weight_k * v1 + global_weight_k * v2
+            self._global_best = global_weight * self._global_best + cur_weight * population
+            self._global_value = global_weight * self._global_value + cur_weight * value
 
             # update the distribution
             self._dist = torch.distributions.Normal(
                 0.95 * self._dist.mean + 0.05 * value,
-                0.95 * self._dist.scale + 0.05 * (value.mean(dim=0) - self._dist.mean) ** 2
+                0.95 * self._dist.scale
+                + 0.05 * (value.mean(dim=0) - self._dist.mean) ** 2,
             )
 
         return self._global_best
 
-    def spawn(self) -> 'GlobalParticleSmooth':
+    def spawn(self) -> "GlobalParticleSmooth":
         return GlobalParticleSmooth(self.dim)
 
 
 class LocalParticleSmooth(LocalParticle):
-    """Mix two tensors together by choosing one gene for each
-    """
+    """Mix two tensors together by choosing one gene for each"""
 
-    def __init__(self, dim: int=0):
+    def __init__(self, dim: int = 0):
         super().__init__()
         self.dim = dim
         self._dist = None
@@ -127,13 +118,13 @@ class LocalParticleSmooth(LocalParticle):
             key (str): The name of the field
             val1 (torch.Tensor): The first value to mix
             val2 (torch.Tensor): The second value to mix
-    
+
         Returns:
             torch.Tensor: The mixed result
         """
 
         # TODO: Break it down into steps
-        
+
         # self._select()
         # if self._dist is None:
         #     global_best = self._init_best()
@@ -155,7 +146,7 @@ class LocalParticleSmooth(LocalParticle):
             global_p = self._dist.cdf(self._local_value) ** 4
 
             cur_weight = cur_p / (cur_p + global_p)
-            
+
             if assessment.maximize:
                 best_weight = cur_weight
                 cur_weight = 1 - cur_weight
@@ -168,18 +159,15 @@ class LocalParticleSmooth(LocalParticle):
                 cur_weight_k = utils.unsqueeze_to(cur_weight, v1)
                 best_weight_k = utils.unsqueeze_to(best_weight, v1)
 
-                self._local_best[k] = (
-                    cur_weight_k * v1 + best_weight_k * v2
-                )
-            self._local_value = (
-                cur_weight * value + best_weight * self._local_value
-            )
+                self._local_best[k] = cur_weight_k * v1 + best_weight_k * v2
+            self._local_value = cur_weight * value + best_weight * self._local_value
             weight = best_weight * 0.95
             self._dist = torch.distributions.Normal(
                 weight * self._dist.mean + (1 - weight) * population,
-                weight * self._dist.mean + (1 - weight) * (population - self._dist.mean) ** 2
+                weight * self._dist.mean
+                + (1 - weight) * (population - self._dist.mean) ** 2,
             )
         return self._local_best
 
-    def spawn(self) -> 'LocalParticleSmooth':
+    def spawn(self) -> "LocalParticleSmooth":
         return LocalParticleSmooth(self.dim)

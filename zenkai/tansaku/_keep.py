@@ -1,6 +1,5 @@
 # 1st party
 import typing
-import typing
 
 # 3rd party
 import torch
@@ -9,7 +8,9 @@ import torch
 from ..kaku import Population, Individual, TensorDict
 
 
-def keep_mixer(original: TensorDict, updated: TensorDict, keep_p: float) -> typing.Union[Population, Individual]:
+def keep_mixer(
+    original: TensorDict, updated: TensorDict, keep_p: float
+) -> typing.Union[Population, Individual]:
     """Keep a certain percentage of values randomly chosen based on keep_p
 
     Args:
@@ -28,7 +29,9 @@ def keep_mixer(original: TensorDict, updated: TensorDict, keep_p: float) -> typi
     return original.spawn(new_values)
 
 
-def keep_feature(original: Individual, population: Population, limit: torch.LongTensor) -> Population:
+def keep_feature(
+    original: Individual, population: Population, limit: torch.LongTensor
+) -> Population:
     """Keep a feature dim based on indices
 
     Args:

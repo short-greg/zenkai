@@ -16,31 +16,29 @@ UNDEFINED = _undefined()
 
 
 class BuilderFunctor(ABC):
-    """Base class for functors used in building a learning machine
-    """
+    """Base class for functors used in building a learning machine"""
 
     @abstractmethod
     def __call__(self, **kwargs):
         pass
 
     @abstractmethod
-    def clone(self) -> 'BuilderFunctor':
+    def clone(self) -> "BuilderFunctor":
         pass
 
     @abstractmethod
-    def vars(self) -> typing.List['Var']:
+    def vars(self) -> typing.List["Var"]:
         pass
 
 
 class Var(BuilderFunctor):
-    """Defines a variable for including in your build process
-    """
+    """Defines a variable for including in your build process"""
 
-    def __init__(self, name: str, default=UNDEFINED, dtype: typing.Type=None):
+    def __init__(self, name: str, default=UNDEFINED, dtype: typing.Type = None):
         """
 
         Args:
-            name (str): 
+            name (str):
             dtype (typing.Type, optional): . Defaults to None.
         """
         self._name = name
@@ -48,11 +46,13 @@ class Var(BuilderFunctor):
         self._dtype = dtype
 
     @classmethod
-    def init(self, name: str, value=UNDEFINED, default=UNDEFINED, dtype: typing.Type=None) -> typing.Union['Var', typing.Any]:
+    def init(
+        self, name: str, value=UNDEFINED, default=UNDEFINED, dtype: typing.Type = None
+    ) -> typing.Union["Var", typing.Any]:
 
         if value != UNDEFINED:
             return value
-        
+
         return Var(name, default, dtype)
 
     @property
@@ -62,7 +62,7 @@ class Var(BuilderFunctor):
             str: The name of the variable
         """
         return self._name
-    
+
     @property
     def dtype(self) -> typing.Type:
         """
@@ -78,16 +78,16 @@ class Var(BuilderFunctor):
         except KeyError:
             if self._default != UNDEFINED:
                 return self._default
-            raise KeyError(f'Variable {self._name} not found in kwargs passed in.')
+            raise KeyError(f"Variable {self._name} not found in kwargs passed in.")
 
-    def clone(self) -> 'Var':
+    def clone(self) -> "Var":
         """
         Returns:
             Var: The cloned variable
         """
         return Var(self._name, self._default, self._dtype)
 
-    def vars(self) -> typing.List['Var']:
+    def vars(self) -> typing.List["Var"]:
         """
         Returns:
             typing.List[Var]: This variable wrapped in a list
@@ -95,19 +95,18 @@ class Var(BuilderFunctor):
         return [self]
 
 
-T = TypeVar('T')
-K = TypeVar('K')
+T = TypeVar("T")
+K = TypeVar("K")
 
 
 class Factory(BuilderFunctor, Generic[T]):
-    """Defines a factory
-    """
+    """Defines a factory"""
 
     def __init__(self, factory, *args, **kwargs):
         """Create a factory which you call
 
         Args:
-            factory: The factory 
+            factory: The factory
         """
         self._factory = factory
         self._args = BuilderArgs(args=args, kwargs=kwargs)
@@ -118,14 +117,14 @@ class Factory(BuilderFunctor, Generic[T]):
         Returns:
             The result of the factory
         """
-        
+
         f_args, f_kwargs = self._args(**kwargs)
         if isinstance(self._factory, BuilderFunctor):
             factory = self._factory(**kwargs)
         else:
             factory = self._factory
         if factory is None:
-            # TODO: Think if this is how I really want to 
+            # TODO: Think if this is how I really want to
             # do it.. It could create conflicts
             return None
         return self._factory(*f_args, **f_kwargs)
@@ -140,7 +139,7 @@ class Factory(BuilderFunctor, Generic[T]):
             vars.extend(self._factory.vars())
         return vars
 
-    def clone(self) -> 'Factory[T]':
+    def clone(self) -> "Factory[T]":
         """
         Returns:
             Factory: The clone of the factory
@@ -151,17 +150,16 @@ class Factory(BuilderFunctor, Generic[T]):
 
 
 class BuilderArgs(BuilderFunctor):
-    """Defines the args for building
-    """
-    
+    """Defines the args for building"""
+
     def __init__(self, args=None, kwargs=None):
-        """Create a 
+        """Create a
 
         Args:
             args (typing.List, optional): The args for the function. Defaults to None.
             kwargs (typing.Dict[str, typing.Any], optional): The kwargs ofr the function. Defaults to None.
         """
-        
+
         self._args = args or []
         self._kwargs = kwargs or {}
 
@@ -190,7 +188,8 @@ class BuilderArgs(BuilderFunctor):
         """Update a kwarg
 
         Args:
-            key (typing.Any[int, str]): The key for the value. If it is an int it will update the args otherwise the kwargs
+            key (typing.Any[int, str]): The key for the value. If it is an int 
+                it will update the args otherwise the kwargs
             value: The value to update with
         """
         if isinstance(key, int):
@@ -220,11 +219,11 @@ class BuilderArgs(BuilderFunctor):
 
         for arg in self._kwargs.values():
             if isinstance(arg, BuilderFunctor):
-                vars.extend(arg.vars())            
+                vars.extend(arg.vars())
 
         return vars
 
-    def clone(self) -> 'BuilderArgs':
+    def clone(self) -> "BuilderArgs":
         """
         Returns:
             BuilderArgs: The cclone of the builder args
@@ -242,22 +241,19 @@ class BuilderArgs(BuilderFunctor):
                 result_kwargs[key] = arg.clone()
             else:
                 result_kwargs[key] = arg
-        return BuilderArgs(
-            result_args, result_kwargs
-        )
+        return BuilderArgs(result_args, result_kwargs)
 
 
 class Builder(BuilderFunctor, Generic[T]):
-    """Create a Builder class. A builder allows for the user to more easily edit the parameters than a factory
-    """
+    """Create a Builder class. A builder allows for the user to more easily 
+    edit the parameters than a factory"""
 
     class Updater(Generic[T, K]):
-
-        def __init__(self, builder: 'T', name: str):
+        def __init__(self, builder: "T", name: str):
             self.builder = builder
             self.name = name
 
-        def __call__(self, value: K) -> 'T':
+        def __call__(self, value: K) -> "T":
 
             clone = self.builder.clone()
             clone[self.name] = value
@@ -277,11 +273,15 @@ class Builder(BuilderFunctor, Generic[T]):
         self._arg_names = arg_names
         difference = set(kwargs.keys()).difference(arg_names)
         if len(difference) != 0:
-            raise ValueError(f'Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}')
+            raise ValueError(
+                f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
+            )
 
         difference = set(kwargs.keys()).difference(arg_names)
         if len(difference) != 0:
-            raise ValueError(f'Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}')
+            raise ValueError(
+                f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
+            )
         self._builder_kwargs = BuilderArgs(kwargs=kwargs)
 
     def __setitem__(self, name: str, value: typing.Any) -> None:
@@ -317,21 +317,19 @@ class Builder(BuilderFunctor, Generic[T]):
             return self._builder_kwargs.get(name)
         return super().__getattr__(name)
 
-    def clone(self) -> 'Builder[T]':
+    def clone(self) -> "Builder[T]":
         """The clone of the Builder
 
         Returns:
             Builder[T]: The cloned of the Builder
         """
         kwargs = self._builder_kwargs.clone()
-        builder = self.__class__(
-            self._factory, [*self._arg_names]
-        )
+        builder = self.__class__(self._factory, [*self._arg_names])
         builder._builder_kwargs = kwargs
         return builder
 
-    def spawn(self, **kwargs) -> 'Builder[T]':
-        
+    def spawn(self, **kwargs) -> "Builder[T]":
+
         builder = self.clone()
         for k, v in kwargs.items():
             builder[k] = v
@@ -339,14 +337,12 @@ class Builder(BuilderFunctor, Generic[T]):
 
     def vars(self) -> typing.List[Var]:
         return self._builder_kwargs.vars()
-    
+
     def __call__(self, **kwargs) -> T:
-        
+
         args, kwargs = self._builder_kwargs(**kwargs)
-        return self._factory(
-            *args, **kwargs
-        )
-    
+        return self._factory(*args, **kwargs)
+
     @classmethod
     def kwargs(self, **kwargs) -> typing.Dict[str, typing.Any]:
         """Use to filter out kwarg arguments to the Builder that are UNDEFINED

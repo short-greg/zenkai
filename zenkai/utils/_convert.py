@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
+
 # TODO: Organize better
 
 
@@ -18,7 +19,7 @@ def to_np(x: torch.Tensor) -> np.ndarray:
 def to_th(
     x: np.ndarray,
     dtype: torch.dtype,
-    device: torch.device=None,
+    device: torch.device = None,
     requires_grad: bool = False,
     retains_grad: bool = False,
 ) -> torch.Tensor:
@@ -106,7 +107,8 @@ def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
     Args:
         x (torch.Tensor): input tensor
         k (int): Number of times to repeat. Must be greater than 0
-        reshape (bool, optional): Whether to reshape the output so the first and second dimensions are combined. Defaults to False.
+        reshape (bool, optional): Whether to reshape the output so the first 
+            and second dimensions are combined. Defaults to False.
 
     Raises:
         ValueError: If k is less than or equal to 0
@@ -115,7 +117,7 @@ def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
         torch.Tensor: the expanded tensor
     """
     if k <= 0:
-        raise ValueError(f'Argument k must be greater than 0 not {k}')
+        raise ValueError(f"Argument k must be greater than 0 not {k}")
 
     y = x[None]
 
@@ -164,17 +166,16 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
     """
     try:
         return parameters_to_vector(model.parameters())
-    except NotImplementedError as e:
+    except NotImplementedError:
         return None
 
 
 # apply_to_parameters(module_parameters([linear1, linear2, linear3]))
 
+
 def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
 
-    return chain(
-        model.parameters() for model in models
-    )
+    return chain(model.parameters() for model in models)
 
 
 def apply_to_parameters(parameters: typing.Iterator[torch.nn.parameter.Parameter], f):
@@ -215,7 +216,7 @@ def set_model_grads(model: nn.Module, theta_grad: torch.Tensor):
         start = finish
 
 
-def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool=True):
+def update_model_grads(model: nn.Module, theta_grad: torch.Tensor, to_add: bool = True):
     """Update the gradients of a module
 
     Args:
@@ -255,7 +256,8 @@ def get_model_grads(model: nn.Module) -> typing.Union[torch.Tensor, None]:
 
 
 def lr_update(
-    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None) -> torch.Tensor:
+    current: torch.Tensor, new_: torch.Tensor, lr: typing.Optional[float] = None
+) -> torch.Tensor:
     """update tensor with learning rate
 
     Args:
@@ -306,7 +308,8 @@ def to_signed_neg(x: torch.Tensor) -> torch.Tensor:
     """convert a 'zero' binary tensor to have negative ones for negatives
 
     Args:
-        x (torch.Tensor): Binary tensor with zeros for negatives. Tensor must be all zeros and ones to get expected result
+        x (torch.Tensor): Binary tensor with zeros for negatives. 
+            Tensor must be all zeros and ones to get expected result
 
     Returns:
         torch.Tensor: The signed binary tensor
@@ -340,18 +343,16 @@ def binary_encoding(
     return results.permute(*shape)
 
 
-
-
 def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.Module:
 
     if isinstance(module, nn.Module):
         if len(args) != 0:
-            raise ValueError(f'Cannot set args if module is already defined')
+            raise ValueError("Cannot set args if module is already defined")
         if len(kwargs) != 0:
-            raise ValueError(f'Cannot set kwargs if module is already defined')
+            raise ValueError("Cannot set kwargs if module is already defined")
 
         return module
-    
+
     return getattr(nn, module)(*args, **kwargs)
 
 
@@ -371,6 +372,7 @@ def unsqueeze_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     for i in range(source.dim(), align_to.dim()):
         source = source.unsqueeze(i)
     return source
+
 
 def align_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     """Unsqueeze a tensor to align with another tensor that has more dimensions
@@ -392,8 +394,11 @@ def align_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     return source
 
 
-
-def decay(new_v: torch.Tensor, cur_v: typing.Union[torch.Tensor, float, None]=None, decay: float=0.1) -> torch.Tensor:
+def decay(
+    new_v: torch.Tensor,
+    cur_v: typing.Union[torch.Tensor, float, None] = None,
+    decay: float = 0.1,
+) -> torch.Tensor:
     """Decay the current
 
     Args:
@@ -427,7 +432,7 @@ class SignSTE(torch.autograd.Function):
         """
         Backward pass of the Binary Step function using the Straight-Through Estimator.
         """
-        x, = ctx.saved_tensors
+        (x,) = ctx.saved_tensors
         grad_input = grad_output.clone()
         # return grad_input.clamp(-1, 1)
         grad_input[(x < -1) | (x > 1)] = 0
@@ -452,7 +457,7 @@ class BinarySTE(torch.autograd.Function):
         """
         Backward pass of the Binary Step function using the Straight-Through Estimator.
         """
-        x, = ctx.saved_tensors
+        (x,) = ctx.saved_tensors
         grad_input = grad_output.clone()
         # return grad_input.clamp(-1, 1)
         grad_input[(x < -1) | (x > 1)] = 0
@@ -465,7 +470,6 @@ def binary_ste(x: torch.Tensor) -> torch.Tensor:
 
 def sign_ste(x: torch.Tensor) -> torch.Tensor:
     return SignSTE.apply(x)
-
 
 
 # def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:

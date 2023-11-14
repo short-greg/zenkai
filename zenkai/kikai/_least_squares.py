@@ -19,15 +19,14 @@ from ..kaku import (
     Criterion,
     ThLoss,
     update_io,
-    OptimFactory
+    OptimFactory,
 )
 from ..utils import to_np, to_th_as
 from ._grad import GradStepTheta
 
 
 class LeastSquaresSolver(ABC):
-    """
-    """
+    """ """
 
     @abstractmethod
     def solve(self, a: torch.Tensor, b: torch.Tensor):
@@ -126,8 +125,7 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
 
 
 class LeastSquaresStepTheta(StepTheta):
-    """
-    """
+    """ """
 
     def __init__(
         self,
@@ -140,7 +138,7 @@ class LeastSquaresStepTheta(StepTheta):
         Args:
             linear (nn.Linear): The linear model to optmize theta for
             solver (LeastSquaresSolver, optional): _description_. Defaults to LeastSquaresStandardSolver.
-            optimize_dw (bool, optional): Whether to optimize the delta or the raw value. 
+            optimize_dw (bool, optional): Whether to optimize the delta or the raw value.
               In general recommended to optimize delta to minimize the change bewteen updates. Defaults to False.
         """
         self.linear = linear
@@ -185,14 +183,16 @@ class LeastSquaresStepX(StepX):
         self,
         linear: nn.Linear,
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
-        optimize_dx: bool = False
+        optimize_dx: bool = False,
     ):
         """initializer
 
         Args:
             linear (nn.Linear): The linear model to use
-            solver (LeastSquaresSolver, optional): The solver to use for updating. Defaults to LeastSquaresStandardSolver.
-            optimize_dx (bool, optional): Whether to minimize the delta of x or x. In general recommended to use delta. Defaults to False.
+            solver (LeastSquaresSolver, optional): The solver to use for updating. 
+                Defaults to LeastSquaresStandardSolver.
+            optimize_dx (bool, optional): Whether to minimize the delta of x or x. 
+                In general recommended to use delta. Defaults to False.
         """
         self.linear = linear
         self.solver = solver
@@ -228,8 +228,8 @@ class LeastSquaresStepX(StepX):
 
 
 class LeastSquaresLearner(LearningMachine):
-    """Learner that uses least squares to optimize theta and x. It wraps a standard linear model. 
-    Uses a ridge regresion solver"""
+    """Learner that uses least squares to optimize theta and x. It wraps a 
+    standard linear model. Uses a ridge regresion solver"""
 
     def __init__(
         self,
@@ -237,8 +237,8 @@ class LeastSquaresLearner(LearningMachine):
         out_features: int,
         bias: bool = True,
         optimize_dx: bool = True,
-        lam_theta: float=1e-3,
-        lam_x: float=1e-4
+        lam_theta: float = 1e-3,
+        lam_x: float = 1e-4,
     ):
         """initializer
 
@@ -273,8 +273,8 @@ class LeastSquaresLearner(LearningMachine):
 
 
 class GradLeastSquaresLearner(LearningMachine):
-    """Learner that uses grad to optimize theta and least squares to optimize x. It wraps a standard linear model. 
-    Uses a ridge regresion solver"""
+    """Learner that uses grad to optimize theta and least squares to optimize x. 
+    It wraps a standard linear model. Uses a ridge regresion solver"""
 
     def __init__(
         self,
@@ -282,9 +282,9 @@ class GradLeastSquaresLearner(LearningMachine):
         out_features: int,
         bias: bool = True,
         optimize_dx: bool = True,
-        optim_factory: OptimFactory=None,
-        loss: Criterion=None,
-        lam_x: float=1e-4,
+        optim_factory: OptimFactory = None,
+        loss: Criterion = None,
+        lam_x: float = 1e-4,
     ):
         """_summary_
 
@@ -294,7 +294,8 @@ class GradLeastSquaresLearner(LearningMachine):
             bias (bool, optional): Whether to use the bias. Defaults to True.
             optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
             optim_factory (OptimFactory, optional): The optimizer to use. Defaults to None.
-            loss (Objective, optional): The loss to minimize. Since this is grad descent it must be a minimization function. Defaults to None.
+            loss (Objective, optional): The loss to minimize. Since this is grad 
+                descent it must be a minimization function. Defaults to None.
             lam_x (float, optional): The regularization parameter. Defaults to 1e-4.
         """
         super().__init__()
@@ -303,10 +304,8 @@ class GradLeastSquaresLearner(LearningMachine):
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
-        optim_factory = optim_factory or OptimFactory('Adam', lr=1e-3)
-        self._step_theta = GradStepTheta(
-            self, optim_factory, "mean"
-        )
+        optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
+        self._step_theta = GradStepTheta(self, optim_factory, "mean")
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         assessment = self._loss.assess(y, t, reduction_override=reduction_override)
@@ -314,7 +313,7 @@ class GradLeastSquaresLearner(LearningMachine):
 
     def accumulate(self, x: IO, t: IO, state: State):
         self._step_theta.accumulate(x, t, state)
-    
+
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._step_x.step_x(x, t, state)
 

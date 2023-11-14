@@ -6,7 +6,6 @@ from zenkai.kikai._null import NullLearner
 
 
 class TestNullLearner:
-    
     def test_step_does_not_update_parameters(self):
 
         x = IO(torch.rand(2, 2))
@@ -19,7 +18,7 @@ class TestNullLearner:
         learner.step(x, t, state)
         after = utils.get_model_parameters(learner)
         assert (before == after) and before is None
-    
+
     def test_step_x_does_not_change_y(self):
 
         x = IO(torch.rand(2, 2))
@@ -34,7 +33,7 @@ class TestNullLearner:
     def test_forward_outputs_x(self):
 
         x = IO(torch.rand(2, 2))
-        t = IO(torch.rand(2, 3))
+        IO(torch.rand(2, 3))
         learner = NullLearner()
         state = State()
 

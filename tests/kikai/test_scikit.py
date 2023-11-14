@@ -1,34 +1,23 @@
-import pytest
-import torch
 import torch
 
-from sklearn.linear_model import LogisticRegression, SGDRegressor
+from sklearn.linear_model import SGDRegressor
 
 # local
 from zenkai.kaku import IO, State, StepX, Criterion
-from zenkai.kikai._scikit import (
-    ScikitLimitGen,
-    ScikitMachine,
-    ScikitMultiMachine
-)
+from zenkai.kikai._scikit import ScikitLimitGen, ScikitMachine
 from zenkai.mod._scikit import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kikai.utils import RandomFeatureIdxGen
 
 
 class NullStepX(StepX):
-
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return super().step_x(x, t, state)
 
 
-# 
 class TestSklearnMultiMachine(object):
-
     def test_fit_fits_regressor(self):
         torch.manual_seed(1)
-        regressor = MultiOutputScikitWrapper.regressor(
-            SGDRegressor(), 3, 2
-        )
+        regressor = MultiOutputScikitWrapper.regressor(SGDRegressor(), 3, 2)
         machine = ScikitMachine(
             regressor, NullStepX(), Criterion("MSELoss"), partial=True
         )
@@ -45,15 +34,10 @@ class TestSklearnMultiMachine(object):
 
 
 class TestSklearnMachine(object):
-
     def test_fit_fits_regressor(self):
         torch.manual_seed(1)
-        regressor = ScikitWrapper.regressor(
-            SGDRegressor(), 3
-        )
-        machine = ScikitMachine(
-            regressor, NullStepX(), Criterion("MSELoss")
-        )
+        regressor = ScikitWrapper.regressor(SGDRegressor(), 3)
+        machine = ScikitMachine(regressor, NullStepX(), Criterion("MSELoss"))
         x1 = IO(torch.randn(8, 3))
         t1 = IO(torch.randn(8))
         x2 = IO(torch.randn(8, 3))
@@ -67,11 +51,10 @@ class TestSklearnMachine(object):
 
 
 class TestScikitLimitGen(object):
-
     def test_scikit_limit_gen_returns_empty_if_not_fitted(self):
         limit_gen = ScikitLimitGen(RandomFeatureIdxGen(3, 2))
         assert limit_gen(False) is None
 
     def test_scikit_limit_gen_returns_limit_if_fitted(self):
         limit_gen = ScikitLimitGen(RandomFeatureIdxGen(3, 2))
-        assert len(limit_gen(True)) is 2
+        assert len(limit_gen(True)) == 2

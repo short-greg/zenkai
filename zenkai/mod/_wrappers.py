@@ -9,12 +9,10 @@ import torch.nn as nn
 
 
 class GradHook(object):
-    """Define a wrapper that modifies the gradeint of a module
-    """
+    """Define a wrapper that modifies the gradeint of a module"""
 
     def __init__(self):
-        """Create a grad hook wrapper
-        """
+        """Create a grad hook wrapper"""
         self.grad_out = None
 
     def grad_out_hook(self, grad: torch.Tensor):
@@ -31,10 +29,10 @@ class GradHook(object):
 
 
 class GaussianGradHook(GradHook):
-    """
-    """
-    def __init__(self, weight: float=1.0):
-        """Create 
+    """ """
+
+    def __init__(self, weight: float = 1.0):
+        """Create
 
         Args:
             weight (float, optional): . Defaults to 1.0.
@@ -46,30 +44,31 @@ class GaussianGradHook(GradHook):
         """Method that decorates the gradient
 
         Args:
-            grad (torch.Tensor): 
+            grad (torch.Tensor):
 
         Returns:
             torch.Tensor: the gradient with noise added that is a function of the output
         """
-        grad_out = (self.grad_out * torch.randn_like(self.grad_out) * self.weight).unsqueeze(-2)
-        
+        grad_out = (
+            self.grad_out * torch.randn_like(self.grad_out) * self.weight
+        ).unsqueeze(-2)
+
         grad = (grad.unsqueeze(-1) + grad_out).mean(dim=-1)
         return grad
 
     @classmethod
-    def factory(self, weight: float=1.0) -> typing.Callable[[], 'GaussianGradHook']:
+    def factory(self, weight: float = 1.0) -> typing.Callable[[], "GaussianGradHook"]:
 
         return partial(GaussianGradHook, weight=weight)
 
 
 class HookWrapper(nn.Module):
-
     def __init__(self, wrapped: nn.Module, grad_hook_factory: typing.Type[GradHook]):
         """
 
         Args:
-            wrapped (nn.Module): 
-            grad_hook_factory (typing.Type[GradHook]): 
+            wrapped (nn.Module):
+            grad_hook_factory (typing.Type[GradHook]):
         """
         super().__init__()
         self.grad_hook_factory = grad_hook_factory

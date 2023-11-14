@@ -9,7 +9,9 @@ from ...kaku import Population, Individual
 
 
 # TODO: Remove
-def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typing.Dict:
+def gen_like(
+    f, k: int, orig_p: torch.Tensor, requires_grad: bool = False
+) -> typing.Dict:
     """generate a tensor like another
 
     Args:
@@ -21,7 +23,12 @@ def gen_like(f, k: int, orig_p: torch.Tensor, requires_grad: bool=False) -> typi
     Returns:
         typing.Dict: _description_
     """
-    return f([k] + [*orig_p.shape[1:]], dtype=orig_p.dtype, device=orig_p.device, requires_grad=requires_grad)
+    return f(
+        [k] + [*orig_p.shape[1:]],
+        dtype=orig_p.dtype,
+        device=orig_p.device,
+        requires_grad=requires_grad,
+    )
 
 
 def binary_prob(
@@ -32,7 +39,7 @@ def binary_prob(
     Args:
         x (torch.Tensor): The population input
         loss (torch.Tensor): The loss
-        retrieve_counts (bool, optional): Whether to return the positive 
+        retrieve_counts (bool, optional): Whether to return the positive
           and negative counts in the result. Defaults to False.
 
     Returns:

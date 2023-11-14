@@ -99,8 +99,7 @@ class SequenceReversible(Reversible):
 
 
 class SigmoidInvertable(Reversible):
-    """Invert the sigmoid operation
-    """
+    """Invert the sigmoid operation"""
 
     def reverse(self, y: torch.Tensor):
         return torch.log(y / (1 - y))
@@ -171,7 +170,8 @@ class BatchNorm1DReversible(Reversible):
             torch.Tensor: the inverted batch norm
         """
         return (
-            y * torch.sqrt(self._batch_norm.running_var[None]) + self._batch_norm.running_mean[None]
+            y * torch.sqrt(self._batch_norm.running_var[None])
+            + self._batch_norm.running_mean[None]
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -6,10 +6,9 @@ from . import Assessment, Criterion, State
 
 
 class Objective(ABC):
-    """Defines an objective function
-    """
+    """Defines an objective function"""
 
-    def __init__(self, maximize: bool=True) -> None:
+    def __init__(self, maximize: bool = True) -> None:
         """Create an objective function to be maximized or minimized
 
         Args:
@@ -24,19 +23,17 @@ class Objective(ABC):
 
 
 class Constraint(ABC):
-    
     @abstractmethod
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         pass
 
-    def __add__(self, other: 'Constraint') -> 'CompoundConstraint':
+    def __add__(self, other: "Constraint") -> "CompoundConstraint":
 
         return CompoundConstraint([self, other])
 
 
 class CompoundConstraint(Constraint):
-    """Create a constraint 
-    """
+    """Create a constraint"""
 
     def __init__(self, constraints: typing.List[Constraint]) -> None:
         """Create a compound constraint
@@ -49,7 +46,8 @@ class CompoundConstraint(Constraint):
         for constraint in constraints:
             if isinstance(constraint, CompoundConstraint):
                 self._constraints.extend(constraint.flattened)
-            else: self._constraints.append(constraint)
+            else:
+                self._constraints.append(constraint)
 
     @property
     def flattened(self) -> typing.List[Constraint]:
@@ -58,7 +56,7 @@ class CompoundConstraint(Constraint):
             typing.List[Constraint]: The list of constraints
         """
         return self._constraints
-        
+
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         """
         Returns:
@@ -75,7 +73,11 @@ class CompoundConstraint(Constraint):
         return result
 
 
-def impose(value: torch.Tensor, constraint: torch.BoolTensor=None, penalty: torch.Tensor=torch.inf) -> torch.Tensor:
+def impose(
+    value: torch.Tensor,
+    constraint: torch.BoolTensor = None,
+    penalty: torch.Tensor = torch.inf,
+) -> torch.Tensor:
     """Impose a constraint on a tensor
 
     Args:
@@ -94,14 +96,15 @@ def impose(value: torch.Tensor, constraint: torch.BoolTensor=None, penalty: torc
 
 
 class Itadaki(ABC):
-    """Create an optimizer
-    """
+    """Create an optimizer"""
 
     @abstractmethod
-    def optim_iter(self, objective: Criterion, state: State=None, **kwargs) -> typing.Iterator[Assessment]:
+    def optim_iter(
+        self, objective: Criterion, state: State = None, **kwargs
+    ) -> typing.Iterator[Assessment]:
         raise NotImplementedError
 
-    def optim(self, objective: Criterion, state: State=None, **kwargs) -> Assessment:
+    def optim(self, objective: Criterion, state: State = None, **kwargs) -> Assessment:
         for assessment in self.optim_iter(objective, state, **kwargs):
             pass
         return assessment

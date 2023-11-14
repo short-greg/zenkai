@@ -1,6 +1,5 @@
 # 1st party
 import typing
-from copy import deepcopy
 
 # 3rd party
 from sklearn.base import BaseEstimator
@@ -11,15 +10,16 @@ import torch.nn.functional
 
 # local
 from .. import utils
-from ._wrappers import Lambda
 
 
 class ScikitWrapper(nn.Module):
-
     def __init__(
-        self, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
+        self,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
     ):
         super().__init__()
         self._estimator = sklearn_estimator
@@ -32,24 +32,20 @@ class ScikitWrapper(nn.Module):
     @property
     def in_features(self) -> int:
         return self._in_features
-    
+
     @property
     def out_features(self) -> int:
         return self._out_features
 
     def partial_fit(self, X: torch.Tensor, t: torch.Tensor, **kwargs):
         self._estimator.fit(
-            X.cpu().detach().numpy(),
-            t.cpu().detach().numpy(),
-            **kwargs
+            X.cpu().detach().numpy(), t.cpu().detach().numpy(), **kwargs
         )
         self._fitted = True
 
     def fit(self, X: torch.Tensor, t: torch.Tensor, **kwargs):
         self._estimator.fit(
-            X.cpu().detach().numpy(),
-            t.cpu().detach().numpy(),
-            **kwargs
+            X.cpu().detach().numpy(), t.cpu().detach().numpy(), **kwargs
         )
         self._fitted = True
 
@@ -59,66 +55,79 @@ class ScikitWrapper(nn.Module):
             return self._backup(x)
         return torch.tensor(
             self._estimator.predict(x.cpu().detach().numpy()),
-            device=x.device, dtype=self._out_dtype or x.dtype
+            device=x.device,
+            dtype=self._out_dtype or x.dtype,
         )
 
     @classmethod
     def regressor(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'ScikitWrapper':
-        
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "ScikitWrapper":
+
         if backup is None:
             backup = LinearBackup(in_features, out_features)
         return ScikitWrapper(
-            sklearn_estimator,
-            in_features, out_features, backup, out_dtype
+            sklearn_estimator, in_features, out_features, backup, out_dtype
         )
 
     @classmethod
     def binary(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'ScikitWrapper':
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "ScikitWrapper":
         if backup is None:
             backup = BinaryBackup(in_features, out_features)
-        
+
         return ScikitWrapper(
-            sklearn_estimator,
-            in_features, out_features, backup, out_dtype
+            sklearn_estimator, in_features, out_features, backup, out_dtype
         )
 
     @classmethod
     def multiclass(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        n_classes: int=None,
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'ScikitWrapper':
-        
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        n_classes: int = None,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "ScikitWrapper":
+
         if backup is None:
             backup = MulticlassBackup(in_features, n_classes, out_features)
         return ScikitWrapper(
             sklearn_estimator,
-            in_features, out_features, backup, out_dtype or torch.long
+            in_features,
+            out_features,
+            backup,
+            out_dtype or torch.long,
         )
-    
+
     @property
     def fitted(self) -> bool:
         return self._fitted
 
 
 class MultiOutputScikitWrapper(nn.Module):
-
     def __init__(
-        self, sklearn_estimator: typing.Union[MultiOutputClassifier, MultiOutputRegressor], in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
+        self,
+        sklearn_estimator: typing.Union[MultiOutputClassifier, MultiOutputRegressor],
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
     ):
         super().__init__()
-        
+
         self._estimator = sklearn_estimator
         self._in_features = in_features
         self._out_features = out_features
@@ -129,7 +138,7 @@ class MultiOutputScikitWrapper(nn.Module):
     @property
     def in_features(self) -> int:
         return self._in_features
-    
+
     @property
     def out_features(self) -> int:
         return self._out_features
@@ -222,50 +231,69 @@ class MultiOutputScikitWrapper(nn.Module):
             return self._backup(x)
         return torch.tensor(
             self._estimator.predict(x.cpu().detach().numpy()),
-            device=x.device, dtype=self._out_dtype or x.dtype
+            device=x.device,
+            dtype=self._out_dtype or x.dtype,
         )
 
     @classmethod
     def regressor(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'MultiOutputScikitWrapper':
-        
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "MultiOutputScikitWrapper":
+
         if backup is None:
             backup = LinearBackup(in_features, out_features)
         return MultiOutputScikitWrapper(
             MultiOutputRegressor(sklearn_estimator),
-            in_features, out_features, backup, out_dtype
+            in_features,
+            out_features,
+            backup,
+            out_dtype,
         )
 
     @classmethod
     def binary(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'MultiOutputScikitWrapper':
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "MultiOutputScikitWrapper":
         if backup is None:
             backup = BinaryBackup(in_features, out_features)
-        
+
         return MultiOutputScikitWrapper(
             MultiOutputClassifier(sklearn_estimator),
-            in_features, out_features, backup, out_dtype
+            in_features,
+            out_features,
+            backup,
+            out_dtype,
         )
 
     @classmethod
     def multiclass(
-        cls, sklearn_estimator: BaseEstimator, in_features: int= 1, 
-        n_classes: int=None,
-        out_features: int=None, backup: nn.Module=None,
-        out_dtype: torch.dtype=None
-    ) -> 'MultiOutputScikitWrapper':
-        
+        cls,
+        sklearn_estimator: BaseEstimator,
+        in_features: int = 1,
+        n_classes: int = None,
+        out_features: int = None,
+        backup: nn.Module = None,
+        out_dtype: torch.dtype = None,
+    ) -> "MultiOutputScikitWrapper":
+
         if backup is None:
             backup = MulticlassBackup(in_features, n_classes, out_features)
         return MultiOutputScikitWrapper(
             MultiOutputClassifier(sklearn_estimator),
-            in_features, out_features, backup, out_dtype or torch.long
+            in_features,
+            out_features,
+            backup,
+            out_dtype or torch.long,
         )
 
     @property
@@ -274,8 +302,7 @@ class MultiOutputScikitWrapper(nn.Module):
 
 
 class LinearBackup(nn.Module):
-
-    def __init__(self, in_features: int, out_features: int=None):
+    def __init__(self, in_features: int, out_features: int = None):
         super().__init__()
 
         self._linear = nn.Linear(in_features, (out_features or 1))
@@ -288,11 +315,10 @@ class LinearBackup(nn.Module):
         if self._out_features is None:
             x = x.squeeze(1)
         return x
-    
+
 
 class MulticlassBackup(nn.Module):
-
-    def __init__(self, in_features: int, n_classes: int, out_features: int=None):
+    def __init__(self, in_features: int, n_classes: int, out_features: int = None):
         super().__init__()
 
         self._linear = nn.Linear(in_features, n_classes * (out_features or 1))
@@ -307,11 +333,10 @@ class MulticlassBackup(nn.Module):
             x = x.reshape(x.shape[0], self._out_features, self._n_classes)
         x = torch.argmax(x, dim=-1)
         return x
-    
+
 
 class BinaryBackup(nn.Module):
-
-    def __init__(self, in_features: int, out_features: int=None):
+    def __init__(self, in_features: int, out_features: int = None):
         super().__init__()
 
         self._linear = nn.Linear(in_features, out_features or 1)

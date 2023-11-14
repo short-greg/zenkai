@@ -14,8 +14,7 @@ import torch.optim as optim
 
 
 class NullOptim(torch.optim.Optimizer):
-    """'Optim' that does not update the parameters 
-    """
+    """'Optim' that does not update the parameters"""
 
     def __init__(self, parameters):
         """initializer
@@ -51,8 +50,7 @@ def lookup_optim(optim_name):
 
 
 class OptimFactory(object):
-    """Factory used to create an optimizer
-    """
+    """Factory used to create an optimizer"""
 
     def __init__(
         self,
@@ -71,7 +69,9 @@ class OptimFactory(object):
         try:
             optim = lookup_optim(optim) if isinstance(optim, str) else optim
         except KeyError:
-            raise KeyError(f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}")
+            raise KeyError(
+                f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}"
+            )
         self._optim = optim
         self._args = args
         self._kwargs = kwargs
@@ -92,7 +92,7 @@ class OptimFactory(object):
 
 class ParamFilter(optim.Optimizer):
     """
-    Optimizer used to smooth the results of an optimization. 
+    Optimizer used to smooth the results of an optimization.
     Especially one that makes large changes in the parameters such as a least squares optimizer
     """
 
@@ -143,7 +143,10 @@ class ParamFilter(optim.Optimizer):
         return self.active_optim.state
 
     def state_dict(self):
-        return {"active_params": self.active_params, "filter_params": self.filter_params}
+        return {
+            "active_params": self.active_params,
+            "filter_params": self.filter_params,
+        }
 
     def load_state_dict(self, state_dict):
 
@@ -173,8 +176,7 @@ class ParamFilter(optim.Optimizer):
                 p_i[:] = mp_i.data
 
     def step_filter(self):
-        """Updates the paramters in the base state
-        """
+        """Updates the paramters in the base state"""
         self.filter_optim.zero_grad()
 
         if self._is_first and self.copy_first:
@@ -215,18 +217,18 @@ class ParamFilter(optim.Optimizer):
 
 
 class _OptimF:
-    """Class to make it easy to create Optimfactories
-    """
-    
+    """Class to make it easy to create Optimfactories"""
+
     def __getattr__(self, optim) -> typing.Callable[[typing.Any], OptimFactory]:
-        
         def _(*args, **kwargs) -> OptimFactory:
 
             return OptimFactory(optim, *args, **kwargs)
+
         return _
-    
+
     def __call__(self, optim, *args: Any, **kwargs: Any) -> Any:
         return OptimFactory(optim, *args, **kwargs)
+
 
 # Convenience object for creating optim factories
 optimf = _OptimF()

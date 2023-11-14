@@ -26,6 +26,7 @@ def gaussian_sample(
         )
     return torch.randn_like(mean) * std + mean
 
+
 # TODO: Remove
 def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
     """Retrieve the indices from population. idx is a 2 dimensional tensor"""

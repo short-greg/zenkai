@@ -5,7 +5,6 @@ on the forward pass
 
 # 1st party
 import typing
-from typing import Any
 from abc import ABC, abstractmethod
 
 # 3rd party
@@ -54,7 +53,7 @@ class GaussianNoiser(ExplorerNoiser):
     def __init__(self, std: float = 1.0, mu: float = 0.0):
         super().__init__()
         if std < 0:
-            raise ValueError(f'Standard deviation must be greater than 0 not {std}')
+            raise ValueError(f"Standard deviation must be greater than 0 not {std}")
         self.std = std
         self.mu = mu
 
@@ -65,8 +64,7 @@ class GaussianNoiser(ExplorerNoiser):
 
 
 class ExplorerSelector(nn.Module):
-    """Use to select the noise or the output
-    """
+    """Use to select the noise or the output"""
 
     @abstractmethod
     def forward(self, x: torch.Tensor, noisy: torch.Tensor) -> torch.Tensor:
@@ -80,7 +78,7 @@ class RandSelector(ExplorerSelector):
         """initializer
 
         Args:
-            select_noise_prob (float): The probability that 
+            select_noise_prob (float): The probability that
         """
         super().__init__()
         self.select_noise_prob = select_noise_prob
@@ -221,7 +219,12 @@ class ModuleNoise(nn.Module):
         """
         x = x.view(self._n_instances, -1, *x.shape[1:])
         ps = (
-            torch.randn(self._n_instances, *self._direction_mean.shape, dtype=x.dtype, device=x.device)
+            torch.randn(
+                self._n_instances,
+                *self._direction_mean.shape,
+                dtype=x.dtype,
+                device=x.device,
+            )
             * torch.sqrt(self._direction_var[None])
             + self._direction_mean[None]
         ) + get_model_parameters(self._module_clone)[None]
@@ -229,7 +232,7 @@ class ModuleNoise(nn.Module):
         for x_i, p_i in zip(x, ps):
             update_model_parameters(self._module_clone, p_i)
             ys.append(self._module_clone(x_i))
-        
+
         return torch.cat(ys)
 
 
@@ -258,7 +261,7 @@ class AssessmentDist(ABC):
 
 
 class EqualsAssessmentDist(AssessmentDist):
-    """Determine the distribution of the assessment to draw samples 
+    """Determine the distribution of the assessment to draw samples
     or get the mean. Use for binary or disrete sets"""
 
     def __init__(self, equals_value):
@@ -274,7 +277,7 @@ class EqualsAssessmentDist(AssessmentDist):
         """Calculate the assessment distribution of the input
 
         Args:
-            assessment (Assessment): The assessment of the 
+            assessment (Assessment): The assessment of the
             x (torch.Tensor): the input tensor
 
         Raises:
@@ -282,13 +285,14 @@ class EqualsAssessmentDist(AssessmentDist):
             ValueError: The dimension of x is not 3
 
         Returns:
-            typing.Tuple[torch.Tensor, torch.Tensor] : mean, std  
+            typing.Tuple[torch.Tensor, torch.Tensor] : mean, std
         """
         if assessment.value.dim() != 2:
             raise ValueError("Value must have dimension of 2 ")
         if x.dim() == 3:
             value = assessment.value[:, :, None]
-        else: value = assessment.value
+        else:
+            value = assessment.value
         if x.dim() not in (2, 3):
             raise ValueError("Argument x must have dimension of 2 or 3")
         equals = (x == self.equals_value).type_as(x)
@@ -331,10 +335,9 @@ class EqualsAssessmentDist(AssessmentDist):
 
 
 class FreezeDropout(nn.Module):
-    """Freeze the dropout
-    """
+    """Freeze the dropout"""
 
-    def __init__(self, p: float, freeze: bool=False):
+    def __init__(self, p: float, freeze: bool = False):
         """Create a FreezeDropout
 
         Args:
@@ -346,7 +349,7 @@ class FreezeDropout(nn.Module):
         """
         super().__init__()
         if p >= 1.0 or p < 0.0:
-            raise ValueError(f'P must be in range [0.0, 1.0) not {p}')
+            raise ValueError(f"P must be in range [0.0, 1.0) not {p}")
         self.p = p
         self.freeze = freeze
         self._cur = None
@@ -363,6 +366,6 @@ class FreezeDropout(nn.Module):
             f = self._cur
         else:
             f = (torch.rand_like(x) > self.p).type_as(x)
-        
+
         self._cur = f
         return f * x

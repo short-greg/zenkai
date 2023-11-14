@@ -14,25 +14,22 @@ from ..kaku import (
 
 
 class TargetPropStepX(StepX):
-
     @abstractmethod
     def step_target_prop(self, x: IO, t: IO, y: IO, state: State):
         pass
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, release: bool=True) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, release: bool = True) -> IO:
         pass
 
 
 class TargetPropCriterion(Criterion):
-
     @abstractmethod
-    def forward(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+    def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
 
 
 class StandardTargetPropObjective(TargetPropCriterion):
-
     def __init__(self, base_objective: Criterion):
         """initializer
 
@@ -41,7 +38,7 @@ class StandardTargetPropObjective(TargetPropCriterion):
         """
         super().__init__(base_objective, base_objective.maximize)
         self.base_objective = base_objective
-    
+
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
         Args:
@@ -52,13 +49,12 @@ class StandardTargetPropObjective(TargetPropCriterion):
         Returns:
             torch.Tensor: The resulting loss
         """
-        
+
         return self.base_objective(x.sub(1), t, reduction_override=reduction_override)
 
 
 class RegTargetPropObjective(TargetPropCriterion):
-    """Calculate the target prop loss while minimizing the difference between the predicted value 
-    """
+    """Calculate the target prop loss while minimizing the difference between the predicted value"""
 
     def __init__(self, base_objective: Criterion, reg_objective: Criterion):
         """initializer
@@ -71,7 +67,7 @@ class RegTargetPropObjective(TargetPropCriterion):
         super().__init__(base_objective, base_objective.maximize)
         self.base_objective = base_objective
         self.reg_objective = reg_objective
-    
+
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
         Args:
@@ -82,8 +78,9 @@ class RegTargetPropObjective(TargetPropCriterion):
         Returns:
             torch.Tensor: The resulting loss
         """
-        
-        return (
-            self.base_objective(x.sub(1), t, reduction_override=reduction_override) +
-            self.reg_objective(x.sub(1), x.sub(0).detach(), reduction_override=reduction_override)
+
+        return self.base_objective(
+            x.sub(1), t, reduction_override=reduction_override
+        ) + self.reg_objective(
+            x.sub(1), x.sub(0).detach(), reduction_override=reduction_override
         )
