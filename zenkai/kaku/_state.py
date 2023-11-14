@@ -171,17 +171,21 @@ class State(object):
             return tuple(id(el) if not isinstance(el, IDable) else el.id for el in obj)
         return id(obj)
     
-    def _get_data_container(self, obj, sub_obj=None) -> DataContainer:
+    def _get_data_container(self, obj, sub_obj=None, to_add: bool=True) -> DataContainer:
 
         id = self.id(obj)
         sub_obj_id = self.id(sub_obj)
         if id not in self._data:
+            if not to_add:
+                return None
             self._data[id] = {}
         if sub_obj_id not in self._data[id]:
+            if not to_add:
+                return None
             self._data[id][sub_obj_id] = DataContainer()
         return self._data[id][sub_obj_id] 
 
-    def set(self, obj: IDable, key: typing.Hashable, value, sub_obj: IDable=None, to_keep: bool=False) -> typing.Any:
+    def set(self, index, value, to_keep: bool=False) -> typing.Any:
         """Store data in the state
 
         Args:
@@ -192,11 +196,12 @@ class State(object):
         Returns:
             The value that was stored
         """
+        obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
         data_container.info[key] = StateData(value, to_keep)
         return value 
 
-    def get(self, obj: IDable, key: typing.Hashable, default=None, sub_obj=None) -> typing.Any:
+    def get(self, index, default=None) -> typing.Any:
         """Retrieve the value for a key
 
         Args:
@@ -207,8 +212,11 @@ class State(object):
         Returns:
             typing.Any: The value stored in the object
         """
+        obj, sub_obj, key = self._split_index(index)
 
-        data_container = self._get_data_container(obj, sub_obj)
+        data_container = self._get_data_container(obj, sub_obj, False)
+        if data_container is None:
+            return None
         try:
             if isinstance(key, typing.List):
                 result = []
@@ -220,7 +228,7 @@ class State(object):
         except KeyError:
             return default
 
-    def get_or_set(self, obj: IDable, key: typing.Hashable, default, sub_obj=None) -> typing.Any:
+    def get_or_set(self, index: IDable, default) -> typing.Any:
         """Retrieve the value for a key
 
         Args:
@@ -233,6 +241,7 @@ class State(object):
         """
 
         # obj_id = self.id(obj)
+        obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
         try:
             return data_container.info[key].data
@@ -263,7 +272,12 @@ class State(object):
             typing.Any: The value stored for the object / key pair
         """
         obj, sub_obj, key = self._split_index(index)
-        data_container = self._get_data_container(obj, sub_obj)
+        data_container = self._get_data_container(obj, sub_obj, False)
+        
+        if data_container is None:
+            raise StateKeyError(
+                f"There is no recorded state for {obj} of type {type(obj)} and key {key}"
+            )
         try:
             if isinstance(key, typing.List):
                 result = []
@@ -290,7 +304,7 @@ class State(object):
         data_container.info[key] = StateData(value)
         return value
 
-    def sub(self, obj: IDable, key: str, sub_obj: IDable=None, to_add: bool = True) -> "State":
+    def sub(self, index, to_add: bool = True) -> "State":
         """Retrieve a sub state
 
         Args:
@@ -303,13 +317,16 @@ class State(object):
         Returns:
             State: The substate
         """
-        data_container = self._get_data_container(obj, sub_obj)
+        obj, sub_obj, key = self._split_index(index)
+        data_container = self._get_data_container(obj, sub_obj, to_add)
+        if data_container is None:
+            return None
         if to_add and key not in data_container.subs:
             state = data_container.subs[key] = State()
             return state
         return data_container.subs[key]
 
-    def add_sub(self, obj: IDable, key: str, sub_obj: IDable=None, ignore_exists: bool = True) -> "State":
+    def add_sub(self, index, ignore_exists: bool = True) -> "State":
         """Add a 'sub state' specified by key
 
         Args:
@@ -322,6 +339,7 @@ class State(object):
         Returns:
             State: The substate created
         """
+        obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
 
         if key in data_container.subs and not ignore_exists:
@@ -332,7 +350,7 @@ class State(object):
         return result
 
     # NOT DONE
-    def my_sub(self, obj: IDable, key: str, sub_obj: IDable=None, to_add: bool = True) -> "MyState":
+    def my_sub(self, index, to_add: bool = True) -> "MyState":
         """Retrieve the substate for an object
 
         Args:
@@ -343,11 +361,13 @@ class State(object):
         Returns:
             MyState: The resulting substate
         """
-        mine = self.mine(obj, to_add)
+        obj, sub_obj, key = self._split_index(index)
+        mine = self.mine(obj, sub_obj, to_add)
         return mine.my_sub(key, to_add)
 
-    def keep(self, obj: IDable, key: str, sub_obj: IDable=None, keep: bool=True):
+    def keep(self, index, keep: bool=True):
         
+        obj, sub_obj, key = self._split_index(index)
         data_container = self._get_data_container(obj, sub_obj)
         data_container.info[key].keep = keep
 
@@ -357,7 +377,9 @@ class State(object):
         Yields:
             typing.Iterator[typing.Tuple[str, 'State']]: The name and state of all substates
         """
-        data_container = self._get_data_container(obj, sub_obj)
+        data_container = self._get_data_container(obj, sub_obj, to_add=False)
+        if data_container is None:
+            return
         for key, value in data_container.subs.items():
             yield key, value
 
@@ -466,7 +488,7 @@ class MyState(object):
         Returns:
             MyState: The substate
         """
-        sub = self._state.add_sub(self._obj, key, self._sub_obj, to_add)
+        sub = self._state.add_sub((self._obj, self._sub_obj, key), to_add)
         return sub.mine(self)
 
     def get(self, key: str, default=None) -> typing.Any:
@@ -479,7 +501,7 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
-        self._state.get(self._obj, key, default, self._sub_obj)
+        self._state.get((self._obj, self._sub_obj, key), default)
     
     def get_or_set(self, key: typing.Hashable, default) -> typing.Any:
 
@@ -499,7 +521,7 @@ class MyState(object):
         Returns:
             typing.Any: The value at the key or the default
         """
-        self._state.set(self._obj, key, value, self._sub_obj, keep)
+        self._state.set((self._obj, self._sub_obj, key), value, keep)
 
     def __getitem__(self, key: str) -> typing.Any:
         """Get the value at a key

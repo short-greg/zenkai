@@ -45,8 +45,8 @@ class StackPostStepTheta(StepTheta):
             RuntimeError: if step has not been executed
         """
         
-        stack_x = state.get(self, 'stack_x')
-        stack_t = state.get(self, 'stack_t')
+        stack_x = state.get((self, 'stack_x'))
+        stack_t = state.get((self, 'stack_t'))
         if stack_x is None or stack_t is None:
             raise RuntimeError('Cannot adv if step has not been executed')
         

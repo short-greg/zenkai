@@ -57,7 +57,7 @@ class GradUpdater(object):
             state (State): The state
         """
         my_state = state.mine(self, x)
-        grads = state.get(self, 'grad', sub_obj=x)
+        grads = state.get((self, x, 'grad'))
 
         if grads is None:
             if self.to_update_theta: my_state.grad = get_model_grads(self.net)
@@ -78,7 +78,7 @@ class GradUpdater(object):
         Returns:
             bool: Whether the update was successful. Will return false if no grads have been set
         """
-        grad = state.get(self, 'grad', sub_obj=x)
+        grad = state.get((self, x, 'grad'))
 
         if grad is not None:     
             net = net_override or self.net
@@ -91,7 +91,7 @@ class GradUpdater(object):
     
     def update_x(self, x: IO, state: State) -> IO:
 
-        x_grad = state.get(self, 'x_grad', sub_obj=x)
+        x_grad = state.get((self, x, 'x_grad'))
         if x_grad is not None:
 
             return IO(x.f - x_grad, detach=True), True
@@ -126,8 +126,8 @@ class GradStepTheta(StepTheta):
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO, state: State):
-        y = state.get(self._learner, self.y_name)
-        stepped = state.get(self, "stepped", False)
+        y = state.get((self._learner, self.y_name))
+        stepped = state.get((self, "stepped"), False)
         
         if stepped or y is None:
             x.freshen(False)
@@ -200,7 +200,7 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         x_idx = idx_io(x, batch_idx, False)
         t_idx = idx_io(t, batch_idx, False)
-        y_idx = self._learner(x_idx, state.sub(self, "step"), release=False)
+        y_idx = self._learner(x_idx, state.sub((self, "step")), release=False)
 
         assessment = grad_assess(
             x_idx, y_idx, t_idx, self._learner, self.criterion, self.reduction

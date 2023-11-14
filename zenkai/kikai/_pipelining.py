@@ -392,7 +392,7 @@ class PipelineLearner(LearningMachine):
     
     def get_pipeline(self, x: IO, state: State) -> 'Pipeline':
         
-        pipeline = state.get(self, 'pipeline', sub_obj=x)
+        pipeline = state.get((self, x, 'pipeline'))
         
         if pipeline is None:
             raise RuntimeError('The pipeline has not been set in the forward method')
@@ -463,7 +463,7 @@ class AccPipelineLearner(LearningMachine):
             Pipeline: The pipeline to retrieve
         """
         
-        pipeline = state.get(self, 'pipeline', sub_obj=x)
+        pipeline = state.get((self, x, 'pipeline'))
         
         if pipeline is None:
             raise RuntimeError('The pipeline has not been set in the forward method')

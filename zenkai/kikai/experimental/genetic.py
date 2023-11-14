@@ -89,7 +89,7 @@ class GeneticNNLearner(LearningMachine):
     @forward_dep('y', True)
     def accumulate(self, x: IO, t: IO, state: State):
 
-        y = state.get((self, x), 'y')
+        y = state.get((self, x, 'y'))
         if y is None:
             raise ValueError('Have not passed forward')
 

@@ -96,8 +96,8 @@ class TestState:
         
         x = X()
         state = state2.State()
-        state.set(x, 'value', 1)
-        assert state.get(x, 'value') == 1
+        state.set((x, 'value'), 1)
+        assert state.get((x, 'value')) == 1
 
     def test_getitem_raises_error_if_invalid_obj(self):
         
@@ -110,7 +110,7 @@ class TestState:
         
         x = X()
         state = state2.State()
-        state.set(x, 2, 2)
+        state.set((x, 2), 2)
         with pytest.raises(KeyError):
             state[x, 1] == 2
 
@@ -118,8 +118,8 @@ class TestState:
         
         x = X()
         state = state2.State()
-        sub1 = state.add_sub(x, 'sub')
-        sub2 = state.sub(x, 'sub', to_add=False)
+        sub1 = state.add_sub((x, 'sub'))
+        sub2 = state.sub((x, 'sub'), to_add=False)
         assert sub1 is sub2
 
     def test_data_is_in_state_after_setting(self):
@@ -133,14 +133,14 @@ class TestState:
 
         io = IO()
         state = state2.State()
-        state.set(self, 'x', 2, io, to_keep=True)
+        state.set((self, io, 'x'), 2, to_keep=True)
         assert (self, io, 'x') in state
 
     def test_data_is_in_state_after_storing_and_spawning(self):
 
         io = IO()
         state = state2.State()
-        state.set(self,  'x', 2, io, to_keep=True)
+        state.set((self, io, 'x'), 2, to_keep=True)
         state_ = state.spawn()
         assert (self, io, 'x') in state_
 
@@ -149,7 +149,7 @@ class TestState:
         io = IO()
         state = state2.State()
         state[self, io, 'x'] = 2
-        state.keep(self, 'x', io, True)
+        state.keep((self, io, 'x'), True)
         state_ = state.spawn()
         assert (self, io, 'x') in state_
 
@@ -158,7 +158,7 @@ class TestState:
         io = IO()
         state = state2.State()
         state[self, io, 'x'] = 2
-        state.keep(self, 'x', io, False)
+        state.keep((self, io, 'x'), False)
         state_ = state.spawn()
         assert (self, io, 'x') not in state_
 
@@ -176,14 +176,14 @@ class TestState:
         obj = 'x'
         state = state2.State()
         state[obj, 'y'] = 2
-        assert state.get_or_set(obj, 'y', 3) == 2
+        assert state.get_or_set((obj, 'y'), 3) == 2
 
     def test_get_or_set_sets_value_when_not_set(self):
 
         obj = 'x'
         state = state2.State()
-        state.get_or_set(obj, 'y', 3)
-        assert state.get(obj, 'y') == 3
+        state.get_or_set((obj, 'y'), 3)
+        assert state.get((obj, 'y')) == 3
 
     # def test_clear_removes_all_data_from_state(self):
 
@@ -223,8 +223,8 @@ class TestState:
         
         obj = 'x'
         state = state2.State()
-        sub1 = state.sub(obj, 'sub')
-        sub2 = state.sub(obj, 'sub2')
+        sub1 = state.sub((obj, 'sub'))
+        sub2 = state.sub((obj, 'sub2'))
         subs = set(sub for _, sub in state.sub_iter(obj))
         assert sub1 in subs and sub2 in subs
 
@@ -241,7 +241,7 @@ class TestState:
 
         obj = 'x'
         state = state2.State()
-        state.set(obj, 'z', 2, None, True)
+        state.set((obj, 'z'), 2, True)
         state_ = state.spawn()
         assert state_[obj, 'z'] == 2
 
@@ -249,10 +249,10 @@ class TestState:
 
         obj = 'x'
         state = state2.State()
-        sub = state.sub(obj, 'sub2')
-        sub.set(obj, 'z', 2, None, True)
+        sub = state.sub((obj, 'sub2'))
+        sub.set((obj, 'z'), 2, True)
         state_ = state.spawn()
-        sub2 = state_.sub(obj, 'sub2', None, False)
+        sub2 = state_.sub((obj, 'sub2'), False)
         assert sub2[obj, 'z'] == 2
 
 
@@ -264,7 +264,7 @@ class TestMyState:
         state = state2.State()
         my_state = state.mine(x)
         my_state.x = 2
-        assert state.get(x, 'x') is my_state.x
+        assert state.get((x, 'x')) is my_state.x
 
     def test_my_state_gets_correct_value_in_state(self):
 
@@ -281,7 +281,7 @@ class TestMyState:
         state[x, 'x'] = 2
         my_state = state.mine(x)
         my_state.my_sub('x')
-        assert state.sub(x, 'x') is not None
+        assert state.sub((x, 'x')) is not None
 
     def test_my_state_set_sets_the_value(self):
 
@@ -296,6 +296,6 @@ class TestMyState:
         x = X()
         
         state = state2.State()
-        state.add_sub(x, "sub")
+        state.add_sub((x, "sub"))
         mine = state.mine(x)
-        assert mine.subs['sub'] is state.sub(x, 'sub')
+        assert mine.subs['sub'] is state.sub((x, 'sub'))

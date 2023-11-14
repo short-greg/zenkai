@@ -330,9 +330,7 @@ class DFALearner(LearningMachine):
 
     @classmethod
     def builder(cls, net=UNDEFINED, netB=UNDEFINED, out_features=UNDEFINED, t_features=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="MSELoss") -> Builder['DFALearner']:
-
         """
-        
         
         """
         kwargs = Builder.kwargs(

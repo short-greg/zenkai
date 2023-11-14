@@ -592,14 +592,7 @@ def acc_dep(check_field: str, x_key: bool=True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
             
-            print('Checking ', check_field, func)
-            try:
-                print(state[self, x, check_field])
-                print('FUOND!')
-            except Exception:
-                pass
-            val = state.get(self, check_field, sub_obj=x if x_key else None)
-            print(val)
+            val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError('Method depends on accumulate() but accumulate has not been called')
             return func(self, x, t, state, *args, **kwargs)
@@ -621,7 +614,7 @@ def step_dep(check_field: str, x_key: bool=True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            val = state.get(self, check_field, sub_obj=x if x_key else None)
+            val = state.get((self,x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError('Method depends on step() but step has not been called')
             return func(self, x, t, state, *args, **kwargs)
@@ -642,7 +635,7 @@ def forward_dep(check_field: str, x_key: bool=True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            val = state.get(self, check_field, sub_obj=x if x_key else None)
+            val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError('Method depends on forward but forward has not been executed')
             return func(self, x, t, state, *args, **kwargs)
