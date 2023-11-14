@@ -1,16 +1,15 @@
-# TODO: Add modules for ensemble
 # 1st party
 import typing
-from copy import deepcopy
-import numpy as np
-import torch.nn as nn
-import torch.nn.functional
 from abc import abstractmethod, abstractproperty
-from ..utils import binary_ste, sign_ste
+from copy import deepcopy
 
 # 3rd party
+import torch.nn as nn
+import torch.nn.functional
 from torch.nn.functional import one_hot
 
+# local
+from ..utils import binary_ste, sign_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Tensor:
@@ -39,7 +38,6 @@ def weighted_votes(votes: torch.Tensor, weights: torch.Tensor=None) -> torch.Ten
     return (votes * weights[:,None,None]).sum(dim=0) / ((weights[:,None,None] + 1e-7).sum(dim=0))
 
 
-# TODO: Improve the voter and make it more object oriented
 class VoteAggregator(nn.Module):
     """Module that chooses the best"""
 

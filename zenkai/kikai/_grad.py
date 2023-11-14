@@ -19,10 +19,8 @@ from ..kaku import (
     idx_io,
     Assessment,
     OptimFactory,
-    # BatchIdxAccStepTheta,
     Criterion,
     acc_dep,
-    step_dep,
     ThLoss,
     XCriterion
 )

@@ -367,3 +367,4 @@ class LinearDFABuilder(Builder[DFALearner]):
         self.optim_factory = self.Updater[LinearDFABuilder, OptimFactory](self, 'optim_factory')
         self.criterion = self.Updater[LinearDFABuilder, Criterion](self, 'criterion')
         self.activation = self.Updater[LinearDFABuilder, typing.Type[nn.Module]](self, 'activation')
+

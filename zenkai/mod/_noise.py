@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import IO, Assessment
+from ..kaku import Assessment
 from ..utils import get_model_parameters, update_model_parameters
 from ..utils import gaussian_sample
 

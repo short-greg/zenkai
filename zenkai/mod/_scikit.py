@@ -1,7 +1,6 @@
 # 1st party
 import typing
 from copy import deepcopy
-from functools import partial
 
 # 3rd party
 from sklearn.base import BaseEstimator

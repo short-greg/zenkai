@@ -6,11 +6,8 @@ from collections import OrderedDict
 
 # local
 from ..kaku import (
-    State, IO, LearningMachine, Assessment, 
-    acc_dep, step_dep
+    State, IO, LearningMachine, Assessment
 )
-from ._grad import grad
-from ._reversible import reverse
 
 
 @dataclass

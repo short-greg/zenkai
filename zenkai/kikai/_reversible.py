@@ -7,7 +7,6 @@ import torch.nn as nn
 # local
 from ..kaku import IO, Assessment, IO, LearningMachine, State, Criterion
 from ..mod import Reversible, SequenceReversible
-
 from ..kaku import Assessment, LearningMachine, Criterion, ThLoss, State, IO
 from ..mod import Lambda
 from ._backtarget import BackTarget
