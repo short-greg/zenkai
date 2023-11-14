@@ -33,9 +33,6 @@ from ._iterable import (
     IterHiddenStepTheta,
     IterStepX
 )
-from ._pipelining import (
-    Pipeline, PipelineLearner, AccPipelineLearner, PipeStep, PipeConn
-)
 from ._post import StackPostStepTheta
 from ._ensemble import EnsembleLearner, EnsembleLearnerVoter
 
