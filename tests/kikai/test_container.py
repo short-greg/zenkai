@@ -7,7 +7,7 @@ import torch
 from zenkai.utils import get_model_parameters, get_model_grads
 
 
-class SampleGraph(containers.Graph):
+class SampleGraph(containers.GraphLearner):
     def __init__(self, step_priority: bool = False, target_out: bool = False):
 
         super().__init__()
@@ -35,7 +35,7 @@ class SampleGraph(containers.Graph):
         yield self.wrap(self.linear3, y2, y3, self.step_priority)
 
 
-class SampleAccGraph(containers.AccGraph):
+class SampleAccGraph(containers.AccGraphLearner):
     def __init__(self, target_out: bool = False):
 
         super().__init__()

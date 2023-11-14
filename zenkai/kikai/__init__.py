@@ -63,3 +63,6 @@ from ._feedback_alignment import (
     LinearDFABuilder,
     fa_target,
 )
+from ._containers import (
+    GraphLearner, AccGraphLearner, SStep
+)

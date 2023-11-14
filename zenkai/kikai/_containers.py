@@ -19,23 +19,24 @@ class SStep:
     x_prime: IO = None
 
 
-class Graph(LearningMachine):
+class GraphLearner(LearningMachine):
+    
     @abstractmethod
     def forward_step(
-        self, x: IO, state: State, release: bool = True, *args, **kwargs
+        self, x: IO, state: State, *args, **kwargs
     ) -> typing.Iterator[SStep]:
         pass
 
     def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
 
-        steps = [step for step in self.forward_step(x, state, release, *args, **kwargs)]
+        steps = [step for step in self.forward_step(x, state, *args, **kwargs)]
         y = steps[-1].y
         ordered_steps = OrderedDict()
         for step in steps:
             ordered_steps[step.machine] = step
         state[self, x, "steps"] = steps
         state[self, x, "step_dict"] = ordered_steps
-        return y
+        return y.out(release)
 
     def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
 
@@ -85,23 +86,24 @@ class Graph(LearningMachine):
         return step.x_prime
 
 
-class AccGraph(LearningMachine):
+class AccGraphLearner(LearningMachine):
+
     @abstractmethod
     def forward_step(
-        self, x: IO, state: State, release: bool = True, *args, **kwargs
+        self, x: IO, state: State, *args, **kwargs
     ) -> typing.Iterator[SStep]:
         pass
 
     def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
 
-        steps = [step for step in self.forward_step(x, state, release, *args, **kwargs)]
+        steps = [step for step in self.forward_step(x, state, *args, **kwargs)]
         y = steps[-1].y
         ordered_steps = OrderedDict()
         for step in steps:
             ordered_steps[step.machine] = step
         state[self, x, "steps"] = steps
         state[self, x, "step_dict"] = ordered_steps
-        return y
+        return y.out(release)
 
     def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
 
@@ -138,7 +140,7 @@ class AccGraph(LearningMachine):
             step.x_prime = machine.step_x(step.x, t_i, state)
 
             prev_t = step.x_prime
-        steps[0].machine.accumulate(x, prev_t, state)
+        steps[0].machine.accumulate(steps[0].x, prev_t, state)
 
     def step(self, x: IO, t: IO, state: State):
 
@@ -156,4 +158,4 @@ class AccGraph(LearningMachine):
         steps: typing.List[SStep] = state[self, x, "steps"]
         prev_t = t if len(steps) == 1 else steps[1].x_prime
         t_i = self.get_t(steps[0], state[self, x, "step_dict"], prev_t, t)
-        return steps[0].machine.step_x(x, t_i, state)
+        return steps[0].machine.step_x(steps[0].x, t_i, state)
