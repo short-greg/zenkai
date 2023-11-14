@@ -9,10 +9,6 @@ from ..kaku import LearningMachine, State, IO, Criterion, forward_dep
 from ..utils import unsqueeze_to
 
 
-# TODO: Do not allow automatic execution for dependencies
-# that can cause problems
-
-
 class DecorateStepX(LearningMachine):
 
     def __init__(self, decorated: LearningMachine):

@@ -18,7 +18,6 @@ from ..utils import get_model_parameters, update_model_parameters
 from ..utils import gaussian_sample
 
 
-# TODO: Decide whether to remove
 class NoiseReplace(torch.autograd.Function):
     """
     Replace x with a noisy value. The gradInput for x will be the gradOutput and
@@ -329,23 +328,6 @@ class EqualsAssessmentDist(AssessmentDist):
         """
         mean, _ = self(assessment, x)
         return mean
-
-
-# TODO: Decide whether to remove
-class NoiseReplace2(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, noisy):
-        ctx.save_for_backward(x, noisy)
-        return noisy
-
-    @staticmethod
-    def backward(ctx, grad_output):
-
-        x, noisy = ctx.saved_tensors
-        grad_input = (noisy + grad_output) - x
-        direction = torch.sign(grad_input)
-        magnitude = torch.min(grad_output.abs(), grad_input.abs())
-        return direction * magnitude, None
 
 
 class FreezeDropout(nn.Module):

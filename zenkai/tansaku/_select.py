@@ -236,9 +236,7 @@ class FitnessParentSelector(Selector):
         if (prob < 0.0).any():
             raise ValueError('All assessments must be greater than 0 to use this divider')
         
-        # Figure out how to divide this up
         # (population, ...)
-        # select()
         if prob.dim() > 1:
             r = torch.arange(0, len(prob.shape)).roll(-1).tolist()
             prob = prob.transpose(*r)

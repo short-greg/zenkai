@@ -46,7 +46,6 @@ from ._scikit import (
 from .utils._assess import (
     LayerAssessor, 
     StepAssessHook, 
-    # union_pre_and_post, 
     StepXLayerAssessor,
     StepFullLayerAssessor,
 ) 

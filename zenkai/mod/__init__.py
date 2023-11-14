@@ -11,7 +11,6 @@ from ._filtering import (
 )
 from ._noise import (
     NoiseReplace,
-    NoiseReplace2,
     ModuleNoise,
     GaussianNoiser,
     ExplorerNoiser,

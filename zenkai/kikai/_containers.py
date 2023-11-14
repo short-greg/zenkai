@@ -7,7 +7,7 @@ from collections import OrderedDict
 # local
 from ..kaku import (
     State, IO, LearningMachine, Assessment, 
-    acc_dep, step_dep, Criterion, OptimFactory
+    acc_dep, step_dep
 )
 from ._grad import grad
 from ._reversible import reverse
