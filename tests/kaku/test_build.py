@@ -18,24 +18,24 @@ class TestVar:
 
     def test_dtype_returns_correct_type(self):
 
-        var = _build.Var("x", int)
+        var = _build.Var("x", dtype=int)
         assert var.dtype == int
 
     def test_clone_copies_dtype_and_var(self):
 
-        var = _build.Var("x", int)
+        var = _build.Var("x", dtype=int)
         var2 = var.clone()
         assert var.name == var2.name
         assert var.dtype == var2.dtype
 
     def test_var_call_returns_value_in_arguments(self):
 
-        var = _build.Var("x", int)
+        var = _build.Var("x", dtype=int)
         assert var(x=2) == 2
 
     def test_var_call_raises_error_if_not_in_args(self):
 
-        var = _build.Var("x", int)
+        var = _build.Var("x", dtype=int)
         with pytest.raises(KeyError):
             var(y=2)
 
@@ -102,69 +102,66 @@ class TestBuilderArgs:
         kwargs['x'] == 2
 
 
+class SimpleLearnerBuilder(_build.Builder[SimpleLearner]):
+
+    def __init__(self, in_features: int=None, out_features: int=None):
+
+        super().__init__(
+            SimpleLearner, ['in_features', 'out_features'],
+            in_features=in_features or _build.Var('in_features', in_features),
+            out_features=out_features or _build.Var('out_features', out_features)
+        )
+        self.in_features = self.Updater[SimpleLearnerBuilder, int](self, 'in_features')
+        self.out_features = self.Updater[SimpleLearnerBuilder, int](self, 'out_features')
+
 class TestBuilder:
 
     def test_builder_returns_simple_learner(self):
 
-        SimpleLearnerBuilder = _build.Builder(
-            SimpleLearner, ['in_features', 'out_features'],
-            in_features=_build.Var('in_features'), 
-            out_features=_build.Var('out_features')
-        )
         simple_learner = SimpleLearnerBuilder(
             in_features=2, out_features=3
         )
-        assert isinstance(simple_learner, SimpleLearner)
+        assert isinstance(simple_learner, SimpleLearnerBuilder)
 
     def test_builder_returns_simple_learner_when_out_features(self):
 
-        SimpleLearnerBuilder = _build.Builder(
-            SimpleLearner, ['in_features', 'out_features'],
-            in_features=_build.Var('in_features')
-        )
-        SimpleLearnerBuilder.out_features = _build.Var('out_features')
         simple_learner = SimpleLearnerBuilder(
             in_features=2, out_features=3
         )
-        assert isinstance(simple_learner, SimpleLearner)
+        assert isinstance(simple_learner, SimpleLearnerBuilder)
 
     def test_builder_returns_simple_learner_after_updating_value(self):
 
-        SimpleLearnerBuilder = _build.Builder(
-            SimpleLearner, ['in_features', 'out_features'],
-            in_features=_build.Var('in_features')
-        )
-        SimpleLearnerBuilder.out_features = _build.Var('out_features')
         simple_learner = SimpleLearnerBuilder(
             in_features=2, out_features=3
-        )
+        )()
         assert isinstance(simple_learner, SimpleLearner)
     
+    def test_builder_returns_simple_learner_after_updating_value(self):
+
+        simple_learner = SimpleLearnerBuilder(
+            in_features=2
+        )(out_features=3)
+        assert isinstance(simple_learner, SimpleLearner)
+
     def test_builder_returns_simple_learner_after_updating_value_with_updater(self):
 
-        SimpleLearnerBuilder = _build.Builder(
-            SimpleLearner, ['in_features', 'out_features'],
-            in_features=_build.Var('in_features')
-        )
-        SimpleLearnerBuilder = SimpleLearnerBuilder.out_features(_build.Var('out_features'))
-        simple_learner = SimpleLearnerBuilder(
+        simple_learner_builder = SimpleLearnerBuilder(
             in_features=2, out_features=3
         )
+        simple_learner = simple_learner_builder.in_features(2)()
         assert isinstance(simple_learner, SimpleLearner)
 
     def test_builder_returns_simple_learner_after_updating_value_with_chained_updates(self):
 
-        SimpleLearnerBuilder = _build.Builder[LearningMachine](
-            SimpleLearner, ['in_features', 'out_features'],
-        )
-        
-        SimpleLearnerBuilder = (
-            SimpleLearnerBuilder.out_features(_build.Var('out_features'))
+
+        simple_learner_builder = (
+            SimpleLearnerBuilder().out_features(_build.Var('out_features'))
                                 .in_features(_build.Var('in_features'))
         )
         
         
-        simple_learner = SimpleLearnerBuilder(
+        simple_learner = simple_learner_builder(
             in_features=2, out_features=3
         )
         assert isinstance(simple_learner, SimpleLearner)

@@ -36,7 +36,7 @@ class Var(BuilderFunctor):
     """Defines a variable for including in your build process
     """
 
-    def __init__(self, name: str, dtype: typing.Type=None):
+    def __init__(self, name: str, default=UNDEFINED, dtype: typing.Type=None):
         """
 
         Args:
@@ -44,7 +44,16 @@ class Var(BuilderFunctor):
             dtype (typing.Type, optional): . Defaults to None.
         """
         self._name = name
+        self._default = default
         self._dtype = dtype
+
+    @classmethod
+    def init(self, name: str, value=UNDEFINED, default=UNDEFINED, dtype: typing.Type=None) -> typing.Union['Var', typing.Any]:
+
+        if value != UNDEFINED:
+            return value
+        
+        return Var(name, default, dtype)
 
     @property
     def name(self) -> str:
@@ -67,6 +76,8 @@ class Var(BuilderFunctor):
         try:
             return kwargs[self._name]
         except KeyError:
+            if self._default != UNDEFINED:
+                return self._default
             raise KeyError(f'Variable {self._name} not found in kwargs passed in.')
 
     def clone(self) -> 'Var':
@@ -74,7 +85,7 @@ class Var(BuilderFunctor):
         Returns:
             Var: The cloned variable
         """
-        return Var(self._name, self._dtype)
+        return Var(self._name, self._default, self._dtype)
 
     def vars(self) -> typing.List['Var']:
         """
@@ -85,6 +96,7 @@ class Var(BuilderFunctor):
 
 
 T = TypeVar('T')
+K = TypeVar('K')
 
 
 class Factory(BuilderFunctor, Generic[T]):
@@ -186,6 +198,13 @@ class BuilderArgs(BuilderFunctor):
         else:
             self._kwargs[key] = value
 
+    def get(self, key: typing.Union[int, str]) -> typing.Any:
+
+        if isinstance(key, int):
+            return self._args[key]
+        else:
+            return self._kwargs[key]
+
     def vars(self) -> typing.List[Var]:
         """
 
@@ -228,18 +247,17 @@ class BuilderArgs(BuilderFunctor):
         )
 
 
-
 class Builder(BuilderFunctor, Generic[T]):
     """Create a Builder class. A builder allows for the user to more easily edit the parameters than a factory
     """
 
-    class Updater(Generic[T]):
+    class Updater(Generic[T, K]):
 
-        def __init__(self, builder: 'Builder[T]', name: str):
+        def __init__(self, builder: 'T', name: str):
             self.builder = builder
             self.name = name
 
-        def __call__(self, value) -> 'Builder[T]':
+        def __call__(self, value: K) -> 'T':
 
             clone = self.builder.clone()
             clone[self.name] = value
@@ -255,12 +273,16 @@ class Builder(BuilderFunctor, Generic[T]):
             ValueError: _description_
         """
         super().__init__()
-        super().__setattr__('_factory', factory)
-        super().__setattr__('_arg_names', arg_names)
+        self._factory = factory
+        self._arg_names = arg_names
         difference = set(kwargs.keys()).difference(arg_names)
         if len(difference) != 0:
             raise ValueError(f'Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}')
-        super().__setattr__('_builder_kwargs', BuilderArgs(kwargs=kwargs))
+
+        difference = set(kwargs.keys()).difference(arg_names)
+        if len(difference) != 0:
+            raise ValueError(f'Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}')
+        self._builder_kwargs = BuilderArgs(kwargs=kwargs)
 
     def __setitem__(self, name: str, value: typing.Any) -> None:
         """Set the builder arg
@@ -271,21 +293,8 @@ class Builder(BuilderFunctor, Generic[T]):
         """
         self._builder_kwargs.update(name, value)
         return value
-    
-    def __setattr__(self, name: str, value: typing.Any) -> None:
-        """Update an arg
 
-        Args:
-            name (str): The name of the arg
-            value (typing.Any): The value for the arg
-        """
-        if name in self._arg_names:
-            self[name] = value
-        else:
-            object.__setattr__(self, name, value)
-        return value
-
-    def __getitem__(self, name: str) -> Updater[T]:
+    def __getitem__(self, name: str) -> Updater[T, K]:
         """
         Args:
             name (str): The name of the arg to update
@@ -293,21 +302,35 @@ class Builder(BuilderFunctor, Generic[T]):
         Returns:
             Updater[T]: The Updater object to update the arg
         """
-        return self.Updater[T](self, name)
+        return self._builder_kwargs.get(name)
 
-    def __getattr__(self, name: str) -> Updater[T]:
-        """
-        Args:
-            name (str): The name of the arg to update
+    # def __getattr__(self, name: str) -> Updater[T]:
+    #     """
+    #     Args:
+    #         name (str): The name of the arg to update
 
-        Returns:
-            Updater[T]: The Updater object to update the arg
-        """
+    #     Returns:
+    #         Updater[T]: The Updater object to update the arg
+    #     """
         
-        if name in self._arg_names:            
-            return self[name]
-        return super().__getattr__(name)
+    #     if name in self._arg_names:            
+    #         return self[name]
+    #     return super().__getattr__(name)
+
     
+    # def __setattr__(self, name: str, value: typing.Any) -> None:
+    #     """Update an arg
+
+    #     Args:
+    #         name (str): The name of the arg
+    #         value (typing.Any): The value for the arg
+    #     """
+    #     if name in self._arg_names:
+    #         self[name] = value
+    #     else:
+    #         object.__setattr__(self, name, value)
+    #     return value
+
     def get(self, name: str) -> typing.Any:
         """
         Args:
@@ -328,8 +351,8 @@ class Builder(BuilderFunctor, Generic[T]):
             Builder[T]: The cloned of the Builder
         """
         kwargs = self._builder_kwargs.clone()
-        builder = Builder(
-            self._factory, [*self._arg_names], 
+        builder = self.__class__(
+            self._factory, [*self._arg_names]
         )
         builder._builder_kwargs = kwargs
         return builder
