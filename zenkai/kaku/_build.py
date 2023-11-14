@@ -304,33 +304,6 @@ class Builder(BuilderFunctor, Generic[T]):
         """
         return self._builder_kwargs.get(name)
 
-    # def __getattr__(self, name: str) -> Updater[T]:
-    #     """
-    #     Args:
-    #         name (str): The name of the arg to update
-
-    #     Returns:
-    #         Updater[T]: The Updater object to update the arg
-    #     """
-        
-    #     if name in self._arg_names:            
-    #         return self[name]
-    #     return super().__getattr__(name)
-
-    
-    # def __setattr__(self, name: str, value: typing.Any) -> None:
-    #     """Update an arg
-
-    #     Args:
-    #         name (str): The name of the arg
-    #         value (typing.Any): The value for the arg
-    #     """
-    #     if name in self._arg_names:
-    #         self[name] = value
-    #     else:
-    #         object.__setattr__(self, name, value)
-    #     return value
-
     def get(self, name: str) -> typing.Any:
         """
         Args:

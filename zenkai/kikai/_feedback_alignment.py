@@ -328,22 +328,6 @@ class DFALearner(LearningMachine):
         
         return self._grad_updater.update(x, state, self.net)
 
-    # @classmethod
-    # def builder(cls, net=UNDEFINED, netB=UNDEFINED, out_features=UNDEFINED, t_features=UNDEFINED, optim_factory=UNDEFINED, activation="ReLU", criterion="MSELoss") -> Builder['DFALearner']:
-    #     """
-        
-    #     """
-    #     kwargs = Builder.kwargs(
-    #         net=net, netB=netB,
-    #         out_features=out_features, t_features=t_features, activation=activation,
-    #         criterion=criterion, optim_factory=optim_factory
-    #     )
-
-    #     return Builder[DFALearner](
-    #         DFALearner, ['net', 'netB', 'out_features', 't_features', 'optim_factory', 'activation', 'criterion'], 
-    #         **kwargs
-    #     )
-
 
 class LinearFABuilder(Builder[FALearner]):
 
@@ -383,23 +367,3 @@ class LinearDFABuilder(Builder[DFALearner]):
         self.optim_factory = self.Updater[LinearDFABuilder, OptimFactory](self, 'optim_factory')
         self.criterion = self.Updater[LinearDFABuilder, Criterion](self, 'criterion')
         self.activation = self.Updater[LinearDFABuilder, typing.Type[nn.Module]](self, 'activation')
-
-
-
-# LinearDFABuilder = DFALearner.builder(
-#     net=Factory(nn.Linear, Var('in_features'), Var('out_features')),
-#     netB=Factory(nn.Linear, Var('in_features'), Var('out_features')),
-#     optim_factory=Var('optim_factory'),
-#     out_features=Var('out_features'),
-#     activation=Factory(Var('activation')),
-#     t_features=Var('t_features'), criterion=Var('criterion')
-# )
-
-# LinearFABuilder = FALearner.builder(
-#     net=Factory(nn.Linear, Var('in_features'), Var('out_features')),
-#     netB=Factory(nn.Linear, Var('in_features'), Var('out_features')),
-#     optim_factory=Var('optim_factory'),
-#     activation=Factory(Var('activation')), criterion=Var('criterion')
-# )
-
-
