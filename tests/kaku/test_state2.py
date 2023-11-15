@@ -162,12 +162,27 @@ class TestState:
         state[obj, "y"] = 2
         assert state.get_or_set((obj, "y"), 3) == 2
 
+    def test_get_or_set_gets_value_if_already_set_when_three(self):
+
+        obj = "x"
+        state = state2.State()
+        t = IO()
+        state[obj, t, "y"] = 2
+        assert state.get_or_set((obj, t, "y"), 3) == 2
+
     def test_get_or_set_sets_value_when_not_set(self):
 
         obj = "x"
         state = state2.State()
         state.get_or_set((obj, "y"), 3)
         assert state.get((obj, "y")) == 3
+
+    def test_value_in_state_after_get_and_set(self):
+
+        obj = "x"
+        state = state2.State()
+        state.get_or_set((obj, "y"), 3)
+        assert (obj, "y") in state
 
     # def test_clear_removes_all_data_from_state(self):
 
@@ -241,6 +256,7 @@ class TestState:
 
 
 class TestMyState:
+
     def test_my_state_sets_value_in_state(self):
 
         x = X()
@@ -277,7 +293,6 @@ class TestMyState:
 
     def test_my_state_gets_correct_sub_state(self):
         x = X()
-
         state = state2.State()
         state.add_sub((x, "sub"))
         mine = state.mine(x)

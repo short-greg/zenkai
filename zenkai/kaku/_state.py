@@ -253,11 +253,11 @@ class State(object):
 
         # obj_id = self.id(obj)
         obj, sub_obj, key = self._split_index(index)
-        data_container = self._get_data_container(obj, sub_obj)
-        try:
+        data_container = self._get_data_container(obj, sub_obj, False)
+        if data_container is not None and key in data_container.info:
             return data_container.info[key].data
-        except KeyError:
-            data_container.info[key] = StateData(default)
+        else:
+            self.set(index, default, False)
             return default
 
     def _split_index(self, index) -> typing.Tuple[IDable, IDable, str]:

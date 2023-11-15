@@ -423,6 +423,7 @@ class LinearDFABuilder(Builder[DFALearner]):
                 Var.init("in_features"),
                 Var.init("out_features", out_features),
             ),
+            out_features=Var('out_features'),
             optim_factory=Var.init("optim_factory", optim_factory),
             activation=Factory(Var.init("activation", activation)),
             t_features=Var.init("t_features", t_features),

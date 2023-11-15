@@ -19,22 +19,22 @@ class GraphNode(nn.Module):
     ):
 
         super().__init__()
-        self._graph = graph
+        self._graph = {'graph': graph}
         self._learner = learner
         self._target = target
         self._step_priority = step_priority
     
     def forward(
         self, x: IO, state: State, release: bool=True, 
-        base_x: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
+        x_index: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
     ):
         if target is False:
             target = self._target
         
         y = self._learner(x, state, release, *args, **kwargs)
 
-        if base_x is not None:
-            self._graph.add_step(x, SStep(self._learner, x, y, self._step_priority, target), state)
+        if x_index is not None:
+            self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
         return y
 
     def __str__(self) -> str:
@@ -69,21 +69,21 @@ class GraphLearnerBase(LearningMachine):
             return t
         return prev_t
 
-    def add_step(self, x: IO, sstep: SStep, state: State):
+    def add_step(self, x_index: IO, sstep: SStep, state: State):
 
-        steps = state.get_or_set((self, x, 'steps'), [])
-        step_dict = state.get_or_set((self, x, 'step_dict'), OrderedDict())
+        steps = state.get_or_set((self, x_index, 'steps'), [])
+        step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         
         step_dict[sstep.machine] = sstep
         steps.append(sstep)
     
-    def get_steps(self, x: IO, state: State, validate: bool=False) -> typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]:
+    def get_steps(self, x_index: IO, state: State, validate: bool=False) -> typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]:
 
-        steps, step_dict = state.get((self, x, 'steps')), state.get((self, x, 'step_dict'))
+        steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
 
         if validate and steps is None:
             raise RuntimeError(
-                'Cannot step as the steps have not been set. Must pass the x input into the graph into each nodes base_x.')
+                'Cannot step as the steps have not been set. Must pass the x input into the graph into each nodes index_x.')
 
         return steps, step_dict
 
@@ -131,8 +131,6 @@ class AccGraphLearner(GraphLearnerBase):
     def accumulate(self, x: IO, t: IO, state: State):
 
         steps, step_dict = self.get_steps(x, state, validate=True)
-        if steps is None:
-            raise RuntimeError('Cannot ')
 
         prev_t = t
         for step in reversed(steps[1:]):
@@ -143,7 +141,7 @@ class AccGraphLearner(GraphLearnerBase):
             step.x_prime = machine.step_x(step.x, t_i, state)
 
             prev_t = step.x_prime
-        steps[0].machine.accumulate(steps[0].x, prev_t, state)
+        steps[0].machine.accumulate(steps[0].x, self.get_t(steps[0], step_dict, prev_t, t), state)
 
     def step(self, x: IO, t: IO, state: State):
 

@@ -80,6 +80,8 @@ class ScikitMachine(LearningMachine):
         Returns:
             IO: the updated x
         """
+        if self._step_x is None:
+            return x
         return self._step_x.step_x(x, t, state)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
@@ -179,6 +181,8 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         Returns:
             IO: the updated x
         """
+        if self._step_x is None:
+            return x
         return self._step_x.step_x(x, t, state, feature_idx)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:

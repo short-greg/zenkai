@@ -271,17 +271,17 @@ class Builder(BuilderFunctor, Generic[T]):
         super().__init__()
         self._factory = factory
         self._arg_names = arg_names
-        difference = set(kwargs.keys()).difference(arg_names)
-        if len(difference) != 0:
-            raise ValueError(
-                f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
-            )
+        # difference = set(kwargs.keys()).difference(arg_names)
+        # if len(difference) != 0:
+        #     raise ValueError(
+        #         f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
+        #     )
 
-        difference = set(kwargs.keys()).difference(arg_names)
-        if len(difference) != 0:
-            raise ValueError(
-                f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
-            )
+        # difference = set(kwargs.keys()).difference(arg_names)
+        # if len(difference) != 0:
+        #     raise ValueError(
+        #         f"Keys in kwargs {list(kwargs.keys())} must be a subset of arg_names {arg_names}"
+        #     )
         self._builder_kwargs = BuilderArgs(kwargs=kwargs)
 
     def __setitem__(self, name: str, value: typing.Any) -> None:
@@ -341,6 +341,7 @@ class Builder(BuilderFunctor, Generic[T]):
     def __call__(self, **kwargs) -> T:
 
         args, kwargs = self._builder_kwargs(**kwargs)
+        print(list(kwargs.keys()))
         return self._factory(*args, **kwargs)
 
     @classmethod

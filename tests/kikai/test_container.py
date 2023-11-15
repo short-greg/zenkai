@@ -131,6 +131,7 @@ class TestGraph:
 
 
 class TestAccGraph:
+    
     def test_forward_step_produces_output_of_correct_size(self):
 
         x = IO(torch.rand(4, 8))
