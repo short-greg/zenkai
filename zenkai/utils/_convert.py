@@ -170,9 +170,6 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
         return None
 
 
-# apply_to_parameters(module_parameters([linear1, linear2, linear3]))
-
-
 def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
 
     return chain(model.parameters() for model in models)

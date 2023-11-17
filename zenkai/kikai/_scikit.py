@@ -29,7 +29,6 @@ class ScikitMachine(LearningMachine):
         module: ScikitWrapper,
         step_x: StepX,
         criterion: Criterion,
-        preprocessor: nn.Module = None,
         partial: bool = False,
     ):
         """initializer
@@ -45,7 +44,6 @@ class ScikitMachine(LearningMachine):
         self._criterion = criterion
         self._step_x = step_x
         self._partial = partial
-        self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._criterion.assess(y, t, reduction_override)
@@ -60,9 +58,6 @@ class ScikitMachine(LearningMachine):
             feature_idx (Idx, optional): . Defaults to None.
 
         """
-        if self._preprocessor is not None:
-            x = IO(self._preprocessor(*x))
-
         if self._partial:
             self._module.partial_fit(x.f, t.f, **kwargs)
         else:
@@ -97,8 +92,6 @@ class ScikitMachine(LearningMachine):
         """
 
         x = x.f
-        if self._preprocessor is not None:
-            x = self._preprocessor(x)
 
         y = IO(self._module(x))
         return y.out(release=release)
@@ -110,6 +103,36 @@ class ScikitMachine(LearningMachine):
             bool: Whether or not the estimator has been fitted
         """
         return self._module.fitted
+    
+    @classmethod
+    def regressor(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMachine(
+            ScikitWrapper.regressor(estimator, in_features, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
+
+    @classmethod
+    def binary(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMachine(
+            ScikitWrapper.binary(estimator, in_features, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
+
+    @classmethod
+    def multiclass(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, n_classes: int=None, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMachine(
+            ScikitWrapper.multiclass(estimator, in_features, n_classes, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
 
 
 class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
@@ -211,6 +234,39 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             bool: Whether or not the estimator has been fitted
         """
         return self._module.fitted
+
+    @classmethod
+    def regressor(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
+        in_features: int, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMultiMachine(
+            MultiOutputScikitWrapper.regressor(estimator, in_features, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
+
+    @classmethod
+    def binary(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
+        in_features: int, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMultiMachine(
+            ScikitWrapper.binary(estimator, in_features, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
+
+    @classmethod
+    def multiclass(
+        self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
+        in_features: int, n_classes: int=None, out_features: int=None, 
+        backup=None, out_dtype=None, partial: bool=False):
+
+        return ScikitMultiMachine(
+            ScikitWrapper.multiclass(estimator, in_features, n_classes, out_features, backup, out_dtype), 
+            step_x, criterion, partial
+        )
 
 
 class ScikitLimitGen(FeatureLimitGen):

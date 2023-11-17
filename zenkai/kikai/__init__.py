@@ -54,6 +54,12 @@ from ._grad import (
 from ._backtarget import (
     BackTarget,
 )
+from ._least_squares import (
+    LeastSquaresLearner, LeastSquaresRidgeSolver,
+    LeastSquaresSolver, LeastSquaresStandardSolver,
+    LeastSquaresStepTheta, GradLeastSquaresLearner,
+    LeastSquaresStepX
+)
 from ._reversible import ReversibleMachine, reverse
 from ._feedback_alignment import (
     FALearner,
@@ -65,4 +71,7 @@ from ._feedback_alignment import (
 )
 from ._containers import (
     GraphLearner, AccGraphLearner, SStep
+)
+from ._target_prop import (
+    TargetPropCriterion, TargetPropStepX, RegTargetPropObjective, StandardTargetPropObjective
 )

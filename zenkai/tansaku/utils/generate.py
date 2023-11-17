@@ -8,6 +8,16 @@ import torch
 from ...kaku import Population, Individual
 
 
+def gather_idx_from_population(pop: torch.Tensor, idx: torch.LongTensor):
+    """Retrieve the indices from population. idx is a 2 dimensional tensor"""
+    repeat_by = [1] * len(idx.shape)
+    for i, sz in enumerate(pop.shape[2:]):
+        idx = idx.unsqueeze(i + 2)
+        repeat_by.append(sz)
+    idx = idx.repeat(*repeat_by)
+    return pop.gather(0, idx)
+
+
 # TODO: Remove
 def gen_like(
     f, k: int, orig_p: torch.Tensor, requires_grad: bool = False

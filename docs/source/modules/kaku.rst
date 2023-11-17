@@ -63,10 +63,10 @@ IO:
    # The IO is 
 
    x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
-   # .f accesses the first element of the IO
+   # .f accesses the front (first) element of the IO
    print(x.f) # torch.tensor([[2, 3], [3, 4]])
-   # .l accesses the last element of the IO
-   print(x.l) # torch.tensor([[1, 1], [0 0]]])
+   # .r accesses the rear (last) element of the IO
+   print(x.r) # torch.tensor([[1, 1], [0 0]]])
    # .u allows access to the tuple storing the values
    print(x.u[0]) # torch.tensor([[2, 3], [3, 4]]) 
    x.freshen() # detach and retain the gradients. Retaining the gradients is essential for implementing backprop with zenkai

@@ -3,6 +3,7 @@ import typing
 
 # 3rd party
 from sklearn.base import BaseEstimator
+import sklearn
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 import numpy as np
 import torch.nn as nn
@@ -115,6 +116,13 @@ class ScikitWrapper(nn.Module):
     @property
     def fitted(self) -> bool:
         return self._fitted
+    
+    def clone(self):
+
+        return ScikitWrapper(
+            sklearn.base.clone(self._estimator), self.in_features, self.out_features, 
+            self._backup, self._out_dtype
+        )
 
 
 class MultiOutputScikitWrapper(nn.Module):
@@ -300,6 +308,13 @@ class MultiOutputScikitWrapper(nn.Module):
     def fitted(self) -> bool:
         return self._fitted
 
+    def clone(self):
+
+        return ScikitWrapper(
+            sklearn.base.clone(self._estimator), self.in_features, self.out_features, 
+            self._backup, self._out_dtype
+        )
+    
 
 class LinearBackup(nn.Module):
     def __init__(self, in_features: int, out_features: int = None):

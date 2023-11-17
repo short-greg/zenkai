@@ -199,13 +199,14 @@ class EnsembleVoter(Voter):
         spawner_args: typing.List = None,
         spawner_kwargs: typing.Dict = None,
     ):
-        """
+        """_summary_
+
         Args:
-            base_estimator (scikit.ScikitEstimator): Base estimator
-            n_keep (int): Number of estimators to keep each round
-            step_x (StepX): StepX to update machine with
-            loss (Loss): The loss to evaluate the machine with
-            preprocessor (nn.Module, optional): Module to execute before . Defaults to None.
+            spawner (typing.Callable[[], nn.Module]): _description_
+            n_keep (int): _description_
+            temporary (nn.Module, optional): _description_. Defaults to None.
+            spawner_args (typing.List, optional): _description_. Defaults to None.
+            spawner_kwargs (typing.Dict, optional): _description_. Defaults to None.
         """
         super().__init__()
 

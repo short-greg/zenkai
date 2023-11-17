@@ -8,8 +8,8 @@ import torch
 
 # local
 from ..kaku import TensorDict
-from ..utils import gather_idx_from_population, align_to
-
+from ..utils import align_to
+from .utils import gather_idx_from_population
 from ..kaku import IO, Assessment
 
 

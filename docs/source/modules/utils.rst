@@ -11,10 +11,6 @@ Key Utilities
 The utilities are used by the core modules, Tansaku, Kikai to make it easier to implement the framework. They are as follows:
 
 - :mod:`Parameter Utilities` - There are several utilities for retrieving and setting parameters or there gradients
-- :mod:`VoterAggregator` - VoterAggregator is the base class for utilties to aggregate votes in an ensemble. There are BinaryVoterAggregator, MulticlassVoterAggregator, and RegrsesionVoterAggregator.
-- :mod:`Voter` - Voter is the base class for utilities to handle the Voting in an ensemble. There are two kinds currently. EnsembleVoter which uses a regular ensemble model and StochasticVoter which wraps a network that outputs a distribution of values such as one that uses dropout.
-- :mod:`Modules` - There are a variety of modules primarily implemented for cases where the gradient is undefined using techniques such as straight through estimation.
-- :mod:`Reversible` - Reversible is the base class for reversible modules. There are several implemented such as LeakyReLU, Sigmoid, ReLU, BatchNorm
 
 
 - **Parameter Utilities**: 

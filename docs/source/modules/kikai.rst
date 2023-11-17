@@ -46,7 +46,7 @@ Kikai implements  LearningMachines.
 
          def step(self, x: IO, t: IO, state: State):
             # implement a method to update the parameters
-            my_state = state.mind((self, x))
+            my_state = state.mine(self, x)
             self.layer2.step(my_state.layer1, t, state)
             t1 = my_state.t1 = self.layer2.step_x(my_state.layer1, t, state)
             self.layer1.step(x, t, state)
