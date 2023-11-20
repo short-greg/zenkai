@@ -10,7 +10,8 @@ Key Utilities
 ==========================
 The utilities are used by the core modules, Tansaku, Kikai to make it easier to implement the framework. They are as follows:
 
-- :mod:`Parameter Utilities` - There are several utilities for retrieving and setting parameters or there gradients
+- :mod:`Parameter` - There are several utilities for retrieving and setting parameters or there gradients
+- :mod:`Sampling` - There are several utilities for retrieving and setting parameters or there gradients
 
 
 - **Parameter Utilities**: 
