@@ -4,7 +4,7 @@ Utils
 
 Introduction
 ============
-Utils are general utilties used by other modules in Zenkai.
+Utils are general utilities used by other modules in Zenkai.
 
 Key Utilities
 ==========================
