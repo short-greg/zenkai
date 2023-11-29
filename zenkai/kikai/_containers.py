@@ -3,6 +3,7 @@ import typing
 from dataclasses import dataclass
 from abc import abstractmethod
 from collections import OrderedDict
+from typing import Any
 
 # 3rd party
 from torch import nn
@@ -30,7 +31,7 @@ class GraphNode(nn.Module):
     def forward(
         self, x: IO, state: State, release: bool=True, 
         x_index: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
-    ):
+    ) -> IO:
         if target is False:
             target = self._target
         
@@ -39,6 +40,11 @@ class GraphNode(nn.Module):
         if x_index is not None:
             self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
         return y
+
+    def __call__(self, x: IO, state: State, release: bool=True, 
+        x_index: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
+    ) -> IO:
+        return super().__call__(x, state, release, x_index, target, *args, **kwargs)
 
     def __str__(self) -> str:
         return f'GraphNode {type(self._learner), type(self._target)}'
