@@ -8,7 +8,10 @@ from collections import OrderedDict
 from torch import nn
 
 # local
-from ..kaku import State, IO, LearningMachine, Assessment
+from ..kaku import State, IO, LearningMachine, Assessment, Criterion, OptimFactory, XCriterion, ThLoss
+from ._grad import GradLearner
+from ._backtarget import BackTarget
+from ..mod import Lambda
 
 
 class GraphNode(nn.Module):
@@ -87,10 +90,97 @@ class GraphLearnerBase(LearningMachine):
 
         return steps, step_dict
 
-    def node(self, learner: LearningMachine, target=None, step_priority: bool=False):
+    def add_learner(self, learner: LearningMachine, target=None, step_priority: bool=False) -> 'GraphNode':
+        """Add a learner to the graph
+
+        Args:
+            learner (LearningMachine): The learner to add
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+            step_priority (bool, optional): Whether to step before doing step_x. Defaults to False.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+        return GraphNode(self, learner, step_priority, target)
+
+    def add_grad(
+        self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory, 
+        target=None, step_priority: bool=False, learn_theta: bool=True, reduction: str='sum', x_lr: float=1.0, 
+        step_dep: bool=False, learn_criterion: typing.Union[Criterion, XCriterion]=None
+    ) -> 'GraphNode':
+        """Add a grad learner to the graph
+
+        Args:
+            mod (nn.Module): The module to add
+            criterion (Criterion): The criterion to evaluate with
+            optim_factory (OptimFactory): The optimizer to use
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+            step_priority (bool, optional): Whether to do step before step_x. Defaults to False.
+            learn_theta (bool, optional): Whether the parameters should be updated. Defaults to True.
+            reduction (str, optional): The reduction for the criterion. Defaults to 'sum'.
+            x_lr (float, optional): The learning rate for x. Defaults to 1.0.
+            step_priority (bool, optional): Whether to step before doing step_x. Defaults to False.
+            learn_criterion (typing.Union[Criterion, XCriterion], optional): Criterion to use for learning. If none will use the assess method. Defaults to None.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+
+        learner = GradLearner(mod, criterion, optim_factory, learn_theta, reduction, x_lr, step_dep, learn_criterion)
 
         return GraphNode(self, learner, step_priority, target)
 
+    def add_gradf(
+        self, f: typing.Callable, *args, criterion: Criterion=None, 
+        target=None, reduction: str='sum', x_lr: float=1.0, **kwargs
+    ) -> 'GraphNode':
+        """Add a function to the graph that uses grad for step x
+
+        Args:
+            f (typing.Callable): The function to add the node for
+            criterion (Criterion, optional): The criterion for evaluation. Defaults to None.
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+            reduction (str, optional): The reduction for the criterion. Defaults to 'sum'.
+            x_lr (float, optional): The learning rate for x. Defaults to 1.0.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+        mod = Lambda(f, *args, **kwargs)
+        criterion = criterion or ThLoss('MSELoss', reduction='sum')
+        learner = GradLearner(mod, criterion, None, False, reduction, x_lr, False)
+        return GraphNode(self, learner, False, target)
+
+    def add_back(self, mod: nn.Module, criterion: Criterion, target=None) -> 'GraphNode':
+        """Add a BackTarget 'Learner' to the graph
+
+        Args:
+            mod (nn.Module): The module to add
+            criterion (Criterion, optional): The criterion for evaluation. Defaults to None.
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+        learner = BackTarget(mod, criterion)
+        return GraphNode(self, learner, False, target)
+
+    def add_backf(self, f: typing.Callable, *args, criterion: Criterion=None, target=None, **kwargs) -> 'GraphNode':
+        """_summary_
+
+        Args:
+            f (typing.Callable): The function to add to the graph
+            criterion (Criterion, optional): The criterion for evaluation. Defaults to None.
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+        mod = Lambda(f, *args, **kwargs)
+        criterion = criterion or ThLoss('MSELoss', reduction='sum')
+        learner = BackTarget(mod, criterion)
+        return GraphNode(self, learner, False, target)
+    
     @abstractmethod
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         pass

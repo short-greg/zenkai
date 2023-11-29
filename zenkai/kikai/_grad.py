@@ -37,7 +37,7 @@ class GradUpdater(object):
         net: nn.Module,
         optim: torch.optim.Optimizer,
         to_update_theta: bool = True,
-        to_update_x: bool = True,
+        to_update_x: bool = True
     ):
         """initializer
 
@@ -114,6 +114,7 @@ class GradStepTheta(StepTheta):
         reduction: str = "mean",
         y_name: str = "y",
         criterion: typing.Union[Criterion, XCriterion] = None,
+        store_grad: bool=True
     ):
         """Update theta with the objective between y and t on the forward pass
 
@@ -127,7 +128,7 @@ class GradStepTheta(StepTheta):
         self._optim = optim_factory(self._learner.parameters())
         self.reduction = reduction
         self.y_name = y_name
-        self._grad_updater = GradUpdater(self._learner, self._optim, to_update_x=False)
+        self._grad_updater = GradUpdater(self._learner, self._optim, to_update_x=False, use_state=store_grad)
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO, state: State):

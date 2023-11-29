@@ -14,9 +14,9 @@ class SampleGraph(containers.GraphLearner):
         if target_out:
             target = 't'
         else: target = None
-        self.linear1 = self.node(THGradLearnerT1(8, 4), target, step_priority)
-        self.linear2 = self.node(THGradLearnerT1(4, 4), target, step_priority)
-        self.linear3 = self.node(THGradLearnerT1(4, 4), step_priority=step_priority)
+        self.linear1 = self.add_learner(THGradLearnerT1(8, 4), target, step_priority)
+        self.linear2 = self.add_learner(THGradLearnerT1(4, 4), target, step_priority)
+        self.linear3 = self.add_learner(THGradLearnerT1(4, 4), step_priority=step_priority)
         self.step_priority = step_priority
         self.target_out = target_out
 
@@ -41,9 +41,9 @@ class SampleAccGraph(containers.AccGraphLearner):
         if target_out:
             target = 't'
         else: target = None
-        self.linear1 = self.node(THGradLearnerT1(8, 4), target)
-        self.linear2 = self.node(THGradLearnerT1(4, 4), target)
-        self.linear3 = self.node(THGradLearnerT1(4, 4))
+        self.linear1 = self.add_learner(THGradLearnerT1(8, 4), target)
+        self.linear2 = self.add_learner(THGradLearnerT1(4, 4), target)
+        self.linear3 = self.add_learner(THGradLearnerT1(4, 4))
         self.target_out = target_out
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
