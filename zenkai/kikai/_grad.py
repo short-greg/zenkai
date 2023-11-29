@@ -293,7 +293,7 @@ class GradLoopStepX(BatchIdxStepX):
     def __init__(
         self,
         learner: LearningMachine,
-        optim_factory: OptimFactory,
+        optim_factory: OptimFactory=None,
         reduction: str = "mean",
         loss_name: str = "loss",
         criterion: typing.Union[Criterion, XCriterion] = None,
@@ -309,7 +309,7 @@ class GradLoopStepX(BatchIdxStepX):
         super().__init__()
 
         self._learner = learner
-        self.optim_factory = optim_factory
+        self.optim_factory = optim_factory or OptimFactory('SGD', lr=1e0)
         self.reduction = reduction
         self.loss_name = loss_name
         self.criterion = criterion
@@ -355,10 +355,9 @@ class GradLearner(LearningMachine):
         module: typing.Union[nn.Module, typing.List[nn.Module], None],
         criterion: Criterion,
         optim_factory: OptimFactory = None,
-        learn_theta: bool = True,
+        loop: bool = False,
         reduction: str = "mean",
         x_lr: float = None,
-        step_dep: bool = True,
         learn_criterion: typing.Union[XCriterion, Criterion] = None,
     ):
         """Standard gradient learner
@@ -383,12 +382,12 @@ class GradLearner(LearningMachine):
         else:
             self._net = nn.Sequential(*module)
 
-        if module is None and learn_theta is True:
+        if module is None:
             raise ValueError(
                 "Argument learn_theta cannot be true if module is set to None"
             )
-        if learn_theta is False and step_dep is True:
-            raise ValueError("Arument learn_theta cannot be false if step_dep is true")
+        # if learn_theta is False and step_dep is True:
+        #     raise ValueError("Arument learn_theta cannot be false if step_dep is true")
         self._criterion = criterion
         if optim_factory is not None:
             self._theta_step = GradStepTheta(
@@ -396,7 +395,7 @@ class GradLearner(LearningMachine):
             )
         else:
             self._theta_step = NullStepTheta()
-        if step_dep or optim_factory is None:
+        if not loop:
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(

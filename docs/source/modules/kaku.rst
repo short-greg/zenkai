@@ -122,7 +122,7 @@ LearningMachine: Show how to implement with gradient descent
       def forward(self, x: IO, state: State, release: bool=True) -> IO:
 
          x.freshen()
-         y = state[(self, x), 'y'] = IO(self.linear(x.f))
+         y = state[self, x, 'y'] = IO(self.linear(x.f))
          return y.out(release)
 
 

@@ -104,7 +104,7 @@ class GraphLearnerBase(LearningMachine):
         return GraphNode(self, learner, step_priority, target)
 
     def add_grad(
-        self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory, 
+        self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory=None, 
         target=None, step_priority: bool=False, learn_theta: bool=True, reduction: str='sum', x_lr: float=1.0, 
         step_dep: bool=False, learn_criterion: typing.Union[Criterion, XCriterion]=None
     ) -> 'GraphNode':
