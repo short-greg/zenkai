@@ -370,9 +370,6 @@ class GradLearner(LearningMachine):
             learn_theta (bool): Whether to update the parameters of theta
             reduction (str, optional): The reduction to use for the loss to optimize theta.
               Defaults to "mean".
-            step_dep (bool, optional): Whether step_x is dependent on step. If False, GradLoopStepX will
-             be used otherwise
-
         """
         super().__init__()
         if isinstance(module, nn.Module):
@@ -386,8 +383,6 @@ class GradLearner(LearningMachine):
             raise ValueError(
                 "Argument learn_theta cannot be true if module is set to None"
             )
-        # if learn_theta is False and step_dep is True:
-        #     raise ValueError("Arument learn_theta cannot be false if step_dep is true")
         self._criterion = criterion
         if optim_factory is not None:
             self._theta_step = GradStepTheta(

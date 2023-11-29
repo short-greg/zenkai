@@ -132,7 +132,10 @@ class GraphLearnerBase(LearningMachine):
             GraphNode: The node added to the graph
         """
 
-        learner = GradLearner(mod, criterion, optim_factory, learn_theta, reduction, x_lr, step_dep, learn_criterion)
+        learner = GradLearner(
+            mod, criterion, optim_factory, learn_theta, reduction, 
+            x_lr, step_dep, learn_criterion
+        )
 
         return GraphNode(self, learner, step_priority, target)
 
