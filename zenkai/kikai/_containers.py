@@ -30,21 +30,24 @@ class GraphNode(nn.Module):
     
     def forward(
         self, x: IO, state: State, release: bool=True, 
-        x_index: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
+        target: typing.Union[str, LearningMachine]=False, 
+        *args, **kwargs
     ) -> IO:
         if target is False:
             target = self._target
         
+        x_index = x.meta.get('x_index', x)
         y = self._learner(x, state, release, *args, **kwargs)
+        y.meta['base_x'] = x_index
 
         if x_index is not None:
             self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
         return y
 
     def __call__(self, x: IO, state: State, release: bool=True, 
-        x_index: IO=None, target: typing.Union[str, LearningMachine]=False, *args, **kwargs
+        target: typing.Union[str, LearningMachine]=False, *args, **kwargs
     ) -> IO:
-        return super().__call__(x, state, release, x_index, target, *args, **kwargs)
+        return super().__call__(x, state, release, target, *args, **kwargs)
 
     def __str__(self) -> str:
         return f'GraphNode {type(self._learner), type(self._target)}'
@@ -112,7 +115,7 @@ class GraphLearnerBase(LearningMachine):
     def add_grad(
         self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory=None, 
         target=None, step_priority: bool=False, learn_theta: bool=True, reduction: str='sum', x_lr: float=1.0, 
-        step_dep: bool=False, learn_criterion: typing.Union[Criterion, XCriterion]=None
+        learn_criterion: typing.Union[Criterion, XCriterion]=None
     ) -> 'GraphNode':
         """Add a grad learner to the graph
 
@@ -134,7 +137,7 @@ class GraphLearnerBase(LearningMachine):
 
         learner = GradLearner(
             mod, criterion, optim_factory, learn_theta, reduction, 
-            x_lr, step_dep, learn_criterion
+            x_lr, learn_criterion
         )
 
         return GraphNode(self, learner, step_priority, target)
@@ -157,7 +160,7 @@ class GraphLearnerBase(LearningMachine):
         """
         mod = Lambda(f, *args, **kwargs)
         criterion = criterion or ThLoss('MSELoss', reduction='sum')
-        learner = GradLearner(mod, criterion, None, False, reduction, x_lr, False)
+        learner = GradLearner(mod, criterion, None, False, reduction, x_lr)
         return GraphNode(self, learner, False, target)
 
     def add_back(self, mod: nn.Module, criterion: Criterion, target=None) -> 'GraphNode':

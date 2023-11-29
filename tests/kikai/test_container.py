@@ -27,10 +27,9 @@ class SampleGraph(containers.GraphLearner):
         self, x: IO, state: State, release: bool = True, *args, **kwargs
     ) -> typing.Iterator[SStep]:
 
-        base_x = x
-        x = self.linear1(x, state, release, base_x)
-        x = self.linear2(x, state, release, base_x)
-        x = self.linear3(x, state, release, base_x)
+        x = self.linear1(x, state, release)
+        x = self.linear2(x, state, release)
+        x = self.linear3(x, state, release)
         return x
 
 
@@ -53,10 +52,9 @@ class SampleAccGraph(containers.AccGraphLearner):
         self, x: IO, state: State, release: bool = True, *args, **kwargs
     ) -> typing.Iterator[SStep]:
 
-        base_x = x
-        x = self.linear1(x, state, release, base_x)
-        x = self.linear2(x, state, release, base_x)
-        x = self.linear3(x, state, release, base_x)
+        x = self.linear1(x, state, release)
+        x = self.linear2(x, state, release)
+        x = self.linear3(x, state, release)
         return x
 
 

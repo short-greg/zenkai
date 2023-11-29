@@ -19,7 +19,7 @@ class IO(object):
     Container for the inputs, outputs, and targets of a learning machine
     """
 
-    def __init__(self, *x, detach: bool = False, names: typing.List[str] = None):
+    def __init__(self, *x, detach: bool = False, names: typing.List[str] = None, meta: typing.Dict=None):
         """Wrap the inputs
 
         Args:
@@ -43,6 +43,7 @@ class IO(object):
             self._names = {name: i for i, name in enumerate(names)}
         else:
             self._names = None
+        self.meta = meta or {}
 
     def freshen(self, inplace: bool = False) -> "IO":
         """Set the values of the IO

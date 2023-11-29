@@ -37,7 +37,8 @@ class GradUpdater(object):
         net: nn.Module,
         optim: torch.optim.Optimizer,
         to_update_theta: bool = True,
-        to_update_x: bool = True
+        to_update_x: bool = True,
+        use_state: bool=True
     ):
         """initializer
 
@@ -49,6 +50,7 @@ class GradUpdater(object):
         self.optim = optim
         self.to_update_theta = to_update_theta
         self.to_update_x = to_update_x
+        self.use_state = use_state
 
     def accumulate(self, x: IO, state: State):
         """accumulate the gradients
@@ -57,8 +59,12 @@ class GradUpdater(object):
             x (IO): The input
             state (State): The state
         """
+        if not self.use_state:
+            return
         my_state = state.mine(self, x)
         grads = state.get((self, x, "grad"))
+
+        print('USING STATE')
 
         if grads is None:
             if self.to_update_theta:
@@ -83,6 +89,9 @@ class GradUpdater(object):
         Returns:
             bool: Whether the update was successful. Will return false if no grads have been set
         """
+        if not self.use_state:
+            self.optim.step()
+            return True
         grad = state.get((self, x, "grad"))
 
         if grad is not None:
@@ -95,6 +104,9 @@ class GradUpdater(object):
         return False
 
     def update_x(self, x: IO, state: State) -> IO:
+
+        if not self.use_state:
+            return IO.grad_update(x.f, detach=True), True
 
         x_grad = state.get((self, x, "x_grad"))
         if x_grad is not None:

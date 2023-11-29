@@ -26,6 +26,7 @@ class X(Base, IDable):
 
 
 class SimpleLearner(core.LearningMachine):
+
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
