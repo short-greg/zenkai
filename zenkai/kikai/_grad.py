@@ -64,8 +64,6 @@ class GradUpdater(object):
         my_state = state.mine(self, x)
         grads = state.get((self, x, "grad"))
 
-        print('USING STATE')
-
         if grads is None:
             if self.to_update_theta:
                 my_state.grad = get_model_grads(self.net)

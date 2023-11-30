@@ -341,7 +341,6 @@ class Builder(BuilderFunctor, Generic[T]):
     def __call__(self, **kwargs) -> T:
 
         args, kwargs = self._builder_kwargs(**kwargs)
-        print(list(kwargs.keys()))
         return self._factory(*args, **kwargs)
 
     @classmethod

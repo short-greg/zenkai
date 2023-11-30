@@ -186,7 +186,6 @@ class TestTopKSelector:
         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
         selector = TopKSelector(2, dim=0)
         index_map = selector.select(value)
-        print(index_map.select_index(Individual(x=x))["x"])
         assert (index_map.select_index(Individual(x=x))["x"] == t).all()
 
     def test_select_retrieves_the_two_best_for_dim2(self):
@@ -212,6 +211,7 @@ class TestTopKSelector:
 
 
 class TestBestSelector:
+
     def test_select_retrieves_the_two_best(self):
 
         x = torch.tensor([[0, 1], [0, 2], [2, 3]])
@@ -219,7 +219,6 @@ class TestBestSelector:
         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
         selector = BestSelector(dim=0)
         index_map = selector.select(value)
-        print(index_map.select_index(Individual(x=x))["x"])
         assert (index_map.select_index(Individual(x=x))["x"] == t).all()
 
     def test_select_retrieves_the_two_best_for_dim2(self):

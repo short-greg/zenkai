@@ -38,7 +38,7 @@ class GraphNode(nn.Module):
         
         x_index = x.meta.get('x_index', x)
         y = self._learner(x, state, release, *args, **kwargs)
-        y.meta['base_x'] = x_index
+        y.meta['x_index'] = x_index
 
         if x_index is not None:
             self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
@@ -204,6 +204,7 @@ class GraphLearner(GraphLearnerBase):
 
         steps, step_dict = self.get_steps(x, state, validate=True)
         prev_t = t
+        i = 0
         for step in reversed(steps):
             machine = step.machine
 
@@ -218,6 +219,7 @@ class GraphLearner(GraphLearnerBase):
                 step.x_prime = machine.step_x(step.x, t_i, state)
                 machine.step(step.x, t_i, state)
             prev_t = step.x_prime
+            i += 1
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         steps, _ = self.get_steps(x, state, True)
