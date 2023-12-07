@@ -55,6 +55,10 @@ class GraphNode(nn.Module):
     def __repr__(self):
         return f'GraphNode {type(self._learner), type(self._target)}'
 
+    @property
+    def learner(self) -> LearningMachine:
+        return self._learner
+
 
 @dataclass
 class SStep:
