@@ -426,6 +426,11 @@ class GradLearner(LearningMachine):
 
     def step(self, x: IO, t: IO, state: State):
         return self._theta_step.step(x, t, state)
+    
+    @property
+    def net(self) -> nn.Module:
+
+        return self._net
 
 
 class GradLoopLearner(LearningMachine, BatchIdxStepX):

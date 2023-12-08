@@ -29,10 +29,11 @@ class GraphNode(nn.Module):
         self._step_priority = step_priority
     
     def forward(
-        self, x: IO, state: State, release: bool=True, 
+        self, x: IO, state: State=None, release: bool=True, 
         target: typing.Union[str, LearningMachine]=False, 
         *args, **kwargs
     ) -> IO:
+        state = state or State()
         if target is False:
             target = self._target
         
@@ -44,7 +45,7 @@ class GraphNode(nn.Module):
             self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
         return y
 
-    def __call__(self, x: IO, state: State, release: bool=True, 
+    def __call__(self, x: IO, state: State=None, release: bool=True, 
         target: typing.Union[str, LearningMachine]=False, *args, **kwargs
     ) -> IO:
         return super().__call__(x, state, release, target, *args, **kwargs)
