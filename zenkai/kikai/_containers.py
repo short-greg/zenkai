@@ -16,33 +16,41 @@ from ..mod import Lambda
 
 
 class GraphNode(nn.Module):
+    """A node wraps a LearningMachine and calls the graph learner
+    """
 
     def __init__(
         self, graph: 'GraphLearner', learner: LearningMachine, step_priority: bool=False, 
         target: typing.Union[str, LearningMachine]=None
     ):
+        """Wrap a LearningMachine and call the graph learner
 
+        Args:
+            graph (GraphLearner): The graph the node is a member of
+            learner (LearningMachine): The learner to wrap
+            step_priority (bool, optional): Whether to execute step before step_x. Defaults to False.
+            target (typing.Union[str, LearningMachine], optional): The target for the learnign machine. Defaults to None.
+        """
         super().__init__()
         self._graph = {'graph': graph}
-        self._learner = learner
-        self._target = target
-        self._step_priority = step_priority
+        self.learner = learner
+        self.target = target
+        self.step_priority = step_priority
     
     def forward(
         self, x: IO, state: State=None, release: bool=True, 
         target: typing.Union[str, LearningMachine]=False, 
         *args, **kwargs
     ) -> IO:
-        state = state or State()
         if target is False:
-            target = self._target
+            target = self.target
         
         x_index = x.meta.get('x_index', x)
-        y = self._learner(x, state, release, *args, **kwargs)
+        y = self.learner(x, state, release, *args, **kwargs)
         y.meta['x_index'] = x_index
 
         if x_index is not None:
-            self._graph['graph'].add_step(x_index, SStep(self._learner, x, y, self._step_priority, target), state)
+            self._graph['graph'].add_step(x_index, SStep(self.learner, x, y, self.step_priority, target), state)
         return y
 
     def __call__(self, x: IO, state: State=None, release: bool=True, 
@@ -51,10 +59,14 @@ class GraphNode(nn.Module):
         return super().__call__(x, state, release, target, *args, **kwargs)
 
     def __str__(self) -> str:
-        return f'GraphNode {type(self._learner), type(self._target)}'
+        return f'GraphNode {type(self.learner), type(self.target)}'
     
     def __repr__(self):
-        return f'GraphNode {type(self._learner), type(self._target)}'
+        return f'GraphNode {type(self.learner), type(self.target)}'
+
+    @property
+    def learner(self) -> LearningMachine:
+        return self._learner
 
     @property
     def learner(self) -> LearningMachine:
@@ -73,13 +85,25 @@ class SStep:
 
 
 class GraphLearnerBase(LearningMachine):
+    """The base graph learner. The learning methods (accumulate, step_x, and step must be implemented to use)
+    """
 
     @abstractmethod
     def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
         pass
 
-    def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
+    def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO) -> IO:
+        """Get the target for the layer
 
+        Args:
+            step (SStep): The step to get t from
+            step_dict: Dcitionary of all the steps
+            prev_t (IO): The previous target
+            t (IO): The default target
+
+        Returns:
+            IO: the target
+        """
         if isinstance(step.target, LearningMachine):
             return step_dict[step.target].x_prime
         elif step.target == "t":
@@ -87,7 +111,13 @@ class GraphLearnerBase(LearningMachine):
         return prev_t
 
     def add_step(self, x_index: IO, sstep: SStep, state: State):
+        """Add a step to the graph. This method is called by the Node
 
+        Args:
+            x_index (IO): The index to use in retrieving the step
+            sstep (SStep): The information on the step
+            state (State): The learning state
+        """
         steps = state.get_or_set((self, x_index, 'steps'), [])
         step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         
@@ -95,7 +125,19 @@ class GraphLearnerBase(LearningMachine):
         steps.append(sstep)
     
     def get_steps(self, x_index: IO, state: State, validate: bool=False) -> typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]:
+        """Retrieve the steps from the state
 
+        Args:
+            x_index (IO): The index to use in retrieving the step
+            state (State): The learning state
+            validate (bool, optional): Whether to validate. Defaults to False.
+
+        Raises:
+            RuntimeError: If there are not steps given the x_index
+
+        Returns:
+            typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]: _description_
+        """
         steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
 
         if validate and steps is None:
@@ -204,8 +246,17 @@ class GraphLearnerBase(LearningMachine):
 
 
 class GraphLearner(GraphLearnerBase):
+    """Standard GraphLearner. Use to define a grpah that does not "accumulate".
+    """
 
     def step(self, x: IO, t: IO, state: State):
+        """Step backward through the graph one by one
+
+        Args:
+            x (IO): The input to the graph
+            t (IO): The global target for the graph
+            state (State): The learning state
+        """
 
         steps, step_dict = self.get_steps(x, state, validate=True)
         prev_t = t
@@ -232,12 +283,21 @@ class GraphLearner(GraphLearnerBase):
 
 
 class AccGraphLearner(GraphLearnerBase):
+    """Standard GraphLearner. Use to define a graph that "accumulates".
+    """
 
     @abstractmethod
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         pass
 
     def accumulate(self, x: IO, t: IO, state: State):
+        """Accumulate through the graph step by step
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
 
         steps, step_dict = self.get_steps(x, state, validate=True)
 
@@ -253,6 +313,13 @@ class AccGraphLearner(GraphLearnerBase):
         steps[0].machine.accumulate(steps[0].x, self.get_t(steps[0], step_dict, prev_t, t), state)
 
     def step(self, x: IO, t: IO, state: State):
+        """Update the parameters of the network
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
 
         steps, step_dict = self.get_steps(x, state, True)
         prev_t = t

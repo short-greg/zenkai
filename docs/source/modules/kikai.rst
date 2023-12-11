@@ -11,6 +11,7 @@ Modules
 Kikai:
 
 - :mod:`GradLearner` - LearningMachines based on gradient descent
+- :mod:`Graphlearner` - Learner used to contain other learners. It defines the accumulate, step and step_x methods. 
 - :mod:`FALearner/DFALearner` - LearningMachines based on feedback alignment
 - :mod:`EnsembleLearner` - Base class for an ensemble module
 - :mod:`HillClimbStepX` - Implements StepX using a hill-climbing algorithm
@@ -81,7 +82,7 @@ Kikai implements  LearningMachines.
 ..    # .f accesses the first element of the IO
 ..    print(x.f) # torch.tensor([[2, 3], [3, 4]])
 ..    # .l accesses the last element of the IO
-..    print(x.l) # torch.tensor([[1, 1], [0 0]]])
+..    print(x.r) # torch.tensor([[1, 1], [0 0]]])
 ..    # .u allows access to the tuple storing the values
 ..    print(x.u[0]) # torch.tensor([[2, 3], [3, 4]]) 
 ..    x.freshen() # detach and retain the gradients. Retaining the gradients is essential for implementing backprop with zenkai
@@ -122,7 +123,7 @@ Kikai implements  LearningMachines.
 ..          return self.loss(x, t, reduction_override)
 
 ..       # forward will be called if it hasn't already
-..       @forward_dep('y', exec=True)
+..       @forward_dep('y')
 ..       def step(self, x: IO, t: IO, state: State):
 ..          # implement a method to update the parameters
 ..          self.optim.zero_grad()
@@ -142,11 +143,11 @@ Kikai implements  LearningMachines.
 ..          return y.out(release)
 
 
-Advanced Topics
-==============================
-Beyond these core features. Zenkai offer a wide array of other features
+.. Advanced Topics
+.. ==============================
+.. Beyond these core features. Zenkai offer a wide array of other features
 
-- **StepXHook**: Use to call before of after step\_x is called.
-- **StepHook**: Use to call before of after step is called.
-- **LayerAssessor**: Use to evaluate the layer before or after.
-- ... and so on.
+.. - **StepXHook**: Use to call before of after step\_x is called.
+.. - **StepHook**: Use to call before of after step is called.
+.. - **LayerAssessor**: Use to evaluate the layer before or after.
+.. - ... and so on.
