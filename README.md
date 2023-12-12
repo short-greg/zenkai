@@ -16,9 +16,7 @@ Zenkai consists of several packages to more flexibly define and train deep learn
 **zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
 **zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
 **zenkai.mods**: Mods contains a variety of utility nn.Modules that are used by the rest of the application. For example, modules for ensemble learning.
-**zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients. 
-<!-- **zenkai.sensei**: Package for training a learning machine. Contains modules to flexibly define the training algorithm
-**zenkai.tako**: Tako contains features to more flexibly access the internals of a module.  -->
+**zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients.
 
 Further documentation is available at https://zenkai.readthedocs.io
 
@@ -116,8 +114,8 @@ class MyMultilayerLearner(LearningMachine):
         # outputs for a connection of two machines
         my_state = state.mine(self, x)
         
-        self.layer2.step(my_state['y2'], my_state['t1'])
-        self.layer1.step(my_state['y1'], t1)
+        self.layer2.step(my_state.y2, my_state.t1)
+        self.layer1.step(my_state.y1, t1)
 
     def step_x(
         self, x: IO, t: IO, state: State
