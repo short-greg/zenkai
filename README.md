@@ -1,10 +1,10 @@
 # Zenkai
 
-Zenkai is a framework built on PyTorch for deep learning researchers to explore a wider variety of
-- machine architectures
-- learning algorithms
+Zenkai is a framework built on PyTorch for deep learning researchers 
+- to explore a wider variety of machine architectures
+- to explore learning algorithms that do not rely on gradient descent
 
-It is fundamentally based on the concepts of target propagation. In target propagation, a targets are propagated to each layer of the network by using an inversion or approximating an inversion operation. Thus, each layer has its own target. While Zenkai allows for more than just using target propagation, it is based on the concept of each layer h.
+It is fundamentally based on the concepts of target propagation. In target propagation, a targets are propagated to each layer of the network by using an inversion or approximating an inversion operation. Thus, each layer has its own target. While Zenkai allows for more than just using target propagation, it is based on the concept of each layer having its own target.
 
 ## Installation
 
