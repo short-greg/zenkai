@@ -21,7 +21,14 @@ class GraphNode(nn.Module):
         self, graph: 'GraphLearner', learner: LearningMachine, step_priority: bool=False, 
         target: typing.Union[str, LearningMachine]=None
     ):
+        """Create a node in a graph to wrap a learner
 
+        Args:
+            graph (GraphLearner): The graph for the node
+            learner (LearningMachine): The learner to wrap
+            step_priority (bool, optional): Whether to prioritize step over step_x. Defaults to False.
+            target (typing.Union[str, LearningMachine], optional): The target for the node. Defaults to None. If none, the graph will use the following node's step_x output as the target
+        """
         super().__init__()
         self._graph = {'graph': graph}
         self._learner = learner
@@ -63,7 +70,8 @@ class GraphNode(nn.Module):
 
 @dataclass
 class SStep:
-
+    """Wrapper for the output of a node
+    """
     machine: LearningMachine
     x: IO
     y: IO
@@ -78,8 +86,19 @@ class GraphLearnerBase(LearningMachine):
     def forward(self, x: IO, state: State, release: bool = True, *args, **kwargs) -> IO:
         pass
 
-    def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO):
+    def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO) -> IO:
+        """Get the target for a node. This is used by the graph learner so does not need to be used by
+        external modules
 
+        Args:
+            step (SStep): The step to retrieve the target for
+            step_dict: Contains the mapping from IO to steps
+            prev_t (IO): The t of the previous node
+            t (IO): The target for the previously evaluated node
+
+        Returns:
+            IO: The target for the node
+        """
         if isinstance(step.target, LearningMachine):
             return step_dict[step.target].x_prime
         elif step.target == "t":

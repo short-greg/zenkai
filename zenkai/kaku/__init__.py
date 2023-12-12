@@ -33,6 +33,7 @@ from ._machine import (
     acc_dep,
     forward_dep,
     step_dep,
+    ForwardHook
 )
 from ._optimize import OPTIM_MAP, ParamFilter, NullOptim, OptimFactory, optimf
 from ._state import IDable, MyState, State, StateKeyError, AssessmentLog

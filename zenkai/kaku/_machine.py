@@ -40,6 +40,7 @@ class StepXHook(ABC):
 
 
 class StepHook(ABC):
+
     @abstractmethod
     def __call__(
         self, step: "StepTheta", x: IO, t: IO, state: State
@@ -48,6 +49,7 @@ class StepHook(ABC):
 
 
 class ForwardHook(ABC):
+    
     @abstractmethod
     def __call__(self, learner: "LearningMachine", x: IO, y: IO, state: State) -> IO:
         pass
@@ -133,6 +135,13 @@ class StepTheta(ABC):
 
     @abstractmethod
     def step(self, x: IO, t: IO, state: State):
+        """Update the parameters of the network
+
+        Args:
+            x (IO): The input
+            t (IO): The output
+            state (State): The learning state
+        """
         pass
 
     def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):

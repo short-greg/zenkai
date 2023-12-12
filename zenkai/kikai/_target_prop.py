@@ -10,10 +10,122 @@ from ..kaku import (
     State,
     Criterion,
     StepX,
+    ForwardHook,
+    LearningMachine
 )
 
 
+class SetYHook(ForwardHook):
+    """
+    """
+    def __init__(self, y: str='y') -> None:
+        super().__init__()
+        self.y_name = y
+
+    def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State) -> IO:
+       
+       state[learner, x, self.y_name] = y
+
+
+class TargetPropLearner(LearningMachine):
+    """
+    """
+
+    y_name = 'y'
+
+    def __init__(self) -> None:
+        """_summary_
+
+        Args:
+            y_name (str, optional): _description_. Defaults to 'y'.
+        """
+        super().__init__()
+        self._reverse_update = True
+        self._forward_update = True
+        self.forward_hook(SetYHook(self.y_name))
+
+    @abstractmethod
+    def accumulate_reverse(self, x: IO, y: IO, t: IO, state: State):
+        pass
+    
+    @abstractmethod
+    def accumulate_forward(self, x: IO, t: IO, state: State):
+        pass
+
+    @abstractmethod
+    def step_reverse(self, x: IO, y: IO, t: IO, state: State):
+        pass
+    
+    @abstractmethod
+    def step_forward(self, x: IO, t: IO, state: State):
+        pass
+
+    def reverse_update(self, update: bool=True):
+        """Set whether to update the reverse model
+
+        Args:
+            update (bool, optional): Whether to update the reverse model. Defaults to True.
+        """
+        self._reverse_update = update
+        return self
+
+    def forward_update(self, update: bool=True):
+        """Set whether to update the forward model
+
+        Args:
+            update (bool, optional): Whether to update the reverse model. Defaults to True.
+        """
+        self._forward_update = update
+        return self
+
+    def accumulate(self, x: IO, t: IO, state: State):
+        """Accumulate the forward and/or reverse model
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The state
+        """
+        if self._forward_update:
+            self.accumulate_forward(x, t, state)
+        if self._reverse_update:
+            y = state[self, x, self.y_name]
+            self.accumulate_reverse(x, y, t, state)
+
+    def step(self, x: IO, t: IO, state: State):
+        """Update the forward and/or reverse model
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The state
+        """
+        if self._forward_update:
+            self.step_forward(x, t, state)
+        if self._reverse_update:
+            y = state[self, x, self._y_name]
+            self.step_reverse(x, y, t, state)
+
+    @abstractmethod
+    def reverse(self, x: IO, y: IO):
+        pass
+
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """The default behavior of Target Propagation is to simply call the reverse function with x and t
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The state
+
+        Returns:
+            IO: The target for the preceding layer
+        """
+        return self.reverse(x, t)
+
+
 class TargetPropStepX(StepX):
+
     @abstractmethod
     def step_target_prop(self, x: IO, t: IO, y: IO, state: State):
         pass

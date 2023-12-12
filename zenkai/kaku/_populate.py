@@ -686,6 +686,7 @@ class Population(TensorDict):
     def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> "Population":
 
         return Population(**tensor_dict)
+        
 
     def clone(self) -> "Population":
         """Create an exact copy of the individual
