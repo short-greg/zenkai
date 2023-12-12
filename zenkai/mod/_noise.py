@@ -359,10 +359,11 @@ class EqualsAssessmentDist(AssessmentDist):
 
 
 class FreezeDropout(nn.Module):
-    """Freeze the dropout"""
+    """Freeze the dropout parameter so that the same parameter will be used """
 
     def __init__(self, p: float, freeze: bool = False):
-        """Create a FreezeDropout
+        """Create a FreezeDropout to keep the parameter frozen. This is useful if you want
+        to go through the network multiple times and get the same output
 
         Args:
             p (float): The dropout rate

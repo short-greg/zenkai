@@ -14,7 +14,10 @@ Kaku:
 - :mod:`IO` - Class used for input and output
 - :mod:`StepTheta` - Use to update the parameters of a model. LearningMachine inherits this.
 - :mod:`StepX` - Use to get t the next t. LearningMachine inherits this.
+- :mod:`Hook` - There are a variety of hooks that can be created to extend learning. They can be added to accumulate, step, step_x etc.
 - :mod:`Assessment` - Use to evaluate the network.
+- :mod:`Individual` - Use for population-based optimization. It wraps all of the parameters for an individual.
+- :mod:`Population` - Use for population-based optimization. It is a container of individuals
 - ... and so on.
 
 Key Features and Functions
@@ -59,7 +62,7 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
 
             # add 1 and store the result in the state
             # .f retrieves the first element in the IO. 
-            y = state[(self, x), 'y'] = IO(x.f + 1)
+            y = state[self, x, 'y'] = IO(x.f + 1)
             return y.out(release)
 
    # wrap the input and target with the IO class
@@ -120,8 +123,8 @@ State: State allows one to store values for the current learning step
    x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
    learning_machine = SimpleLearner()
    # set the number of iterations for the key (learning_machine, x) to 1
-   state[(learning_machine, x), 'iterations'] = 1
-   my_state = state.mind((learning_machine, x))
+   state[(learning_machine, x, 'iterations'] = 1
+   my_state = state.mine(learning_machine, x)
    print(my_state.iterations) # "1"
    # add a sub_state
    sub_state = my_state.sub("sub")
