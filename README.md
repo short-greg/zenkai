@@ -1,6 +1,10 @@
 # Zenkai
 
-Zenkai is a framework built on Pytorch for researchers to more easily explore a wider variety of machine architectures for deep learning (or just learning with hidden layers). It is fundamentally based on the concepts of target propagation, where a target is propagated backward. As backpropagation with gradient descent can be viewed as a form of target propagation, it extends what one can do with Pytorch to a much larger class of machines. It aims to allow for much more freedom and control over the learning process while minimizing the added complexity.
+Zenkai is a framework built on PyTorch for deep learning researchers to explore a wider variety of
+- machine architectures
+- learning algorithms
+
+It is fundamentally based on the concepts of target propagation. In target propagation, a targets are propagated to each layer of the network by using an inversion or approximating an inversion operation. Thus, each layer has its own target. While Zenkai allows for more than just using target propagation, it is based on the concept of each layer h.
 
 ## Installation
 
@@ -12,11 +16,11 @@ pip install zenkai
 
 Zenkai consists of several packages to more flexibly define and train deep learning machines beyond what is easy to do with Pytorch.
 
-**zenkai**: The core package. It contains all modules necessary for defining a learning machine.
-**zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
-**zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
-**zenkai.mods**: Mods contains a variety of utility nn.Modules that are used by the rest of the application. For example, modules for ensemble learning.
-**zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients.
+- **zenkai**: The core package. It contains all modules necessary for defining a learning machine.
+- **zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
+- **zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
+- **zenkai.mods**: Mods contains a variety of utility nn.Modules that are used by the rest of the application. For example, modules for ensemble learning.
+- **zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients.
 
 Further documentation is available at https://zenkai.readthedocs.io
 
