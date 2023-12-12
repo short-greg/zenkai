@@ -86,6 +86,12 @@ class IndexMap(object):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0"""
 
     def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int = 0):
+        """Create an index map to select from a multidimensional tensor
+
+        Args:
+            assessment (Assessment): The assessment of the tensor
+            dim (int, optional): The dimension to select on. Defaults to 0.
+        """
         super().__init__()
         self.index = index
         self.dim = dim
@@ -110,7 +116,14 @@ class IndexMap(object):
         return len(self.index)
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """
 
+        Args:
+            x (torch.Tensor): The tensor to select from
+
+        Returns:
+            torch.Tensor: The selected tensor
+        """
         result = tuple(self.index_for(i, x) for i in range(len(self)))
         if len(result) == 1:
             return result[0]
@@ -183,7 +196,13 @@ class TopKSelector(Selector):
 
 
 class BestSelector(Selector):
+
     def __init__(self, dim: int = 0):
+        """Select the best
+
+        Args:
+            dim (int, optional): The dimension to select on. Defaults to 0.
+        """
         super().__init__(1)
         self.dim = dim
 
@@ -205,6 +224,9 @@ class BestSelector(Selector):
 
 
 class FitnessParentSelector(Selector):
+    """Select parents based on the fitness
+    """
+
     def select(self, assessment: Assessment) -> IndexMap:
         """Select parents from the assessment. It calculates a probability based on the
         population dimension currently
@@ -251,7 +273,10 @@ class FitnessParentSelector(Selector):
         return IndexMap(assessment, parents1, parents2, dim=0)
 
 
-class RankParentSelector(Selector):
+class RankParentSelector(Selector):    
+    """Select parents based on the rank
+    """
+
     def select(self, assessment: Assessment) -> IndexMap:
         """Select parents from the assessments using ranks
 

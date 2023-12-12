@@ -13,9 +13,10 @@ pip install zenkai
 Zenkai consists of several packages to more flexibly define and train deep learning machines beyond what is easy to do with Pytorch.
 
 **zenkai**: The core package. It contains all modules necessary for defining a learning machine.
-**zenkai.utils**: Utils contains a variety of utility functions that are . For example, utilities for ensemble learning and getting retrieving model parameters.
 **zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
 **zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
+**zenkai.mods**: Mods contains a variety of utility nn.Modules that are used by the rest of the application. For example, modules for ensemble learning.
+**zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients. 
 <!-- **zenkai.sensei**: Package for training a learning machine. Contains modules to flexibly define the training algorithm
 **zenkai.tako**: Tako contains features to more flexibly access the internals of a module.  -->
 
@@ -113,7 +114,7 @@ class MyMultilayerLearner(LearningMachine):
         # x (IO): The input to update with
         # t (IO): the target to update
         # outputs for a connection of two machines
-        my_state = state.mine((self, x))
+        my_state = state.mine(self, x)
         
         self.layer2.step(my_state['y2'], my_state['t1'])
         self.layer1.step(my_state['y1'], t1)
@@ -123,14 +124,14 @@ class MyMultilayerLearner(LearningMachine):
     ) -> IO:
         # use to update the target for the machine
         # it calculates "new targets" for the incoming layer
-        my_state = state.mine((self, x))
-        t1 = my_state['t1'] = self.layer2.step_x(my_state['y2'], t)
-        return self.layer1.step_x(my_state['y1'], t1)
+        my_state = state.mine(self, x)
+        t1 = my_state.t1 = self.layer2.step_x(my_state.y2, t)
+        return self.layer1.step_x(my_state.y1, t1)
 
     def forward(self, x: zenkai.IO, state: State, release: bool=True) -> zenkai.IO:
 
         # define the state to be for the self, input pair
-        my_state = state.mine((self, x))
+        my_state = state.mine(self, x)
         x = my_state['y1'] = self.layer1(x, state)
         x = my_state['y2'] = self.layer2(x, state, release=release)
         return x
