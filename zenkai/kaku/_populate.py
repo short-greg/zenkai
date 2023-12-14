@@ -295,7 +295,9 @@ class Individual(TensorDict):
         self._id = individual_idx
         return self
 
-    def report(self, assessment: Assessment, replace: bool=False) -> "Individual":
+    def report(
+        self, assessment: Assessment, replace: bool=False
+    ) -> "Individual":
         """Report the assessment for an individual. If the individual in a population
         it will set the assessment in the population as well
 
@@ -308,6 +310,17 @@ class Individual(TensorDict):
         self._assessment = assessment
         if self._population is not None:
             self._population.report_for(self._id, assessment, replace)
+        return self
+
+    def zero_assessment(self) -> "Individual":
+        """Remove the assessment for the individual
+
+        Returns:
+            Individual: self
+        """
+        self._assessment = None
+        if self._population is not None:
+            self._population.report_for(self._id, None, True)
         return self
 
     @property
@@ -462,6 +475,15 @@ class Population(TensorDict):
             self._assessments[id] = assessment
         else:
             self._assessments[id] = self._assessments[id] + assessment
+
+    def zero_assessment(self) -> "Population":
+        """Remove the assessment for the individual
+
+        Returns:
+            Population: self
+        """
+        self._assesments = [None] * self._k
+        return self
 
     def set_model(self, model: nn.Module, key: str, id: int):
         update_model_parameters(model, self[key][id])
