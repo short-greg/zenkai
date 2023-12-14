@@ -5,12 +5,20 @@ Factories for creating optimizers
 # 1st Party
 import typing
 from typing import Any
+from abc import abstractmethod, ABC
 
 # 3rd Party
 import torch
 import torch.nn as nn
 import torch.nn.functional
 import torch.optim as optim
+
+# local
+from ._machine import LearningMachine
+from ._assess import PopulationAssessment, Criterion, Assessment
+from ._populate import Population
+from ._state import State
+from ._io import IO
 
 
 class NullOptim(torch.optim.Optimizer):
@@ -228,6 +236,43 @@ class _OptimF:
 
     def __call__(self, optim, *args: Any, **kwargs: Any) -> Any:
         return OptimFactory(optim, *args, **kwargs)
+
+
+
+class PopulationOptim(ABC):
+
+    @abstractmethod
+    def assess(self, learning_machine: LearningMachine, x: IO, t: IO) -> PopulationAssessment:
+        pass
+
+    @abstractmethod
+    def accumulate(self, assessment: PopulationAssessment):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def step(self):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def params(
+        self, key: str=None
+    ) -> typing.Union[Population, torch.Tensor]:
+        pass
+
+
+class Fit(ABC):
+    """Create an optimizer"""
+
+    @abstractmethod
+    def optim_iter(
+        self, objective: Criterion, state: State = None, **kwargs
+    ) -> typing.Iterator[Assessment]:
+        raise NotImplementedError
+
+    def optim(self, objective: Criterion, state: State = None, **kwargs) -> Assessment:
+        for assessment in self.optim_iter(objective, state, **kwargs):
+            pass
+        return assessment
 
 
 # Convenience object for creating optim factories

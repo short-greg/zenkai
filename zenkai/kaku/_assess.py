@@ -10,6 +10,7 @@ import torch.nn as nn
 
 # Local
 from ._io import IO
+from ..utils import align_to
 
 
 class Reduction(Enum):
@@ -659,3 +660,58 @@ class ThLoss(Criterion):
                 reduction,
             )
         )
+
+
+
+class PopulationAssessment(Assessment):
+    """Convenience class to make it easier to work with assessments
+    of populations. It assumes that the first dimension is the population
+    dimension.
+    """
+
+    @property
+    def k(self) -> int:
+        """The population size
+        """
+        return self.value.shape[0]
+    
+    @property
+    def batch_size(self) -> int:
+        """The batch size if any
+        """
+        return self.shape[1] if self.dim() > 1 else 0
+    
+    @property
+    def feature_shape(self) -> torch.Size:
+        """The shape of the feature dimensions
+        """
+        return self.shape[2:]
+
+    def from_index(
+        self, assessment: Assessment, 
+        index: torch.LongTensor, k: int, pop_dim: int=0
+    ) -> 'PopulationAssessment':
+        """
+
+        Args:
+            assessment (Assessment): The base assessment. Probably a 
+            populationassessment
+            index (torch.LongTensor): The index to create the assessment by 
+            k (int): the population size
+            pop_dim (int, optional): . Defaults to 0.
+
+        Returns:
+            PopulationAssessment: The assessment expanded to a population assessment
+        """
+        index = align_to(
+            index, assessment.value
+        )
+        shape = list(index.shape)
+        shape.insert(pop_dim, k)
+        pop_assessment = torch.zeros(shape)
+        
+        pop_assessment.scatter(index, assessment.value)
+        return PopulationAssessment(
+            pop_assessment, assessment.maximize
+        )
+

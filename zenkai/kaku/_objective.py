@@ -2,7 +2,7 @@ import typing
 from abc import abstractmethod, ABC
 
 import torch
-from . import Assessment, Criterion, State
+from . import Assessment
 
 
 class Objective(ABC):
@@ -93,18 +93,3 @@ def impose(
     value = value.clone()
     value[constraint] = penalty
     return value
-
-
-class Fit(ABC):
-    """Create an optimizer"""
-
-    @abstractmethod
-    def optim_iter(
-        self, objective: Criterion, state: State = None, **kwargs
-    ) -> typing.Iterator[Assessment]:
-        raise NotImplementedError
-
-    def optim(self, objective: Criterion, state: State = None, **kwargs) -> Assessment:
-        for assessment in self.optim_iter(objective, state, **kwargs):
-            pass
-        return assessment
