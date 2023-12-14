@@ -20,6 +20,8 @@ class TensorDict(dict):
         self,
         **values: typing.Union[nn.Module, torch.Tensor, Parameter],
     ):
+        """
+        """
         results = {}
         for k, v in values.items():
             if isinstance(v, nn.Module):
@@ -293,7 +295,7 @@ class Individual(TensorDict):
         self._id = individual_idx
         return self
 
-    def report(self, assessment: Assessment) -> "Individual":
+    def report(self, assessment: Assessment, replace: bool=False) -> "Individual":
         """Report the assessment for an individual. If the individual in a population
         it will set the assessment in the population as well
 
@@ -305,7 +307,7 @@ class Individual(TensorDict):
         """
         self._assessment = assessment
         if self._population is not None:
-            self._population.report_for(self._id, assessment)
+            self._population.report_for(self._id, assessment, replace)
         return self
 
     @property
@@ -416,7 +418,7 @@ class Population(TensorDict):
         individual.join(self, i)
         return individual
 
-    def report(self, assessment: "Assessment") -> "Population":
+    def report(self, assessment: "Assessment", replace: bool=False) -> "Population":
         """Report the result of an assessment
 
         Args:
@@ -437,11 +439,15 @@ class Population(TensorDict):
                 "Length of assessment must be same "
                 f"as population {self._k} not {len(assessment)}"
             )
-        self._assessments = list(assessment)
+        for i, (new_, cur) in enumerate(zip(list(assessment), self._assessments)):
+            if cur is None or replace:
+                self._assessments[i] = new_
+            else:
+                self._assessments[i] = new_ + cur
         self._assessment_size = assessment.value.shape[1:]
         return self
 
-    def report_for(self, id: int, assessment: "Assessment"):
+    def report_for(self, id: int, assessment: "Assessment", replace: bool=False):
         if id < 0 or id >= self._k:
             raise ValueError(f"Value i must be in range [0, {self._k})")
         if (
@@ -452,7 +458,10 @@ class Population(TensorDict):
                 f"Assessment size must be the same as others {self._assessment_size}"
             )
         self._assessment_size = self._assessment_size or assessment.value.size()
-        self._assessments[id] = assessment
+        if self._assessments[id] is None or replace:
+            self._assessments[id] = assessment
+        else:
+            self._assessments[id] = self._assessments[id] + assessment
 
     def set_model(self, model: nn.Module, key: str, id: int):
         update_model_parameters(model, self[key][id])

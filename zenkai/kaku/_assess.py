@@ -276,7 +276,7 @@ class Assessment(object):
         )
 
     @classmethod
-    def stack(self, assessments: typing.Iterable["Assessment"]) -> "Assessment":
+    def stack(cls, assessments: typing.Iterable["Assessment"]) -> "Assessment":
         """Stack multiple assessments
 
         Args:
@@ -299,7 +299,7 @@ class Assessment(object):
                     f"Current is {maximize} previous was {assessment.maximize}"
                 )
             values.append(assessment.value)
-        return Assessment(torch.stack(values), maximize)
+        return cls(torch.stack(values), maximize)
 
     def to_dict(self, name: str) -> "AssessmentDict":
         """Convert the Assessment to an AssessmentDict
