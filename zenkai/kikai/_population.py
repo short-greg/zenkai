@@ -27,6 +27,7 @@ class ParamUpdater(ABC):
         pass
 
 
+# I think this is the same as align to
 def resize_to(tensor1: torch.Tensor, tensor2: torch.Tensor) -> torch.Tensor:
     """Resize tensor1 to be compatible with tensor2
 

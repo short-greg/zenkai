@@ -8,6 +8,7 @@ import torch
 from ..kaku import IO, LearningMachine, Criterion, Assessment
 from ._keep import Population
 from ..kaku import Objective
+from ..utils import align_to
 
 
 class Assessor(ABC):
@@ -177,3 +178,47 @@ class XPopAssessor(Assessor):
         population.report(assessment)
 
         return population
+
+
+class PopulationAssessment(Assessment):
+
+    @property
+    def k(self) -> int:
+
+        return self.value.shape[0]
+    
+    @property
+    def batch_size(self) -> int:
+
+        return self.shape[1] if self.dim() > 1 else 0
+    
+    @property
+    def feature_shape(self) -> torch.Size:
+        return self.shape[2:]
+
+    def from_index(
+        self, assessment: Assessment, 
+        index: torch.LongTensor, k: int, pop_dim: int=0
+    ) -> 'PopulationAssessment':
+        """
+
+        Args:
+            assessment (Assessment): 
+            index (torch.LongTensor): 
+            k (int): 
+            pop_dim (int, optional): . Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
+        index = align_to(
+            index, assessment.value
+        )
+        shape = list(index.shape)
+        shape.insert(pop_dim, k)
+        pop_assessment = torch.zeros(shape)
+        
+        pop_assessment.scatter(index, assessment.value)
+        return PopulationAssessment(
+            pop_assessment, assessment.maximize
+        )

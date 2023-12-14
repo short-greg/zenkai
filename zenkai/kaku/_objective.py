@@ -95,7 +95,7 @@ def impose(
     return value
 
 
-class Itadaki(ABC):
+class Fit(ABC):
     """Create an optimizer"""
 
     @abstractmethod

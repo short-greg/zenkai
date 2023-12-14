@@ -39,7 +39,7 @@ from ._optimize import OPTIM_MAP, ParamFilter, NullOptim, OptimFactory, optimf
 from ._state import IDable, MyState, State, StateKeyError, AssessmentLog
 from ._populate import Population, PopulationIndexer, Individual, TensorDict
 from ._objective import (
-    Itadaki,
+    Fit,
     Objective,
     Constraint,
     impose,

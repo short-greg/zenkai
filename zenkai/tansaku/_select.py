@@ -5,12 +5,13 @@ import math
 
 # 3rd party
 import torch
+import torch.nn as nn
 
 # local
 from ..kaku import TensorDict
 from ..utils import align_to
 from .utils import gather_idx_from_population
-from ..kaku import IO, Assessment
+from ..kaku import IO, Assessment, State
 
 
 # TODO: Remove
@@ -85,7 +86,10 @@ class Indexer(object):
 class IndexMap(object):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0"""
 
-    def __init__(self, assessment: Assessment, *index: torch.LongTensor, dim: int = 0):
+    def __init__(
+        self, assessment: Assessment, 
+        *index: torch.LongTensor, dim: int = 0
+    ):
         """Create an index map to select from a multidimensional tensor
 
         Args:
@@ -170,7 +174,14 @@ class Selector(ABC):
         pass
 
     def __call__(self, assessment: Assessment) -> "IndexMap":
+        """Select an individual from the population
 
+        Args:
+            assessment (Assessment): The population assessment
+
+        Returns:
+            IndexMap: The index of the selection
+        """
         return self.select(assessment)
 
 
@@ -318,3 +329,78 @@ class RankParentSelector(Selector):
         parents2 = parents2.reshape(k, *base_shape[1:])
 
         return IndexMap(assessment, parents1, parents2, dim=0)
+
+
+def resize_to(tensor1: torch.Tensor, tensor2: torch.Tensor) -> torch.Tensor:
+    """Resize tensor1 to be compatible with tensor2
+
+    Args:
+        tensor1 (torch.Tensor): The tensor to resize
+        tensor2 (torch.Tensor): The tensor to resize to
+
+    Returns:
+        torch.Tensor: The resized tensor
+    """
+    difference = tensor2.dim() - tensor1.dim()
+    if difference < 0:
+        raise ValueError
+
+    shape2 = list(tensor2.shape)
+    reshape = []
+
+    for i, s2 in enumerate(shape2):
+        if len(tensor1.dim()) < i:
+            reshape.append(1)
+        else:
+            reshape.append(s2)
+    return tensor1.repeat(reshape)
+
+
+class Sampler(nn.Module, ABC):
+
+    def __init__(self, k: int):
+        super().__init__()
+        self._k = k
+
+    @property
+    def k(self) -> int:
+        return self._k
+
+    @abstractmethod
+    def forward(self, x: torch.Tensor) -> typing.Tuple[torch.Tensor]:
+        raise NotImplementedError
+
+
+class RandFeatureSampler(Sampler):
+
+    def __init__(self, k: int, dim: int=-1):
+        """
+
+        Args:
+            k (int): 
+            dim (int, optional): . Defaults to -1.
+        """
+        super().__init__(k)
+        self._dim = dim
+    
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    def forward(
+        self, x: torch.Tensor
+    ) -> torch.Tensor:
+        """Randomly select a feature on the feature dim
+
+        Args:
+            x (torch.Tensor): The input
+
+        Returns:
+            torch.Tensor: The sampled tensor
+        """
+        out_shape = list(x.shape)
+        out_shape[self._dim] = 1
+        indices = torch.randint(
+            0, x.shape[self._dim], out_shape
+        )
+        return x.gather(self._dim, indices), indices
