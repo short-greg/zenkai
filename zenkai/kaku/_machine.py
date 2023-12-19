@@ -245,6 +245,10 @@ class FeatureIdxStepX(StepX):
 
 
 class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
+    """LearningMachine defines a semiautonomous learner that defines its own
+    update function and updates the inputs
+    """
+
     def __init__(self) -> None:
 
         super().__init__()

@@ -5,91 +5,92 @@ from abc import ABC, abstractmethod
 import torch
 
 # local
-from ..kaku import Population, TensorDict
+from ..kaku import TensorDict
 
 
-class Noiser(ABC):
-    """Mixes two populations together"""
+def gausian_noise(x: torch.Tensor, std: float=1.0, mean: float=0.0) -> torch.Tensor:
 
-    @abstractmethod
-    def __call__(self, population: TensorDict) -> TensorDict:
-        pass
-
-    @abstractmethod
-    def spawn(self) -> "Noiser":
-        pass
+    return x + torch.randn_like(x) * std + mean
 
 
-# Can do this with apply now
-class GaussianNoiser(Noiser):
-    """Add Gaussian noise to the input"""
+def binary_noise(x: torch.Tensor, flip_p: bool = 0.5, signed_neg: bool = True) -> torch.Tensor:
 
-    def __init__(self, std: float = 0.0, mean: float = 0.0):
-        """Create Gaussian noiser
-
-        Args:
-            std (float): The std by which to mutate
-            mean (float): The mean with which to mutate
-        """
-
-        super().__init__()
-        self.mean = mean
-
-        if std < 0:
-            raise ValueError(f"Argument std must be >= 0 not {std}")
-        self.std = std
-
-    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
-        """Mutate all fields in the population
-
-        Args:
-            population (Population): The population to mutate
-
-        Returns:
-            Population: The mutated population
-        """
-
-        result = {}
-        for k, v in tensor_dict.items():
-            result[k] = v + torch.randn_like(v) * self.std + self.mean
-        return tensor_dict.spawn(result)
-
-    def spawn(self) -> "GaussianNoiser":
-        return GaussianNoiser(self.std, self.mean)
+    to_flip = torch.rand_like(x) > flip_p
+    if signed_neg:
+        return to_flip.float() * -x + (~to_flip).float() * x
+    return (x - to_flip.float()).abs()
 
 
-class BinaryNoiser(Noiser):
-    """Randomly mutate boolean genes in the population"""
+# # Can do this with apply now
+# class GaussianNoiser(Noiser):
+#     """Add Gaussian noise to the input"""
 
-    def __init__(self, flip_p: bool = 0.5, signed_neg: bool = True):
-        """initializer
+#     def __init__(self, std: float = 0.0, mean: float = 0.0):
+#         """Create Gaussian noiser
 
-        Args:
-            flip_p (bool): The probability of flipping
-            signed_neg (bool, optional): Whether the negative is -1 (true) or 0 (false). Defaults to True.
-        """
+#         Args:
+#             std (float): The std by which to mutate
+#             mean (float): The mean with which to mutate
+#         """
 
-        self.flip_p = flip_p
-        self.signed_neg = signed_neg
+#         super().__init__()
+#         self.mean = mean
 
-    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
-        """Mutate all fields in the population
+#         if std < 0:
+#             raise ValueError(f"Argument std must be >= 0 not {std}")
+#         self.std = std
 
-        Args:
-            population (Population): The population to mutate
+#     def __call__(self, tensor_dict: TensorDict) -> TensorDict:
+#         """Mutate all fields in the population
 
-        Returns:
-            Population: The mutated population
-        """
+#         Args:
+#             population (Population): The population to mutate
 
-        result = {}
-        for k, v in tensor_dict.items():
-            to_flip = torch.rand_like(v) > self.flip_p
-            if self.signed_neg:
-                result[k] = to_flip.float() * -v + (~to_flip).float() * v
-            else:
-                result[k] = (v - to_flip.float()).abs()
-        return Population(**result)
+#         Returns:
+#             Population: The mutated population
+#         """
 
-    def spawn(self) -> "BinaryNoiser":
-        return BinaryNoiser(self.flip_p, self.signed_neg)
+#         result = {}
+#         for k, v in tensor_dict.items():
+#             result[k] = v + torch.randn_like(v) * self.std + self.mean
+#         return tensor_dict.spawn(result)
+
+#     def spawn(self) -> "GaussianNoiser":
+#         return GaussianNoiser(self.std, self.mean)
+
+
+# class BinaryNoiser(Noiser):
+#     """Randomly mutate boolean genes in the population"""
+
+#     def __init__(self, flip_p: bool = 0.5, signed_neg: bool = True):
+#         """initializer
+
+#         Args:
+#             flip_p (bool): The probability of flipping
+#             signed_neg (bool, optional): Whether the negative is -1 (true) or 0 (false). Defaults to True.
+#         """
+
+#         self.flip_p = flip_p
+#         self.signed_neg = signed_neg
+
+#     def __call__(self, tensor_dict: TensorDict) -> TensorDict:
+#         """Mutate all fields in the population
+
+#         Args:
+#             population (Population): The population to mutate
+
+#         Returns:
+#             Population: The mutated population
+#         """
+
+#         result = {}
+#         for k, v in tensor_dict.items():
+#             to_flip = torch.rand_like(v) > self.flip_p
+#             if self.signed_neg:
+#                 result[k] = to_flip.float() * -v + (~to_flip).float() * v
+#             else:
+#                 result[k] = (v - to_flip.float()).abs()
+#         return Population(**result)
+
+#     def spawn(self) -> "BinaryNoiser":
+#         return BinaryNoiser(self.flip_p, self.signed_neg)

@@ -1,6 +1,6 @@
 # 1st party
 import typing
-from abc import abstractmethod
+from abc import abstractmethod, abstractproperty
 
 # 3rd party
 import torch
@@ -32,6 +32,14 @@ class TensorDict(dict):
 
         super().__init__(**results)
 
+    @abstractproperty
+    def assessment(self) -> Assessment:
+        """
+        Returns:
+            Assessment: The assessment for the TensorDict
+        """
+        pass
+    
     def loop_over(
         self,
         others: typing.Union["TensorDict", typing.List["TensorDict"]],
@@ -556,6 +564,14 @@ class Population(TensorDict):
                 raise ValueError(f"Assessment {i} has not been set.")
             values.append(assessment.value)
         return Assessment(torch.stack(values), self._assessments[0].maximize)
+
+    @property
+    def assessment(self) -> Assessment:
+        """
+        Returns:
+            Assessment: The assessment for the population
+        """
+        return self.stack_assessments()
 
     def gather_sub(self, gather_by: torch.LongTensor) -> "Population":
         """Gather on the population dimension

@@ -7,8 +7,9 @@ from zenkai.tansaku._select import (
     select_best_sample,
     TopKSelector,
     BestSelector,
-    RankParentSelector,
-    FitnessParentSelector,
+    ToRankProb,
+    ToFitnessProb,
+    ProbSelector
 )
 from zenkai import Individual, Population
 
@@ -233,25 +234,25 @@ class TestBestSelector:
         assert (index_map.select_index(Individual(x=x))["x"] == t).all()
 
 
-class TestFitnessParentSelector:
-    def test_select_retrieves_two_parents_of_length_two(self):
+# class TestFitnessParentSelector:
+#     def test_select_retrieves_two_parents_of_length_two(self):
 
-        x = torch.tensor([[0, 1], [0, 2], [2, 3]])
-        value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
-        selector = FitnessParentSelector(k=2)
-        index_map = selector.select(value)
-        parent1, parent2 = index_map.select_index(Individual(x=x))
-        assert parent1["x"].shape == torch.Size([2, 2])
-        assert parent2["x"].shape == torch.Size([2, 2])
+#         x = torch.tensor([[0, 1], [0, 2], [2, 3]])
+#         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
+#         selector = FitnessParentSelector(k=2)
+#         index_map = selector.select(value)
+#         parent1, parent2 = index_map.select_index(Individual(x=x))
+#         assert parent1["x"].shape == torch.Size([2, 2])
+#         assert parent2["x"].shape == torch.Size([2, 2])
 
 
-class TestRankParentSelector:
-    def test_select_retrieves_two_parents_of_length_two(self):
+# class TestRankParentSelector:
+#     def test_select_retrieves_two_parents_of_length_two(self):
 
-        x = torch.tensor([[0, 1], [0, 2], [2, 3]])
-        value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
-        selector = RankParentSelector(k=2)
-        index_map = selector.select(value)
-        parent1, parent2 = index_map.select_index(Individual(x=x))
-        assert parent1["x"].shape == torch.Size([2, 2])
-        assert parent2["x"].shape == torch.Size([2, 2])
+#         x = torch.tensor([[0, 1], [0, 2], [2, 3]])
+#         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
+#         selector = RankParentSelector(k=2)
+#         index_map = selector.select(value)
+#         parent1, parent2 = index_map.select_index(Individual(x=x))
+#         assert parent1["x"].shape == torch.Size([2, 2])
+#         assert parent2["x"].shape == torch.Size([2, 2])

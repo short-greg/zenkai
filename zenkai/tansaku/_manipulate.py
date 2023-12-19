@@ -1,8 +1,18 @@
+
+
+# 1st part
+from abc import ABC, abstractmethod
+
 # 3rd party
 import torch
 
 # local
-from ._keep import Individual, Population
+from ._keep import Individual, Population, TensorDict
+from ..kaku import State
+from ..kaku import (
+    Individual,
+    Population,
+)
 
 
 class SlopeCalculator(object):
@@ -46,6 +56,7 @@ class SlopeCalculator(object):
 
 
 class SlopeUpdater(object):
+
     def __init__(
         self, momentum: float, lr: float = 0.1, x: str = "x", maximize: bool = False
     ):
@@ -88,3 +99,89 @@ class SlopeUpdater(object):
 
     def spawn(self) -> "SlopeUpdater":
         return SlopeUpdater(self._momentum, self.lr, self.x, self._multiplier == 1)
+
+
+class ApplyMomentum(object):
+    """Reduces the population using momentum"""
+
+    def __init__(self, momentum: float = None):
+        """initializer
+
+        Args:
+            momentum (float, optional): Weight for previous time step Defaults to None.
+            maximize (bool, optional): Whether to maximize the evaluation. Defaults to True.
+        """
+        super().__init__()
+        self._momentum = momentum
+        self._params_updated = None
+        self._keep_s = True
+        self.diff = None
+        self.cur = None
+        self.dx = None
+
+    def apply_momentum(
+        self, k: str, individual: torch.Tensor,  state: State
+    ) -> torch.Tensor:
+        """Decorates the individual with the momentum
+
+        Args:
+            key (str): The name of the field
+            individual (torch.Tensor): The individual to decorate
+            assessment (Assessment): The assessment for the individual
+
+        Returns:
+            torch.Tensor: The decorated reducer
+        """
+        my_state = state.mine(self, k)
+        diff = my_state.get("diff")
+        cur = my_state.get("cur")
+
+        if diff is None and cur is None:
+            my_state.cur = individual
+        elif self.diff is None:
+            my_state.diff = individual - my_state.cur
+            my_state.cur = individual
+        else:
+            my_state.diff = (individual - my_state.cur) + self._momentum * self.diff
+            my_state.cur = my_state.diff + individual
+
+        return my_state.cur
+
+    def __call__(self, individual: Individual, state: State) -> Individual:
+        """Reduces the population and decorates it
+
+        Args:
+            population (Population): The population to reduce
+
+        Returns:
+            Individual: The reduction (individual)
+        """
+
+        result = {}
+        for k, v in individual.items():
+            result[k] = self.apply_momentum(k, v, state)
+        return Individual(**result)
+
+    def spawn(self) -> "ApplyMomentum":
+        return ApplyMomentum(self._momentum)
+
+
+class Apply(object):
+    """Mixes two populations together"""
+
+    def __init__(self, noise_f, *args, **kwargs):
+
+        self.noise_f = lambda x: noise_f(x, *args, **kwargs)
+        self._args = args
+        self._kwargs = kwargs
+
+    def __call__(self, tensor_dict: TensorDict) -> TensorDict:
+        
+        return tensor_dict.apply(
+            self.noise_f
+        )
+
+    def spawn(self) -> "Apply":
+        return Apply(
+            self.noise_f, self._args, self._kwargs
+        )

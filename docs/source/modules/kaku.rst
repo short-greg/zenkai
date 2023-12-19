@@ -123,7 +123,7 @@ State: State allows one to store values for the current learning step
    x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
    learning_machine = SimpleLearner()
    # set the number of iterations for the key (learning_machine, x) to 1
-   state[(learning_machine, x, 'iterations'] = 1
+   state[learning_machine, x, 'iterations'] = 1
    my_state = state.mine(learning_machine, x)
    print(my_state.iterations) # "1"
    # add a sub_state
@@ -155,7 +155,7 @@ LearningMachine: Show how to implement with gradient descent
       def step(self, x: IO, t: IO, state: State):
          # implement a method to update the parameters
          self.optim.zero_grad() 
-         self.assess_y(state[(self, x), 'y'], t)['loss'].backward()
+         self.assess_y(state[self, x, 'y'], t)['loss'].backward()
          self.optim.step()
 
       # step will be called if it hasn't already

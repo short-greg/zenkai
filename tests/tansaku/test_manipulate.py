@@ -1,8 +1,8 @@
 import torch
 import pytest
 
-from zenkai import Individual, Population, Assessment
-from zenkai.tansaku._slope import SlopeUpdater, SlopeCalculator
+from zenkai import Individual, Population, Assessment, State
+from zenkai.tansaku._manipulate import SlopeUpdater, SlopeCalculator, ApplyMomentum
 
 
 @pytest.fixture
@@ -160,3 +160,34 @@ class TestSlopeCalculator:
         individual = selector(population2_with_assessment)
         individual = selector(population2_with_assessment)
         assert individual["x"].size() == population2_with_assessment["x"].shape[1:]
+
+
+class TestMomentum:
+    def test_momentum_selector_returns_best_with_one_dimensions(
+        self, individual1
+    ):
+
+        momentum = ApplyMomentum(0.1)
+        state = State()
+        individual = momentum(individual1, state)
+        assert individual["x"].size() == individual1["x"].shape
+
+    def test_momentum_selector_returns_best_with_two_dimensions(
+        self, individual1
+    ):
+
+        momentum = ApplyMomentum(0.1)
+        state = State()
+        individual = momentum(individual1, state)
+        assert individual["x"].size() == individual1["x"].shape
+
+    def test_momentum_selector_returns_best_after_two_iterations_two_dimensions(
+        self, individual1
+    ):
+
+        momentum = ApplyMomentum(0.1)
+        state = State()
+        individual = momentum(individual1, state)
+        individual = momentum(individual1, state)
+        assert individual["x"].size() == individual1["x"].shape
+
