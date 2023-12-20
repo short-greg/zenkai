@@ -4,67 +4,87 @@ Kikai
 
 Introduction
 ============
-Kikai contains a variety of modules that inherit from LearningMachine.
+Kikai contains a variety of Learning . The subpackage can be divided to two types of learners
 
-Modules
-========
-Kikai:
+- Extensions: Classes used to wrap other learners or extend the functionality of the standard learning machine
+- Parameter Updaters: Classes used directly to update the parameters or the x values
+- X Updaters: Classes that do not update the parameters or do not have parameters and only update the x value.
 
-- :mod:`GradLearner` - LearningMachines based on gradient descent
-- :mod:`Graphlearner` - Learner used to contain other learners. It defines the accumulate, step and step_x methods. 
-- :mod:`FALearner/DFALearner` - LearningMachines based on feedback alignment
+Extensions
+==========
+
+- :mod:`Graphlearner` - Learner used to contain other learners. It defines the accumulate, step and step_x methods. This is possibly the most valuable amongst these as it can greatly simplify the process of creating a machine.
 - :mod:`EnsembleLearner` - Base class for an ensemble module
-- :mod:`HillClimbStepX` - Implements StepX using a hill-climbing algorithm
 - :mod:`IterStepX/IterStepTheta` - Wrap learning machines so that they will be iterated over 
-- :mod:`LeastSquaresLearner` - Uses least squares for parameter or x updates
 - :mod:`StackPostStepTheta` - Wraps learning machine so it postpones step() and adds accumulate(). step_x must not depend on step
-- :mod:`ReversibleMachine` - Wraps a reversible module
-- :mod:`ScikitLearner` - Wraps a Scikit-Learn estimator
-- :mod:`TagetPropLearner` - A base class for implementing TargetPropagation
-- ... and so on.
+- :mod:`TargetPropLearner` - Extend to implement target propagation. 
 
-Key Features and Functions
-==========================
-Kikai implements  LearningMachines.
+Parameter Updaters
+==========
+- :mod:`LeastSquaresLearner` - Uses least squares for parameter or x updates.
+- :mod:`GradLearner` - LearningMachines based on gradient descent. Use to connect regular backpropagation with other types of machines or to wrap backpropagation in a loop.
+- :mod:`FALearner/DFALearner` - LearningMachines based on feedback alignment
+- :mod:`ScikitLearner` - Wraps a Scikit-Learn estimator. Can be used for things like using decision trees as the fundamental operation instead of dot product.
 
-- **LearningMachine 1**: A learner that does not update
+X Updaters
+==========
+- :mod:`BackTarget` - Machines that  . Can use to wrap functions that do not operate on the inputs such as view, reshape, etc.
+- :mod:`ReversibleMachine` - Wraps a reversible module to update x. step_x will invert the result.
+- :mod:`CriterionStepX` - LearningMachine that contains a criterion and uses gradient descent to update the x. Use especially if the preceding layer requires targets other than the targets of the machine. For example, if it requires real valued targets instead of categorical.
+- :mod:`NullLearner` - Wrap a module that does not update the parameters and returns x.
+
+Examples
+==========
+
+- **GraphLearner Example**: Here is an implementation of the GraphLearner. This is a convenience class used so that the user does not have to write the step, step_x, or accumulate functions. There are two types of GraphLearners: AccGraphLearner and GraphLearner. The former does the backward pass in the accumulate method. The latter does the backward pass in the step method.
   
   .. code-block:: python
   
      from zenkai import LearningMachine, IO, State
 
-     class MultiLayerLearningMachine(LearningMachine):
+     class MultiLayerLearningMachine(GraphLearner):
 
          def __init__(self, layer1: LeastSquaresLearner, layer2: LeastSquaresLearner):
 
             super().__init__()
-            self.layer1 = layer1
-            self.layer2 = layer2
+            # Wrapped in a GraphNode so the "graph" will be composed
+            # on the forward pass
+            self.layer1 = GraphNode(layer1)
+            self.layer2 = GraphNode(layer2)
          
-         def assess_y(self, y: IO, t: IO, state: State, reduction_override: bool=None):
+         def assess_y(self, y: IO, t: IO, state: State, reduction_override: bool=None) -> Assessment:
             # use a Criterion to calculate the loss
             return self.layer2.assess_y(y, t, state, reduction_override)
 
-         def step(self, x: IO, t: IO, state: State):
-            # implement a method to update the parameters
-            my_state = state.mine(self, x)
-            self.layer2.step(my_state.layer1, t, state)
-            t1 = my_state.t1 = self.layer2.step_x(my_state.layer1, t, state)
-            self.layer1.step(x, t, state)
-
-         @step_dep('t1')
-         def step_x(self, x: IO, t: IO, state: State) -> IO:
-            # implement a method to update x
-            return self.step_x(x, t, state)
-
          def forward(self, x: IO, state: State, release: bool=True) -> IO:
 
-            my_state = state.mind((self, x))
-            x = my_state.layer1 = self.layer1(x, state)
+            my_state = state.mine(self, x)
+            # these two calls will create the graph
+            x = self.layer1(x, state)
             x = self.layer2(x, state)
             return y.out(release)
 
-- ... and so on.
+
+- **GradLearner**: The next example is a learner that makes use of graident descent. This can be useful for connecting learners that update using backprop with those that do not.
+  
+  .. code-block:: python
+  
+     from torch import nn
+     from zenkai import LearningMachine, IO, State, ThLoss
+
+     class LinearLearner(GradLearner):
+
+         def __init__(self, in_features: int, out_features: int):
+
+            # Pass in self as the "grad m"
+            linear = nn.Linear(in_features, out_features)
+            activation = nn.ReLU()
+            super().__init__(nn.Sequential(linear, activation))
+            criterion = ThLoss('MSELoss')
+         
+         def assess_y(self, y: IO, t: IO, state: State, reduction_override: bool=None) -> Assessment:
+            # use a Criterion to calculate the loss
+            return self.criterion.assess(y, t, reduction_override)
 
 .. How to Use
 .. ==========
