@@ -1,6 +1,7 @@
 # 1st party
 import typing
 from abc import abstractmethod, abstractproperty
+import functools
 
 # 3rd party
 import torch
@@ -148,20 +149,36 @@ class TensorDict(dict):
                 return False
         return True
 
-    def __add__(self, other: "TensorDict") -> "TensorDict":
+    def __add__(self, other) -> "TensorDict":
         return self.binary_op(torch.add, other, False, True)
 
-    def __sub__(self, other: "TensorDict") -> "TensorDict":
+    def __radd__(self, other) -> "TensorDict":
+        return self.binary_op(torch.add, other, False, True)
+    
+    def __pow__(self, other) -> "TensorDict":
+        return self.binary_op(torch.pow, other, True, False)
+
+    def __sub__(self, other) -> "TensorDict":
 
         return self.binary_op(torch.sub, other, True, True)
 
+    def __rsub__(self, other) -> "TensorDict":
+
+        return self.binary_op(torch.rsub, other, True, True)
+    
     def __mul__(self, other: "TensorDict") -> "TensorDict":
 
+        return self.binary_op(torch.mul, other, True, False)
+    
+    def __rmul__(self, other) -> "TensorDict":
         return self.binary_op(torch.mul, other, True, False)
 
     def __truediv__(self, other: "TensorDict") -> "TensorDict":
         return self.binary_op(torch.true_divide, other, True, False)
 
+    def __rtruediv__(self, other: "TensorDict") -> "TensorDict":
+        return self.binary_op(torch.true_divide, other, True, False)
+    
     def __and__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
             return False
@@ -704,8 +721,8 @@ class Population(TensorDict):
 
     def apply(
         self,
-        f: typing.Callable[[torch.Tensor], torch.Tensor],
-        keys: typing.Union[typing.List[str], str] = None,
+        f: typing.Callable[[torch.Tensor], torch.Tensor], *args,
+        keys: typing.Union[typing.List[str], str] = None, **kwargs
     ) -> "Population":
         """Apply a function to he individual to generate a new individual
 
@@ -725,7 +742,7 @@ class Population(TensorDict):
         results = {}
         for k, v in self.items():
             if k in keys:
-                results[k] = f(v)
+                results[k] = f(v, *args, **kwargs)
             else:
                 results[k] = torch.clone(v)
         return Population(**results)
@@ -733,7 +750,18 @@ class Population(TensorDict):
     def spawn(self, tensor_dict: typing.Dict[str, torch.Tensor]) -> "Population":
 
         return Population(**tensor_dict)
-        
+    
+    def all(self) -> bool:
+
+        return functools.reduce(
+            lambda x, y: x and torch.all(y), self.values()
+        )
+
+    def any(self) -> bool:
+
+        return functools.reduce(
+            lambda x, y: x or torch.all(y), self.values()
+        )
 
     def clone(self) -> "Population":
         """Create an exact copy of the individual

@@ -198,7 +198,7 @@ class IndexMap(object):
         # return result
 
     def select_index(
-        self, tensor_dict: TensorDict, to_split: bool=False
+        self, tensor_dict: TensorDict
     ) -> TensorDict:
         """Select on the index specified for a tensor
 
@@ -212,7 +212,10 @@ class IndexMap(object):
         result = {}
         for k, v in tensor_dict.items():
             result[k] = self(v)
-        return tensor_dict.__class__(**result)
+        
+        tensor_dict = tensor_dict.__class__(**result)
+        tensor_dict.report(self._assessment)
+        return tensor_dict
                 
         # if len(self) == 1:
         #     result = {}
@@ -299,10 +302,10 @@ class TopKSelector(Selector):
             IndexMap: The resulting index map
         """
 
-        _, topk = assessment.value.topk(
+        value, topk = assessment.value.topk(
             self.k, dim=self._dim, largest=assessment.maximize
         )
-        return IndexMap(assessment, topk, dim=self._dim)
+        return IndexMap(Assessment(value, assessment.maximize), topk, dim=self._dim)
 
 
 class BestSelector(Selector):
@@ -326,10 +329,10 @@ class BestSelector(Selector):
         """
 
         if assessment.maximize:
-            _, best = assessment.value.max(dim=self._dim, keepdim=True)
+            value, best = assessment.value.max(dim=self._dim, keepdim=True)
         else:
-            _, best = assessment.value.min(dim=self._dim, keepdim=True)
-        return IndexMap(assessment, best, dim=self._dim)
+            value, best = assessment.value.min(dim=self._dim, keepdim=True)
+        return IndexMap(Assessment(value, assessment.maximize), best, dim=self._dim)
 
 
 class RandSelector(Selector):
@@ -346,8 +349,12 @@ class RandSelector(Selector):
 
         out_shape = list(assessment.shape)
         out_shape[self._dim] = 1
+        index = torch.randint(
+            0, assessment.shape[self._dim], out_shape
+        )
+        value = assessment.value.gather(self._dim, index)
         return IndexMap(
-            assessment, torch.randint(
+            Assessment(value, assessment.maximize), torch.randint(
                 0, assessment.shape[self._dim], out_shape
             ), self._dim
         )
@@ -453,8 +460,13 @@ class ProbSelector(Selector):
 
         prob = self.to_prob(assessment, self.k)
         selection = select_from_prob(prob, 2, self._dim)
-        print(selection.shape)
-        return IndexMap(assessment, selection, dim=self._dim)
+        sz = assessment.dim()
+        value = assessment.value.unsqueeze(-1)
+        value = value.repeat([1] * sz + [2])
+        value = value.gather(self._dim, selection)
+        return IndexMap(
+            Assessment(value, maximize=assessment.maximize), selection, dim=self._dim
+        )
 
 
 # def resize_to(tensor1: torch.Tensor, tensor2: torch.Tensor) -> torch.Tensor:

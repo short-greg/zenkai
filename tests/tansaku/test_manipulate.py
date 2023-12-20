@@ -163,6 +163,7 @@ class TestSlopeCalculator:
 
 
 class TestMomentum:
+
     def test_momentum_selector_returns_best_with_one_dimensions(
         self, individual1
     ):

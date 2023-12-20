@@ -6,7 +6,6 @@ from zenkai import tansaku, Assessment
 from zenkai.kaku import Individual, Population
 
 import torch
-import pytest
 
 from zenkai import Assessment
 from zenkai.kaku import Population
@@ -14,6 +13,7 @@ from zenkai.tansaku import _genetic, _select
 
 
 class TestKeepMixer:
+
     def test_keep_mixer_results_in_correct_size(self):
 
         individual1 = Individual(x=torch.rand(4, 2))
@@ -38,6 +38,7 @@ class TestKeepMixer:
 
 
 class TestBinaryRandCrossOver:
+
     def test_binary_rand_crossover(self):
 
         mixer = tansaku.BinaryRandCrossOver(0.5)

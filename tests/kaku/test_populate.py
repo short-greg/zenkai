@@ -163,6 +163,7 @@ class TestIndividual:
     ):
         individual1 = individual1.copy()
         individual1["x1"] = x2
+        
         individual3 = individual1 - individual2
 
         assert (individual3["x1"] == (x2 - x1)).all()
@@ -199,10 +200,8 @@ class TestIndividual:
         assert (individual3["x"]).all()
 
     def test_gt_gets_greater_value_from_inviduals(self, individual1):
-        individual1 = individual1.copy()
         individual2 = individual1 - 1
         individual3 = individual1 > individual2
-
         assert (individual3["x"]).all()
 
     def test_eq_returns_equal_if_same(self, individual1):
