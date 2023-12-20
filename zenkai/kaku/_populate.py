@@ -176,8 +176,8 @@ class TensorDict(dict):
     def __truediv__(self, other: "TensorDict") -> "TensorDict":
         return self.binary_op(torch.true_divide, other, True, False)
 
-    def __rtruediv__(self, other: "TensorDict") -> "TensorDict":
-        return self.binary_op(torch.true_divide, other, True, False)
+    # def __rtruediv__(self, other: "TensorDict") -> "TensorDict":
+    #     return self.binary_op(torch.true_divide, other, True, False)
     
     def __and__(self, other: "TensorDict") -> "TensorDict":
         if not self.validate_keys(other):
