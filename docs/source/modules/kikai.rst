@@ -80,11 +80,34 @@ Examples
             linear = nn.Linear(in_features, out_features)
             activation = nn.ReLU()
             super().__init__(nn.Sequential(linear, activation))
-            criterion = ThLoss('MSELoss')
+            self.criterion = ThLoss('MSELoss')
          
          def assess_y(self, y: IO, t: IO, state: State, reduction_override: bool=None) -> Assessment:
             # use a Criterion to calculate the loss
             return self.criterion.assess(y, t, reduction_override)
+
+- They can also be created through the use of the convenience function `grad()` as follows.
+
+  .. code-block:: python 
+  
+     # 
+     from torch import nn
+     from zenkai import LearningMachine, IO, State, ThLoss, kikai
+
+     sequential = nn.Sequential(nn.Linear(in_features, out_features), nn.ReLU())
+     grad_learner = kikai.grad(sequential)
+
+
+- **Reversible**: Reversibles allow one to invert the output to get the target for the preceding layer.
+  
+  .. code-block:: python
+  
+     # There is also a reverse function. This will use the BackTarget method
+     reversible = kikai.reverse(lambda x: x.view(...))
+     
+     # If you use a reversible module it will wrap it.
+     batchnorm = kikai.reverse(BatchNorm1DReversible(n_features)) 
+
 
 .. How to Use
 .. ==========
