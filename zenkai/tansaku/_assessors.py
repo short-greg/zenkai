@@ -8,7 +8,6 @@ import torch
 from ..kaku import IO, LearningMachine, Criterion, Assessment
 from ._keep import Population
 from ..kaku import Objective
-from ..utils import align_to
 
 
 class Assessor(ABC):

@@ -12,7 +12,6 @@ from ..kaku import (
     LearningMachine,
     Assessment,
     OptimFactory,
-    StepX,
     Criterion,
     ThLoss,
     Builder,
@@ -37,102 +36,6 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
     """
 
     return IO(y.f, y_prime.f, detach=detach)
-
-
-class FALinearLearner(LearningMachine):
-    """Linear network for implementing feedback alignment"""
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        optim_factory: OptimFactory,
-        criterion: typing.Union[Criterion, str] = "MSELoss",
-    ) -> None:
-        """Linear network for implementing feedback alignment
-
-        Args:
-            in_features (int): the number of features into the layer
-            out_features (int): the number of features out of the layer
-            optim_factory (OptimFactory): the optimizer to use for optimizing
-            criterion (typing.Union[Criterion, str], optional): . Defaults to 'mse'.
-        """
-        super().__init__()
-        self.linear = nn.Linear(in_features, out_features, bias=False)
-        self.B = torch.randn(in_features, out_features)
-        self.optim = optim_factory(self.linear.parameters())
-        if isinstance(criterion, str):
-            self.criterion = ThLoss(criterion)
-        else:
-            self.criterion = criterion
-
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-
-        x = state[self, "y"] = IO(self.linear(x.f))
-        return x.out(release)
-
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return self.criterion.assess_dict(y, t, reduction_override)
-
-    def step(self, x: IO, t: IO, state: State):
-        """Update the base parameters
-
-        Args:
-            x (IO): the input
-            t (IO[y, y_prime]): the target
-            state (State): the learning state
-
-        Returns:
-            IO: the updated target
-        """
-        self.optim.zero_grad()
-        output_error = t.f - t.u[1]
-        self.linear.weight.grad = output_error.T.mm(x.f)
-        self.optim.step()
-
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """Backpropagates the error resulting from the randomly generated matrix
-
-        Args:
-            x (IO): the input
-            t (IO[y, y_prime]): the target
-            state (State): the learning state
-
-        Returns:
-            IO: the updated target
-        """
-        output_error = t.f - t.u[1]
-        output_error = output_error.mm(self.B.T)
-        return IO(x.f - output_error, detach=True)
-
-
-class BStepX(StepX):
-    """Use to propagate the error from the final target directly to a given layer"""
-
-    def __init__(self, out_features: int, t_features: int = None) -> None:
-        """Propagate the error from the final target to the layer to oupdate
-
-        Args:
-            out_features (int): the output features of a layer
-            t_features (int, optional): the target features. Defaults to None.
-        """
-        super().__init__()
-        self.B = torch.randn(out_features, t_features)
-
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        """Backpropagates the error resulting from the randomly generated matri
-
-        Args:
-            x (IO): the input
-            t (IO[y, y_prime]): the target
-            state (State): the learning state
-
-        Returns:
-            IO: the updated target
-        """
-        output_error = t.f - t.u[1]
-        output_error = output_error.mm(self.B.T)
-        return IO(x.f - output_error, detach=True)
 
 
 class FALearner(LearningMachine):

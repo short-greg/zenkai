@@ -1,10 +1,8 @@
 # 1st party
 from abc import ABC, abstractmethod
-import typing
 
 # 3rd party
 import torch
-from torch import nn
 
 # local
 from ..kaku import TensorDict
@@ -125,54 +123,3 @@ class BinarySampler(Sampler):
 
     def spawn(self) -> "BinarySampler":
         return BinarySampler(self.k, self.decay, self._p0, self._sign_neg)
-
-
-# class Sampler(nn.Module, ABC):
-
-#     def __init__(self, k: int):
-#         super().__init__()
-#         self._k = k
-
-#     @property
-#     def k(self) -> int:
-#         return self._k
-
-#     @abstractmethod
-#     def forward(self, x: torch.Tensor) -> typing.Tuple[torch.Tensor]:
-#         raise NotImplementedError
-
-
-# class RandFeatureSampler(Sampler):
-
-#     def __init__(self, k: int, dim: int=-1):
-#         """
-
-#         Args:
-#             k (int): 
-#             dim (int, optional): . Defaults to -1.
-#         """
-#         super().__init__(k)
-#         self._dim = dim
-    
-#     @property
-#     def dim(self) -> int:
-#         return self._dim
-
-#     def forward(
-#         self, x: torch.Tensor
-#     ) -> torch.Tensor:
-#         """Randomly select a feature on the feature dim
-
-#         Args:
-#             x (torch.Tensor): The input
-
-#         Returns:
-#             torch.Tensor: The sampled tensor
-#         """
-#         out_shape = list(x.shape)
-#         out_shape[self._dim] = 1
-#         indices = torch.randint(
-#             0, x.shape[self._dim], out_shape
-#         )
-#         return x.gather(self._dim, indices), indices
-

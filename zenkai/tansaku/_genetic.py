@@ -8,8 +8,6 @@ import torch
 
 # local
 from ..kaku import Population
-from ..kaku import State
-from ..kaku import Population
 from . import _select as selection
 
 
@@ -146,43 +144,3 @@ class SmoothCrossOver(CrossOver):
 
     def spawn(self) -> "SmoothCrossOver":
         return SmoothCrossOver()
-
-
-# class Divider(ABC):
-#     @abstractmethod
-#     def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
-#         pass
-
-#     def __call__(
-#         self, population: Population, state: State = None
-#     ) -> typing.Tuple[Population]:
-#         return self.divide(population, state or State())
-
-#     @abstractmethod
-#     def spawn(self) -> "Divider":
-#         pass
-
-# class EqualDivider(Divider):
-#     def divide(self, population: Population, state: State) -> typing.Tuple[Population]:
-#         """Divide the population into two based on the fitness proportionality
-
-#         Args:
-#             population (Population): The population to divide
-
-#         Returns:
-#             typing.Tuple[Population]: The two parents
-#         """
-#         fitness = population.stack_assessments().reduce("samplemeans")
-#         if not fitness.maximize:
-#             p = torch.nn.functional.softmin(fitness.value, dim=0).detach()
-#         else:
-#             p = torch.nn.functional.softmax(fitness.value, dim=0).detach()
-
-#         selection1, selection2 = torch.multinomial(p, 2 * len(fitness), True).view(
-#             2, -1
-#         )
-
-#         return population.sub[selection1], population.sub[selection2]
-
-#     def spawn(self) -> Divider:
-#         return EqualDivider()
