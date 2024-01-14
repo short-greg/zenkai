@@ -614,7 +614,9 @@ class Population(TensorDict):
             result[k] = v.gather(0, gather_by)
         return Population(**result)
 
-    def pstack(self, others: typing.Iterable["Population"]) -> "Population":
+    def pstack(
+            self, others: typing.Iterable["Population"]
+        ) -> "Population":
         """Stack the populations on top of one another
 
         Args:

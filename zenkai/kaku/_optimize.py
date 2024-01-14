@@ -238,7 +238,6 @@ class _OptimF:
         return OptimFactory(optim, *args, **kwargs)
 
 
-
 class PopulationOptim(ABC):
 
     @abstractmethod
