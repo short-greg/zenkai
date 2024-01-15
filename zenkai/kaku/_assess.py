@@ -206,22 +206,6 @@ class Assessment(object):
         """
         return Assessment(self.value * val, self.maximize)
 
-    # def batch_mean(self) -> "Assessment":
-    #     """Calculate the mean of the assessment for each sample
-
-    #     Returns:
-    #         Assessment: The resulting assessment
-    #     """
-    #     return Assessment(self.value.view(self.shape[0], -1).mean(dim=-1))
-
-    # def batch_sum(self) -> "Assessment":
-    #     """Calculate the sum of the assessment for each sample
-
-    #     Returns:
-    #         Assessment: The resulting assessment
-    #     """
-    #     return Assessment(self.value.view(self.shape[0], -1).sum(dim=-1))
-
     def __getattr__(self, key: str):
 
         try:
@@ -714,4 +698,3 @@ class PopulationAssessment(Assessment):
         return PopulationAssessment(
             pop_assessment, assessment.maximize
         )
-

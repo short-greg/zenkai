@@ -249,7 +249,8 @@ class TensorDict(dict):
 
 
 class Individual(TensorDict):
-    """An individual in a population. An individual consists of fields for one element of a population"""
+    """An individual in a population. An individual consists 
+    of fields for one element of a population"""
 
     def __init__(
         self,
@@ -264,7 +265,9 @@ class Individual(TensorDict):
         """
         super().__init__(**values)
         if len(self) == 0:
-            raise ValueError("Must pass tensors into the population")
+            raise ValueError(
+                "Must pass tensors into the population"
+            )
         self._assessment = assessment
         self._id = None
         self._population = None
@@ -304,7 +307,9 @@ class Individual(TensorDict):
 
         return Population(**{key: expand_dim0(v, k, False) for key, v in self.items()})
 
-    def join(self, population: "Population", individual_idx: int) -> "Individual":
+    def join(
+        self, population: "Population", individual_idx: int
+    ) -> "Individual":
         """Set the population for the individual
 
         Args:
@@ -695,10 +700,7 @@ class Population(TensorDict):
         Returns:
             torch.Tensor: The value at key
         """
-        if isinstance(key, slice):
-            if key == slice():
-                # return all
-                pass
+        
         if isinstance(key, tuple):
             field, i = key
             return self[field][i]
