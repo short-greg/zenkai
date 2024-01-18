@@ -13,6 +13,7 @@ from ._convert import (
     to_th_as,
     to_zero_neg,
     update_model_parameters,
+    apply_to_parameters,
     update_model_grads,
     get_model_grads,
     set_model_grads,

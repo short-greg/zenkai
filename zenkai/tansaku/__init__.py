@@ -3,8 +3,6 @@
 from ._assessors import Assessor, XPopAssessor, ObjectivePopAssessor
 from ._keep import keep_feature, keep_mixer
 from ._reduction import (
-    BinaryGaussianReducer,
-    BinaryProbReducer,
     keep_original,
 )
 from ._distortion import (

@@ -82,7 +82,7 @@ def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, 
 
     Args:
         prob (torch.Tensor): The probability to from
-        k (int, optional): The . Defaults to 2.
+        k (int, optional): The dimension to sleect on. Defaults to 2.
         dim (int, optional): The dimension the probability is on. Defaults to -1.
         replace (bool, optional): . Defaults to False.
         g (torch.Generator, optional): . Defaults to None.
@@ -98,6 +98,13 @@ def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, 
     selection = torch.multinomial(prob, k, replace, generator=g)
 
     selection = selection.reshape(list(shape[:-1]) + [k])
+    permutation = list(range(selection.dim() - 1))
+    permutation.insert(dim, selection.dim() - 1)
+    selection = selection.permute(permutation)
+    select_shape = list(selection.shape)
+    select_shape.pop(dim)
+    select_shape[dim] = -1
+    selection = selection.reshape(select_shape)
     # if len(shape) > 1:
 
     #     # new_shape = list(shape)
@@ -109,8 +116,9 @@ def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, 
     #selection = selection.transpose(-1, dim)
     return selection
     
+from . import utils
 
-def split_tensor_dict(tensor_dict: TensorDict, dim: int=-1) -> typing.Tuple[TensorDict]:
+def split_tensor_dict(tensor_dict: TensorDict, num_splits: int, dim: int=-1) -> typing.Tuple[TensorDict]:
     """split the tensor dict on a dimension
 
     Args:
@@ -123,8 +131,17 @@ def split_tensor_dict(tensor_dict: TensorDict, dim: int=-1) -> typing.Tuple[Tens
     all_results = []
     for k, v in tensor_dict.items():
         v: torch.Tensor = v
+        shape = list(v.shape)
+        # TODO: Create a utility for this
+        if dim < 0:
+            dim = len(shape) + dim
+        shape[dim] = shape[dim] // num_splits
+        shape.insert(dim, -1)
+
+        v = v.reshape(shape)
         split_tensors = v.tensor_split(v.size(dim), dim)
         for i, t in enumerate(split_tensors):
+            t = t.squeeze(dim)
             if i >= len(all_results):
                 all_results.append({})
             all_results[i][k] = t
@@ -190,10 +207,6 @@ class IndexMap(object):
             return x[self._index]
         
         return gather_selection(x, self._index, self._dim)
-        # result = tuple(self.index_for(i, x) for i in range(len(self)))
-        # if len(result) == 1:
-        #     return result[0]
-        # return result
 
     def select_index(
         self, tensor_dict: TensorDict
@@ -214,43 +227,11 @@ class IndexMap(object):
         tensor_dict = tensor_dict.__class__(**result)
         tensor_dict.report(self._assessment)
         return tensor_dict
-                
-        # if len(self) == 1:
-        #     result = {}
-        #     for k, v in tensor_dict.items():
-        #         result[k] = self(v)
-        #     return tensor_dict.spawn(result)
-
-        # result = []
-        # for i in range(len(self._index)):
-        #     cur_result = {}
-        #     for k, v in tensor_dict.items():
-        #         cur_result[k] = self.index_for(i, v)
-        #     result.append(tensor_dict.spawn(cur_result))
-        # return tuple(result)
 
     @property
     def assessment(self) -> torch.Tensor:
 
         return self._assessment
-
-    # def __getitem__(self, i: int) -> "IndexMap":
-
-    #     return IndexMap(self.index[i], dim=self.dim)
-
-    # def index_for(self, i: int, x: torch.Tensor) -> torch.Tensor:
-
-    #     index = self.index[i].clone()
-    #     if index.dim() > x.dim():
-    #         raise ValueError(
-    #             "Gather By dim must be less than or equal to the value dimension"
-    #         )
-
-    #     index = align_to(index, x)
-    #     return x.gather(self.dim, index)
-
-    # def __len__(self) -> int:
-    #     return len(self.index)
 
 
 class Selector(ABC):
@@ -275,7 +256,7 @@ class Selector(ABC):
     def select(self, assessment: Assessment) -> "IndexMap":
         pass
 
-    def __call__(self, tensor_dict: TensorDict) -> "IndexMap":
+    def __call__(self, tensor_dict: TensorDict) -> "TensorDict":
         """Select an individual from the population
 
         Args:
@@ -408,7 +389,6 @@ class ToRankProb(ToProb):
     def __call__(self, assessment: Assessment, k: int) -> torch.Tensor:
         
         # t = assessment.value
-        
         _, ranked = assessment.value.sort(self.dim, assessment.maximize)
         ranks = torch.arange(1, assessment.shape[self.dim] + 1)
         repeat = []
@@ -435,16 +415,18 @@ class ToRankProb(ToProb):
 
 class ProbSelector(Selector):
 
-    def __init__(self, k: int, to_prob: ToProb, dim: int = 0):
+    def __init__(self, k: int, to_prob: ToProb, dim: int = 0, c: int=1):
         """
 
         Args:
-            k (int): The number to select
+            k (int): The number of vectors to select from
             to_prob (ToProb): The probability calculation
             dim (int, optional): The dimension to select on. Defaults to 0.
+            c: The number to select from each vector. Defaults to 1
         """
         super().__init__(k, dim)
         self.to_prob = to_prob
+        self.c = c
 
     def select(self, assessment: Assessment) -> IndexMap:
         """Select the TopK fromm the assessment with k specified by in the initializer
@@ -455,14 +437,10 @@ class ProbSelector(Selector):
         Returns:
             IndexMap: The resulting index map
         """
-
         prob = self.to_prob(assessment, self.k)
-        selection = select_from_prob(prob, 2, self._dim)
-        sz = assessment.dim()
-        value = assessment.value.unsqueeze(-1)
-        value = value.repeat([1] * sz + [2])
+        selection = select_from_prob(prob, self.c, self._dim)
+        value = assessment.value
         value = value.gather(self._dim, selection)
         return IndexMap(
             Assessment(value, maximize=assessment.maximize), selection, dim=self._dim
         )
-

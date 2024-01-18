@@ -93,8 +93,9 @@ class TestProbDivider:
             Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
         )
 
-        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToFitnessProb(0)))
+        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToFitnessProb(0), c=2))
         child1, child2 = divider(population)
+        assert child1['x'].shape == torch.Size([3, 4, 2])
         assert child1.k == 3
 
         assert child2.k == 3
@@ -107,8 +108,9 @@ class TestProbDivider:
             Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
         )
 
-        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToRankProb(0)))
+        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToRankProb(0), c=2))
         child1, child2 = divider(population)
+        assert child1['x'].shape == torch.Size([3, 4, 2])
         assert child1.k == 3
         assert child2.k == 3
 
@@ -118,11 +120,12 @@ class TestProbDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
 
-        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToRankProb(0)))
+        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToRankProb(0), c=2))
         child1, child2 = divider(population)
 
         assert child1.k == 3
         assert child2.k == 3
+        assert child1['x'].shape == torch.Size([3, 4, 2])
 
     def test_divides_into_correct_sizes_when_div_start_is_two(self):
 
@@ -130,8 +133,9 @@ class TestProbDivider:
         population = Population(x=torch.rand(8, 4, 2))
         population.report(Assessment(torch.rand(8, 4)))
 
-        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToFitnessProb(1)))
+        divider = _genetic.Divider(_select.ProbSelector(3, _select.ToFitnessProb(1), c=2))
         child1, child2 = divider(population)
+        assert child1['x'].shape == torch.Size([8, 3, 2])
         assert child1.k == 8
         assert child2.k == 8
 

@@ -20,10 +20,7 @@ class Divider(object):
         Args:
         """
         super().__init__()
-        # self.divide_start = divide_start
         self.selector = selector
-        # if divide_start < 1:
-        #     raise ValueError("Divide start must be greater than 1")
 
     def __call__(self, population: Population) -> typing.Tuple[Population]:
         """Divide the population into two based on the fitness proportionality
@@ -35,18 +32,10 @@ class Divider(object):
             typing.Tuple[Population]: The two parents
         """
 
-        # calc_probs()
-        # assessment = population.stack_assessments()
-
-        # shape = assessment.shape
-        # reduced = assessment.reduce_image(self.divide_start)
-
         population = self.selector(population)
-        # index_map = selector.select(reduced)
-        # result = index_map.select_index(population)
-        # return Population(**result[0]), Population(**result[1])
+
         return selection.split_tensor_dict(
-            population, -1
+            population, 2, self.selector.dim
         )
 
     def spawn(self) -> 'Divider':
@@ -74,12 +63,6 @@ class Elitism(object):
         Returns:
             Population: the updated new generation
         """
-        # selector = selection.TopKSelector(self.k)
-        #assessment = population1.stack_assessments().reduce_image(self.divide_start)
-        # index_map = selector.select(assessment)
-
-        # population1 = index_map(population1)
-
         population1 = self.selector(population1)
         return population1.pstack([population2])
 

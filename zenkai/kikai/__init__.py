@@ -63,7 +63,6 @@ from ._least_squares import (
 from ._reversible import ReversibleMachine, reverse
 from ._feedback_alignment import (
     FALearner,
-    FALinearLearner,
     LinearFABuilder,
     DFALearner,
     LinearDFABuilder,

@@ -184,7 +184,7 @@ class ParamFilter(optim.Optimizer):
                 p_i[:] = mp_i.data
 
     def step_filter(self):
-        """Updates the paramters in the base state"""
+        """Updates the parameters in the base state"""
         self.filter_optim.zero_grad()
 
         if self._is_first and self.copy_first:
@@ -241,15 +241,20 @@ class _OptimF:
 class PopulationOptim(ABC):
 
     @abstractmethod
-    def assess(self, learning_machine: LearningMachine, x: IO, t: IO) -> PopulationAssessment:
+    def assess(
+        self, learning_machine: LearningMachine, x: IO, t: IO,
+        state: State
+    ) -> PopulationAssessment:
         pass
 
     @abstractmethod
-    def accumulate(self, assessment: PopulationAssessment):
+    def accumulate(
+        self, assessment: PopulationAssessment, state: State
+    ):
         raise NotImplementedError
     
     @abstractmethod
-    def step(self):
+    def step(self, state: State):
         raise NotImplementedError
     
     @abstractmethod
