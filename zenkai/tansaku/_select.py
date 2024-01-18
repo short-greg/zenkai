@@ -93,30 +93,26 @@ def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, 
 
     shape = prob.shape
 
-    # prob = prob.transpose(dim, -1)
     prob = prob.reshape(-1, shape[-1])
     selection = torch.multinomial(prob, k, replace, generator=g)
 
+    # remerge the dimension selected on with
+    # the number of items selected (in the final dimension)
+
+    # permute so they are next to one another
     selection = selection.reshape(list(shape[:-1]) + [k])
     permutation = list(range(selection.dim() - 1))
     permutation.insert(dim, selection.dim() - 1)
     selection = selection.permute(permutation)
+
+    # reshape so they are combined
     select_shape = list(selection.shape)
     select_shape.pop(dim)
     select_shape[dim] = -1
     selection = selection.reshape(select_shape)
-    # if len(shape) > 1:
 
-    #     # new_shape = list(shape)
-    #     # new_shape = new_shape[1:]
-    #     # new_shape.insert(dim, shape[0])
-    #     # new_shape.append(k)
-    #     # new_shape.pop(dim)
-        
-    #selection = selection.transpose(-1, dim)
     return selection
-    
-from . import utils
+
 
 def split_tensor_dict(tensor_dict: TensorDict, num_splits: int, dim: int=-1) -> typing.Tuple[TensorDict]:
     """split the tensor dict on a dimension
@@ -355,7 +351,10 @@ class ToFitnessProb(ToProb):
     """
     """
 
-    def __init__(self, dim: int = -1, preprocess: typing.Callable[[Assessment], Assessment] =None, soft: bool=True):
+    def __init__(
+        self, dim: int = -1, 
+        preprocess: typing.Callable[[Assessment], Assessment] =None, soft: bool=True
+    ):
         super().__init__(dim)
         self.preprocess = preprocess or (lambda x: x)
         self.soft = soft
@@ -388,7 +387,6 @@ class ToRankProb(ToProb):
 
     def __call__(self, assessment: Assessment, k: int) -> torch.Tensor:
         
-        # t = assessment.value
         _, ranked = assessment.value.sort(self.dim, assessment.maximize)
         ranks = torch.arange(1, assessment.shape[self.dim] + 1)
         repeat = []
@@ -408,8 +406,6 @@ class ToRankProb(ToProb):
         ranked = align_to(ranked, rank_prob)
 
         rank_prob = rank_prob / rank_prob.sum(dim=self.dim, keepdim=True)
-        # rank_index = rank_prob.gather(dim=self.dim, index=ranked)
-        # rank_index = rank_index.transpose(-1, self.dim)
         return rank_prob.transpose(-1, self.dim)
 
 
