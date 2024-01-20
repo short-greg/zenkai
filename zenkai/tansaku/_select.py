@@ -384,6 +384,9 @@ class ToFitnessProb(ToProb):
 class ToRankProb(ToProb):
     """
     """
+    def __init__(self, dim: int = -1, exp: float=None):
+        super().__init__(dim)
+        self.exp = exp
 
     def __call__(self, assessment: Assessment, k: int) -> torch.Tensor:
         
@@ -405,7 +408,10 @@ class ToRankProb(ToProb):
         rank_prob = ranks.repeat(repeat)
         ranked = align_to(ranked, rank_prob)
 
+        if self.exp is not None:
+            rank_prob = rank_prob ** self.exp
         rank_prob = rank_prob / rank_prob.sum(dim=self.dim, keepdim=True)
+        rank_prob = torch.gather(rank_prob, self.dim, ranked)
         return rank_prob.transpose(-1, self.dim)
 
 
