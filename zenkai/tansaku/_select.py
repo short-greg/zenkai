@@ -171,8 +171,10 @@ class IndexMap(object):
     """Use to select indices from a multidimensional tensor. Only works for dimension 0"""
 
     def __init__(
-        self, assessment: Assessment, 
-        index: torch.LongTensor, dim: int = 0
+        self, 
+        assessment: Assessment, 
+        index: torch.LongTensor, 
+        dim: int = 0
     ):
         """Create an index map to select from a multidimensional tensor
 
@@ -469,4 +471,79 @@ class ProbSelector(Selector):
         value = value.gather(self._dim, selection)
         return IndexMap(
             Assessment(value, maximize=assessment.maximize), selection, dim=self._dim
+        )
+
+
+class MultiSelector(Selector):
+
+    def __init__(self, multiple: int, dim: int = 0):
+        """Select instances from the assessment based on a ToProb functor
+
+        Args:
+            k (int): The number of vectors to select from
+            to_prob (ToProb): The probability calculation
+            dim (int, optional): The dimension to select on. Defaults to 0.
+            c: The number to select from each vector. Defaults to 1
+        """
+        super().__init__(multiple, dim)
+
+    def select(self, assessment: Assessment) -> IndexMap:
+        """Select the TopK fromm the assessment with k specified by in the initializer
+
+        Args:
+            assessment (Assessment): The assessment to select fromm
+
+        Returns:
+            IndexMap: The resulting index map
+        """
+
+        value = assessment.value
+        
+        # use this to get an index tensor
+        _, indices = assessment.value.topk(
+            assessment.value.shape[self.dim], dim=self.dim
+        )
+        repetitions = list(range(value.dim()))
+        repetitions[self.dim] = self.k
+        selection = indices.repeat(repetitions)
+
+        return IndexMap(
+            Assessment(value, maximize=assessment.maximize), selection, dim=self._dim
+        )
+
+
+class CompositeSelector(Selector):
+
+    def __init__(self, selectors: typing.List[Selector]):
+        """Select instances from the assessment based on a ToProb functor
+
+        Args:
+            k (int): The number of vectors to select from
+            to_prob (ToProb): The probability calculation
+            dim (int, optional): The dimension to select on. Defaults to 0.
+            c: The number to select from each vector. Defaults to 1
+        """
+        super().__init__(selectors[0].k, selectors[0].dim)
+        self._selectors = selectors
+
+    def select(self, assessment: Assessment) -> IndexMap:
+        """Select the TopK fromm the assessment with k specified by in the initializer
+
+        Args:
+            assessment (Assessment): The assessment to select fromm
+
+        Returns:
+            IndexMap: The resulting index map
+        """
+        index = None
+        for selector in self._selectors:
+            index_map = selector.select(assessment)
+            if index is not None:
+                index = index_map(index)
+            else:
+                index = index_map._index
+            assessment = index_map.assessment
+
+        return IndexMap(
+            assessment, index, dim=self._dim
         )

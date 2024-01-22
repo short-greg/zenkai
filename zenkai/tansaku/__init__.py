@@ -30,7 +30,9 @@ from ._select import (
     ToFitnessProb,
     IndexMap,
     split_tensor_dict,
-    RandSelector
+    RandSelector,
+    MultiSelector,
+    CompositeSelector
 )
 from . import utils
 from ._constraints import (

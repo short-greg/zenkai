@@ -9,7 +9,9 @@ from zenkai.tansaku._select import (
     BestSelector,
     ToRankProb,
     ToFitnessProb,
-    ProbSelector
+    ProbSelector,
+    CompositeSelector,
+    MultiSelector
 )
 from zenkai import Individual, Population
 
@@ -234,25 +236,49 @@ class TestBestSelector:
         assert (index_map.select_index(Individual(x=x))["x"] == t).all()
 
 
-# class TestFitnessParentSelector:
-#     def test_select_retrieves_two_parents_of_length_two(self):
+class TestFitnessParentSelector:
 
-#         x = torch.tensor([[0, 1], [0, 2], [2, 3]])
-#         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
-#         selector = FitnessParentSelector(k=2)
-#         index_map = selector.select(value)
-#         parent1, parent2 = index_map.select_index(Individual(x=x))
-#         assert parent1["x"].shape == torch.Size([2, 2])
-#         assert parent2["x"].shape == torch.Size([2, 2])
+    def test_select_retrieves_length_two(self):
+
+        x = torch.tensor([[0, 1], [0, 2], [2, 3]])
+        value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
+        selector = ProbSelector(1, ToFitnessProb(dim=0), 0, 2)
+        index_map = selector.select(value)
+        parent = index_map.select_index(Individual(x=x))
+        assert parent["x"].shape == torch.Size([2, 2])
 
 
-# class TestRankParentSelector:
-#     def test_select_retrieves_two_parents_of_length_two(self):
+class TestRankParentSelector:
 
-#         x = torch.tensor([[0, 1], [0, 2], [2, 3]])
-#         value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
-#         selector = RankParentSelector(k=2)
-#         index_map = selector.select(value)
-#         parent1, parent2 = index_map.select_index(Individual(x=x))
-#         assert parent1["x"].shape == torch.Size([2, 2])
-#         assert parent2["x"].shape == torch.Size([2, 2])
+    def test_select_retrieves_length_two(self):
+
+        x = torch.tensor([[0, 1], [0, 2], [2, 3]])
+        value = Assessment(torch.tensor([0.1, 2.0, 3.0]), maximize=True)
+        selector = ProbSelector(1, ToRankProb(dim=0), 0, 2)
+        index_map = selector.select(value)
+        parent = index_map.select_index(Individual(x=x))
+        assert parent["x"].shape == torch.Size([2, 2])
+
+
+class TestCompositeSelector:
+
+    def test_select_retrieves_length_two(self):
+
+        x = torch.tensor([[0, 1], [0, 2], [2, 3], [2, 4]])
+        value = Assessment(torch.tensor([0.1, 2.0, 3.0, 1.0]), maximize=True)
+        selector = CompositeSelector([TopKSelector(3, 0), ProbSelector(1, ToRankProb(dim=0), 0, 2)])
+        index_map = selector.select(value)
+        parent = index_map.select_index(Individual(x=x))
+        assert parent["x"].shape == torch.Size([2, 2])
+
+
+class TestMultiSelect:
+
+    def test_select_retrieves_length_two(self):
+
+        x = torch.tensor([[0, 1], [0, 2], [2, 3], [2, 4]])
+        value = Assessment(torch.tensor([0.1, 2.0, 3.0, 1.0]), maximize=True)
+        selector = MultiSelector(2, 0)
+        index_map = selector.select(value)
+        parent = index_map.select_index(Individual(x=x))
+        assert parent["x"].shape == torch.Size([8, 2])
