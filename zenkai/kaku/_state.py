@@ -10,12 +10,19 @@ from uuid import uuid4
 
 
 class IDable(object):
+    """Defines an object that has an id. Useful for recovering the object
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._id = str(uuid4())
 
     def load_state_dict(self, state_dict: typing.Dict):
-        # Assumes that the
+        """Load the objects state dict
+
+        Args:
+            state_dict (typing.Dict): The state dict to load
+        """
 
         try:
             super().load_state_dict(state_dict["params"])
@@ -51,7 +58,7 @@ class AssessmentLog(object):
     inside the network"""
 
     def __init__(self):
-        """Instantiate the AssessmentLog"""
+        """Instantiate the assessments"""
 
         self._log: typing.Dict[
             typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]
@@ -101,7 +108,12 @@ class AssessmentLog(object):
         return self._log
 
     def clear(self, id=None, sub_id=None):
+        """
 
+        Args:
+            id (typing.Any, optional): The id of the object. Defaults to None.
+            sub_id (typing.Any, optional): The sub id of the object. Defaults to None.
+        """
         if id is None:
             self._log.clear()
             return

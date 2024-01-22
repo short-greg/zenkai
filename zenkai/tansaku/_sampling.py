@@ -28,7 +28,7 @@ class GaussianSampler(Sampler):
     def __init__(
         self, k: int, decay: float = 0.1, mu0: float = None, std0: float = None
     ):
-        """initializer
+        """Sample from the Gaussian distribution
 
         Args:
             k (int): the population size
@@ -80,7 +80,7 @@ class BinarySampler(Sampler):
     def __init__(
         self, k: int, decay: float = 0.9, p0: float = None, sign_neg: bool = False
     ):
-        """initializer
+        """Do a binary sampling of the input
 
         Args:
             k (int): population size

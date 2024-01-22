@@ -7,6 +7,9 @@ import math
 from ..utils import unsqueeze_to
 
 
+# TODO: Consider more carefully how to do this and make it more extensible
+
+
 class ParticleUpdater(ABC):
 
     @abstractmethod
@@ -19,6 +22,8 @@ class ParticleUpdater(ABC):
 
 
 class GaussianParticleUpdater(ParticleUpdater):
+    """
+    """
 
     sqrt2 = math.sqrt(2)
     

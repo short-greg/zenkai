@@ -550,10 +550,27 @@ class NullLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.loss.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: State) -> IO:
+    def step(self, x: IO, t: IO, state: State):
+        """It is a null "learner" so it does nothing
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         pass
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """It is a null learner so it does nothing
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: The input
+        """
         return x
 
     def forward(self, x: IO, state: State):
@@ -566,7 +583,16 @@ class OutDepStepTheta(StepTheta):
     @abstractmethod
     def step(
         self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
-    ) -> IO:
+    ):
+        """Step that depends on the outgoing machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The state
+            outgoing_t (IO, optional): The target for the succeeding machine. Defaults to None.
+            outgoing_x (IO, optional): The input for the succeeding machine. Defaults to None.
+        """
         pass
 
 
@@ -577,6 +603,19 @@ class InDepStepX(StepX):
     def step_x(
         self, x: IO, t: IO, state: State, incoming_x: IO = None, incoming_t: IO = None
     ) -> IO:
+        """_summary_
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            incoming_x (IO, optional): The input to the incoming machine. Defaults to None.
+            incoming_t (IO, optional): The target for the incoming machine. Defaults to None.
+
+        Returns:
+            IO: The updated input
+        """
+        
         pass
 
 

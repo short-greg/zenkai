@@ -142,6 +142,7 @@ class FuncObjective(Objective):
 
 
 class NNLinearObjective(Objective):
+
     def __init__(
         self,
         linear: nn.Linear,

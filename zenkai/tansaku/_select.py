@@ -78,7 +78,7 @@ def gather_selection(param: torch.Tensor, selection: torch.LongTensor, dim: int=
 
 
 def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, g: torch.Generator=None) -> torch.Tensor:
-    """ 
+    """ Select instances from the probability vector that was calculated using ToProb
 
     Args:
         prob (torch.Tensor): The probability to from
@@ -148,7 +148,7 @@ class Indexer(object):
     """"""
 
     def __init__(self, idx: torch.LongTensor, k: int, maximize: bool = False):
-        """initializer
+        """Use to index the tensor
 
         Args:
             idx (torch.LongTensor): index the tensor
@@ -336,10 +336,15 @@ class RandSelector(Selector):
 
 
 class ToProb(ABC):
-    """
+    """Convert the assessment to a probability vector for use in selection
     """
 
     def __init__(self, dim: int= -1):
+        """
+
+        Args:
+            dim (int, optional): The dimension to use for calculating probability. Defaults to -1.
+        """
         self.dim = dim
 
     @abstractmethod
@@ -355,6 +360,13 @@ class ToFitnessProb(ToProb):
         self, dim: int = -1, 
         preprocess: typing.Callable[[Assessment], Assessment] =None, soft: bool=True
     ):
+        """Convert the assessment to a probability based on the value of the assessment
+
+        Args:
+            dim (int, optional): The dimension to calculate the probability on. Defaults to -1.
+            preprocess (typing.Callable[[Assessment], Assessment], optional): An optional function to preprocess assessment with. Useful if the values are quite close or negative. Defaults to None.
+            soft (bool, optional): Whether to to use softmax for calculating the probabilities. If False it will use the assessment divided by the sum of assessments. Defaults to True.
+        """
         super().__init__(dim)
         self.preprocess = preprocess or (lambda x: x)
         self.soft = soft
@@ -384,12 +396,24 @@ class ToFitnessProb(ToProb):
 class ToRankProb(ToProb):
     """
     """
-    def __init__(self, dim: int = -1, exp: float=None):
+    def __init__(
+        self, dim: int = -1, preprocess: typing.Callable[[Assessment], Assessment] =None, preprocess_p: typing.Callable[[torch.Tensor], torch.Tensor] =None
+    ):
+        """Convert the assessment to a rank probablity
+
+        Args:
+            dim (int, optional): The dimension to calculate the assessment on. Defaults to -1.
+            preprocess (typing.Callable[[Assessment], Assessment], optional): Optional function to preprocess the assessment with. Defaults to None.
+            preprocess_p (typing.Callable[[Assessment], Assessment], optional): Optional function to preprocess the probabilities with. Defaults to None.
+        """
         super().__init__(dim)
-        self.exp = exp
+        self.preprocess = preprocess
+        self.preprocess_p = preprocess_p
 
     def __call__(self, assessment: Assessment, k: int) -> torch.Tensor:
         
+        if self.preprocess is not None:
+            assessment = self.preprocess(assessment)
         _, ranked = assessment.value.sort(self.dim, assessment.maximize)
         ranks = torch.arange(1, assessment.shape[self.dim] + 1)
         repeat = []
@@ -408,8 +432,8 @@ class ToRankProb(ToProb):
         rank_prob = ranks.repeat(repeat)
         ranked = align_to(ranked, rank_prob)
 
-        if self.exp is not None:
-            rank_prob = rank_prob ** self.exp
+        if self.preprocess_p is not None:
+            rank_prob = self.preprocess_p(rank_prob)
         rank_prob = rank_prob / rank_prob.sum(dim=self.dim, keepdim=True)
         rank_prob = torch.gather(rank_prob, self.dim, ranked)
         return rank_prob.transpose(-1, self.dim)
@@ -418,7 +442,7 @@ class ToRankProb(ToProb):
 class ProbSelector(Selector):
 
     def __init__(self, k: int, to_prob: ToProb, dim: int = 0, c: int=1):
-        """
+        """Select instances from the assessment based on a ToProb functor
 
         Args:
             k (int): The number of vectors to select from
