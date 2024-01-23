@@ -4,6 +4,8 @@ from abc import abstractmethod
 # 3rd Party
 import torch
 
+from zenkai.kaku import IO, State
+
 # Local
 from ..kaku import (
     IO,
@@ -107,7 +109,7 @@ class TargetPropLearner(LearningMachine):
             self.step_reverse(x, y, t, state)
 
     @abstractmethod
-    def reverse(self, x: IO, y: IO):
+    def reverse(self, x: IO, y: IO, state: State, release: bool=True):
         pass
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
@@ -124,6 +126,63 @@ class TargetPropLearner(LearningMachine):
         return self.reverse(x, t)
 
 
+class StdTargetProp(TargetPropLearner):
+    """Learner that wraps a forward learner and a reverse learner
+    """
+
+    def __init__(
+        self, 
+        forward_learner: LearningMachine, 
+        reverse_learner: LearningMachine,
+        cat_x: bool=False
+    ):
+        """Create a TargetProp that wraps two machines
+
+        Args:
+            forward_learner (LearningMachine): The forward model to train for predicting the output
+            reverse_learner (LearningMachine): The reverse model to calculate the incoming target. The reverse model takes an IO for its x values made up of the x and y values IO[IO, IO] 
+            cat_x (bool): Whether to include the input in the IO for the reverse model.
+            If included the input IO will be the first element of the IO
+        """
+        
+        super().__init__()
+        self.forward_learner = forward_learner
+        self.reverse_learner = reverse_learner
+        self.cat_x = cat_x
+
+    def get_rev_x(self, x: IO, y: IO) -> IO:
+        """
+        Args:
+            x (IO): The input of the machine
+            y (IO): The output fo the machine
+
+        Returns:
+            IO: The input to the reverse model
+
+        """
+        if self.cat_x:
+            return IO(x, y)
+        return y
+
+    def accumulate_forward(self, x: IO, t: IO, state: State):
+        self.forward_learner.accumulate(x, t, state)
+
+    def accumulate_reverse(self, x: IO, y: IO, t: IO, state: State):
+        self.reverse_learner.accumulate(self.get_rev_x(x, y), t, state)
+
+    def step_forward(self, x: IO, t: IO, state: State):
+        self.forward_learner.step(x, t, state)
+    
+    def step_reverse(self, x: IO, y: IO, t: IO, state: State):
+        self.reverse_learner.step(self.get_rev_x(x, y), t, state)
+
+    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+        return self.forward_learner(x, state, release)
+
+    def reverse(self, x: IO, y: IO, state: State, release: bool=True):
+        return self.reverse_learner(self.get_rev_x(x, y), state, release)
+
+
 class TargetPropStepX(StepX):
 
     @abstractmethod
@@ -136,20 +195,22 @@ class TargetPropStepX(StepX):
 
 
 class TargetPropCriterion(Criterion):
+
     @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
 
 
-class StandardTargetPropObjective(TargetPropCriterion):
-    def __init__(self, base_objective: Criterion):
+class StdTargetPropCriterion(TargetPropCriterion):
+
+    def __init__(self, base_criterion: Criterion, reduction: str='mean'):
         """initializer
 
         Args:
             base_loss (ThLoss): The base loss to use in evaluation
         """
-        super().__init__(base_objective, base_objective.maximize)
-        self.base_objective = base_objective
+        super().__init__(reduction, base_criterion.maximize)
+        self._base_criterion = base_criterion
 
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
@@ -162,13 +223,13 @@ class StandardTargetPropObjective(TargetPropCriterion):
             torch.Tensor: The resulting loss
         """
 
-        return self.base_objective(x.sub(1), t, reduction_override=reduction_override)
+        return self._base_criterion(x.sub(1), t, reduction_override=reduction_override)
 
 
-class RegTargetPropObjective(TargetPropCriterion):
+class RegTargetPropCriterion(TargetPropCriterion):
     """Calculate the target prop loss while minimizing the difference between the predicted value"""
 
-    def __init__(self, base_objective: Criterion, reg_objective: Criterion):
+    def __init__(self, base_criterion: Criterion, reg_criterion: Criterion, reduction: str='mean'):
         """initializer
 
         Args:
@@ -176,9 +237,9 @@ class RegTargetPropObjective(TargetPropCriterion):
             reg_objective (Objective): The loss to minimize the difference between the x prediction
              based on the target and the x prediction based on y
         """
-        super().__init__(base_objective, base_objective.maximize)
-        self.base_objective = base_objective
-        self.reg_objective = reg_objective
+        super().__init__(reduction, base_criterion.maximize)
+        self._base_criterion = base_criterion
+        self._reg_criterion = reg_criterion
 
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """
@@ -191,8 +252,8 @@ class RegTargetPropObjective(TargetPropCriterion):
             torch.Tensor: The resulting loss
         """
 
-        return self.base_objective(
+        return self._base_criterion(
             x.sub(1), t, reduction_override=reduction_override
-        ) + self.reg_objective(
+        ) + self._reg_criterion(
             x.sub(1), x.sub(0).detach(), reduction_override=reduction_override
         )

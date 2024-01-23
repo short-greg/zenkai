@@ -72,5 +72,5 @@ from ._containers import (
     GraphLearner, AccGraphLearner, SStep
 )
 from ._target_prop import (
-    TargetPropCriterion, TargetPropStepX, RegTargetPropObjective, StandardTargetPropObjective
+    TargetPropCriterion, TargetPropStepX, RegTargetPropCriterion, StdTargetPropCriterion, StdTargetProp
 )

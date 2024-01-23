@@ -10,7 +10,7 @@ class TestStandardTargetPropLoss:
         mse = nn.MSELoss()
         x = IO(torch.rand(4, 4), torch.rand(4, 4))
         t = IO(torch.rand(4, 4))
-        loss = _target_prop.StandardTargetPropObjective(ThLoss("MSELoss"))
+        loss = _target_prop.StdTargetPropCriterion(ThLoss("MSELoss"))
         assert (loss(x, t) == mse(x.u[1], t.f)).all()
 
 
@@ -20,7 +20,7 @@ class TestRegTargetPropLoss:
         mse = nn.MSELoss()
         x = IO(torch.rand(4, 4), torch.rand(4, 4))
         t = IO(torch.rand(4, 4))
-        loss = _target_prop.RegTargetPropObjective(
+        loss = _target_prop.RegTargetPropCriterion(
             ThLoss("MSELoss"), ThLoss("MSELoss", weight=0.1)
         )
         assert (loss(x, t) == (mse(x.u[1], t.f) + 0.1 * mse(x.f, x.u[1]))).all()
