@@ -94,8 +94,8 @@ class GraphLearnerBase(LearningMachine):
         pass
 
     def get_t(self, step: SStep, step_dict, prev_t: IO, t: IO) -> IO:
-        """Get the target for a node. This is used by the graph learner so does not need to be used by
-        external modules
+        """Get the target for a node. This is used by the graph learner 
+        so does not need to be used by external modules
 
         Args:
             step (SStep): The step to retrieve the target for
@@ -160,6 +160,41 @@ class GraphLearnerBase(LearningMachine):
             GraphNode: The node added to the graph
         """
         return GraphNode(self, learner, step_priority, target)
+
+    def add_mse(
+        self, mod: nn.Module, reduction: str='sum', optim_factory: OptimFactory=None, 
+        target=None, step_priority: bool=False, learn_theta: bool=True, x_lr: float=1.0, 
+        learn_reduction: str=None
+    ) -> 'GraphNode':
+        """Add a grad learner to the graph
+
+        Args:
+            mod (nn.Module): The module to add
+            reduction (str): The base reduction
+            optim_factory (OptimFactory): The optimizer to use
+            target (optional): The target for the learner. If none will be the succeeding node. Defaults to None.
+            step_priority (bool, optional): Whether to do step before step_x. Defaults to False.
+            learn_theta (bool, optional): Whether the parameters should be updated. Defaults to True.
+            reduction (str, optional): The reduction for the criterion. Defaults to 'sum'.
+            x_lr (float, optional): The learning rate for x. Defaults to 1.0.
+            step_priority (bool, optional): Whether to step before doing step_x. Defaults to False.
+            learn_reduction (str, optional): Reduction to use for learning. If none will use the assess method. Defaults to None.
+
+        Returns:
+            GraphNode: The node added to the graph
+        """
+
+        if learn_reduction is not None:
+            learn_criterion = ThLoss('MSELoss', learn_reduction)
+        else:
+            learn_criterion = None
+        learner = GradLearner(
+            mod, ThLoss('MSELoss', reduction), optim_factory, learn_theta, reduction, 
+            x_lr, learn_criterion
+        )
+
+        return GraphNode(self, learner, step_priority, target)
+
 
     def add_grad(
         self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory=None, 

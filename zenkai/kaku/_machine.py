@@ -254,7 +254,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         super().__init__()
         self._test_posthooks = []
         self._learn_posthooks = []
-        self._forward_hooks = []
+        self._y_hooks = []
         self._base_learn = self.learn
         self._base_test = self.test
         self.learn = self._learn_hook_runner
@@ -359,12 +359,12 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         return super().__call__(x, state, release, *args, **kwargs)
 
     def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
-        """_summary_
+        """Add hook to call after forward
 
         Args:
             hook (ForwardHook): _description_
         """
-        self._forward_hooks.append(hook)
+        self._y_hooks.append(hook)
         return self
 
     def learner_hook(
@@ -417,7 +417,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             state (State, optional): The state at the timestep. Defaults to None.
         """
         y = self._base_forward(x, state, *args, **kwargs)
-        for hook in self._forward_hooks:
+        for hook in self._y_hooks:
             y = hook(self, x, y, state)
         return y
 

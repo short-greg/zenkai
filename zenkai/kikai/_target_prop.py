@@ -5,6 +5,7 @@ from abc import abstractmethod
 import torch
 
 from zenkai.kaku import IO, State
+from zenkai.kaku._assess import Assessment
 
 # Local
 from ..kaku import (
@@ -27,6 +28,7 @@ class SetYHook(ForwardHook):
     def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State) -> IO:
        
        state[learner, x, self.y_name] = y
+       return y
 
 
 class TargetPropLearner(LearningMachine):
@@ -105,7 +107,7 @@ class TargetPropLearner(LearningMachine):
         if self._forward_update:
             self.step_forward(x, t, state)
         if self._reverse_update:
-            y = state[self, x, self._y_name]
+            y = state[self, x, self.y_name]
             self.step_reverse(x, y, t, state)
 
     @abstractmethod
@@ -123,7 +125,7 @@ class TargetPropLearner(LearningMachine):
         Returns:
             IO: The target for the preceding layer
         """
-        return self.reverse(x, t)
+        return self.reverse(x, t, state)
 
 
 class StdTargetProp(TargetPropLearner):
@@ -163,18 +165,21 @@ class StdTargetProp(TargetPropLearner):
         if self.cat_x:
             return IO(x, y)
         return y
+    
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.forward_learner.assess_y(y, t, reduction_override)
 
     def accumulate_forward(self, x: IO, t: IO, state: State):
         self.forward_learner.accumulate(x, t, state)
 
     def accumulate_reverse(self, x: IO, y: IO, t: IO, state: State):
-        self.reverse_learner.accumulate(self.get_rev_x(x, y), t, state)
+        self.reverse_learner.accumulate(self.get_rev_x(x, y), x, state)
 
     def step_forward(self, x: IO, t: IO, state: State):
         self.forward_learner.step(x, t, state)
     
     def step_reverse(self, x: IO, y: IO, t: IO, state: State):
-        self.reverse_learner.step(self.get_rev_x(x, y), t, state)
+        self.reverse_learner.step(self.get_rev_x(x, y), x, state)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         return self.forward_learner(x, state, release)
