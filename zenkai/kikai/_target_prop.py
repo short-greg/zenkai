@@ -38,10 +38,7 @@ class TargetPropLearner(LearningMachine):
     y_name = 'y'
 
     def __init__(self) -> None:
-        """_summary_
-
-        Args:
-            y_name (str, optional): _description_. Defaults to 'y'.
+        """Create a target prop learner for doing target propagation
         """
         super().__init__()
         self._reverse_update = True
@@ -234,7 +231,12 @@ class StdTargetPropCriterion(TargetPropCriterion):
 class RegTargetPropCriterion(TargetPropCriterion):
     """Calculate the target prop loss while minimizing the difference between the predicted value"""
 
-    def __init__(self, base_criterion: Criterion, reg_criterion: Criterion, reduction: str='mean'):
+    def __init__(
+        self, 
+        base_criterion: Criterion, 
+        reg_criterion: Criterion, 
+        reduction: str='mean'
+    ):
         """initializer
 
         Args:

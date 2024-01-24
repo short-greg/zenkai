@@ -256,7 +256,7 @@ class GradStepX(StepX):
         self.x_lr = x_lr
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
-
+        
         return x.grad_update(self.x_lr, True, True)
 
 
@@ -339,12 +339,17 @@ class GradLoopStepX(BatchIdxStepX):
         x_state = state.mine(x)
 
         if "optim" not in x_state:
-            x_state.optim = self.optim_factory([*x])
+            x_prime = x.clone()
+            x_prime.freshen()
+            x_state.x_prime = x_prime
+            x_state.optim = self.optim_factory([*x_prime])
+        else:
+            x_prime = x_state.x_prime
 
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
-        x = idx_io(x, batch_idx)
+        x = idx_io(x_prime, batch_idx)
         t = idx_io(t, batch_idx)
         x_state.optim.zero_grad()
 
@@ -352,7 +357,8 @@ class GradLoopStepX(BatchIdxStepX):
         assessment = grad_assess(x, y, t, self._learner, self.criterion, self.reduction)
         assessment.backward()
         x_state.optim.step()
-        return x
+
+        return x_prime
 
 
 class GradLearner(LearningMachine):
@@ -400,7 +406,7 @@ class GradLearner(LearningMachine):
             )
         else:
             self._theta_step = NullStepTheta()
-        if not loop:
+        if not loop and optim_factory is not None:
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(

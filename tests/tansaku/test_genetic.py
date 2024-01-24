@@ -150,7 +150,6 @@ class TestKBestElitism:
         population1.report(Assessment(torch.tensor([0.1, 0.2, 0.8, 1.0])))
         population2 = Population(x=torch.rand(4, 4, 2))
         new_population = mixer(population1, population2)
-        print(population1, new_population)
         assert (new_population.sub[[0, 1]]["x"] == population1.sub[[0, 1]]["x"]).all()
         assert (new_population.sub[[2, 3, 4, 5]]["x"] == population2["x"]).all()
 
@@ -164,62 +163,3 @@ class TestKBestElitism:
         new_population = mixer(population1, population2)
         assert (new_population.sub[[0, 1]]["x"] == population1.sub[[3, 2]]["x"]).all()
         assert (new_population.sub[[2, 3, 4, 5]]["x"] == population2["x"]).all()
-
-
-#     def test_divides_into_correct_sizes_when_div_start_is_two_and_dim_is_1_with_rank(
-#         self,
-#     ):
-
-#         torch.manual_seed(1)
-#         population = Population(x=torch.rand(8, 4))
-#         population.report(Assessment(torch.rand(8, 4)))
-
-#         divider = dividers.ProbDivider(_select.RankParentSelector(3), 2)
-#         child1, child2 = divider(population)
-#         assert child1.k == 3
-#         assert child2.k == 3
-
-#     def test_raises_error_if_negative_assessments(self):
-#         torch.manual_seed(1)
-
-#         population = Population(x=torch.rand(8, 4, 2))
-#         population.report(Assessment(torch.randn(8, 4)))
-
-#         divider = dividers.ProbDivider(_select.FitnessParentSelector(3))
-#         with pytest.raises(ValueError):
-#             divider(population)
-
-
-# class TestFitnessEqualDivider:
-#     def test_divides_into_correct_sizes(self):
-
-#         torch.manual_seed(1)
-#         population = Population(x=torch.rand(8, 4, 2))
-#         population.report(
-#             Assessment(torch.tensor([0.1, 0.4, 0.3, 0.2, 0.8, 1.0, 0.2, 1.0]))
-#         )
-
-#         divider = dividers.EqualDivider()
-#         child1, child2 = divider(population)
-#         assert child1.k == 8
-#         assert child2.k == 8
-
-# #     def test_divides_into_correct_sizes_with_two_dims_for_assessment(self):
-
-# #         torch.manual_seed(1)
-# #         population = Population(x=torch.rand(8, 4, 2))
-# #         population.report(Assessment(torch.rand(8, 4)))
-
-# #         divider = dividers.EqualDivider()
-# #         child1, child2 = divider(population)
-# #         assert child1.k == 8
-# #         assert child2.k == 8
-
-# # 3rd party
-# import torch
-
-# # local
-# from zenkai import Assessment
-# from zenkai import kaku
-# from zenkai.tansaku import _elitism
-
