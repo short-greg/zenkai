@@ -100,13 +100,15 @@ class Meta(dict):
             self[key] = value
             return value
         
-    def __call__(self, sub: str, to_add: bool=True) -> Any:
+    def __call__(self, sub, to_add: bool=True) -> Any:
 
         if not to_add and sub not in self:
             raise KeyError(f'There is no sub meta called {sub}')
         
         if sub not in self and to_add:
             self[sub] = Meta()
+        elif not isinstance(self[sub], Meta):
+            raise KeyError(f'Item {sub} is a Meta class')
         return self[sub]
 
 
