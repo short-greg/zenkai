@@ -17,7 +17,6 @@ import torch.optim as optim
 from ._machine import LearningMachine
 from ._assess import PopulationAssessment, Criterion, Assessment
 from ._populate import Population
-from ._state import State
 from ._io import IO
 
 
@@ -243,18 +242,17 @@ class PopulationOptim(ABC):
     @abstractmethod
     def assess(
         self, learning_machine: LearningMachine, x: IO, t: IO,
-        state: State
     ) -> PopulationAssessment:
         pass
 
     @abstractmethod
     def accumulate(
-        self, assessment: PopulationAssessment, state: State
+        self, assessment: PopulationAssessment
     ):
         raise NotImplementedError
     
     @abstractmethod
-    def step(self, state: State):
+    def step(self):
         raise NotImplementedError
     
     @abstractmethod
@@ -269,12 +267,12 @@ class Fit(ABC):
 
     @abstractmethod
     def optim_iter(
-        self, objective: Criterion, state: State = None, **kwargs
+        self, objective: Criterion, **kwargs
     ) -> typing.Iterator[Assessment]:
         raise NotImplementedError
 
-    def optim(self, objective: Criterion, state: State = None, **kwargs) -> Assessment:
-        for assessment in self.optim_iter(objective, state, **kwargs):
+    def optim(self, objective: Criterion, **kwargs) -> Assessment:
+        for assessment in self.optim_iter(objective, **kwargs):
             pass
         return assessment
 

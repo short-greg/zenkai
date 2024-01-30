@@ -6,7 +6,7 @@ from torch import nn
 from zenkai import OptimFactory, ThLoss, utils
 
 # local
-from zenkai.kaku import IO, State
+from zenkai.kaku import IO
 from zenkai.kikai import _grad
 
 
@@ -46,7 +46,7 @@ class TestGradLearner1:
 
         learner = THGradLearnerT1(2, 3)
         x = IO(torch.rand(2, 2))
-        y = learner.forward(x, State())
+        y = learner.forward(x)
         assert y.f.grad_fn is None
 
     def test_step_x_updates_x(self):
@@ -55,11 +55,10 @@ class TestGradLearner1:
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         x_ = x.clone(True)
-        state = State()
-        learner.forward(x, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
-        x = learner.step_x(x, t, state)
+        learner.forward(x)
+        learner.accumulate(x, t)
+        learner.step(x, t)
+        x = learner.step_x(x, t)
         assert (x.f != x_.f).any()
 
     def test_step_updates_parameters(self):
@@ -67,11 +66,10 @@ class TestGradLearner1:
         learner = THGradLearnerT1(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        state = State()
         before = utils.get_model_parameters(learner)
-        learner(x, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner(x)
+        learner.accumulate(x, t)
+        learner.step(x, t)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -93,11 +91,10 @@ class TestTHGradLoopLearner:
         og_x = x.clone()
         x.freshen()
         t = IO(torch.rand(2, 3))
-        state = State()
-        learner(x, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
-        x = learner.step_x(x, t, state)
+        learner(x)
+        learner.accumulate(x, t)
+        learner.step(x, t)
+        x = learner.step_x(x, t)
         assert (x.f != og_x.f).any()
 
     def test_step_x_updates_x_repeated(self):
@@ -106,12 +103,11 @@ class TestTHGradLoopLearner:
         x = IO(torch.rand(2, 2))
         og_x = x.clone()
         t = IO(torch.rand(2, 3))
-        state = State()
-        learner.forward(x, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
-        x = learner.step_x(x, t, state)
-        x = learner.step_x(x, t, state)
+        learner.forward(x)
+        learner.accumulate(x, t)
+        learner.step(x, t)
+        x = learner.step_x(x, t)
+        x = learner.step_x(x, t)
         assert (x.f != og_x.f).any()
 
     def test_step_updates_parameters(self):
@@ -119,11 +115,10 @@ class TestTHGradLoopLearner:
         learner = THGradLearnerT2(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        state = State()
         before = utils.get_model_parameters(learner)
-        learner.forward(x, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.forward(x)
+        learner.accumulate(x, t)
+        learner.step(x, t)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -132,12 +127,11 @@ class TestTHGradLoopLearner:
         learner = THGradLearnerT2(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        state = State()
         before = utils.get_model_parameters(learner)
-        learner.forward(x, state)
-        learner.accumulate(x, t, state)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.forward(x)
+        learner.accumulate(x, t)
+        learner.accumulate(x, t)
+        learner.step(x, t)
         after = utils.get_model_parameters(learner)
         assert (before != after).any()
 
@@ -146,12 +140,12 @@ class TestCriterionGrad:
     def test_criterion_grad_step_produces_correct_shape(self):
 
         learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
-        learner.step(IO(torch.rand(3, 4)), IO(torch.randint(0, 4, (3,))), State())
+        learner.step(IO(torch.rand(3, 4)), IO(torch.randint(0, 4, (3,))))
         assert True
 
     def test_criterion_grad_step_x_produces_correct_shape(self):
 
         learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
         x = IO(torch.rand(3, 4))
-        x_prime = learner.step_x(x, IO(torch.randint(0, 4, (3,))), State())
+        x_prime = learner.step_x(x, IO(torch.randint(0, 4, (3,))))
         assert (x.f != x_prime.f).any()

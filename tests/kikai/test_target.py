@@ -5,6 +5,7 @@ from zenkai.kikai import _target_prop
 
 
 class TestStandardTargetPropLoss:
+    
     def test_standard_target_prop_loss_calculates_loss(self):
 
         mse = nn.MSELoss()

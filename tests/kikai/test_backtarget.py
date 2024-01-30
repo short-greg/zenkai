@@ -9,18 +9,16 @@ class TestBackTarget:
 
         x = IO(torch.rand(2, 4, 2))
         t = IO(torch.rand(2, 8))
-        state = State()
         view = BackTarget(lambda x: x.view(2, 8))
-        view(x, state)
-        x_prime = view.step_x(x, t, state)
+        view(x)
+        x_prime = view.step_x(x, t)
         assert (x_prime.f == t.f.view(2, 4, 2)).all()
 
     def test_back_target_reverses_index(self):
 
         x = IO(torch.rand(2, 4, 2))
         t = IO(torch.rand(2, 4))
-        state = State()
         view = BackTarget(lambda x: x[:, :, 0])
-        view(x, state)
-        x_prime = view.step_x(x, t, state)
+        view(x)
+        x_prime = view.step_x(x, t)
         assert (x_prime.f[:, :, 0] == t.f).all()

@@ -7,7 +7,7 @@ import torch
 
 # Local
 from ..mod import Lambda
-from ..kaku import IO, LearningMachine, State, Criterion, Assessment, ThLoss
+from ..kaku import IO, LearningMachine, Criterion, Assessment, ThLoss
 
 
 class BackTarget(LearningMachine):
@@ -28,15 +28,15 @@ class BackTarget(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen()
         y = x._.y = self.module(*x.u)
         return IO(y).out(release=release)
 
-    def step(self, x: IO, t: IO, state: State) -> IO:
+    def step(self, x: IO, t: IO) -> IO:
         pass
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
 
         y = x._.y #  state[self, x, "y"]
         y.grad = None

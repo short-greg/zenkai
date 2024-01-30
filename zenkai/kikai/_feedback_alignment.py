@@ -8,7 +8,6 @@ import torch
 # local
 from ..kaku import (
     IO,
-    State,
     LearningMachine,
     Assessment,
     OptimFactory,
@@ -72,7 +71,7 @@ class FALearner(LearningMachine):
         else:
             self.criterion = criterion
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
 
         x.freshen()
         y = self.net(x.f)
@@ -88,13 +87,12 @@ class FALearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
         """Update the
 
         Args:
             x (IO): the input
             t (IO[y, y_prime]): the target
-            state (State): the learning state
 
         Returns:
             IO: the updated target
@@ -104,7 +102,7 @@ class FALearner(LearningMachine):
         self.netB.zero_grad()
 
         if "y" not in x._:
-            self(x, state=state)
+            self(x)
 
         y = x._.y
         y2 = self.netB(x.f)
@@ -113,29 +111,28 @@ class FALearner(LearningMachine):
         y_det = x._.y_det
         y2.backward(y_det.grad)
 
-        self._grad_updater.accumulate(x, state)
+        self._grad_updater.accumulate(x)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
 
         Args:
             x (IO): the input
             t (IO[y, y_prime]): the target
-            state (State): the learning state
 
         Returns:
             IO: the updated target
         """
-        x_prime, _ = self._grad_updater.update_x(x, state)
+        x_prime, _ = self._grad_updater.update_x(x)
         return x_prime
 
-    def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None]) -> bool:
         """Advance the optimizer
 
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
-        return self._grad_updater.update(x, state, self.net)
+        return self._grad_updater.update(x, self.net)
 
     @classmethod
     def builder(
@@ -203,7 +200,7 @@ class DFALearner(LearningMachine):
             self.criterion = criterion
         self._grad_updater = GradUpdater(self.netB, self._optim)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
 
         x.freshen()
         y = self.net(x.f)
@@ -217,13 +214,12 @@ class DFALearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
         """Update the net parameters
 
         Args:
             x (IO[x]): the input
             t (IO[y]): the target
-            state (State): the learning state
 
         Returns:
             IO: the updated target
@@ -233,7 +229,7 @@ class DFALearner(LearningMachine):
         self.netB.zero_grad()
         self.B.zero_grad()
         if "y" not in x._:
-            self(x, state=state)
+            self(x)
 
         y2 = self.netB(x.f)
 
@@ -246,30 +242,29 @@ class DFALearner(LearningMachine):
         y2.backward(y_det.grad)
 
         assert x.f.grad is not None
-        self._grad_updater.accumulate(x, state)
+        self._grad_updater.accumulate(x)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """Backpropagates the error resulting from the randomly generated matrix
 
         Args:
             x (IO): the input
             t (IO[y, y_prime]): the target
-            state (State): the learning state
 
         Returns:
             IO: the updated target
         """
-        x_prime, _ = self._grad_updater.update_x(x, state)
+        x_prime, _ = self._grad_updater.update_x(x)
         return x_prime
 
-    def step(self, x: IO, t: typing.Union[IO, None], state: State) -> bool:
+    def step(self, x: IO, t: typing.Union[IO, None]) -> bool:
         """Advance the optimizer
 
         Returns:
             bool: False if unable to advance (already advanced or not stepped yet)
         """
 
-        return self._grad_updater.update(x, state, self.net)
+        return self._grad_updater.update(x, self.net)
 
 
 class LinearFABuilder(Builder[FALearner]):

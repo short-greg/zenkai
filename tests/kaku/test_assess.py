@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 from zenkai.kaku import _assess as _evaluation, ThLoss, IO, Reduction
-from zenkai.kaku._assess import AssessmentLog, Assessment
+from zenkai.kaku import AssessmentLog, Assessment
 
 
 class TestReduction:

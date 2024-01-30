@@ -2,20 +2,20 @@
 from zenkai.kaku._assess import Assessment, Criterion, ThLoss
 
 # Local
-from ..kaku import IO, State, StepTheta, StepX, LearningMachine
+from ..kaku import IO, StepTheta, StepX, LearningMachine
 
 
 class NullStepTheta(StepTheta):
     """Step that does not update theta"""
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         pass
 
 
 class NullStepX(StepX):
     """Step that does not update theta"""
 
-    def step_x(self, x: IO, t: IO, state: State):
+    def step_x(self, x: IO, t: IO):
         return x
 
 
@@ -29,5 +29,5 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         return x

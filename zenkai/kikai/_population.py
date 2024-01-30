@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch
 
 # Local
-from ..kaku import IO, LearningMachine, State, Assessment, Population
+from ..kaku import IO, LearningMachine, Assessment, Population
 
 
 class ParamUpdater(ABC):
@@ -197,13 +197,12 @@ class PopulationLearner(LearningMachine, ABC):
         indices = torch.randint(0, y_population.shape[dim], out_shape)
         return y_population.gather(dim, indices, y_population)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         """
         Assumes there will be only one output for y
 
         Args:
             x (IO): The input
-            state (State): The learning state
             release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
@@ -211,7 +210,7 @@ class PopulationLearner(LearningMachine, ABC):
         """
         x.freshen()
 
-        y_population = self.forward_population(x, state)
+        y_population = self.forward_population(x)
         y, idx = self.select(y_population.f)
         y = IO(y)
         x._[self.idx_name] = idx
@@ -219,29 +218,28 @@ class PopulationLearner(LearningMachine, ABC):
         return y.out(release)
     
     @abstractmethod
-    def forward_population(self, x: IO, state: State) -> IO:
+    def forward_population(self, x: IO) -> IO:
         pass
 
     @abstractmethod
-    def step_population(self, x: IO, state: State, batch_assessment: Assessment=None):
+    def step_population(self, x: IO, batch_assessment: Assessment=None):
         pass
 
     @abstractmethod
-    def accumulate(self, x: IO, t: IO, state: State, batch_assessment: Assessment=None):
+    def accumulate(self, x: IO, t: IO, batch_assessment: Assessment=None):
         pass
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, batch_assessment: Assessment=None) -> IO:
+    def step(self, x: IO, t: IO, batch_assessment: Assessment=None) -> IO:
         pass
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, batch_assessment: Assessment=None) -> IO:
+    def step_x(self, x: IO, t: IO, batch_assessment: Assessment=None) -> IO:
         """
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The learning state
             batch_assessment (Assessment, optional): The assess. Defaults to None.
 
         Returns:

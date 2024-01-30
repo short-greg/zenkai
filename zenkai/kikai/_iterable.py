@@ -12,7 +12,6 @@ from ..kaku import (
     BatchIdxStepX,
     update_io,
     StepTheta,
-    State,
     OutDepStepTheta,
     StepX,
     Idx,
@@ -81,13 +80,12 @@ class IterStepTheta(StepTheta):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """
 
         Args:
             x (IO): The input value for the layer
             t (IO): the output value for the layer
-            state (State): The learning state
         """
         loop = StepLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
@@ -96,11 +94,11 @@ class IterStepTheta(StepTheta):
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
                 if isinstance(self.base_step, BatchIdxStepTheta):
-                    self.base_step.accumulate(x, t, state, batch_idx=idx)
-                    self.base_step.step(x, t, state, batch_idx=idx)
+                    self.base_step.accumulate(x, t, batch_idx=idx)
+                    self.base_step.step(x, t, batch_idx=idx)
                 else:
-                    self.base_step.accumulate(idx(x), idx(t), state)
-                    self.base_step.step(idx(x), idx(t), state)
+                    self.base_step.accumulate(idx(x), idx(t))
+                    self.base_step.step(idx(x), idx(t))
 
 
 class IterStepX(StepX):
@@ -118,23 +116,22 @@ class IterStepX(StepX):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """
 
         Args:
             x (IO): The input value for the layer
             t (IO): the output value for the layer
-            state (State): The learning state
         """
         loop = StepLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
             for idx in loop.loop(x):
 
                 if isinstance(self.base_step, BatchIdxStepX):
-                    updated_x = self.base_step.step_x(x, t, state, idx)
+                    updated_x = self.base_step.step_x(x, t, idx)
                 else:
                     updated_x = self.base_step.step_x(
-                        idx(x, detach=True), idx(t, detach=True), state
+                        idx(x, detach=True), idx(t, detach=True)
                     )
 
                 x = update_io(updated_x, x, idx)
@@ -181,14 +178,13 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self.tie_in_t = tie_in_t
 
     def step(
-        self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
+        self, x: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
     ) -> IO:
         """
 
         Args:
             x (IO): Input
             t (IO): Target
-            state (State): The state
             outgoing_t (IO, optional): The target of the outgoing layer.
             If none, will not do step_x for the outgoing layer. Defaults to None.
             outgoing_x (IO, optional): The x value for the outgoing layer.
@@ -211,13 +207,13 @@ class IterHiddenStepTheta(OutDepStepTheta):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):
                             x_idx = self.outgoing.step_x(
-                                outgoing_x, outgoing_t, state, batch_idx=idx
+                                outgoing_x, outgoing_t, batch_idx=idx
                             )
                         else:
                             # BUG: FIX HERE. It is doing a step_x
                             # without going forward
                             x_idx = self.outgoing.step_x(
-                                idx(outgoing_x), idx(outgoing_t), state
+                                idx(outgoing_x), idx(outgoing_t)
                             )
                         outgoing_x = update_io(x_idx, outgoing_x, idx, detach=True)
 
@@ -227,11 +223,11 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
                     if isinstance(self.update, BatchIdxStepTheta):
-                        self.update.accumulate(x, t, state, batch_idx=idx)
-                        self.update.step(x, t, state, batch_idx=idx)
+                        self.update.accumulate(x, t, batch_idx=idx)
+                        self.update.step(x, t, batch_idx=idx)
                     else:
-                        self.update.accumulate(idx(x), idx(t), state)
-                        self.update.step(idx(x), idx(t), state)
+                        self.update.accumulate(idx(x), idx(t))
+                        self.update.step(idx(x), idx(t))
 
             if self.tie_in_t and i < (self.n_epochs - 1):
                 outgoing_x = self.net(x)

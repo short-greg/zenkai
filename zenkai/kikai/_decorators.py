@@ -7,22 +7,23 @@ from ..utils import unsqueeze_to
 
 
 class DecorateStepX(LearningMachine):
+
     def __init__(self, decorated: LearningMachine):
 
         super().__init__()
         self.decorated = decorated
 
-    def pre_step_x(self, x: IO, t: IO, state: State) -> IO:
+    def pre_step_x(self, x: IO, t: IO) -> IO:
         return x, t
 
-    def post_step_x(self, x: IO, t: IO, x_prime: IO, state: State) -> IO:
+    def post_step_x(self, x: IO, t: IO, x_prime: IO) -> IO:
         return x_prime
 
-    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+    def step_x(self, x: IO, t: IO, *args, **kwargs) -> IO:
 
-        x, t = self.pre_step_x(x, t, state)
-        x_prime = self.decorated.step_x(x, t, state, *args, **kwargs)
-        return self.post_step_x(x, t, x_prime, state)
+        x, t = self.pre_step_x(x, t)
+        x_prime = self.decorated.step_x(x, t, *args, **kwargs)
+        return self.post_step_x(x, t, x_prime)
 
 
 class FDecorator(object):
@@ -57,18 +58,18 @@ class FDecorateStepX(DecorateStepX):
         self.decorated = decorated
         self.f = f
 
-    def forward(self, x: IO, state: State, release: bool = True, **kwargs) -> IO:
-        y = x._.y = self.decorated(x, state, False)
+    def forward(self, x: IO, release: bool = True, **kwargs) -> IO:
+        y = x._.y = self.decorated(x, False)
         
         # state[self, x, "y"] = y
         return y
 
-    def post_step_x(self, x: IO, t: IO, x_prime: IO, state: State) -> IO:
+    def post_step_x(self, x: IO, t: IO, x_prime: IO) -> IO:
 
         y = x._.y
         # y = state[self, x, "y"]
         return self.f(x, x_prime, y, t)
 
     @forward_dep("y")
-    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
-        return super().step_x(x, t, state, *args, **kwargs)
+    def step_x(self, x: IO, t: IO, *args, **kwargs) -> IO:
+        return super().step_x(x, t, *args, **kwargs)

@@ -15,7 +15,6 @@ from ..kaku import (
     Idx,
     LearningMachine,
     Criterion,
-    State,
 )
 from ..mod import ScikitWrapper, MultiOutputScikitWrapper
 from .utils import FeatureLimitGen
@@ -48,13 +47,12 @@ class ScikitMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, t: IO, **kwargs):
         """Update the estimator
 
         Args:
             x (IO): Input
             t (IO): Target
-            state (State): The current state
             feature_idx (Idx, optional): . Defaults to None.
 
         """
@@ -63,28 +61,26 @@ class ScikitMachine(LearningMachine):
         else:
             self._module.fit(x.f, t.f, **kwargs)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """Update the estimator
 
         Args:
             x (IO): Input
             t (IO): Target
-            state (State): The state of training
-            feature_idx (Idx, optional): _description_. Defaults to None.
+            feature_idx (Idx, optional): . Defaults to None.
 
         Returns:
             IO: the updated x
         """
         if self._step_x is None:
             return x
-        return self._step_x.step_x(x, t, state)
+        return self._step_x.step_x(x, t)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         """
 
         Args:
             x (IO): input to the machine
-            state (State): the state
             release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
@@ -164,13 +160,12 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
+    def step(self, x: IO, t: IO, feature_idx: Idx = None, **kwargs):
         """Update the estimator
 
         Args:
             x (IO): Input
             t (IO): Target
-            state (State): The current state
             feature_idx (Idx, optional): . Defaults to None.
 
         """
@@ -192,13 +187,12 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
                 **kwargs
             )
 
-    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, feature_idx: Idx = None) -> IO:
         """Update the estimator
 
         Args:
             x (IO): Input
             t (IO): Traget
-            state (State): The state of training
             feature_idx (Idx, optional): _description_. Defaults to None.
 
         Returns:
@@ -206,14 +200,13 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """
         if self._step_x is None:
             return x
-        return self._step_x.step_x(x, t, state, feature_idx)
+        return self._step_x.step_x(x, t, feature_idx)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         """
 
         Args:
             x (IO): input to the machine
-            state (State): the state
             release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:

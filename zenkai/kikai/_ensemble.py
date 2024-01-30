@@ -10,7 +10,6 @@ import torch
 from ..kaku import (
     IO,
     LearningMachine,
-    State,
 )
 from ..kaku import Individual, Population
 from ..mod import Voter
@@ -20,12 +19,11 @@ class EnsembleLearner(LearningMachine):
     """Base class for A LearningMachine that optimizes over an ensemble of otehr machines"""
 
     @abstractmethod
-    def vote(self, x: IO, state: State, release: bool = True) -> IO:
+    def vote(self, x: IO, release: bool = True) -> IO:
         """Get all of the votes
 
         Args:
             x (IO): The input
-            state (State): The learning state
             release (bool, optional): Whether to release the output. Defaults to False.
 
         Returns:
@@ -34,12 +32,11 @@ class EnsembleLearner(LearningMachine):
         pass
 
     @abstractmethod
-    def reduce(self, x: IO, state: State, release: bool = True) -> IO:
+    def reduce(self, x: IO, release: bool = True) -> IO:
         """Aggregate the votes
 
         Args:
             x (IO): The votes
-            state (State): The learning state
             release (bool, optional): Whether to release the output. Defaults to False.
 
         Returns:
@@ -47,18 +44,17 @@ class EnsembleLearner(LearningMachine):
         """
         pass
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         """Votes and then reduces based on the vote
 
         Args:
             x (IO): the input
-            state (State): the learning state
             release (bool, optional): whether to release. Defaults to True.
 
         Returns:
             IO: the output
         """
-        return self.reduce(self.vote(x, state, release=False), state, release=release)
+        return self.reduce(self.vote(x, release=False), release=release)
 
 
 class EnsembleLearnerVoter(nn.Module):

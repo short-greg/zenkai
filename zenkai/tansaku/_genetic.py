@@ -72,6 +72,7 @@ class Elitism(object):
 
 
 class CrossOver(ABC):
+    
     @abstractmethod
     def __call__(self, parents1: Population, parents2: Population) -> Population:
         pass

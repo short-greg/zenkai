@@ -3,15 +3,15 @@ import torch
 from sklearn.linear_model import SGDRegressor
 
 # local
-from zenkai.kaku import IO, State, StepX, Criterion
+from zenkai.kaku import IO, StepX, Criterion
 from zenkai.kikai._scikit import ScikitLimitGen, ScikitMachine
 from zenkai.mod._scikit import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kikai.utils import RandomFeatureIdxGen
 
 
 class NullStepX(StepX):
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        return super().step_x(x, t, state)
+    def step_x(self, x: IO, t: IO) -> IO:
+        return super().step_x(x, t)
 
 
 class TestSklearnMultiMachine(object):
@@ -26,9 +26,9 @@ class TestSklearnMultiMachine(object):
         x2 = IO(torch.randn(8, 3))
         t2 = IO(torch.randn(8, 2))
 
-        machine.step(x1, t1, State())
+        machine.step(x1, t1)
         # TODO: add Limit
-        machine.step(x2, t2, State())
+        machine.step(x2, t2)
         y = machine(IO(torch.rand(8, 3)))
         assert y.f.shape == torch.Size([8, 2])
 
@@ -43,9 +43,9 @@ class TestSklearnMachine(object):
         x2 = IO(torch.randn(8, 3))
         t2 = IO(torch.randn(8))
 
-        machine.step(x1, t1, State())
+        machine.step(x1, t1)
         # TODO: add Limit
-        machine.step(x2, t2, State())
+        machine.step(x2, t2)
         y = machine(IO(torch.rand(8, 3)))
         assert y.f.shape == torch.Size([8])
 

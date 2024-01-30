@@ -13,7 +13,6 @@ from ..kaku import (
     IO,
     Assessment,
     LearningMachine,
-    State,
     StepTheta,
     StepX,
     Criterion,
@@ -172,7 +171,7 @@ class LeastSquaresStepTheta(StepTheta):
         if bias is not None:
             self.linear.bias.data = bias
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         self._optimize(x.f, t.f)
 
 
@@ -212,12 +211,11 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """Update x
 
         Args:
             conn (Conn): The connection to update with
-            state (State): The current learning state
 
         Returns:
             Conn: The connection with x updated
@@ -261,13 +259,13 @@ class LeastSquaresLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self._loss.assess(y, t, reduction_override=reduction_override)
 
-    def step(self, x: IO, t: IO, state: State):
-        self._step_theta.step(x, t, state)
+    def step(self, x: IO, t: IO):
+        self._step_theta.step(x, t)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        return self._step_x.step_x(x, t, state)
+    def step_x(self, x: IO, t: IO) -> IO:
+        return self._step_x.step_x(x, t)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen(False)
         return IO(self._linear(x.f), detach=release)
 
@@ -311,15 +309,15 @@ class GradLeastSquaresLearner(LearningMachine):
         assessment = self._loss.assess(y, t, reduction_override=reduction_override)
         return assessment
 
-    def accumulate(self, x: IO, t: IO, state: State):
-        self._step_theta.accumulate(x, t, state)
+    def accumulate(self, x: IO, t: IO):
+        self._step_theta.accumulate(x, t)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
-        return self._step_x.step_x(x, t, state)
+    def step_x(self, x: IO, t: IO) -> IO:
+        return self._step_x.step_x(x, t)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         return IO(self._linear(x.f), detach=release)
 
-    def step(self, x: IO, t: typing.Union[IO, None], state: State):
+    def step(self, x: IO, t: typing.Union[IO, None]):
 
-        return self._step_theta.step(x, t, state)
+        return self._step_theta.step(x, t)

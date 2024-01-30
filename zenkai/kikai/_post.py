@@ -2,7 +2,6 @@
 from ..kaku import (
     IO,
     StepTheta,
-    State,
 )
 
 
@@ -21,7 +20,7 @@ class StackPostStepTheta(StepTheta):
         super().__init__()
         self._base_step_theta = base_step_theta
 
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
 
         if "stack" not in self._:
             self._.stack_x = []
@@ -34,7 +33,7 @@ class StackPostStepTheta(StepTheta):
         # state[self, "stack_x"].append(x)
         # state[self, "stack_t"].append(t)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """complete the step by concatenating all ios and running
         the base step method
 
@@ -55,4 +54,4 @@ class StackPostStepTheta(StepTheta):
 
         x = IO.cat(stack_x)
         t = IO.cat(stack_t)
-        self._base_step_theta.step(x, t, state)
+        self._base_step_theta.step(x, t)

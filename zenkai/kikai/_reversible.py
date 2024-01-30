@@ -5,7 +5,7 @@ import typing
 import torch.nn as nn
 
 # local
-from ..kaku import IO, Assessment, LearningMachine, State, Criterion, ThLoss
+from ..kaku import IO, Assessment, LearningMachine, Criterion, ThLoss
 from ..mod import Reversible, SequenceReversible
 from ..mod import Lambda
 from ._backtarget import BackTarget
@@ -34,29 +34,27 @@ class ReversibleMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.objective.assess(y, t, reduction_override)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """Update x
 
         Args:
             x (IO): Input
-            state (State): The learning state
-
+            
         Returns:
             IO: The updated input
         """
         return IO(self.reversible.reverse(t.f), detach=True)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """These layers do not have parameters so the internal mechanics are not updated
 
         Args:
             x (IO): The input
             t (IO): The output 
-            state (State): The learning state
         """
         pass
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         return IO(self.reversible(x.f)).out(release)
 
 

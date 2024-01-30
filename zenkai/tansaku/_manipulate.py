@@ -119,7 +119,7 @@ class ApplyMomentum(object):
         self._['cur'] = {}
 
     def apply_momentum(
-        self, k: str, individual: torch.Tensor,  state: State
+        self, k: str, individual: torch.Tensor
     ) -> torch.Tensor:
         """Decorates the individual with the momentum
 
@@ -155,7 +155,7 @@ class ApplyMomentum(object):
 
         return self._.cur[k]
 
-    def __call__(self, individual: Individual, state: State) -> Individual:
+    def __call__(self, individual: Individual) -> Individual:
         """Reduces the population and decorates it
 
         Args:
@@ -167,7 +167,7 @@ class ApplyMomentum(object):
 
         result = {}
         for k, v in individual.items():
-            result[k] = self.apply_momentum(k, v, state)
+            result[k] = self.apply_momentum(k, v)
         return Individual(**result)
 
     def spawn(self) -> "ApplyMomentum":

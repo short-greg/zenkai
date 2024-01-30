@@ -14,6 +14,12 @@ class Assessor(ABC):
     """Modules to asseess the population"""
 
     def __init__(self, reduce_from: int = 1, reduction: str = "mean"):
+        """
+
+        Args:
+            reduce_from (int, optional): . Defaults to 1.
+            reduction (str, optional): . Defaults to "mean".
+        """
         self.reduce_from = reduce_from
         self.reduction = reduction
 

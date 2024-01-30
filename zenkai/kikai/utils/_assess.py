@@ -3,7 +3,7 @@ import typing
 from abc import ABC, abstractmethod
 
 # local
-from ...kaku._machine import IO, State, StepXHook, StepHook, LearningMachine, Assessment
+from ...kaku import IO, StepXHook, StepHook, LearningMachine, Assessment, Meta
 
 
 class LayerAssessor(ABC):
@@ -12,15 +12,15 @@ class LayerAssessor(ABC):
     """
 
     @abstractmethod
-    def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def pre(self, x: IO, t: IO, *args, **kwargs):
         pass
 
     @abstractmethod
-    def post(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def post(self, x: IO, t: IO, *args, **kwargs):
         pass
 
     @abstractmethod
-    def assessment(self, state: State) -> Assessment:
+    def assessment(self) -> Assessment:
         pass
 
 
@@ -38,22 +38,21 @@ class StepAssessHook(StepXHook, StepHook):
         self._pre = pre
 
     def __call__(
-        self, x: IO, t: IO, state: State, *args, **kwargs
+        self, x: IO, t: IO, *args, **kwargs
     ) -> typing.Tuple[IO, IO]:
         """Call the layer assessor
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The learning state
 
         Returns:
             typing.Tuple[IO, IO]: The input and target
         """
         if self._pre:
-            self._assessor.pre(x, t, state, *args, **kwargs)
+            self._assessor.pre(x, t, *args, **kwargs)
         else:
-            self._assessor.post(x, t, state, *args, **kwargs)
+            self._assessor.post(x, t, *args, **kwargs)
 
         return x, t
 
@@ -79,31 +78,30 @@ class StepXLayerAssessor(LayerAssessor):
         else:
             self._learning_machine.step_prehook(self._pre_hook)
             self._learning_machine.step_posthook(self._post_hook)
+        self._ = Meta()
 
-    def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def pre(self, x: IO, t: IO, *args, **kwargs):
         """The assessment before the step
 
         Args:
             x (IO): The input
             t (IO): The Target
-            state (State): The learning state
         """
         self._.pre = self._learning_machine.assess(x, t).prepend("Pre")
         # state[self, "pre"] = self._learning_machine.assess(x, t).prepend("Pre")
 
-    def post(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def post(self, x: IO, t: IO, *args, **kwargs):
         """The assessment after the step
 
         Args:
             x (IO): The input
             t (IO): The Target
-            state (State): The learning state
         """
         self._.post = self._learning_machine.assess(x, t).prepend("Post")
         # state[self, "post"] = self._learning_machine.assess(x, t).prepend("Post")
 
-    def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
-        return state.get((self, "pre")), state.get((self, "post"))
+    def assessment(self) -> typing.Tuple[Assessment, Assessment]:
+        return self._.get('pre'), self._.get("post")
 
 
 class StepFullLayerAssessor(LayerAssessor):
@@ -126,13 +124,12 @@ class StepFullLayerAssessor(LayerAssessor):
         self._learning_machine.step_prehook(self._pre_hook)
         self._learning_machine.step_posthook(self._post_hook)
 
-    def pre(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def pre(self, x: IO, t: IO, *args, **kwargs):
         """The assessment before the step
 
         Args:
             x (IO): The input
             t (IO): The Target
-            state (State): The learning state
         """
         self._.pre = self._outgoing.assess(
             self._learning_machine(x), t
@@ -141,13 +138,12 @@ class StepFullLayerAssessor(LayerAssessor):
         #     self._learning_machine(x), t
         # ).prepend("Pre")
 
-    def post(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def post(self, x: IO, t: IO, *args, **kwargs):
         """The assessment after the step
 
         Args:
             x (IO): The input
             t (IO): The Target
-            state (State): The learning state
         """
         self._.post = self._outgoing.assess(
             self._learning_machine(x), t
@@ -156,12 +152,9 @@ class StepFullLayerAssessor(LayerAssessor):
         #     self._learning_machine(x), t
         # ).prepend("Post")
 
-    def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
+    def assessment(self) -> typing.Tuple[Assessment, Assessment]:
         """Retrieve the assessment
-
-        Args:
-            state (State): The state to retrieve the assessemnt from
-
+        
         Returns:
             typing.Tuple[Assessment, Assessment]: The pre and post assessments
         """

@@ -8,6 +8,7 @@ from zenkai.utils import get_model_parameters, get_model_grads
 
 
 class SampleGraph(containers.GraphLearner):
+
     def __init__(self, step_priority: bool = False, target_out: bool = False):
 
         super().__init__()
@@ -24,16 +25,17 @@ class SampleGraph(containers.GraphLearner):
         return self.linear3.assess_y(y, t, reduction_override)
 
     def forward(
-        self, x: IO, state: State, release: bool = True, *args, **kwargs
+        self, x: IO,  release: bool = True, *args, **kwargs
     ) -> typing.Iterator[SStep]:
 
-        x = self.linear1(x, state, release)
-        x = self.linear2(x, state, release)
-        x = self.linear3(x, state, release)
+        x = self.linear1(x, release)
+        x = self.linear2(x, release)
+        x = self.linear3(x, release)
         return x
 
 
 class SampleAccGraph(containers.AccGraphLearner):
+
     def __init__(self, target_out: bool = False):
 
         super().__init__()
@@ -49,12 +51,12 @@ class SampleAccGraph(containers.AccGraphLearner):
         return self.linear3.assess_y(y, t, reduction_override)
 
     def forward(
-        self, x: IO, state: State, release: bool = True, *args, **kwargs
+        self, x: IO, release: bool = True, *args, **kwargs
     ) -> typing.Iterator[SStep]:
 
-        x = self.linear1(x, state, release)
-        x = self.linear2(x, state, release)
-        x = self.linear3(x, state, release)
+        x = self.linear1(x, release)
+        x = self.linear2(x, release)
+        x = self.linear3(x, release)
         return x
 
 
@@ -72,10 +74,9 @@ class TestGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleGraph()
-        state = State()
-        graph(x, state)
+        graph(x)
         before = get_model_parameters(graph)
-        graph.step(x, t, state)
+        graph.step(x, t)
 
         assert (before != get_model_parameters(graph)).any()
 
@@ -84,10 +85,9 @@ class TestGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleGraph()
-        state = State()
-        graph(x, state)
-        graph.step(x, t, state)
-        x_prime = graph.step_x(x, t, state)
+        graph(x)
+        graph.step(x, t)
+        x_prime = graph.step_x(x, t)
 
         assert (x.f != x_prime.f).any()
 
@@ -96,10 +96,9 @@ class TestGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleGraph(step_priority=True)
-        state = State()
-        graph(x, state)
+        graph(x)
         before = get_model_parameters(graph)
-        graph.step(x, t, state)
+        graph.step(x, t)
 
         assert (before != get_model_parameters(graph)).any()
 
@@ -108,10 +107,9 @@ class TestGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleGraph(step_priority=True)
-        state = State()
-        graph(x, state)
-        graph.step(x, t, state)
-        x_prime = graph.step_x(x, t, state)
+        graph(x)
+        graph.step(x, t)
+        x_prime = graph.step_x(x, t)
 
         assert (x.f != x_prime.f).any()
 
@@ -120,10 +118,9 @@ class TestGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleGraph(target_out=True)
-        state = State()
-        graph(x, state)
+        graph(x)
         before = get_model_parameters(graph)
-        graph.step(x, t, state)
+        graph.step(x, t)
 
         assert (before != get_model_parameters(graph)).any()
 
@@ -142,11 +139,10 @@ class TestAccGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleAccGraph()
-        state = State()
-        graph(x, state)
+        graph(x)
         before = get_model_parameters(graph)
-        graph.accumulate(x, t, state)
-        graph.step(x, t, state)
+        graph.accumulate(x, t)
+        graph.step(x, t)
 
         assert (before != get_model_parameters(graph)).any()
 
@@ -155,10 +151,9 @@ class TestAccGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleAccGraph()
-        state = State()
-        graph(x, state)
-        graph.accumulate(x, t, state)
-        x_prime = graph.step_x(x, t, state)
+        graph(x)
+        graph.accumulate(x, t)
+        x_prime = graph.step_x(x, t)
         assert (x.f != x_prime.f).any()
 
     def test_step_updates_the_parameters_with_output_as_target(self):
@@ -166,10 +161,9 @@ class TestAccGraph:
         x = IO(torch.rand(4, 8))
         t = IO(torch.rand(4, 4))
         graph = SampleAccGraph(target_out=True)
-        state = State()
-        graph(x, state)
+        graph(x)
         before = get_model_parameters(graph)
-        graph.accumulate(x, t, state)
-        graph.step(x, t, state)
+        graph.accumulate(x, t)
+        graph.step(x, t)
 
         assert (before != get_model_parameters(graph)).any()

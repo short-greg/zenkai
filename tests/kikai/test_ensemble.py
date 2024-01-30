@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from zenkai.kaku import IO, State
+from zenkai.kaku import IO
 from zenkai.kaku._assess import Assessment
 from zenkai.tansaku._keep import Individual
 from zenkai.kikai._ensemble import VoterPopulator, EnsembleLearner
@@ -9,6 +9,7 @@ from .test_grad import THGradLearnerT1
 
 
 class TestVoterPopulator:
+
     def test_voter_populator_populates_correct_count(self):
 
         voter = StochasticVoter(nn.Sequential(nn.Dropout(0.2), nn.Linear(4, 3)), 6)
@@ -34,27 +35,27 @@ class DummyEnsembleLearner(EnsembleLearner):
             THGradLearnerT1(in_features, out_features) for i in range(n_learners)
         ]
 
-    def vote(self, x: IO, state: State, release: bool = True) -> IO:
+    def vote(self, x: IO, release: bool = True) -> IO:
 
-        votes = [learner(x, state, release).f for learner in self._learners]
+        votes = [learner(x, release).f for learner in self._learners]
         return IO(torch.stack(votes))
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return Assessment(torch.tensor(1))
 
-    def reduce(self, x: IO, state: State, release: bool = True) -> IO:
+    def reduce(self, x: IO, release: bool = True) -> IO:
         return IO(torch.mean(x.f, dim=0)).out(release)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
 
         for learner in self._learners:
-            learner.step(x, t, state)
+            learner.step(x, t)
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
 
         x_primes = []
         for learner in self._learners:
-            x_primes.append(learner.step(x, t, state).f)
+            x_primes.append(learner.step(x, t).f)
         return IO(sum(x_primes))
 
 
@@ -67,4 +68,4 @@ class TestEnsembleLearnerVoter:
     def test_vote_results_in_three_votes(self):
 
         learner = DummyEnsembleLearner(2, 3, 3)
-        assert learner.vote(IO(torch.rand(4, 2)), State()).f.size(0) == 3
+        assert learner.vote(IO(torch.rand(4, 2))).f.size(0) == 3

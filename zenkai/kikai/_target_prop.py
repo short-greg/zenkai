@@ -4,17 +4,15 @@ from abc import abstractmethod
 # 3rd Party
 import torch
 
-from zenkai.kaku import IO, State
-from zenkai.kaku._assess import Assessment
 
 # Local
 from ..kaku import (
     IO,
-    State,
     Criterion,
     StepX,
     ForwardHook,
-    LearningMachine
+    LearningMachine,
+    Assessment
 )
 
 
@@ -25,7 +23,7 @@ class SetYHook(ForwardHook):
         super().__init__()
         self.y_name = y
 
-    def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State) -> IO:
+    def __call__(self, learner: LearningMachine, x: IO, y: IO) -> IO:
        
        # state[learner, x, self.y_name] = y
        x._[self.y_name] = y
@@ -47,19 +45,19 @@ class TargetPropLearner(LearningMachine):
         self.forward_hook(SetYHook(self.y_name))
 
     @abstractmethod
-    def accumulate_reverse(self, x: IO, y: IO, t: IO, state: State):
+    def accumulate_reverse(self, x: IO, y: IO, t: IO):
         pass
     
     @abstractmethod
-    def accumulate_forward(self, x: IO, t: IO, state: State):
+    def accumulate_forward(self, x: IO, t: IO):
         pass
 
     @abstractmethod
-    def step_reverse(self, x: IO, y: IO, t: IO, state: State):
+    def step_reverse(self, x: IO, y: IO, t: IO):
         pass
     
     @abstractmethod
-    def step_forward(self, x: IO, t: IO, state: State):
+    def step_forward(self, x: IO, t: IO):
         pass
 
     def reverse_update(self, update: bool=True):
@@ -80,52 +78,49 @@ class TargetPropLearner(LearningMachine):
         self._forward_update = update
         return self
 
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
         """Accumulate the forward and/or reverse model
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The state
         """
         if self._forward_update:
-            self.accumulate_forward(x, t, state)
+            self.accumulate_forward(x, t)
         if self._reverse_update:
             # y = state[self, x, self.y_name]
-            y = state._[self.y_name]
-            self.accumulate_reverse(x, y, t, state)
+            y = x._[self.y_name]
+            self.accumulate_reverse(x, y, t)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """Update the forward and/or reverse model
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The state
         """
         if self._forward_update:
-            self.step_forward(x, t, state)
+            self.step_forward(x, t)
         if self._reverse_update:
-            y = state._[self.y_name]
+            y = x._[self.y_name]
             # y = state[self, x, self.y_name]
-            self.step_reverse(x, y, t, state)
+            self.step_reverse(x, y, t)
 
     @abstractmethod
-    def reverse(self, x: IO, y: IO, state: State, release: bool=True):
+    def reverse(self, x: IO, y: IO, release: bool=True):
         pass
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """The default behavior of Target Propagation is to simply call the reverse function with x and t
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The state
 
         Returns:
             IO: The target for the preceding layer
         """
-        return self.reverse(x, t, state)
+        return self.reverse(x, t)
 
 
 class StdTargetProp(TargetPropLearner):
@@ -169,33 +164,33 @@ class StdTargetProp(TargetPropLearner):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.forward_learner.assess_y(y, t, reduction_override)
 
-    def accumulate_forward(self, x: IO, t: IO, state: State):
-        self.forward_learner.accumulate(x, t, state)
+    def accumulate_forward(self, x: IO, t: IO):
+        self.forward_learner.accumulate(x, t)
 
-    def accumulate_reverse(self, x: IO, y: IO, t: IO, state: State):
-        self.reverse_learner.accumulate(self.get_rev_x(x, y), x, state)
+    def accumulate_reverse(self, x: IO, y: IO, t: IO):
+        self.reverse_learner.accumulate(self.get_rev_x(x, y), x)
 
-    def step_forward(self, x: IO, t: IO, state: State):
-        self.forward_learner.step(x, t, state)
+    def step_forward(self, x: IO, t: IO):
+        self.forward_learner.step(x, t)
     
-    def step_reverse(self, x: IO, y: IO, t: IO, state: State):
-        self.reverse_learner.step(self.get_rev_x(x, y), x, state)
+    def step_reverse(self, x: IO, y: IO, t: IO):
+        self.reverse_learner.step(self.get_rev_x(x, y), x)
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
-        return self.forward_learner(x, state, release)
+    def forward(self, x: IO, release: bool = True) -> IO:
+        return self.forward_learner(x, release)
 
-    def reverse(self, x: IO, y: IO, state: State, release: bool=True):
-        return self.reverse_learner(self.get_rev_x(x, y), state, release)
+    def reverse(self, x: IO, y: IO, release: bool=True):
+        return self.reverse_learner(self.get_rev_x(x, y), release)
 
 
 class TargetPropStepX(StepX):
 
     @abstractmethod
-    def step_target_prop(self, x: IO, t: IO, y: IO, state: State):
+    def step_target_prop(self, x: IO, t: IO, y: IO):
         pass
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, release: bool = True) -> IO:
+    def step_x(self, x: IO, t: IO, release: bool = True) -> IO:
         pass
 
 

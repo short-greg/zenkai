@@ -24,7 +24,7 @@ import torch.nn as nn
 
 # local
 from ._assess import Assessment, Criterion
-from ._state import IDable, State, Meta
+from ._state import IDable, Meta
 from ._io import IO, Idx
 from functools import wraps
 
@@ -34,7 +34,7 @@ class StepXHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, step_x: "StepX", x: IO, x_prime: IO, t: IO, state: State
+        self, step_x: "StepX", x: IO, x_prime: IO, t: IO
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -43,7 +43,7 @@ class StepHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, step: "StepTheta", x: IO, t: IO, state: State
+        self, step: "StepTheta", x: IO, t: IO
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -51,7 +51,7 @@ class StepHook(ABC):
 class ForwardHook(ABC):
     
     @abstractmethod
-    def __call__(self, learner: "LearningMachine", x: IO, y: IO, state: State) -> IO:
+    def __call__(self, learner: "LearningMachine", x: IO, y: IO) -> IO:
         pass
 
 
@@ -60,7 +60,7 @@ class LearnerPostHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, x: IO, t: IO, state: State, y: IO, assessment: Assessment
+        self, x: IO, t: IO, y: IO, assessment: Assessment
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -81,25 +81,23 @@ class StepX(ABC):
             self._ = Meta()
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         pass
 
-    def _step_x_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+    def _step_x_hook_runner(self, x: IO, t: IO,  *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
         Args:
             x (IO): The incoming IO
             t (IO): The target
-            state (State): The current state
-
         Returns:
             IO: the updated x
         """
 
-        x_prime = self._base_step_x(x, t, state, *args, **kwargs)
+        x_prime = self._base_step_x(x, t, *args, **kwargs)
 
         for posthook in self._step_x_posthooks:
-            x_prime, t = posthook(self, x, x_prime, t, state)
+            x_prime, t = posthook(self, x, x_prime, t)
 
         return x_prime
 
@@ -134,33 +132,31 @@ class StepTheta(ABC):
         if '_' not in self.__dict__:
             self._ = Meta()
 
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
         pass
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """Update the parameters of the network
 
         Args:
             x (IO): The input
             t (IO): The output
-            state (State): The learning state
         """
         pass
 
-    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def _accumulate_hook_runner(self, x: IO, t: IO, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
-            state (State): The current state
         """
 
-        self._base_accumulate(x, t, state, *args, **kwargs)
+        self._base_accumulate(x, t, *args, **kwargs)
 
         for posthook in self._accumulate_hooks:
-            posthook(x, t, state)
+            posthook(x, t)
 
     def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
@@ -173,19 +169,18 @@ class StepTheta(ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def _step_hook_runner(self, x: IO, t: IO, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
-            state (State): The current state
         """
 
-        result = self._base_step(x, t, state, *args, **kwargs)
+        result = self._base_step(x, t, *args, **kwargs)
 
         for posthook in self._step_hooks:
-            x, t = posthook(self, x, t, state)
+            x, t = posthook(self, x, t)
         return result
 
     def step_posthook(self, hook: StepHook) -> "StepTheta":
@@ -201,15 +196,15 @@ class StepTheta(ABC):
 
 
 class NullStepX(StepX):
-    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+    def step_x(self, x: IO, t: IO, *args, **kwargs) -> IO:
         return x
 
 
 class NullStepTheta(StepTheta):
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
         pass
 
-    def step(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def step(self, x: IO, t: IO,  *args, **kwargs):
         return
 
 
@@ -217,10 +212,10 @@ class BatchIdxStepTheta(StepTheta):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+    def step(self, x: IO, t: IO, batch_idx: Idx = None):
         pass
 
-    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+    def accumulate(self, x: IO, t: IO, batch_idx: Idx = None):
         pass
 
 
@@ -228,7 +223,7 @@ class FeatureIdxStepTheta(StepTheta):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None):
+    def step(self, x: IO, t: IO, feature_idx: Idx = None):
         pass
 
 
@@ -236,7 +231,7 @@ class BatchIdxStepX(StepX):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, batch_idx: Idx = None) -> IO:
         pass
 
 
@@ -244,7 +239,7 @@ class FeatureIdxStepX(StepX):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, feature_idx: Idx = None) -> IO:
         pass
 
 
@@ -313,7 +308,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         x: IO,
         t: IO,
         reduction_override: str = None,
-        state: State = None,
         release: bool = False,
     ) -> Assessment:
         """Assess the learning machine
@@ -323,22 +317,20 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             t (IO): _description_
             reduction_override (str, optional): Value to override the
               reduction by. If None will not override. Defaults to None.
-            state (State, optional): Defaults to None.
             release (bool, optional): Whether to release the output.
               Defaults to False.
 
         Returns:
             Assessment: The assessment of the machine
         """
-        y = self(x, state=state, release=release)
+        y = self(x, release=release)
         return self.assess_y(y, t, reduction_override=reduction_override)
 
     @abstractmethod
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         """
         Args:
             x (IO): The input to the machine
-            state (State)
             release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
@@ -347,20 +339,17 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         raise NotImplementedError
 
     def __call__(
-        self, x: IO, state: State = None, release: bool = True, *args, **kwargs
+        self, x: IO, release: bool = True, *args, **kwargs
     ) -> IO:
         """
         Args:
             x (IO): The input to the machine
-            state (State, optional): Defaults to None.
             release (bool, optional): Whether to release the output. Defaults to True.
 
         Returns:
             IO: The output fo the machine
         """
-        if state is None:
-            state = State()
-        return super().__call__(x, state, release, *args, **kwargs)
+        return super().__call__(x, release, *args, **kwargs)
 
     def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
         """Add hook to call after forward
@@ -389,8 +378,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         self,
         x: IO,
         t: IO,
-        state: State = None,
-        clear_state: bool = False,
         reduction_override: str = None,
         get_y: bool = False,
     ):
@@ -399,37 +386,33 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
-            state (State): The current state
         """
-        state = state or State()
         assessment, y = self._base_learn(
-            x, t, state, clear_state, reduction_override, True
+            x, t, reduction_override, True
         )
 
         for posthook in self._learn_posthooks:
-            posthook(x, t, state, y, assessment)
+            posthook(x, t, y, assessment)
         if get_y:
             return assessment, y
         return assessment
 
-    def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
-        """_summary_
+    def _forward_hook_runner(self, x: IO, *args, **kwargs):
+        """
 
         Args:
             x (IO): The input to the module
             t (IO): The target
-            state (State, optional): The state at the timestep. Defaults to None.
         """
-        y = self._base_forward(x, state, *args, **kwargs)
+        y = self._base_forward(x, *args, **kwargs)
         for hook in self._y_hooks:
-            y = hook(self, x, y, state)
+            y = hook(self, x, y)
         return y
 
     def _test_hook_runner(
         self,
         x: IO,
         t: IO,
-        state: State = None,
         reduction_override: str = None,
         get_y: bool = False,
     ):
@@ -438,13 +421,11 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
-            state (State): The current state
         """
-        state = state or State()
-        assessment, y = self._base_test(x, t, state, reduction_override, True)
+        assessment, y = self._base_test(x, t, reduction_override, True)
 
         for posthook in self._test_posthooks:
-            posthook(x, t, state, y, assessment)
+            posthook(x, t, y, assessment)
         if get_y:
             return assessment, y
 
@@ -454,8 +435,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         self,
         x: IO,
         t: IO,
-        state: State = None,
-        clear_state: bool = False,
         reduction_override: str = None,
         get_y: bool = False,
     ) -> Assessment:
@@ -465,7 +444,6 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         Args:
             x: The input to the machine
             t: The target to the machine
-            state (State, optional): The current learning state. Defaults to None.
             return_step (bool, optional): Whether to return step_x based on the inputs. Defaults to False.
             clear_state (bool, optional): Whether to clear teh state for the machine. Defaults to False.
 
@@ -475,40 +453,35 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         # if not self.training:
         self.train()
         x, t = self.to_my_device(x, t)
-        state = state or State()
-        y = self(x, state)
+        y = self(x)
         assessment = self.assess_y(y, t, reduction_override=reduction_override)
-        self.accumulate(x, t, state)
-        self.step(x, t, state)
-        # if clear_state:
-        #    state.clear(self)
+        self.accumulate(x, t)
+        self.step(x, t)
         if get_y:
             return assessment, y
         return assessment
 
-    def backward(self, x: IO, t: IO, state: State, step: bool = False) -> IO:
+    def backward(self, x: IO, t: IO, step: bool = False) -> IO:
         """
         Go backward through the network
 
         Args:
             x (IO): the input
             t (IO): the target
-            state (State): State
             step (bool, optional): Whether to execute step or not. Defaults to True.
 
         Returns:
             IO: The result of step_x
         """
-        self.accumulate(x, t, state)
+        self.accumulate(x, t)
         if step:
-            self.step(x, t, state)
-        return self.step_x(x, t, state)
+            self.step(x, t)
+        return self.step_x(x, t)
 
     def test(
         self,
         x: IO,
         t: IO,
-        state: State = None,
         reduction_override: str = None,
         get_y: bool = False,
     ) -> Assessment:
@@ -523,10 +496,9 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         """
         # if self.training:
         self.eval()
-        state = state or State()
         with torch.no_grad():
             x, t = self.to_my_device(x, t)
-            y = self(x, state=state)
+            y = self(x)
             result = (
                 self.assess_y(y, t, reduction_override=reduction_override)
                 .cpu()
@@ -554,30 +526,28 @@ class NullLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.loss.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         """It is a null "learner" so it does nothing
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The learning state
         """
         pass
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         """It is a null learner so it does nothing
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The learning state
 
         Returns:
             IO: The input
         """
         return x
 
-    def forward(self, x: IO, state: State):
+    def forward(self, x: IO):
         return x
 
 
@@ -586,14 +556,13 @@ class OutDepStepTheta(StepTheta):
 
     @abstractmethod
     def step(
-        self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
+        self, x: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
     ):
         """Step that depends on the outgoing machine
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The state
             outgoing_t (IO, optional): The target for the succeeding machine. Defaults to None.
             outgoing_x (IO, optional): The input for the succeeding machine. Defaults to None.
         """
@@ -605,14 +574,13 @@ class InDepStepX(StepX):
 
     @abstractmethod
     def step_x(
-        self, x: IO, t: IO, state: State, incoming_x: IO = None, incoming_t: IO = None
+        self, x: IO, t: IO, incoming_x: IO = None, incoming_t: IO = None
     ) -> IO:
         """_summary_
 
         Args:
             x (IO): The input
             t (IO): The target
-            state (State): The learning state
             incoming_x (IO, optional): The input to the incoming machine. Defaults to None.
             incoming_t (IO, optional): The target for the incoming machine. Defaults to None.
 
@@ -634,7 +602,7 @@ def acc_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
             
             # TODO: add in x_key
             val = x._.get(check_field) if x_key else self._.get(check_field)
@@ -643,7 +611,7 @@ def acc_dep(check_field: str, x_key: bool = True):
                 raise RuntimeError(
                     "Method depends on accumulate() but accumulate has not been called"
                 )
-            return func(self, x, t, state, *args, **kwargs)
+            return func(self, x, t, *args, **kwargs)
 
         return _
 
@@ -661,7 +629,7 @@ def step_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
 
             val = x._.get(check_field) if x_key else self._.get(check_field)
             # val = state.get((self, x if x_key else None, check_field))
@@ -669,7 +637,7 @@ def step_dep(check_field: str, x_key: bool = True):
                 raise RuntimeError(
                     "Method depends on step() but step has not been called"
                 )
-            return func(self, x, t, state, *args, **kwargs)
+            return func(self, x, t, *args, **kwargs)
 
         return _
 
@@ -686,7 +654,7 @@ def forward_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
 
             # val = state.get((self, x if x_key else None, check_field))
             val = x._.get(check_field) if x_key else self._.get(check_field)
@@ -694,7 +662,7 @@ def forward_dep(check_field: str, x_key: bool = True):
                 raise RuntimeError(
                     "Method depends on forward but forward has not been executed"
                 )
-            return func(self, x, t, state, *args, **kwargs)
+            return func(self, x, t, *args, **kwargs)
 
         return _
 
