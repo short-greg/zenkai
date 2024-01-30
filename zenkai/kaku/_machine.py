@@ -24,7 +24,7 @@ import torch.nn as nn
 
 # local
 from ._assess import Assessment, Criterion
-from ._state import IDable, State
+from ._state import IDable, State, Meta
 from ._io import IO, Idx
 from functools import wraps
 
@@ -77,6 +77,8 @@ class StepX(ABC):
         self._step_x_posthooks = []
         self._base_step_x = self.step_x
         self.step_x = self._step_x_hook_runner
+        if '_' not in self.__dict__:
+            self._ = Meta()
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State) -> IO:
@@ -129,6 +131,8 @@ class StepTheta(ABC):
         self.step = self._step_hook_runner
         self.accumulate = self._accumulate_hook_runner
         self._accumulate_hooks = []
+        if '_' not in self.__dict__:
+            self._ = Meta()
 
     def accumulate(self, x: IO, t: IO, state: State):
         pass
@@ -476,8 +480,8 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         assessment = self.assess_y(y, t, reduction_override=reduction_override)
         self.accumulate(x, t, state)
         self.step(x, t, state)
-        if clear_state:
-            state.clear(self)
+        # if clear_state:
+        #    state.clear(self)
         if get_y:
             return assessment, y
         return assessment
@@ -631,8 +635,10 @@ def acc_dep(check_field: str, x_key: bool = True):
     def inner(func):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
-
-            val = state.get((self, x if x_key else None, check_field))
+            
+            # TODO: add in x_key
+            val = x._.get(check_field) if x_key else self._.get(check_field)
+            # val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError(
                     "Method depends on accumulate() but accumulate has not been called"
@@ -657,7 +663,8 @@ def step_dep(check_field: str, x_key: bool = True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            val = state.get((self, x if x_key else None, check_field))
+            val = x._.get(check_field) if x_key else self._.get(check_field)
+            # val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError(
                     "Method depends on step() but step has not been called"
@@ -681,7 +688,8 @@ def forward_dep(check_field: str, x_key: bool = True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
-            val = state.get((self, x if x_key else None, check_field))
+            # val = state.get((self, x if x_key else None, check_field))
+            val = x._.get(check_field) if x_key else self._.get(check_field)
             if val is None:
                 raise RuntimeError(
                     "Method depends on forward but forward has not been executed"

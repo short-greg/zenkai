@@ -27,7 +27,8 @@ class SetYHook(ForwardHook):
 
     def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State) -> IO:
        
-       state[learner, x, self.y_name] = y
+       # state[learner, x, self.y_name] = y
+       x._[self.y_name] = y
        return y
 
 
@@ -90,7 +91,8 @@ class TargetPropLearner(LearningMachine):
         if self._forward_update:
             self.accumulate_forward(x, t, state)
         if self._reverse_update:
-            y = state[self, x, self.y_name]
+            # y = state[self, x, self.y_name]
+            y = state._[self.y_name]
             self.accumulate_reverse(x, y, t, state)
 
     def step(self, x: IO, t: IO, state: State):
@@ -104,7 +106,8 @@ class TargetPropLearner(LearningMachine):
         if self._forward_update:
             self.step_forward(x, t, state)
         if self._reverse_update:
-            y = state[self, x, self.y_name]
+            y = state._[self.y_name]
+            # y = state[self, x, self.y_name]
             self.step_reverse(x, y, t, state)
 
     @abstractmethod

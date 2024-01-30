@@ -88,7 +88,8 @@ class StepXLayerAssessor(LayerAssessor):
             t (IO): The Target
             state (State): The learning state
         """
-        state[self, "pre"] = self._learning_machine.assess(x, t).prepend("Pre")
+        self._.pre = self._learning_machine.assess(x, t).prepend("Pre")
+        # state[self, "pre"] = self._learning_machine.assess(x, t).prepend("Pre")
 
     def post(self, x: IO, t: IO, state: State, *args, **kwargs):
         """The assessment after the step
@@ -98,7 +99,8 @@ class StepXLayerAssessor(LayerAssessor):
             t (IO): The Target
             state (State): The learning state
         """
-        state[self, "post"] = self._learning_machine.assess(x, t).prepend("Post")
+        self._.post = self._learning_machine.assess(x, t).prepend("Post")
+        # state[self, "post"] = self._learning_machine.assess(x, t).prepend("Post")
 
     def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
         return state.get((self, "pre")), state.get((self, "post"))
@@ -132,9 +134,12 @@ class StepFullLayerAssessor(LayerAssessor):
             t (IO): The Target
             state (State): The learning state
         """
-        state[self, "pre"] = self._outgoing.assess(
+        self._.pre = self._outgoing.assess(
             self._learning_machine(x), t
         ).prepend("Pre")
+        # state[self, "pre"] = self._outgoing.assess(
+        #     self._learning_machine(x), t
+        # ).prepend("Pre")
 
     def post(self, x: IO, t: IO, state: State, *args, **kwargs):
         """The assessment after the step
@@ -144,9 +149,12 @@ class StepFullLayerAssessor(LayerAssessor):
             t (IO): The Target
             state (State): The learning state
         """
-        state[self, "post"] = self._outgoing.assess(
+        self._.post = self._outgoing.assess(
             self._learning_machine(x), t
         ).prepend("Post")
+        # state[self, "post"] = self._outgoing.assess(
+        #     self._learning_machine(x), t
+        # ).prepend("Post")
 
     def assessment(self, state: State) -> typing.Tuple[Assessment, Assessment]:
         """Retrieve the assessment
@@ -157,4 +165,5 @@ class StepFullLayerAssessor(LayerAssessor):
         Returns:
             typing.Tuple[Assessment, Assessment]: The pre and post assessments
         """
-        return state.get((self, "pre")), state.get((self, "post"))
+        return self._.get('pre'), self._.get('post')
+        # return state.get((self, "pre")), state.get((self, "post"))

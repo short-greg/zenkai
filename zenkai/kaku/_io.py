@@ -12,6 +12,7 @@ from torch import nn
 
 # local
 from .. import utils as base_utils
+from ._state import Meta
 
 
 class IO(object):
@@ -43,7 +44,7 @@ class IO(object):
             self._names = {name: i for i, name in enumerate(names)}
         else:
             self._names = None
-        self.meta = meta or {}
+        self._ = Meta(meta or {})
 
     def freshen(self, inplace: bool = False) -> "IO":
         """Set the values of the IO

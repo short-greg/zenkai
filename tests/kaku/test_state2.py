@@ -7,7 +7,6 @@ from torch import nn
 # local
 from zenkai.kaku import IO, Assessment
 from zenkai.kaku import _state as state2
-from zenkai.kaku._state import AssessmentLog
 
 
 class Base:
@@ -43,36 +42,6 @@ class TestIDable:
         state_dict = x.state_dict()
         x2.load_state_dict(state_dict)
         assert x2.id == x.id
-
-
-class TestAssessmentLog:
-    def test_assessment_log_update_adds(self):
-        log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        log.update("x", "name", "validation", assessment)
-        assert log.dict["x"][None]["name"]["validation"].value == assessment.value
-
-    def test_assessment_log_as_assessment_dict_gets_assessment(self):
-        log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        log.update("x", "name", "validation", assessment)
-        assert log.as_assessment_dict()["name_validation"].value == assessment.value
-
-    def test_update_overwrites_initial_assessment(self):
-        log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        assessment2 = Assessment(torch.rand(1)[0], True)
-        log.update("x", "name", "validation", assessment)
-        log.update("x", "name", "validation", assessment2)
-        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
-
-    def test_update_overwrites_initial_assessment_even_when_keys_are_different(self):
-        log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        assessment2 = Assessment(torch.rand(1)[0], True)
-        log.update("x", "name", "validation", assessment)
-        log.update("y", "name", "validation", assessment2)
-        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
 
 
 class TestState:
@@ -146,14 +115,14 @@ class TestState:
         state_ = state.spawn()
         assert (self, io, "x") not in state_
 
-    def test_assessment_log_logs_assessment(self):
+    # def test_assessment_log_logs_assessment(self):
 
-        obj = "x"
-        state = state2.State()
-        assessment = Assessment(torch.tensor(1.0))
-        state.log_assessment(obj, "x", "k", assessment)
-        result = state.logs.as_assessment_dict()
-        assert (result["x_k"].value == assessment.value).all()
+    #     obj = "x"
+    #     state = state2.State()
+    #     assessment = Assessment(torch.tensor(1.0))
+    #     state.log_assessment(obj, "x", "k", assessment)
+    #     result = state.logs.as_assessment_dict()
+    #     assert (result["x_k"].value == assessment.value).all()
 
     def test_get_or_set_gets_value_if_already_set(self):
 
@@ -193,14 +162,14 @@ class TestState:
         subs = set(sub for _, sub in state.sub_iter(obj))
         assert sub1 in subs and sub2 in subs
 
-    def test_log_assessment_updates_the_logs(self):
+    # def test_log_assessment_updates_the_logs(self):
 
-        obj = "x"
-        state = state2.State()
-        state.log_assessment(
-            obj, "name", "validation", Assessment(torch.tensor(2), True)
-        )
-        assert state.logs.as_assessment_dict()["name_validation"].value == 2
+    #     obj = "x"
+    #     state = state2.State()
+    #     state.log_assessment(
+    #         obj, "name", "validation", Assessment(torch.tensor(2), True)
+    #     )
+    #     assert state.logs.as_assessment_dict()["name_validation"].value == 2
 
     def test_spawn_keeps_values_in_keep(self):
 

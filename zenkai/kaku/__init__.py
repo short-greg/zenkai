@@ -10,6 +10,7 @@ from ._assess import (
     Criterion,
     XCriterion,
     PopulationAssessment,
+    AssessmentLog, 
     reduce_assessment,
 )
 
@@ -46,7 +47,7 @@ from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
     OptimFactory, optimf, Fit, PopulationOptim
 )
-from ._state import IDable, MyState, State, StateKeyError, AssessmentLog
+from ._state import IDable, MyState, State, StateKeyError, Meta
 from ._populate import (
     Population, PopulationIndexer, Individual, TensorDict
 )

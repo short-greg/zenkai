@@ -3,9 +3,10 @@ import typing
 from dataclasses import dataclass
 from collections import OrderedDict
 from dataclasses import field
+from typing import Any
 
 # local
-from ._assess import Assessment, AssessmentDict
+# from ._assess import Assessment, AssessmentDict
 from uuid import uuid4
 
 
@@ -53,92 +54,6 @@ class StateKeyError(KeyError):
     pass
 
 
-class AssessmentLog(object):
-    """Class to log assessments during training. Especially ones that may occur 
-    inside the network"""
-
-    def __init__(self):
-        """Instantiate the assessments"""
-
-        self._log: typing.Dict[
-            typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]
-        ] = {}
-
-    def update(
-        self,
-        id,
-        obj_name: str,
-        assessment_name: str,
-        assessment: Assessment,
-        sub_id=None,
-        replace: bool = False,
-        to_cpu: bool = True,
-    ):
-        """Update the AssessmentLog with a new Assessment. detach() will automatically 
-        be called to prevent storing grads
-
-        Args:
-            id : The unique identifier for the layer
-            name (str): The name of the layer/operation. Can also include time step info etc
-            assessment (Assessment): The assessment dict to update with
-            replace (bool, optional): Whether to replace the current assessment 
-                dict for the key/name. Defaults to False.
-            to_cpu (bool): Whether to convert to cpu or not
-        """
-        assessment = assessment.detach()
-        if to_cpu:
-            assessment = assessment.cpu()
-
-        if id not in self._log:
-            self._log[id] = {}
-        if sub_id not in self._log[id]:
-            self._log[id][sub_id] = {}
-
-        if isinstance(assessment, typing.Dict):
-            cur = assessment
-        else:
-            cur = {assessment_name: assessment}
-        if obj_name not in self._log[id][sub_id] or replace:
-            self._log[id][sub_id][obj_name] = cur
-        else:
-            self._log[id][sub_id][obj_name].update(cur)
-
-    @property
-    def dict(self) -> typing.Dict:
-        return self._log
-
-    def clear(self, id=None, sub_id=None):
-        """
-
-        Args:
-            id (typing.Any, optional): The id of the object. Defaults to None.
-            sub_id (typing.Any, optional): The sub id of the object. Defaults to None.
-        """
-        if id is None:
-            self._log.clear()
-            return
-
-        self._log[id][sub_id].clear()
-
-    def as_assessment_dict(self) -> AssessmentDict:
-        """
-
-        Returns:
-            typing.Dict[str, Assessment]: The assessment log converted to a dictionary of assessments
-        """
-
-        result = {}
-        for key, val in self._log.items():
-
-            for key2, val2 in val.items():
-                for key3, val3 in val2.items():
-                    cur = {
-                        f"{key3}_{name}": assessment
-                        for name, assessment in val3.items()
-                    }
-                    result.update(cur)
-        return AssessmentDict(**result)
-
 
 @dataclass
 class StateData:
@@ -166,6 +81,28 @@ class DataContainer(object):
         return DataContainer(infos, subs)
 
 
+class Meta(dict):
+
+    def __getattr__(self, key: str):
+
+        return self[key]
+
+    def __setattr__(self, key: str, value: Any) -> Any:
+        
+        print('Setting ', key)
+        self[key] = value
+        return value
+    
+    def get_or_set(self, key: str, value: Any) -> Any:
+
+        try: 
+            return self[key]
+        except KeyError:
+            self[key] = value
+            return value
+
+
+
 class State(object):
     """Class to store the learning state for one learning iteration"""
 
@@ -173,7 +110,7 @@ class State(object):
         """initializer"""
         super().__init__()
         self._data: typing.Dict[str, typing.Dict[str, DataContainer]] = {}
-        self._logs = AssessmentLog()
+        # self._logs = AssessmentLog()
 
     def id(self, obj) -> str:
         """Get the key for an object
@@ -440,29 +377,29 @@ class State(object):
             return False
         return key in self._data[id_][sub_id].info
 
-    def log_assessment(
-        self,
-        obj: IDable,
-        obj_name: str,
-        log_name: str,
-        assessment: Assessment,
-        sub_obj: IDable = None,
-    ):
-        """Log an assessment
+    # def log_assessment(
+    #     self,
+    #     obj: IDable,
+    #     obj_name: str,
+    #     log_name: str,
+    #     assessment: Assessment,
+    #     sub_obj: IDable = None,
+    # ):
+    #     """Log an assessment
 
-        Args:
-            obj: The object to log for
-            obj_name: The name of the object to log for (So it is clear who it is coming from)
-            assessment (Assessment): the values to log
-        """
+    #     Args:
+    #         obj: The object to log for
+    #         obj_name: The name of the object to log for (So it is clear who it is coming from)
+    #         assessment (Assessment): the values to log
+    #     """
 
-        obj_id = self.id(obj)
-        sub_obj_id = self.id(sub_obj)
-        self._logs.update(obj_id, obj_name, log_name, assessment, sub_obj_id)
+    #     obj_id = self.id(obj)
+    #     sub_obj_id = self.id(sub_obj)
+    #     self._logs.update(obj_id, obj_name, log_name, assessment, sub_obj_id)
 
-    @property
-    def logs(self) -> AssessmentLog:
-        return self._logs
+    # @property
+    # def logs(self) -> AssessmentLog:
+    #     return self._logs
 
     def spawn(self, spawn_logs: bool = False) -> "State":
         """Spawn the state to be used for another time step or another instance of the machine

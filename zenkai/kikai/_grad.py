@@ -24,7 +24,7 @@ from ..kaku import (
     XCriterion,
 )
 from ..mod import Lambda
-from ..utils import get_model_grads, set_model_grads
+from ..utils import get_model_grads, set_model_grads, get_model_parameters
 from ..mod import Null
 from ._null import NullStepTheta
 
@@ -61,19 +61,25 @@ class GradUpdater(object):
         """
         if not self.use_state:
             return
-        my_state = state.mine(self, x)
-        grads = state.get((self, x, "grad"))
+        # my_state = state.mine(self, x)
+        # grads = state.get((self, x, "grad"))
+
+        grads = x._.get('grad')
 
         if grads is None:
             if self.to_update_theta:
-                my_state.grad = get_model_grads(self.net)
+                x._.grad = get_model_grads(self.net)
+                # my_state.grad = get_model_grads(self.net)
             if self.to_update_x:
-                my_state.x_grad = x.f.grad
+                x._.grad = x.f.grad
+                # my_state.x_grad = x.f.grad
         else:
             if self.to_update_theta:
-                my_state.grad = get_model_grads(self.net) + grads
+                x._.x_grad = get_model_grads(self.net) + grads
+                # my_state.grad = get_model_grads(self.net) + grads
             if self.to_update_x:
-                my_state.x_grad = my_state["x_grad"] + x.f.grad
+                x._.x_grad = x._.x_grad + x.f.grad
+                # my_state.x_grad = my_state["x_grad"] + x.f.grad
 
     def update(self, x: IO, state: State, net_override: nn.Module = None) -> bool:
         """Update the network
@@ -90,7 +96,8 @@ class GradUpdater(object):
         if not self.use_state:
             self.optim.step()
             return True
-        grad = state.get((self, x, "grad"))
+        # grad = state.get((self, x, "grad"))
+        grad = x._.get('grad')
 
         if grad is not None:
             net = net_override or self.net
@@ -106,7 +113,8 @@ class GradUpdater(object):
         if not self.use_state:
             return IO.grad_update(x.f, detach=True), True
 
-        x_grad = state.get((self, x, "x_grad"))
+        # x_grad = state.get((self, x, "x_grad"))
+        x_grad = x._.get('x_grad')
         if x_grad is not None:
 
             return IO(x.f - x_grad, detach=True), True
@@ -142,8 +150,10 @@ class GradStepTheta(StepTheta):
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO, state: State):
-        y = state.get((self._learner, self.y_name))
-        stepped = state.get((self, "stepped"), False)
+        # y = state.get((self._learner, self.y_name))
+        y = x._.get(self.y_name)
+        stepped = x._.get('stepped', False)
+        # stepped = state.get((self, "stepped"), False)
 
         if stepped or y is None:
             x.freshen(False)
@@ -221,7 +231,10 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         x_idx = idx_io(x, batch_idx, False)
         t_idx = idx_io(t, batch_idx, False)
-        y_idx = self._learner(x_idx, state.sub((self, "step")), release=False)
+        # TODO: Figure out how to handle this
+        
+        y_idx = self._learner(x_idx, state, release=False)
+        # y_idx = self._learner(x_idx, state.sub((self, "step")), release=False)
 
         assessment = grad_assess(
             x_idx, y_idx, t_idx, self._learner, self.criterion, self.reduction
@@ -229,9 +242,10 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         assessment.backward()
         self._grad_updater.accumulate(x, state)
-        state[self, "accumulated"] = True
 
-    @acc_dep("accumulated", False)
+        # state[self, "accumulated"] = True
+
+    # @acc_dep("accumulated", False)
     def step(
         self, x: IO, t: typing.Union[IO, None], state: State, batch_idx: Idx = None
     ) -> bool:
@@ -336,27 +350,27 @@ class GradLoopStepX(BatchIdxStepX):
         Returns:
             IO: The updated input. The tensor x is updated in this case
         """
-        x_state = state.mine(x)
+        # x_state = state.mine(x)
 
-        if "optim" not in x_state:
+        if "optim" not in x._:
             x_prime = x.clone()
             x_prime.freshen()
-            x_state.x_prime = x_prime
-            x_state.optim = self.optim_factory([*x_prime])
+            x._.x_prime = x_prime
+            x._.optim = self.optim_factory([*x_prime])
         else:
-            x_prime = x_state.x_prime
+            x_prime = x._.x_prime
 
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
         x = idx_io(x_prime, batch_idx)
         t = idx_io(t, batch_idx)
-        x_state.optim.zero_grad()
+        x._.optim.zero_grad()
 
         y = self._learner(x, release=False)
         assessment = grad_assess(x, y, t, self._learner, self.criterion, self.reduction)
         assessment.backward()
-        x_state.optim.step()
+        x._.optim.step()
 
         return x_prime
 
@@ -489,19 +503,20 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
         return self._criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
-        state[self, "accumulated"] = True
+        # state[self, "accumulated"] = True
         return self._theta_step.accumulate(x, t, state, batch_idx)
 
     def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         return self._theta_step.step(x, t, state, batch_idx)
 
-    @acc_dep("accumulated", False)
+    # @acc_dep("accumulated", False)
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return self._x_step.step_x(x, t, state, batch_idx)
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen(False)
-        y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
+        y = x._[self.Y_NAME] = IO(self._net(*x), detach=False)
+        # y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
 
 

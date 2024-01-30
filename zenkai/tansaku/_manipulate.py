@@ -4,7 +4,7 @@ import torch
 
 # local
 from ._keep import Individual, Population, TensorDict
-from ..kaku import State
+from ..kaku import State, Meta
 from ..kaku import (
     Individual,
     Population,
@@ -114,6 +114,9 @@ class ApplyMomentum(object):
         self.diff = None
         self.cur = None
         self.dx = None
+        self._ = Meta()
+        self._['diff'] = {}
+        self._['cur'] = {}
 
     def apply_momentum(
         self, k: str, individual: torch.Tensor,  state: State
@@ -128,20 +131,29 @@ class ApplyMomentum(object):
         Returns:
             torch.Tensor: The decorated reducer
         """
-        my_state = state.mine(self, k)
-        diff = my_state.get("diff")
-        cur = my_state.get("cur")
+        # my_state = state.mine(self, k)
+
+        diff = self._['diff'][k]
+        cur = self._['cur'][k]
+        # diff = my_state.get("diff")
+        # cur = my_state.get("cur")
 
         if diff is None and cur is None:
-            my_state.cur = individual
-        elif self.diff is None:
-            my_state.diff = individual - my_state.cur
-            my_state.cur = individual
-        else:
-            my_state.diff = (individual - my_state.cur) + self._momentum * self.diff
-            my_state.cur = my_state.diff + individual
+            self._.cur[k] = individual
+            # my_state.cur = individual
+        elif self.diff.get(k) is None:
+            self._.diff[k] = individual - self._.cur
+            self._.cur[k] = individual
 
-        return my_state.cur
+            # my_state.diff = individual - my_state.cur
+            # my_state.cur = individual
+        else:
+            self._.diff[k] = (individual - self._.cur[k]) + self._momentum * self._.diff[k]
+            self._.cur[k] = self._.diff[k] + individual
+            # my_state.diff = (individual - my_state.cur) + self._momentum * self.diff
+            # my_state.cur = my_state.diff + individual
+
+        return self._.cur[k]
 
     def __call__(self, individual: Individual, state: State) -> Individual:
         """Reduces the population and decorates it

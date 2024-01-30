@@ -45,9 +45,9 @@ class GraphNode(nn.Module):
         if target is False:
             target = self.target
         
-        x_index = x.meta.get('x_index', x)
+        x_index = x._.get('x_index', x)
         y = self.learner(x, state, release, *args, **kwargs)
-        y.meta['x_index'] = x_index
+        y._['x_index'] = x_index
 
         if x_index is not None:
             self._graph['graph'].add_step(x_index, SStep(self.learner, x, y, self.step_priority, target), state)
@@ -120,8 +120,10 @@ class GraphLearnerBase(LearningMachine):
             sstep (SStep): The information on the step
             state (State): The learning state
         """
-        steps = state.get_or_set((self, x_index, 'steps'), [])
-        step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
+        steps = x_index._.get_or_set('steps', [])
+        step_dict = x_index._.get_or_set('step_dict', [])
+        # steps = state.get_or_set((self, x_index, 'steps'), [])
+        # step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         
         step_dict[sstep.machine] = sstep
         steps.append(sstep)
@@ -140,7 +142,9 @@ class GraphLearnerBase(LearningMachine):
         Returns:
             typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]: _description_
         """
-        steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
+        steps = x_index._.steps
+        step_dict = x_index._.step_dict
+        # steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
 
         if validate and steps is None:
             raise RuntimeError(

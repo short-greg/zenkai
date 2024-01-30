@@ -78,6 +78,7 @@ class ObjectivePopAssessor(Assessor):
 
 
 class CriterionPopAssessor(Assessor):
+
     def __init__(
         self,
         criterion: Criterion,

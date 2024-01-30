@@ -44,10 +44,10 @@ class SimpleLearner(core.LearningMachine):
         return IO(x.f - x.f.grad)
 
     def step(self, x: IO, t: IO, state: core.State):
-        if (self, x, "y") not in state:
+        if 'y' not in x._:
             y = self(x, state, release=False)
         else:
-            y = state[self, x, "y"]
+            y = x._.y
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
@@ -55,7 +55,7 @@ class SimpleLearner(core.LearningMachine):
 
     def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, "y"] = IO(self.linear(x.f))
+        y = x._.y = IO(self.linear(x.f))
         return y.out(release)
 
 
@@ -70,10 +70,10 @@ class SimpleAccLearner(core.LearningMachine):
         return self.loss.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, "y") not in state:
+        if 'y' not in x._:
             y = self(x, state, release=False)
         else:
-            y = state[(self, x), "y"]
+            y = x._y
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
@@ -90,15 +90,18 @@ class SimpleAccLearner(core.LearningMachine):
 
     def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, "y"] = IO(self.linear(x.f))
+        y = x._.y = IO(self.linear(x.f))
         return y.out(release)
 
 
 class DummyHook(core.LearnerPostHook):
+
     def __call__(
         self, x: IO, t: IO, state: State, y: IO, assessment: Assessment
     ) -> typing.Tuple[IO, IO]:
-        state[self, "hi"] = "hi"
+        
+        x._.hi = 'hi'
+        # state[self, "hi"] = "hi"
 
 
 class TestLearningMachineWithSimpleLearner:
@@ -158,7 +161,8 @@ class TestLearningMachineWithSimpleLearner:
         learner.learner_hook(hook, True, False)
         state = State()
         learner.learn(x, t, state)
-        assert state[hook, "hi"] == "hi"
+        assert x._.hi == "hi"
+        # assert state[hook, "hi"] == "hi"
 
     def test_learn_hook_not_called_after_testing_and_state_not_set_to_hi(self):
         learner = SimpleLearner(2, 3)
@@ -178,10 +182,12 @@ class TestLearningMachineWithSimpleLearner:
         learner.learner_hook(hook, True, True)
         state = State()
         learner.test(x, t, state)
-        assert state[hook, "hi"] == "hi"
+        assert x._.hi == "hi"
+        # assert state[hook, "hi"] == "hi"
 
 
 class LayeredLearner(core.LearningMachine):
+
     def __init__(self, m1: SimpleLearner, m2: SimpleLearner):
         super().__init__()
         self.m1 = m1
@@ -191,18 +197,23 @@ class LayeredLearner(core.LearningMachine):
         return self.m2.assess_y(y, t, reduction_override=reduction_override)
 
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        t = state[self, "x_step_t"]
+        # t = state[self, "x_step_t"]
+        t = self._.x_step_t
         return self.m1.step_x(x, t, state)
 
     def step(self, x: IO, t: IO, state: core.State):
-        self.m2.step(state[self, "y1"], t, state)
-        t1 = self.m2.step_x(state[self, "y1"], t, state)
+        self.m2.step(self._.y1, t, state)
+        t1 = self.m2.step_x(self._.y1, t, state)
+        # t1 = self.m2.step_x(state[self, "y1"], t, state)
         self.m1.step(x, t1, state)
-        state[self, "x_step_t"] = t1
+        self._.x_step_t = t1
+        # state[self, "x_step_t"] = t1
 
     def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
-        y1 = state[self, "y1"] = self.m1(x, state)
-        y2 = state[self, "y2"] = self.m2(y1, state)
+        y1 = self._.y1 = self.m1(x, state)
+        y2 = self._.y2 = self.m2(y1, state)
+        # y1 = state[self, "y1"] = self.m1(x, state)
+        # y2 = state[self, "y2"] = self.m2(y1, state)
         return y2.out(release)
 
 
@@ -271,6 +282,7 @@ class TestLearningMachineWithComplexLearner:
 
 
 class DependentLearner(core.LearningMachine):
+    
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
@@ -282,7 +294,8 @@ class DependentLearner(core.LearningMachine):
 
     @core.step_dep("stepped")
     def step_x(self, x: IO, t: IO, state: core.State) -> IO:
-        if (self, x, "y") not in state:
+        # if (self, x, "y") not in state:
+        if 'y' not in x._:
             assessment = self.assess(x, t.detach(), state=state, release=False)
             assessment.backward()
 
@@ -290,20 +303,26 @@ class DependentLearner(core.LearningMachine):
 
     @core.forward_dep("y")
     def step(self, x: IO, t: IO, state: core.State):
-        y = state[self, x, "y"]
+        y = x._.y
+        # y = state[self, x, "y"]
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
         self.optim.step()
-        state[self, x, "stepped"] = True
+        x._.stepped = True
+        # state[self, x, "stepped"] = True
 
     def forward(self, x: IO, state: core.State, release: bool = True) -> torch.Tensor:
         x.freshen(False)
-        y = state[self, x, "y"] = IO(self.linear(x.f))
+        y = x._.y = IO(self.linear(x.f))
+        print('Calling forward')
+        print(x._)
+        # y = state[self, x, "y"] = IO(self.linear(x.f))
         return y.out(release)
 
 
 class TestDependencies:
+
     def test_step_executes_forward(self):
 
         x = IO(torch.rand(2, 2))
@@ -312,7 +331,8 @@ class TestDependencies:
         dependent = DependentLearner(2, 3)
         dependent(x, state=state)
         dependent.step(x, t, state)
-        assert state[dependent, x, "y"] is not None
+        assert x._.y is not None
+        # assert state[dependent, x, "y"] is not None
 
     def test_step_does_not_execute_forward_if_already_called(self):
 
@@ -321,9 +341,9 @@ class TestDependencies:
         state = core.State()
         dependent = DependentLearner(2, 3)
         dependent(x, state)
-        prev = state[dependent, x, "y"]
+        prev = x._.y
         dependent.step(x, t, state)
-        assert state[dependent, x, "y"] is prev
+        assert x._.y is prev
 
     def test_step_x_if_not_stepped(self):
 

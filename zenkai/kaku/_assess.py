@@ -698,3 +698,92 @@ class PopulationAssessment(Assessment):
         return PopulationAssessment(
             pop_assessment, assessment.maximize
         )
+
+
+
+class AssessmentLog(object):
+    """Class to log assessments during training. Especially ones that may occur 
+    inside the network"""
+
+    def __init__(self):
+        """Instantiate the assessments"""
+
+        self._log: typing.Dict[
+            typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]
+        ] = {}
+
+    def update(
+        self,
+        id,
+        obj_name: str,
+        assessment_name: str,
+        assessment: Assessment,
+        sub_id=None,
+        replace: bool = False,
+        to_cpu: bool = True,
+    ):
+        """Update the AssessmentLog with a new Assessment. detach() will automatically 
+        be called to prevent storing grads
+
+        Args:
+            id : The unique identifier for the layer
+            name (str): The name of the layer/operation. Can also include time step info etc
+            assessment (Assessment): The assessment dict to update with
+            replace (bool, optional): Whether to replace the current assessment 
+                dict for the key/name. Defaults to False.
+            to_cpu (bool): Whether to convert to cpu or not
+        """
+        assessment = assessment.detach()
+        if to_cpu:
+            assessment = assessment.cpu()
+
+        if id not in self._log:
+            self._log[id] = {}
+        if sub_id not in self._log[id]:
+            self._log[id][sub_id] = {}
+
+        if isinstance(assessment, typing.Dict):
+            cur = assessment
+        else:
+            cur = {assessment_name: assessment}
+        if obj_name not in self._log[id][sub_id] or replace:
+            self._log[id][sub_id][obj_name] = cur
+        else:
+            self._log[id][sub_id][obj_name].update(cur)
+
+    @property
+    def dict(self) -> typing.Dict:
+        return self._log
+
+    def clear(self, id=None, sub_id=None):
+        """
+
+        Args:
+            id (typing.Any, optional): The id of the object. Defaults to None.
+            sub_id (typing.Any, optional): The sub id of the object. Defaults to None.
+        """
+        if id is None:
+            self._log.clear()
+            return
+
+        self._log[id][sub_id].clear()
+
+    def as_assessment_dict(self) -> AssessmentDict:
+        """
+
+        Returns:
+            typing.Dict[str, Assessment]: The assessment log converted to a dictionary of assessments
+        """
+
+        result = {}
+        for key, val in self._log.items():
+
+            for key2, val2 in val.items():
+                for key3, val3 in val2.items():
+                    cur = {
+                        f"{key3}_{name}": assessment
+                        for name, assessment in val3.items()
+                    }
+                    result.update(cur)
+        return AssessmentDict(**result)
+

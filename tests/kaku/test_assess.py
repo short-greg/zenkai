@@ -4,9 +4,11 @@ import torch.nn as nn
 
 
 from zenkai.kaku import _assess as _evaluation, ThLoss, IO, Reduction
+from zenkai.kaku._assess import AssessmentLog, Assessment
 
 
 class TestReduction:
+    
     def test_is_torch_checks_if_it_is_torch(self):
         assert Reduction.is_torch("mean")
 
@@ -253,3 +255,34 @@ class TestLookup:
 
         with pytest.raises(KeyError):
             _evaluation.lookup_loss("XLoss")
+
+
+class TestAssessmentLog:
+    def test_assessment_log_update_adds(self):
+        log = AssessmentLog()
+        assessment = Assessment(torch.rand(1)[0], True)
+        log.update("x", "name", "validation", assessment)
+        assert log.dict["x"][None]["name"]["validation"].value == assessment.value
+
+    def test_assessment_log_as_assessment_dict_gets_assessment(self):
+        log = AssessmentLog()
+        assessment = Assessment(torch.rand(1)[0], True)
+        log.update("x", "name", "validation", assessment)
+        assert log.as_assessment_dict()["name_validation"].value == assessment.value
+
+    def test_update_overwrites_initial_assessment(self):
+        log = AssessmentLog()
+        assessment = Assessment(torch.rand(1)[0], True)
+        assessment2 = Assessment(torch.rand(1)[0], True)
+        log.update("x", "name", "validation", assessment)
+        log.update("x", "name", "validation", assessment2)
+        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
+
+    def test_update_overwrites_initial_assessment_even_when_keys_are_different(self):
+        log = AssessmentLog()
+        assessment = Assessment(torch.rand(1)[0], True)
+        assessment2 = Assessment(torch.rand(1)[0], True)
+        log.update("x", "name", "validation", assessment)
+        log.update("y", "name", "validation", assessment2)
+        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
+

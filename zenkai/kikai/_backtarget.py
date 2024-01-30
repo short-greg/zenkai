@@ -30,7 +30,7 @@ class BackTarget(LearningMachine):
 
     def forward(self, x: IO, state: State, release: bool = True) -> IO:
         x.freshen()
-        y = state[self, x, "y"] = self.module(*x.u)
+        y = x._.y = self.module(*x.u)
         return IO(y).out(release=release)
 
     def step(self, x: IO, t: IO, state: State) -> IO:
@@ -38,7 +38,7 @@ class BackTarget(LearningMachine):
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
 
-        y = state[self, x, "y"]
+        y = x._.y #  state[self, x, "y"]
         y.grad = None
         y.backward(*t.u)
         xs = []
