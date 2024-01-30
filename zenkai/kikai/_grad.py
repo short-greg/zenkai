@@ -59,25 +59,19 @@ class GradUpdater(object):
         """
         if not self.use_state:
             return
-        # my_state = state.mine(self, x)
-        # grads = state.get((self, x, "grad"))
 
-        grads = x._.get('grad')
+        grads = x._(self).get('grad')
 
         if grads is None:
             if self.to_update_theta:
-                x._.grad = get_model_grads(self.net)
-                # my_state.grad = get_model_grads(self.net)
+                x._(self).grad = get_model_grads(self.net)
             if self.to_update_x:
-                x._.x_grad = x.f.grad
-                # my_state.x_grad = x.f.grad
+                x._(self).x_grad = x.f.grad
         else:
             if self.to_update_theta:
-                x._.grad = get_model_grads(self.net) + grads
-                # my_state.grad = get_model_grads(self.net) + grads
+                x._(self).grad = get_model_grads(self.net) + grads
             if self.to_update_x:
-                x._.x_grad = x._.x_grad + x.f.grad
-                # my_state.x_grad = my_state["x_grad"] + x.f.grad
+                x._(self).x_grad = x._(self).x_grad + x.f.grad
 
     def update(self, x: IO, net_override: nn.Module = None) -> bool:
         """Update the network
@@ -94,7 +88,7 @@ class GradUpdater(object):
             self.optim.step()
             return True
         # grad = state.get((self, x, "grad"))
-        grad = x._.get('grad')
+        grad = x._(self).get('grad')
 
         if grad is not None:
             net = net_override or self.net
@@ -109,10 +103,9 @@ class GradUpdater(object):
     def update_x(self, x: IO) -> IO:
 
         if not self.use_state:
-            return IO.grad_update(x.f, detach=True), True
+            return x.grad_update(detach=True), True
 
-        # x_grad = state.get((self, x, "x_grad"))
-        x_grad = x._.get('x_grad')
+        x_grad = x._(self).get('x_grad')
         if x_grad is not None:
 
             return IO(x.f - x_grad, detach=True), True
@@ -127,6 +120,8 @@ class GradStepTheta(StepTheta):
         self,
         learner: LearningMachine,
         optim_factory: OptimFactory,
+        # use to limit parameters that are trained
+        mod: nn.Module=None,
         reduction: str = "mean",
         y_name: str = "y",
         criterion: typing.Union[Criterion, XCriterion] = None,
@@ -141,16 +136,17 @@ class GradStepTheta(StepTheta):
         """
         super().__init__()
         self._learner = learner
-        self._optim = optim_factory(self._learner.parameters())
+        mod = mod or learner
+        self._optim = optim_factory(mod.parameters())
         self.reduction = reduction
         self.y_name = y_name
-        self._grad_updater = GradUpdater(self._learner, self._optim, to_update_x=False, use_state=store_grad)
+        self._grad_updater = GradUpdater(mod, self._optim, to_update_x=False, use_state=store_grad)
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO):
         # y = state.get((self._learner, self.y_name))
-        y = x._.get(self.y_name)
-        stepped = x._.get('stepped', False)
+        y = x._(self).get(self.y_name)
+        stepped = x._(self).get('stepped', False)
         # stepped = state.get((self, "stepped"), False)
 
         if stepped or y is None:
@@ -194,6 +190,8 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         self,
         learner: LearningMachine,
         optim_factory: OptimFactory,
+        # define "sub" module of learning machine for updating parameters
+        mod: nn.Module=None,
         reduction: str = "mean",
         loss_name: str = "loss",
         criterion: typing.Union[Criterion, XCriterion] = None,
@@ -208,10 +206,11 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         """
         super().__init__()
         self._learner = learner
-        self._optim = optim_factory(learner.parameters())
+        mod = mod or self._learner
+        self._optim = optim_factory(mod.parameters())
         self.reduction = reduction
         self.loss_name = loss_name
-        self._grad_updater = GradUpdater(self._learner, self._optim, to_update_x=False)
+        self._grad_updater = GradUpdater(mod, self._optim, to_update_x=False)
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO, batch_idx: Idx = None):
@@ -348,25 +347,25 @@ class GradLoopStepX(BatchIdxStepX):
         """
         # x_state = state.mine(x)
 
-        if "optim" not in x._:
+        if "optim" not in x._(self):
             x_prime = x.clone()
             x_prime.freshen()
-            x._.x_prime = x_prime
-            x._.optim = self.optim_factory([*x_prime])
+            x._(self).x_prime = x_prime
+            x._(self).optim = self.optim_factory([*x_prime])
         else:
-            x_prime = x._.x_prime
+            x_prime = x._(self).x_prime
 
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
         x_idx = idx_io(x_prime, batch_idx)
         t_idx = idx_io(t, batch_idx)
-        x._.optim.zero_grad()
+        x._(self).optim.zero_grad()
 
         y_idx = self._learner(x_idx, release=False)
         assessment = grad_assess(x_idx, y_idx, t_idx, self._learner, self.criterion, self.reduction)
         assessment.backward()
-        x._.optim.step()
+        x._(self).optim.step()
 
         return x_prime
 
@@ -412,7 +411,7 @@ class GradLearner(LearningMachine):
         self._criterion = criterion
         if optim_factory is not None:
             self._theta_step = GradStepTheta(
-                self, optim_factory, reduction, criterion=learn_criterion
+                self, optim_factory, self._net, reduction, criterion=learn_criterion
             )
         else:
             self._theta_step = NullStepTheta()
@@ -420,10 +419,11 @@ class GradLearner(LearningMachine):
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(
-                self, optim_factory, reduction, criterion=learn_criterion
+                self, module, optim_factory, reduction, criterion=learn_criterion
             )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+
         assessment = self._criterion.assess(y, t, reduction_override)
         return assessment
 
@@ -489,7 +489,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
             self._net = nn.Sequential(*module)
         self._criterion = criterion
         self._theta_step = GradLoopStepTheta(
-            self, theta_optim_factory, theta_reduction, criterion=learn_criterion
+            self, theta_optim_factory, self._net, theta_reduction, criterion=learn_criterion
         )
         self._x_step = GradLoopStepX(
             self, x_optim_factory, x_reduction, criterion=learn_criterion
@@ -511,7 +511,7 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
 
     def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen(False)
-        y = x._[self.Y_NAME] = IO(self._net(*x), detach=False)
+        y = x._(self)[self.Y_NAME] = IO(self._net(*x), detach=False)
         # y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
 

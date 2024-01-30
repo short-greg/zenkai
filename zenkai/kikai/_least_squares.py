@@ -303,7 +303,7 @@ class GradLeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
-        self._step_theta = GradStepTheta(self, optim_factory, "mean")
+        self._step_theta = GradStepTheta(self, optim_factory, reduction="mean")
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         assessment = self._loss.assess(y, t, reduction_override=reduction_override)

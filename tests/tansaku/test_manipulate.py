@@ -144,6 +144,7 @@ class TestSlopeInfluencer:
 
 
 class TestSlopeCalculator:
+    
     def test_slope_selector_returns_slope_with_one_dimensions(
         self, population2_with_assessment
     ):

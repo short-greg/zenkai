@@ -448,7 +448,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             clear_state (bool, optional): Whether to clear teh state for the machine. Defaults to False.
 
         Returns:
-            Assessment: _description_
+            Assessment: 
         """
         # if not self.training:
         self.train()
@@ -605,7 +605,7 @@ def acc_dep(check_field: str, x_key: bool = True):
         def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
             
             # TODO: add in x_key
-            val = x._.get(check_field) if x_key else self._.get(check_field)
+            val = x._(self).get(check_field) if x_key else self._.get(check_field)
             # val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError(
@@ -631,7 +631,7 @@ def step_dep(check_field: str, x_key: bool = True):
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
 
-            val = x._.get(check_field) if x_key else self._.get(check_field)
+            val = x._(self).get(check_field) if x_key else self._.get(check_field)
             # val = state.get((self, x if x_key else None, check_field))
             if val is None:
                 raise RuntimeError(
@@ -653,11 +653,12 @@ def forward_dep(check_field: str, x_key: bool = True):
     """
 
     def inner(func):
+        
         @wraps(func)
         def _(self: LearningMachine, x: IO, t: IO, *args, **kwargs):
 
             # val = state.get((self, x if x_key else None, check_field))
-            val = x._.get(check_field) if x_key else self._.get(check_field)
+            val = x._(self).get(check_field) if x_key else self._.get(check_field)
             if val is None:
                 raise RuntimeError(
                     "Method depends on forward but forward has not been executed"

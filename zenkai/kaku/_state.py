@@ -89,7 +89,6 @@ class Meta(dict):
 
     def __setattr__(self, key: str, value: Any) -> Any:
         
-        print('Setting ', key)
         self[key] = value
         return value
     
@@ -100,7 +99,15 @@ class Meta(dict):
         except KeyError:
             self[key] = value
             return value
+        
+    def __call__(self, sub: str, to_add: bool=True) -> Any:
 
+        if not to_add and sub not in self:
+            raise KeyError(f'There is no sub meta called {sub}')
+        
+        if sub not in self and to_add:
+            self[sub] = Meta()
+        return self[sub]
 
 
 class State(object):

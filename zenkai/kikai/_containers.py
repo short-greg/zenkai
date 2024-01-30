@@ -45,7 +45,7 @@ class GraphNode(nn.Module):
         if target is False:
             target = self.target
         
-        x_index = x._.get('x_index', x)
+        x_index = x._(self).get('x_index', x)
         y = self.learner(x, release, *args, **kwargs)
         y._['x_index'] = x_index
 
@@ -119,8 +119,8 @@ class GraphLearnerBase(LearningMachine):
             x_index (IO): The index to use in retrieving the step
             sstep (SStep): The information on the step
         """
-        steps = x_index._.get_or_set('steps', [])
-        step_dict = x_index._.get_or_set('step_dict', OrderedDict())
+        steps = x_index._(self).get_or_set('steps', [])
+        step_dict = x_index._(self).get_or_set('step_dict', OrderedDict())
         # steps = state.get_or_set((self, x_index, 'steps'), [])
         # step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         
@@ -140,8 +140,8 @@ class GraphLearnerBase(LearningMachine):
         Returns:
             typing.Tuple[typing.List[SStep], typing.Dict[str, SStep]]: _description_
         """
-        steps = x_index._.steps
-        step_dict = x_index._.step_dict
+        steps = x_index._(self).steps
+        step_dict = x_index._(self).step_dict
         # steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
 
         if validate and steps is None:
