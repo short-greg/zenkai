@@ -78,6 +78,7 @@ class TestFALearner:
 
 
 class TestDFALearner:
+
     def test_dfa__learner_updates_the_parameters(self):
 
         net = nn.Linear(3, 4)

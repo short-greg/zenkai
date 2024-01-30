@@ -562,6 +562,7 @@ class XCriterion(nn.Module):
     ) -> torch.Tensor:
         pass
 
+# TODO: Make it easy to create an "XCriterion"
 
 LOSS_MAP = {}
 

@@ -121,7 +121,7 @@ class GraphLearnerBase(LearningMachine):
             state (State): The learning state
         """
         steps = x_index._.get_or_set('steps', [])
-        step_dict = x_index._.get_or_set('step_dict', [])
+        step_dict = x_index._.get_or_set('step_dict', OrderedDict())
         # steps = state.get_or_set((self, x_index, 'steps'), [])
         # step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         

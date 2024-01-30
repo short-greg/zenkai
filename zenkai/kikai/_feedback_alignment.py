@@ -106,13 +106,11 @@ class FALearner(LearningMachine):
         if "y" not in x._:
             self(x, state=state)
 
-        # y = state[self, x, "y"]
         y = x._.y
         y2 = self.netB(x.f)
 
         self.criterion(IO(y), t).backward()
         y_det = x._.y_det
-        # y_det = state[self, x, "y_det"]
         y2.backward(y_det.grad)
 
         self._grad_updater.accumulate(x, state)
@@ -211,11 +209,9 @@ class DFALearner(LearningMachine):
         y = self.net(x.f)
         y = y.detach()
         x._.y_det = y
-        # state[self, x, "y_det"] = y
         y.requires_grad = True
         y.retain_grad()
         y = x._.y = self.activation(y)
-        # y = state[self, x, "y"] = self.activation(y)
         return IO(y).out(release)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:

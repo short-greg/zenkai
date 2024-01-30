@@ -133,16 +133,16 @@ class ApplyMomentum(object):
         """
         # my_state = state.mine(self, k)
 
-        diff = self._['diff'][k]
-        cur = self._['cur'][k]
+        diff = self._['diff'].get(k)
+        cur = self._['cur'].get(k)
         # diff = my_state.get("diff")
         # cur = my_state.get("cur")
 
         if diff is None and cur is None:
             self._.cur[k] = individual
             # my_state.cur = individual
-        elif self.diff.get(k) is None:
-            self._.diff[k] = individual - self._.cur
+        elif self._.diff.get(k) is None:
+            self._.diff[k] = individual - self._.cur[k]
             self._.cur[k] = individual
 
             # my_state.diff = individual - my_state.cur

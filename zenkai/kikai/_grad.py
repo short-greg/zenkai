@@ -71,11 +71,11 @@ class GradUpdater(object):
                 x._.grad = get_model_grads(self.net)
                 # my_state.grad = get_model_grads(self.net)
             if self.to_update_x:
-                x._.grad = x.f.grad
+                x._.x_grad = x.f.grad
                 # my_state.x_grad = x.f.grad
         else:
             if self.to_update_theta:
-                x._.x_grad = get_model_grads(self.net) + grads
+                x._.grad = get_model_grads(self.net) + grads
                 # my_state.grad = get_model_grads(self.net) + grads
             if self.to_update_x:
                 x._.x_grad = x._.x_grad + x.f.grad
@@ -103,6 +103,7 @@ class GradUpdater(object):
             net = net_override or self.net
 
             self.optim.zero_grad()
+
             set_model_grads(net, grad)
             self.optim.step()
             return True
@@ -363,12 +364,12 @@ class GradLoopStepX(BatchIdxStepX):
         if batch_idx is not None:
             batch_idx = batch_idx.detach()
 
-        x = idx_io(x_prime, batch_idx)
-        t = idx_io(t, batch_idx)
+        x_idx = idx_io(x_prime, batch_idx)
+        t_idx = idx_io(t, batch_idx)
         x._.optim.zero_grad()
 
-        y = self._learner(x, release=False)
-        assessment = grad_assess(x, y, t, self._learner, self.criterion, self.reduction)
+        y_idx = self._learner(x_idx, release=False)
+        assessment = grad_assess(x_idx, y_idx, t_idx, self._learner, self.criterion, self.reduction)
         assessment.backward()
         x._.optim.step()
 
