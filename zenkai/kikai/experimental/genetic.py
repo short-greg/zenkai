@@ -21,6 +21,7 @@ from ... import tansaku
 
 
 class GeneticNNLearner(LearningMachine):
+    
     def __init__(
         self,
         in_features: int,
@@ -60,22 +61,20 @@ class GeneticNNLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, self.reduction or reduction_override)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
 
         self.objective.x = x
         self.objective.t = t
 
-        my_state = state.mine(self)
-
-        stepped = my_state.get_or_set("stepped", False)
+        stepped = x._(self).get_or_set('stepped', False)
 
         if not stepped:
             individual = Individual(w=self.linear.weight.data, b=self.linear.bias.data)
             population = individual.populate(self.n)
             population = self.mutator(population)
         else:
-            population = my_state.get("population")
-            parents1, parents2 = self.divider(population, state)
+            population = x._(self).get('population')
+            parents1, parents2 = self.divider(population)
             children = self.crossover(parents1, parents2)
             children = self.mutator(children)
             population = self.elitism(population, children)
@@ -83,21 +82,21 @@ class GeneticNNLearner(LearningMachine):
         population = self.assessor(population)
         individual = self.best(population)
 
-        my_state["population"] = population
-        my_state["stepped"] = True
+        x._(self).population = population
+        x._(self).stepped = True
 
         self.linear.weight.data = individual["w"]
         self.linear.bias.data = individual["b"]
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen()
-        y = state[self, x, "y"] = IO(self.network(x.f))
+        y = x._(self).y = IO(self.network(x.f))
         return y.out(release)
 
     @forward_dep("y", True)
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, t: IO):
 
-        y = state.get((self, x, "y"))
+        y = x._(self).y
         if y is None:
             raise ValueError("Have not passed forward")
 
@@ -106,7 +105,7 @@ class GeneticNNLearner(LearningMachine):
         assessment.value.backward()
 
     @acc_dep("y", True)
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
 
         x_prime = IO(x.f - x.f.grad, True)
         return x_prime
@@ -122,26 +121,26 @@ class GeneticNetwork(LearningMachine):
             32, 10, False, ThLoss("CrossEntropyLoss"), reduction="mean", reduce_from=1
         )
 
-    def forward(self, x: IO, state: State, release: bool = True) -> IO:
+    def forward(self, x: IO, release: bool = True) -> IO:
 
-        x = state[self, "x"] = IO(x.f.flatten(1))
-        x = state[self, "layer1"] = self.layer1(x, state, True)
-        x = state[self, "layer2"] = self.layer2(x, state, False)
+        x = x._(self).x = IO(x.f.flatten(1))
+        x = x._(self).layer1 = self.layer1(x, True)
+        x = x._(self).layer2 = self.layer2(x, False)
         return x.out(release)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
 
         x = IO(x.f.flatten(1))
-        self.layer2.accumulate(state[self, "layer1"], t, state)
-        x_prime = self.layer2.step_x(state[self, "layer1"], t, state)
-        self.layer1.accumulate(x, x_prime, state)
-        self.layer2.step(state[self, "layer1"], t, state)
-        self.layer1.step(x, x_prime, state)
-        state[self, "x_prime"] = x_prime
+        self.layer2.accumulate(x._(self).layer1, t)
+        x_prime = self.layer2.step_x(x._(self).layer1, t)
+        self.layer1.accumulate(x, x_prime)
+        self.layer2.step(x._(self).layer1, t)
+        self.layer1.step(x, x_prime)
+        x._(self).x_prime = x_prime
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         x = IO(x.f.flatten(1))
-        return self.layer1.step_x(x, state[self, "x_prime"], state)
+        return self.layer1.step_x(x, x._(self).x_prime)
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.layer2.assess_y(y, t, reduction_override)

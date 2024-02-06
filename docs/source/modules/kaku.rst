@@ -41,28 +41,28 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
 
      class SimpleLearner(LearningMachine):
          
-         def assess_y(self, x: IO, t: IO, state: State, reduction_override: bool=None):
+         def assess_y(self, x: IO, t: IO, reduction_override: bool=None):
             # use a Criterion to calculate the loss
             return self.loss(x, t, reduction_override)
 
-         def accumulate(self, x: IO, t: IO, state: State):
+         def accumulate(self, x: IO, t: IO):
             # implement a method to accumulate updates to the parameters
             # not essential to implement.
             pass
 
-         def step(self, x: IO, t: IO, state: State):
+         def step(self, x: IO, t: IO):
             # implement a method to update the parameters
             pass
 
-         def step_x(self, x: IO, t: IO, state: State) -> IO:
+         def step_x(self, x: IO, t: IO) -> IO:
             # implement a method to update x
             return x
 
-         def forward(self, x: IO, state: State, release: bool=True) -> IO:
+         def forward(self, x: IO, release: bool=True) -> IO:
 
             # add 1 and store the result in the state
             # .f retrieves the first element in the IO. 
-            y = state[self, x, 'y'] = IO(x.f + 1)
+            y = x._(self).y = IO(x.f + 1)
             return y.out(release)
 
    # wrap the input and target with the IO class
@@ -80,18 +80,15 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
    # so that calling a function will call the function on the tensor
    print(assessment.maximize)
 
-   # state stores the learning state
-   # it is used to avoid needing to store it on 'self'  
-   state = State()
-   y = learning_machine(x, state)
+   y = learning_machine(x)
    # this will accumulate updates to the machine
    # it is not essential to implement this as it might be desirable
    # to solely implement step()
-   learning_machine.accumulate(x, t, state)
+   learning_machine.accumulate(x, t)
    # you can get the target of the previous layer with the step_x() method
-   t_prev = learning_machine.step_x(x, t, state)
+   t_prev = learning_machine.step_x(x, t)
    # you can update the 
-   learning_machine.step(x, t, state)
+   learning_machine.step(x, t)
 
 
 How to Use
@@ -115,20 +112,16 @@ IO:
    print(x.u[0]) # torch.tensor([[2, 3], [3, 4]]) 
    x.freshen() # detach and retain the gradients. Retaining the gradients is essential for implementing backprop with zenkai
 
-State: State allows one to store values for the current learning step
-.. code-block:: python
+.. .. code-block:: python
 
-   from zenkai import State, IO
-
-   x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
-   learning_machine = SimpleLearner()
-   # set the number of iterations for the key (learning_machine, x) to 1
-   state[learning_machine, x, 'iterations'] = 1
-   my_state = state.mine(learning_machine, x)
-   print(my_state.iterations) # "1"
-   # add a sub_state
-   sub_state = my_state.sub("sub")
-   sub_state.t = 2
+..    x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
+..    learning_machine = SimpleLearner()
+..    # set the number of iterations for the key (learning_machine, x) to 1
+..    x._(learning_machine).iterations = 1
+..    print(my_state.iterations) # "1"
+..    # add a sub_state
+..    sub_state = my_state.sub("sub")
+..    sub_state.t = 2
 
 LearningMachine: Show how to implement with gradient descent
 .. code-block:: python
@@ -146,28 +139,28 @@ LearningMachine: Show how to implement with gradient descent
          self.optim = optim_factory(sself.linear.parameters())
          self.x_lr = 0.5
       
-      def assess_y(self, x: IO, t: IO, state: State, reduction_override: bool=None):
+      def assess_y(self, x: IO, t: IO, reduction_override: bool=None):
          # use a Criterion to calculate the loss
          return self.loss(x, t, reduction_override)
 
       # forward will be called if it hasn't already
       @forward_dep('y')
-      def step(self, x: IO, t: IO, state: State):
+      def step(self, x: IO, t: IO):
          # implement a method to update the parameters
          self.optim.zero_grad() 
-         self.assess_y(state[self, x, 'y'], t)['loss'].backward()
+         self.assess_y(x._(self).y, t)['loss'].backward()
          self.optim.step()
 
       # step will be called if it hasn't already
       @step_dep('stepped')
-      def step_x(self, x: IO, t: IO, state: State) -> IO:
+      def step_x(self, x: IO, t: IO) -> IO:
          # implement a method to update x
          return IO(x.f - self.x_lr * x.f.grad, detach=True)
 
-      def forward(self, x: IO, state: State, release: bool=True) -> IO:
+      def forward(self, x: IO, release: bool=True) -> IO:
 
          x.freshen()
-         y = state[self, x, 'y'] = IO(self.linear(x.f))
+         y = x._(self).y = IO(self.linear(x.f))
          return y.out(release)
 
 

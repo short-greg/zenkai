@@ -101,7 +101,6 @@ class DummyHook(core.LearnerPostHook):
     ) -> typing.Tuple[IO, IO]:
         
         x._(self).hi = 'hi'
-        # state[self, "hi"] = "hi"
 
 
 class TestLearningMachineWithSimpleLearner:
@@ -191,23 +190,18 @@ class LayeredLearner(core.LearningMachine):
         return self.m2.assess_y(y, t, reduction_override=reduction_override)
 
     def step_x(self, x: IO, t: IO) -> IO:
-        # t = state[self, "x_step_t"]
         t = self._.x_step_t
         return self.m1.step_x(x, t)
 
     def step(self, x: IO, t: IO):
         self.m2.step(self._.y1, t)
         t1 = self.m2.step_x(self._.y1, t)
-        # t1 = self.m2.step_x(state[self, "y1"], t, state)
         self.m1.step(x, t1)
         self._.x_step_t = t1
-        # state[self, "x_step_t"] = t1
 
     def forward(self, x: IO, release: bool = True) -> torch.Tensor:
         y1 = self._.y1 = self.m1(x)
         y2 = self._.y2 = self.m2(y1)
-        # y1 = state[self, "y1"] = self.m1(x, state)
-        # y2 = state[self, "y2"] = self.m2(y1, state)
         return y2.out(release)
 
 
@@ -287,7 +281,6 @@ class DependentLearner(core.LearningMachine):
 
     @core.step_dep("stepped")
     def step_x(self, x: IO, t: IO) -> IO:
-        # if (self, x, "y") not in state:
         if 'y' not in x._(self):
             assessment = self.assess(x, t.detach(), release=False)
             assessment.backward()
@@ -297,20 +290,15 @@ class DependentLearner(core.LearningMachine):
     @core.forward_dep("y")
     def step(self, x: IO, t: IO):
         y = x._(self).y
-        # y = state[self, x, "y"]
         self.optim.zero_grad()
         assessment = self.assess_y(y, t.detach())
         assessment.backward()
         self.optim.step()
         x._(self).stepped = True
-        # state[self, x, "stepped"] = True
 
     def forward(self, x: IO, release: bool = True) -> torch.Tensor:
         x.freshen(False)
         y = x._(self).y = IO(self.linear(x.f))
-        # print('Calling forward')
-        # print(x._(self))
-        # y = state[self, x, "y"] = IO(self.linear(x.f))
         return y.out(release)
 
 
@@ -324,7 +312,6 @@ class TestDependencies:
         dependent(x)
         dependent.step(x, t)
         assert x._(dependent).y is not None
-        # assert state[dependent, x, "y"] is not None
 
     def test_step_does_not_execute_forward_if_already_called(self):
 

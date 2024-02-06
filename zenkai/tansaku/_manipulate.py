@@ -131,12 +131,9 @@ class ApplyMomentum(object):
         Returns:
             torch.Tensor: The decorated reducer
         """
-        # my_state = state.mine(self, k)
 
         diff = self._['diff'].get(k)
         cur = self._['cur'].get(k)
-        # diff = my_state.get("diff")
-        # cur = my_state.get("cur")
 
         if diff is None and cur is None:
             self._.cur[k] = individual
@@ -145,13 +142,9 @@ class ApplyMomentum(object):
             self._.diff[k] = individual - self._.cur[k]
             self._.cur[k] = individual
 
-            # my_state.diff = individual - my_state.cur
-            # my_state.cur = individual
         else:
             self._.diff[k] = (individual - self._.cur[k]) + self._momentum * self._.diff[k]
             self._.cur[k] = self._.diff[k] + individual
-            # my_state.diff = (individual - my_state.cur) + self._momentum * self.diff
-            # my_state.cur = my_state.diff + individual
 
         return self._.cur[k]
 

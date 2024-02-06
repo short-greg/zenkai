@@ -386,30 +386,6 @@ class State(object):
             return False
         return key in self._data[id_][sub_id].info
 
-    # def log_assessment(
-    #     self,
-    #     obj: IDable,
-    #     obj_name: str,
-    #     log_name: str,
-    #     assessment: Assessment,
-    #     sub_obj: IDable = None,
-    # ):
-    #     """Log an assessment
-
-    #     Args:
-    #         obj: The object to log for
-    #         obj_name: The name of the object to log for (So it is clear who it is coming from)
-    #         assessment (Assessment): the values to log
-    #     """
-
-    #     obj_id = self.id(obj)
-    #     sub_obj_id = self.id(sub_obj)
-    #     self._logs.update(obj_id, obj_name, log_name, assessment, sub_obj_id)
-
-    # @property
-    # def logs(self) -> AssessmentLog:
-    #     return self._logs
-
     def spawn(self, spawn_logs: bool = False) -> "State":
         """Spawn the state to be used for another time step or another instance of the machine
         All data that is not to be kept will be cleared

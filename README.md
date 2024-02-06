@@ -54,23 +54,23 @@ class MyLearner(zenkai.LearningMachine):
         return self.loss.assess_dict(x, t, reduction_override)
 
     def step(
-        self, x: IO, t: IO, state: State
+        self, x: IO, t: IO
     ):
         # use to update the parameters of the machine
         # x (IO): The input to update with
         # t (IO): the target to update
         # outputs for a connection of two machines
-        return self._step_theta(x, t, state)
+        return self._step_theta(x, t)
 
     def step_x(
-        self, x: IO, t: IO, state: State
+        self, x: IO, t: IO
     ) -> IO:
         # use to update the target for the machine
         # step_x is analogous to updateGradInputs in Torch except
         # it calculates "new targets" for the incoming layer
-        return self._step_x(x, t, state)
+        return self._step_x(x, t)
 
-    def forward(self, x: zenkai.IO, state: State, release: bool=False) -> zenkai.IO:
+    def forward(self, x: zenkai.IO, release: bool=False) -> zenkai.IO:
         y = self.module(x.f)
         return y.out(release=release)
 
@@ -78,10 +78,9 @@ class MyLearner(zenkai.LearningMachine):
 my_learner = MyLearner(...)
 
 for x, t in dataloader:
-    state = State()
-    assessment = my_learner.learn(x, t, state=state)
+    assessment = my_learner.learn(x, t)
     # outputs the logs stored by the learner
-    print(state.logs)
+    # print(state.logs)
 
 ```
 
@@ -110,41 +109,36 @@ class MyMultilayerLearner(LearningMachine):
         return self.layer2.assess_y(y, t)
 
     def step(
-        self, x: IO, t: IO, state: State
+        self, x: IO, t: IO
     ):
         # use to update the parameters of the machine
         # x (IO): The input to update with
         # t (IO): the target to update
         # outputs for a connection of two machines
-        my_state = state.mine(self, x)
         
-        self.layer2.step(my_state.y2, my_state.t1)
-        self.layer1.step(my_state.y1, t1)
+        self.layer2.step(x._(self).y2, x._(self).t1)
+        self.layer1.step(x._(self).y1, t1)
 
     def step_x(
-        self, x: IO, t: IO, state: State
+        self, x: IO, t: IO
     ) -> IO:
         # use to update the target for the machine
         # it calculates "new targets" for the incoming layer
-        my_state = state.mine(self, x)
-        t1 = my_state.t1 = self.layer2.step_x(my_state.y2, t)
-        return self.layer1.step_x(my_state.y1, t1)
+        t1 = x._(self).t1 = self.layer2.step_x(x._(self).y2, t)
+        return self.layer1.step_x(x._(self).y1, t1)
 
-    def forward(self, x: zenkai.IO, state: State, release: bool=True) -> zenkai.IO:
+    def forward(self, x: zenkai.IO, release: bool=True) -> zenkai.IO:
 
         # define the state to be for the self, input pair
-        my_state = state.mine(self, x)
-        x = my_state['y1'] = self.layer1(x, state)
-        x = my_state['y2'] = self.layer2(x, state, release=release)
+        x = x._(self).y1 = self.layer1(x)
+        x = x._(self).y2 = self.layer2(x, release=release)
         return x
 
 my_learner = MyLearner(...)
 
 for x, t in dataloader:
-    state = State()
-    assessment = my_learner.learn(x, t, state=state)
+    assessment = my_learner.learn(x, t)
     # outputs the logs stored by the learner
-    print(state.logs)
 
 ```
 

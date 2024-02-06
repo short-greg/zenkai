@@ -214,7 +214,6 @@ class PopulationLearner(LearningMachine, ABC):
         y, idx = self.select(y_population.f)
         y = IO(y)
         x._(self)[self.idx_name] = idx
-        # state[self, x, self.idx_name] = idx
         return y.out(release)
     
     @abstractmethod

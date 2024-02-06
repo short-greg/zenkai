@@ -25,13 +25,9 @@ class StackPostStepTheta(StepTheta):
         if "stack" not in self._:
             self._.stack_x = []
             self._.stack_t = []
-            # state[self, "stack_x"] = []
-            # state[self, "stack_t"] = []
         
         self._.stack_x.append(x)
         self._.stack_t.append(t)
-        # state[self, "stack_x"].append(x)
-        # state[self, "stack_t"].append(t)
 
     def step(self, x: IO, t: IO):
         """complete the step by concatenating all ios and running
@@ -40,15 +36,12 @@ class StackPostStepTheta(StepTheta):
         Args:
             x (IO): The last input - The input is not used as a key so anything
               can be actually passed in
-            state (State): The learning state
 
         Raises:
             RuntimeError: if step has not been executed
         """
         stack_x = self._.get('stack_x')
         stack_t = self._.get('stack_t')
-        # stack_x = state.get((self, "stack_x"))
-        # stack_t = state.get((self, "stack_t"))
         if stack_x is None or stack_t is None:
             raise RuntimeError("Cannot adv if step has not been executed")
 

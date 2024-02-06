@@ -14,13 +14,15 @@ from ..kaku.test_machine import SimpleLearner
 
 
 class SimpleLearner2(SimpleLearner):
-    def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
-        y = super().forward(x, state, False)
+    
+    def forward(self, x: IO, release: bool = True) -> torch.Tensor:
+        y = super().forward(x, False)
         y = IO(torch.mean(x.f, dim=1))
         return y.out(release)
 
 
 class SimpleLearner3(LearningMachine):
+
     def __init__(self, in_groups: int, in_features: int, out_features: int):
         super().__init__()
         self.weight = torch.nn.parameter.Parameter(
@@ -28,17 +30,17 @@ class SimpleLearner3(LearningMachine):
         )
         self.loss = ThLoss("MSELoss")
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, t: IO):
         pass
 
-    def step_x(self, x: IO, t: IO, state: State) -> IO:
+    def step_x(self, x: IO, t: IO) -> IO:
         pass
 
     def assess_y(self, x: IO, t: IO, reduction_override: str = None) -> Assessment:
         result = self.loss.assess(x, t, reduction_override)
         return result
 
-    def forward(self, x: IO, state: State, release: bool = True) -> torch.Tensor:
+    def forward(self, x: IO, release: bool = True) -> torch.Tensor:
 
         y = IO((x.f.transpose(1, 0) @ self.weight).transpose(1, 0).contiguous())
         return y

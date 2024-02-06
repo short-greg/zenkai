@@ -38,7 +38,7 @@ class BackTarget(LearningMachine):
 
     def step_x(self, x: IO, t: IO) -> IO:
 
-        y = x._(self).y #  state[self, x, "y"]
+        y = x._(self).y
         y.grad = None
         y.backward(*t.u)
         xs = []

@@ -87,7 +87,6 @@ class TargetPropLearner(LearningMachine):
         if self._forward_update:
             self.accumulate_forward(x, t)
         if self._reverse_update:
-            # y = state[self, x, self.y_name]
             y = x._(self)[self.y_name]
             self.accumulate_reverse(x, y, t)
 
@@ -102,7 +101,6 @@ class TargetPropLearner(LearningMachine):
             self.step_forward(x, t)
         if self._reverse_update:
             y = x._(self)[self.y_name]
-            # y = state[self, x, self.y_name]
             self.step_reverse(x, y, t)
 
     @abstractmethod

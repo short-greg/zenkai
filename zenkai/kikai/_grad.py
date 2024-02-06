@@ -87,7 +87,6 @@ class GradUpdater(object):
         if not self.use_state:
             self.optim.step()
             return True
-        # grad = state.get((self, x, "grad"))
         grad = x._(self).get('grad')
 
         if grad is not None:
@@ -144,10 +143,8 @@ class GradStepTheta(StepTheta):
         self.criterion = criterion
 
     def accumulate(self, x: IO, t: IO):
-        # y = state.get((self._learner, self.y_name))
         y = x._(self).get(self.y_name)
         stepped = x._(self).get('stepped', False)
-        # stepped = state.get((self, "stepped"), False)
 
         if stepped or y is None:
             x.freshen(False)
@@ -230,7 +227,6 @@ class GradLoopStepTheta(BatchIdxStepTheta):
         # TODO: Figure out how to handle this
         
         y_idx = self._learner(x_idx, release=False)
-        # y_idx = self._learner(x_idx, state.sub((self, "step")), release=False)
 
         assessment = grad_assess(
             x_idx, y_idx, t_idx, self._learner, self.criterion, self.reduction
@@ -238,8 +234,6 @@ class GradLoopStepTheta(BatchIdxStepTheta):
 
         assessment.backward()
         self._grad_updater.accumulate(x)
-
-        # state[self, "accumulated"] = True
 
     # @acc_dep("accumulated", False)
     def step(
@@ -345,7 +339,6 @@ class GradLoopStepX(BatchIdxStepX):
         Returns:
             IO: The updated input. The tensor x is updated in this case
         """
-        # x_state = state.mine(x)
 
         if "optim" not in x._(self):
             x_prime = x.clone()
@@ -419,7 +412,7 @@ class GradLearner(LearningMachine):
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(
-                self, module, optim_factory, reduction, criterion=learn_criterion
+                self, optim_factory, reduction, criterion=learn_criterion
             )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -499,7 +492,6 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
         return self._criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO, batch_idx: Idx = None):
-        # state[self, "accumulated"] = True
         return self._theta_step.accumulate(x, t, batch_idx)
 
     def step(self, x: IO, t: IO, batch_idx: Idx = None):
@@ -512,7 +504,6 @@ class GradLoopLearner(LearningMachine, BatchIdxStepX):
     def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen(False)
         y = x._(self)[self.Y_NAME] = IO(self._net(*x), detach=False)
-        # y = state[self, self.Y_NAME] = IO(self._net(*x), detach=False)
         return y.out(release)
 
 

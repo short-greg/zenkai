@@ -45,12 +45,14 @@ class GraphNode(nn.Module):
         if target is False:
             target = self.target
         
-        x_index = x._(self).get('x_index', x)
+        x_index = x._.get('x_index', x)
         y = self.learner(x, release, *args, **kwargs)
-        y._['x_index'] = x_index
+        y._.x_index = x_index
 
         if x_index is not None:
-            self._graph['graph'].add_step(x_index, SStep(self.learner, x, y, self.step_priority, target))
+            self._graph['graph'].add_step(
+                x_index, SStep(self.learner, x, y, self.step_priority, target)
+            )
         return y
 
     def __call__(self, x: IO, release: bool=True, 
@@ -63,14 +65,6 @@ class GraphNode(nn.Module):
     
     def __repr__(self):
         return f'GraphNode {type(self.learner), type(self.target)}'
-
-    @property
-    def learner(self) -> LearningMachine:
-        return self._learner
-
-    @property
-    def learner(self) -> LearningMachine:
-        return self._learner
 
 
 @dataclass
@@ -121,8 +115,6 @@ class GraphLearnerBase(LearningMachine):
         """
         steps = x_index._(self).get_or_set('steps', [])
         step_dict = x_index._(self).get_or_set('step_dict', OrderedDict())
-        # steps = state.get_or_set((self, x_index, 'steps'), [])
-        # step_dict = state.get_or_set((self, x_index, 'step_dict'), OrderedDict())
         
         step_dict[sstep.machine] = sstep
         steps.append(sstep)
@@ -142,7 +134,6 @@ class GraphLearnerBase(LearningMachine):
         """
         steps = x_index._(self).steps
         step_dict = x_index._(self).step_dict
-        # steps, step_dict = state.get((self, x_index, 'steps')), state.get((self, x_index, 'step_dict'))
 
         if validate and steps is None:
             raise RuntimeError(
@@ -196,7 +187,6 @@ class GraphLearnerBase(LearningMachine):
         )
 
         return GraphNode(self, learner, step_priority, target)
-
 
     def add_grad(
         self, mod: nn.Module, criterion: Criterion, optim_factory: OptimFactory=None, 
@@ -264,7 +254,7 @@ class GraphLearnerBase(LearningMachine):
         return GraphNode(self, learner, False, target)
 
     def add_backf(self, f: typing.Callable, *args, criterion: Criterion=None, target=None, **kwargs) -> 'GraphNode':
-        """_summary_
+        """
 
         Args:
             f (typing.Callable): The function to add to the graph
