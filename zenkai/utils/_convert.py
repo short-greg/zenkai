@@ -328,7 +328,7 @@ class undo_grad(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         
         if exc_type is not None:
-            exc_type
+            exc_val
         for stored, value in zip(self._stored, self._values):
             
             if (
@@ -342,7 +342,7 @@ class undo_grad(object):
                     value.grad = stored
             else:
                 update_model_grads(
-                    value, self._stored, False
+                    value, stored, False
                 )
         
 

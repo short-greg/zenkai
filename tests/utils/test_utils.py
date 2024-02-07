@@ -169,6 +169,38 @@ class TestSetModelGrads:
         new_grads = _convert.get_model_grads(mod1)
         assert (_convert.cat_1d(new_grads) == grads2).all()
 
+    def test_undo_grads_resets_grads(self):
+
+        mod1 = nn.Linear(2, 4)
+        grads1 = torch.randn(12)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads1), False)
+
+        with _convert.undo_grad([mod1]):
+            grads2 = torch.randn(12)
+            _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads2), False)
+
+        new_grads = _convert.get_model_grads(mod1)
+        assert (_convert.cat_1d(new_grads) == grads1).all()
+
+    def test_undo_grads_resets_grads_for_tensor(self):
+
+        mod1 = nn.Linear(2, 4)
+        grads1 = torch.randn(12)
+        t = torch.rand(12)
+        t_grad = torch.rand(12)
+        t.grad = t_grad
+
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads1), False)
+
+        with _convert.undo_grad([mod1, t]):
+            grads2 = torch.randn(12)
+            _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads2), False)
+            t.grad = torch.rand(12)
+
+        new_grads = _convert.get_model_grads(mod1)
+        assert (_convert.cat_1d(new_grads) == grads1).all()
+        assert (t_grad == t.grad).all()
+
 
 class TestLR:
 
