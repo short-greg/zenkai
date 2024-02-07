@@ -136,39 +136,42 @@ class TestSetModelParameters:
 
 
 class TestSetModelGrads:
+
     def test_set_model_grads_sets_correctly(self):
 
         mod1 = nn.Linear(2, 4)
         grads = torch.randn(12)
 
-        _convert.update_model_grads(mod1, grads, False)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads), False)
         new_grads = _convert.get_model_grads(mod1)
-        assert (new_grads == grads).all()
+
+        assert (_convert.cat_1d(new_grads) == grads).all()
 
     def test_set_model_grads_adds_grads_when_set_to_true(self):
 
         mod1 = nn.Linear(2, 4)
-        grads = torch.randn(12)
+        grads1 = torch.randn(12)
         grads2 = torch.randn(12)
 
-        _convert.update_model_grads(mod1, grads, False)
-        _convert.update_model_grads(mod1, grads2, True)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads1), False)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads2), True)
         new_grads = _convert.get_model_grads(mod1)
-        assert (new_grads == (grads + grads2)).all()
+        assert (_convert.cat_1d(new_grads) == (grads1 + grads2)).all()
 
     def test_set_model_grads_does_not_add_when_not_set_to_true(self):
 
         mod1 = nn.Linear(2, 4)
-        grads = torch.randn(12)
+        grads1 = torch.randn(12)
         grads2 = torch.randn(12)
 
-        _convert.update_model_grads(mod1, grads, False)
-        _convert.update_model_grads(mod1, grads2, False)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads1), False)
+        _convert.update_model_grads(mod1, _convert.undo_cat1d(mod1, grads2), False)
         new_grads = _convert.get_model_grads(mod1)
-        assert (new_grads == grads2).all()
+        assert (_convert.cat_1d(new_grads) == grads2).all()
 
 
 class TestLR:
+
     def test_lr_update_interpolates_between_current_and_new(self):
 
         x = torch.rand(2, 4)
