@@ -229,25 +229,33 @@ def update_model_grads(model: nn.Module, theta_grad: typing.List[typing.Union[to
 
     for p, grad in zip(model, theta_grad):
         
-        if theta_grad is None and not to_add:
+        if grad is None and not to_add:
             p.grad = None
         
         if p.grad is None:
-            if theta_grad is not None:
+            if grad is not None:
                 p.grad = grad.detach()
         else:
-            if theta_grad is not None and to_add:
+            if grad is not None and to_add:
                 p.grad.data = p.grad.data + grad.detach()
-            elif theta_grad is not None:
-                p.grad.data = grad.detach()
-            
-        # finish = start + p.numel()
-        
-        # cur = theta_grad[start:finish].reshape(p.shape)
+            elif grad is not None:
+                p.grad.data = grad.detach() 
 
-        # elif to_add and grad is not None:
-        #     p.grad.data = p.grad.data + grad.detach()
-        # start = finish
+
+def checkattr(name: str):
+    # Check that a class has the attribute specified
+
+    def _wrap(f):
+
+        def _(self, *args, **kwargs):
+            if not hasattr(self, name):
+                raise AttributeError(
+                    f'Class of type {type(self)} requires attribute {name} to be set'
+                )
+            return f(self, *args, **kwargs)
+        
+        return _
+    return _wrap
 
 
 def get_model_grads(model: nn.Module, clone: bool=True) -> typing.Union[torch.Tensor, None]:

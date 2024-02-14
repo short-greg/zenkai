@@ -27,11 +27,9 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 
 """
 
-
 from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX
 from ._post import StackPostStepTheta
 from ._ensemble import EnsembleLearner, EnsembleLearnerVoter, VoterPopulator
-
 from ._scikit import ScikitLimitGen, ScikitMachine, ScikitMultiMachine, SciClone
 from .utils._assess import (
     LayerAssessor,
@@ -50,6 +48,7 @@ from ._grad import (
     GradUpdater,
     CriterionGrad,
     grad,
+    GradLearnerW
 )
 from ._backtarget import (
     BackTarget,

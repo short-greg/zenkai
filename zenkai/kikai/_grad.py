@@ -26,6 +26,7 @@ from ..mod import Lambda
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
 from ..mod import Null
 from ._null import NullStepTheta
+from ..utils import checkattr
 
 
 class GradUpdater(object):
@@ -311,6 +312,7 @@ class GradLoopStepX(BatchIdxStepX):
         reduction: str = "mean",
         loss_name: str = "loss",
         criterion: typing.Union[Criterion, XCriterion] = None,
+        x_lr: float = None
     ):
         """initializer
 
@@ -323,10 +325,11 @@ class GradLoopStepX(BatchIdxStepX):
         super().__init__()
 
         self._learner = learner
-        self.optim_factory = optim_factory or OptimFactory('SGD', lr=1e0)
+        self.optim_factory = optim_factory or OptimFactory('SGD', lr=x_lr)
         self.reduction = reduction
         self.loss_name = loss_name
         self.criterion = criterion
+        self.x_lr = x_lr
 
     def step_x(self, x: IO, t: IO, batch_idx: Idx = None) -> IO:
         """Update x by reevaluating. Primarily use in loops
@@ -360,6 +363,8 @@ class GradLoopStepX(BatchIdxStepX):
         assessment.backward()
         x._(self).optim.step()
 
+        if (self.x_lr < 1):
+            print((x_prime.f - x.f).pow(2).mean().item())
         return x_prime
 
 
@@ -412,7 +417,7 @@ class GradLearner(LearningMachine):
             self._x_step = GradStepX(x_lr)
         else:
             self._x_step = GradLoopStepX(
-                self, optim_factory, reduction, criterion=learn_criterion
+                self, optim_factory, reduction, criterion=learn_criterion, x_lr=x_lr
             )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -440,6 +445,44 @@ class GradLearner(LearningMachine):
     def net(self) -> nn.Module:
 
         return self._net
+
+
+class GradLearnerW(LearningMachine):
+    """Standard gradient learner"""
+
+    def __init__(self, grad_reduction: str=None):
+
+        super().__init__()
+        self.grad_reduction = grad_reduction
+
+    @checkattr('criterion')
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+
+        assessment = self.criterion.assess(y, t, reduction_override)
+        return assessment
+
+    def accumulate(self, x: IO, t: IO):
+
+        assessment = self.backward_assess(x, t)
+        assessment.value.backward()
+
+    def backward_assess(self, x: IO, t: IO, reduction_override: str = None) -> Assessment:
+        return self.assess_y(
+            x._(self).y, t, self.grad_reduction
+        )
+
+    def step_x(self, x: IO, t: IO) -> IO:
+        
+        x_lr = self.x_lr if hasattr(self, 'x_lr') else 1.
+        return x.grad_update(x_lr)
+
+    def forward(self, x: IO, release: bool = True) -> IO:
+        pass
+
+    @checkattr('optim')
+    def step(self, x: IO, t: IO):
+        self.optim.step()
+        self.optim.zero_grad()
 
 
 class GradLoopLearner(LearningMachine, BatchIdxStepX):

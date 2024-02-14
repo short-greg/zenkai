@@ -27,4 +27,8 @@ from ._convert import (
     sign_ste,
     BinarySTE,
     SignSTE,
+    undo_cat1d,
+    cat_1d,
+    undo_grad,
+    checkattr
 )
