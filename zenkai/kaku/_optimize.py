@@ -6,6 +6,7 @@ Factories for creating optimizers
 import typing
 from typing import Any
 from abc import abstractmethod, ABC
+from itertools import chain
 
 # 3rd Party
 import torch
@@ -95,6 +96,72 @@ class OptimFactory(object):
 
         kwargs = {**self._kwargs, **kwarg_overrides}
         return self._optim(params, *self._args, **kwargs)
+    
+    def comp(self, x_lr: float=1.) -> 'CompOptim':
+        """Create a comp optimizer 
+
+        Args:
+            params: _description_
+            x_lr (float, optional): _description_. Defaults to 1..
+
+        Returns:
+            CompOptim: _description_
+        """
+        return CompOptim(
+            self, x_lr
+        )
+
+
+class CompOptim(object):
+
+    def __init__(
+        self, theta_optim: OptimFactory=None,
+        x_optim: typing.Union[float, OptimFactory]=1.0,
+    ):
+        self.theta_optimf = theta_optim
+        self.x_optimf = x_optim
+
+    def step_theta(self):
+        if self.theta_optim is not None:
+            self.theta_optim.step()
+
+    def prep_theta(self, model: typing.Union[nn.Module, typing.List[nn.Module]], **kwarg_overrides):
+
+        if self.theta_optimf is None or model is None:
+            self.theta_optim = None
+            return
+
+        if isinstance(model, typing.List):
+            p = chain([parameter for parameter in model.parameters()])
+        else:
+            p = model.parameters()
+        self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
+
+    def prep_x(self, x: IO, clear: bool=False, **kwarg_overrides):
+
+        if (
+            (clear or x._(self).get('optim') is None) and
+            isinstance(self.x_optimf, OptimFactory)
+        ):
+            x._(self).optim = self.x_optimf(x.u, **kwarg_overrides)
+
+    def step_x(self, x: IO):
+
+        if isinstance(self.x_optimf, OptimFactory):
+            optim = x._(self).optim
+            optim.step()
+            return x
+        return x.grad_update(self.x_optimf)
+
+    def zero_theta(self):
+        if self.theta_optim is not None:
+            self.theta_optim.zero_grad()
+
+    def zero_x(self, x: IO):
+        if isinstance(self.x_optimf, OptimFactory):
+            x._(self).optim.zero_grad()
+        else:
+            x.zero_grad()
 
 
 class ParamFilter(optim.Optimizer):

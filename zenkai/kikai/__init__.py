@@ -40,15 +40,8 @@ from .utils._assess import (
 from . import utils
 from ._grad import (
     GradLearner,
-    GradLoopLearner,
-    GradLoopStepTheta,
-    GradLoopStepX,
     GradStepTheta,
     GradStepX,
-    GradUpdater,
-    CriterionGrad,
-    grad,
-    GradLearnerW
 )
 from ._backtarget import (
     BackTarget,
@@ -71,5 +64,5 @@ from ._containers import (
     GraphLearner, AccGraphLearner, SStep
 )
 from ._target_prop import (
-    TargetPropCriterion, TargetPropStepX, RegTargetPropCriterion, StdTargetPropCriterion, StdTargetProp
+    TargetPropLearner, DiffTargetPropLearner
 )

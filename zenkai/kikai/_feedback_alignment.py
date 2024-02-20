@@ -18,8 +18,8 @@ from ..kaku import (
     Var,
     Factory,
 )
-from ._grad import GradUpdater
 from ..mod import Null
+from ._grad import GradLearner
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
@@ -37,7 +37,7 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
     return IO(y.f, y_prime.f, detach=detach)
 
 
-class FALearner(LearningMachine):
+class FALearner(GradLearner):
     """Learner for implementing feedback alignment"""
 
     def __init__(
@@ -58,19 +58,18 @@ class FALearner(LearningMachine):
             activation (nn.Module): The activation
             criterion (typing.Union[Criterion, str], optional): The criterion. Defaults to 'mse'.
         """
-        super().__init__()
+        if isinstance(criterion, str):
+            criterion = ThLoss(criterion)
+
+        super().__init__(
+            optim=optim_factory.comp(self.net.parameters()), 
+            criterion=criterion
+        )
         self.net = net
         self.netB = netB
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
-        self._optim = optim_factory(self.net.parameters())
-
-        self._grad_updater = GradUpdater(self.netB, self._optim)
-        if isinstance(criterion, str):
-            self.criterion = ThLoss(criterion)
-        else:
-            self.criterion = criterion
-
+        
     def forward(self, x: IO, release: bool = True) -> IO:
 
         x.freshen()
@@ -81,9 +80,6 @@ class FALearner(LearningMachine):
         y.retain_grad()
         y = x._(self).y = self.activation(y)
         return IO(y).out(release)
-
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return self.criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO):
         """Update the
@@ -109,27 +105,6 @@ class FALearner(LearningMachine):
         y2.backward(y_det.grad)
 
         self._grad_updater.accumulate(x)
-
-    def step_x(self, x: IO, t: IO) -> IO:
-        """Backpropagates the error resulting from the randomly generated matrix
-
-        Args:
-            x (IO): the input
-            t (IO[y, y_prime]): the target
-
-        Returns:
-            IO: the updated target
-        """
-        x_prime, _ = self._grad_updater.update_x(x)
-        return x_prime
-
-    def step(self, x: IO, t: typing.Union[IO, None]) -> bool:
-        """Advance the optimizer
-
-        Returns:
-            bool: False if unable to advance (already advanced or not stepped yet)
-        """
-        return self._grad_updater.update(x, self.net)
 
     @classmethod
     def builder(
@@ -157,7 +132,7 @@ class FALearner(LearningMachine):
         )
 
 
-class DFALearner(LearningMachine):
+class DFALearner(GradLearner):
     """Learner for implementing feedback alignment."""
 
     def __init__(
@@ -184,18 +159,18 @@ class DFALearner(LearningMachine):
             criterion (typing.Union[Criterion, str], optional): The criterion. 
                 Defaults to 'mse'.
         """
-        super().__init__()
+        if isinstance(criterion, str):
+            criterion = ThLoss(criterion)
+        
+        super().__init__(
+            optim=optim_factory.comp(self.net.parameters()),
+            criterion=criterion
+        )
         self.net = net
         self.netB = netB
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
-        self._optim = optim_factory(self.net.parameters())
-        if isinstance(criterion, str):
-            self.criterion = ThLoss(criterion)
-        else:
-            self.criterion = criterion
-        self._grad_updater = GradUpdater(self.netB, self._optim)
 
     def forward(self, x: IO, release: bool = True) -> IO:
 
@@ -207,9 +182,6 @@ class DFALearner(LearningMachine):
         y.retain_grad()
         y = x._(self).y = self.activation(y)
         return IO(y).out(release)
-
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        return self.criterion.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO):
         """Update the net parameters
@@ -237,28 +209,6 @@ class DFALearner(LearningMachine):
 
         assert x.f.grad is not None
         self._grad_updater.accumulate(x)
-
-    def step_x(self, x: IO, t: IO) -> IO:
-        """Backpropagates the error resulting from the randomly generated matrix
-
-        Args:
-            x (IO): the input
-            t (IO[y, y_prime]): the target
-
-        Returns:
-            IO: the updated target
-        """
-        x_prime, _ = self._grad_updater.update_x(x)
-        return x_prime
-
-    def step(self, x: IO, t: typing.Union[IO, None]) -> bool:
-        """Advance the optimizer
-
-        Returns:
-            bool: False if unable to advance (already advanced or not stepped yet)
-        """
-
-        return self._grad_updater.update(x, self.net)
 
 
 class LinearFABuilder(Builder[FALearner]):

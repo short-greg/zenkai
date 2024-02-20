@@ -4,6 +4,7 @@ Modules to wrap inputs ond outputs for the network
 
 # 1st party
 import typing
+import copy
 
 # 3rd party
 import torch
@@ -118,7 +119,7 @@ class IO(object):
         Returns:
             IO: The cloned IO
         """
-        x = [torch.clone(x_i) for x_i in self._x]
+        x = [torch.clone(x_i) if isinstance(x_i, torch.Tensor) else copy.copy(x_i) for x_i in self._x]
         result = IO(
             *x,
             detach=detach,
@@ -276,13 +277,19 @@ class IO(object):
 
         Args:
             x (IO): the IO to update. Grad must not be 0
-            lr (float, optional): multipler to multiple the gradient by. Defaults to 1.0.
-            detach (bool, optional): whether to detach the output. Defaults to False.
+            lr (float, optional): multipler to multiple the gradient by. Defaults to 1.0. If None will not update
+            detach (bool, optional): whether to detach the output. Defaults to False. If this is None it will simply clone
             zero_grad (bool, optional): whether the gradient should be set to none. Defaults to True.
 
         Returns:
             IO: updated x
         """
+        if lr is None:
+            if zero_grad:
+                for x_i in self:
+                    x_i.grad = None
+            return self.clone()
+        
         updated = []
         lr = lr if lr is not None else 1.0
         for x_i in self:
@@ -297,7 +304,17 @@ class IO(object):
                         x_i.grad = None
             updated.append(x_i)
         return IO(*updated, detach=detach)
+    
+    def zero_grad(self, set_to_none: bool=False):
 
+        for x_i in self.u:
+            if isinstance(x_i, torch.Tensor) and x_i.grad is not None:
+                if set_to_none:
+                    x_i.grad = None
+                else:
+                    x_i.grad.data.zero_()
+            elif isinstance(x_i, IO):
+                x_i.zero_grad(set_to_none)
 
 class Idx(object):
     """

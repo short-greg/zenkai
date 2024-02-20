@@ -668,3 +668,17 @@ def forward_dep(check_field: str, x_key: bool = True):
         return _
 
     return inner
+
+
+class SetYHook(ForwardHook):
+    """
+    """
+    def __init__(self, y: str='y') -> None:
+        super().__init__()
+        self.y_name = y
+
+    def __call__(self, learner: LearningMachine, x: IO, y: IO) -> IO:
+       
+       x._(learner)[self.y_name] = y
+       return y
+
