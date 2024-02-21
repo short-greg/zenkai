@@ -5,6 +5,8 @@ import typing
 import torch.nn as nn
 import torch
 
+from zenkai.kaku import Idx
+
 # local
 from ..kaku import (
     IO,
@@ -17,7 +19,9 @@ from ..kaku import (
     UNDEFINED,
     Var,
     Factory,
+    forward_dep
 )
+from .. import utils
 from ..mod import Null
 from ._grad import GradLearner
 
@@ -62,7 +66,8 @@ class FALearner(GradLearner):
             criterion = ThLoss(criterion)
 
         super().__init__(
-            optim=optim_factory.comp(self.net.parameters()), 
+            module=net,
+            optim=optim_factory.comp(), 
             criterion=criterion
         )
         self.net = net
@@ -70,17 +75,16 @@ class FALearner(GradLearner):
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         
-    def forward(self, x: IO, release: bool = True) -> IO:
+    def forward_nn(self, x: IO) -> IO:
 
-        x.freshen()
         y = self.net(x.f)
         y = y.detach()
         x._(self).y_det = y
         y.requires_grad = True
         y.retain_grad()
-        y = x._(self).y = self.activation(y)
-        return IO(y).out(release)
+        return IO(self.activation(y))
 
+    @forward_dep('y')
     def accumulate(self, x: IO, t: IO):
         """Update the
 
@@ -91,20 +95,19 @@ class FALearner(GradLearner):
         Returns:
             IO: the updated target
         """
-        self.net.zero_grad()
-        self.netB.zero_grad()
-
-        if "y" not in x._(self):
-            self(x)
-
+        self.optim.prep_x(x)
         y = x._(self).y
         y2 = self.netB(x.f)
-
-        self.criterion(IO(y), t).backward()
+        
+        self.criterion.assess(y, t).backward()
         y_det = x._(self).y_det
         y2.backward(y_det.grad)
-
-        self._grad_updater.accumulate(x)
+        utils.set_model_grads(self.net, utils.get_model_grads(self.netB))
+    
+    @forward_dep('y')
+    def step(self, x: IO, t: IO, batch_idx: Idx = None):
+        super().step(x, t, batch_idx)
+        self.netB.zero_grad()
 
     @classmethod
     def builder(
@@ -163,7 +166,8 @@ class DFALearner(GradLearner):
             criterion = ThLoss(criterion)
         
         super().__init__(
-            optim=optim_factory.comp(self.net.parameters()),
+            module=net,
+            optim=optim_factory.comp(),
             criterion=criterion
         )
         self.net = net
@@ -172,17 +176,16 @@ class DFALearner(GradLearner):
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
 
-    def forward(self, x: IO, release: bool = True) -> IO:
+    def forward_nn(self, x: IO) -> IO:
 
-        x.freshen()
         y = self.net(x.f)
         y = y.detach()
         x._(self).y_det = y
         y.requires_grad = True
         y.retain_grad()
-        y = x._(self).y = self.activation(y)
-        return IO(y).out(release)
+        return IO(self.activation(y))
 
+    @forward_dep('y')
     def accumulate(self, x: IO, t: IO):
         """Update the net parameters
 
@@ -191,24 +194,26 @@ class DFALearner(GradLearner):
             t (IO[y]): the target
 
         Returns:
+           
             IO: the updated target
         """
-        self.net.zero_grad()
-        self.netB.zero_grad()
-        self.B.zero_grad()
-        if "y" not in x._(self):
-            self(x)
-
+        self.optim.prep_x(x)
         y2 = self.netB(x.f)
 
         y_det = x._(self).y_det
         y = x._(self).y
-        y = self.B(y)
+        y = self.B(y.f)
         self.criterion(IO(y), t).backward()
         y2.backward(y_det.grad)
 
+        utils.set_model_grads(self.net, utils.get_model_grads(self.netB))
         assert x.f.grad is not None
-        self._grad_updater.accumulate(x)
+    
+    @forward_dep('y')
+    def step(self, x: IO, t: IO, batch_idx: Idx = None):
+        
+        super().step(x, t, batch_idx)
+        self.netB.zero_grad()
 
 
 class LinearFABuilder(Builder[FALearner]):

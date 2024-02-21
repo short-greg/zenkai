@@ -84,7 +84,6 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        print(y.u, t.u)
         return self.criterion.assess(y, t, reduction_override)
 
     def grad_assess(self, x: IO, y: IO, t: IO, reduction_override: str=None) -> Assessment:
@@ -119,16 +118,16 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.optim.step_theta()
         self.optim.zero_theta()
 
-    def forward_nn(self, *x: torch.Tensor) -> torch.Tensor:
+    def forward_nn(self, x: IO) -> IO:
         if self.module is not None:
-            return self.module(x[0])
-        return x[0]
+            return self.module(x.f)
+        return x
 
     def forward(self, x: IO, release: bool = True, batch_idx: Idx = None) -> IO:
         
         x.freshen()
         x_idx = batch_idx(x) if batch_idx is not None else x
-        y = x._(self).y = IO(self.forward_nn(*x_idx))
+        y = x._(self).y = self.forward_nn(x_idx)
         return y.out(release)
     
     def zero_x_grad(self, x: IO):

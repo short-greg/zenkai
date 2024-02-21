@@ -151,6 +151,7 @@ class CompOptim(object):
             optim = x._(self).optim
             optim.step()
             return x
+        print(self.x_optimf)
         return x.grad_update(self.x_optimf)
 
     def zero_theta(self):
