@@ -120,6 +120,7 @@ class CompOptim(object):
     ):
         self.theta_optimf = theta_optim
         self.x_optimf = x_optim
+        self.theta_optim = None
 
     def step_theta(self):
         if self.theta_optim is not None:
@@ -132,7 +133,7 @@ class CompOptim(object):
             return
 
         if isinstance(model, typing.List):
-            p = chain([parameter for parameter in model.parameters()])
+            p = chain(*[model_i.parameters() for model_i in model])
         else:
             p = model.parameters()
         self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
@@ -151,7 +152,6 @@ class CompOptim(object):
             optim = x._(self).optim
             optim.step()
             return x
-        print(self.x_optimf)
         return x.grad_update(self.x_optimf)
 
     def zero_theta(self):

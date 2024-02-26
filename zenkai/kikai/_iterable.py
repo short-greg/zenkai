@@ -19,7 +19,8 @@ from ..kaku import (
 from torch.utils import data as torch_data
 
 
-class StepLoop(object):
+class IdxLoop(object):
+
     def __init__(self, batch_size: int = None, shuffle: bool = True):
         """Loop over a connection by indexing
 
@@ -55,13 +56,43 @@ class StepLoop(object):
             typing.Iterator[Idx]: Return
 
         Yields:
-            Iterator[typing.Iterator[Conn]]: _description_
+            Idx: The index to retrieve by
         """
         if self.batch_size is None:
             yield Idx(dim=0)
         else:
             for (idx,) in self.create_dataloader(io):
                 yield Idx(idx.to(io.f.device), dim=0)
+
+
+class IOLoop(object):
+
+    def __init__(self, batch_size: int = None, shuffle: bool = True):
+        """Loop over a connection by indexing
+
+        Args:
+            batch_size (int): The size of the batch for the loop. If None. There will only be one iteration
+            shuffle (bool, optional): whether to shuffle the indices. Defaults to True.
+        """
+        self.idx_loop = IdxLoop(batch_size, shuffle)
+
+    def loop(self, *ios: IO) -> typing.Iterator[IO]:
+        """Loop over the io
+
+        Args:
+            *io (IO): The ios to iterate over
+
+        Returns:
+            typing.Iterator[IO]: Return
+
+        Yields:
+            IO: The indexed IO
+        """
+        for idx in self.idx_loop.loop(ios[0]):
+            
+            yield tuple(
+                idx(io) for io in ios
+            )
 
 
 class IterStepTheta(StepTheta):
@@ -87,7 +118,7 @@ class IterStepTheta(StepTheta):
             x (IO): The input value for the layer
             t (IO): the output value for the layer
         """
-        loop = StepLoop(self.batch_size, True)
+        loop = IdxLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
             for idx in loop.loop(x):
 
@@ -123,7 +154,7 @@ class IterStepX(StepX):
             x (IO): The input value for the layer
             t (IO): the output value for the layer
         """
-        loop = StepLoop(self.batch_size, True)
+        loop = IdxLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
             for idx in loop.loop(x):
 
@@ -194,8 +225,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
             IO: The updated t value for incoming
         """
 
-        theta_loop = StepLoop(self.batch_size, True)
-        x_loop = StepLoop(self.x_batch_size, True)
+        theta_loop = IdxLoop(self.batch_size, True)
+        x_loop = IdxLoop(self.x_batch_size, True)
 
         outgoing_x = outgoing_x or t
 

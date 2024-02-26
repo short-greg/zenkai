@@ -23,7 +23,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ._assess import Assessment, Criterion
+from ._assess import Assessment, Criterion, Reduction
 from ._state import IDable, Meta
 from ._io import IO, Idx
 from functools import wraps
@@ -507,6 +507,44 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             if get_y:
                 return result, y
             return result
+
+
+class StdLearningMachine(LearningMachine):
+
+    def __init__(
+        self, module: nn.Module=None, step_theta: StepTheta=None, step_x: StepX=None,
+        criterion: Criterion=None
+    ):
+        """Create a normal learning machine that wraps step_theta and step_x
+
+        Args:
+            module (nn.Module): The module must take IO as an input
+            step_theta (StepTheta): The object to use for accumulating and stepping
+            step_x (StepX): The object to use for updating x
+            criterion (Criterion): The criterion to use for assessment
+        """
+        super().__init__()
+        self._module = module
+        self._step_theta = step_theta
+        self._step_x = step_x
+        self._criterion = criterion
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+        
+        if self._criterion is None:
+            # use MSE Loss for the default
+            return Assessment(Reduction.reduce((y.f - t.f).pow(2), reduction_override))
+
+        return self._criterion.assess(y, t, reduction_override)
+
+    def step_x(self, x: IO, t: IO) -> IO:
+        return self._step_x.step_x(x, t)
+    
+    def step(self, x: IO, t: IO) -> IO:
+        return self._step_theta.step(x, t)
+
+    def accumulate(self, x: IO, t: IO):
+        return self._step_theta.accumulate(x, t)
 
 
 class NullLearner(LearningMachine):

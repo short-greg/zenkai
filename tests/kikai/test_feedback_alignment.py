@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 
-from zenkai.kaku import OptimFactory, IO, State
+from zenkai.kaku import OptimFactory, IO
 from zenkai.utils import get_model_parameters
 from zenkai.kikai import _feedback_alignment
 
 
 class TestFALearner:
+
     def test_fa_learner_updates_the_parameters(self):
 
         net = nn.Linear(3, 4)

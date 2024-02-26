@@ -142,6 +142,7 @@ class TestTHGradLoopLearner:
 
 
 class TestCriterionGrad:
+
     def test_criterion_grad_step_produces_correct_shape(self):
 
         learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
