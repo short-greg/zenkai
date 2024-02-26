@@ -6,8 +6,7 @@ from ..kaku import (
     IO,
     SetYHook,
     LearningMachine,
-    StepTheta,
-    NullStepTheta
+    StepTheta
 )
 
 
@@ -18,7 +17,7 @@ class TargetPropLearner(LearningMachine):
     y_name = 'y'
 
     def __init__(
-        self, default_forward: nn.Module, default_reverse: nn.Module, 
+        self, forward_module: nn.Module=None, reverse_module: nn.Module=None, 
         forward_step_theta: StepTheta=None, reverse_step_theta: StepTheta=None,
         cat_x: bool=True
     ) -> None:
@@ -27,24 +26,29 @@ class TargetPropLearner(LearningMachine):
         super().__init__()
         self._reverse_update = True
         self._forward_update = True
-        self._default_forward = default_forward
-        self._default_reverse = default_reverse
-        self._forward_step_theta = forward_step_theta or NullStepTheta()
-        self._reverse_step_theta = reverse_step_theta or NullStepTheta()
+        self.forward_module = forward_module
+        self.reverse_module = reverse_module
+        self.forward_step_theta = forward_step_theta
+        self.reverse_step_theta = reverse_step_theta
         self.cat_x = cat_x
         self.forward_hook(SetYHook(self.y_name))
 
     def accumulate_reverse(self, x: IO, y: IO, t: IO):
-        self._reverse_step_theta.accumulate(self.get_rev_x(x, y), t)
+        if self.reverse_step_theta is not None:
+            self.reverse_step_theta.accumulate(self.get_rev_x(x, y), t)
     
     def accumulate_forward(self, x: IO, t: IO):
-        self._forward_step_theta.accumulate(x, t)
+        if self.forward_step_theta is not None:
+            self.forward_step_theta.accumulate(x, t)
 
     def step_reverse(self, x: IO, y: IO, t: IO):
-        self._reverse_step_theta.step(self.get_rev_x(x, y), t)
+        if self.reverse_step_theta is not None:
+            self.reverse_step_theta.step(self.get_rev_x(x, y), t)
     
     def step_forward(self, x: IO, t: IO):
-        self._forward_step_theta.step(x, t)
+
+        if self.forward_step_theta is not None:
+            self.forward_step_theta.step(x, t)
 
     def get_rev_x(self, x: IO, y: IO) -> IO:
         """
@@ -105,13 +109,13 @@ class TargetPropLearner(LearningMachine):
             self.step_reverse(x, y, t)
 
     def reverse(self, x: IO, y: IO, release: bool=True):
-        if self._default_reverse:
-            x = self._default_reverse(x, y)
+        if self.reverse_module is not None:
+            x = self.reverse_module(x, y)
         return x.out(release)
 
     def forward(self, x: IO, release: bool=True):
-        if self._default_forward:
-            x = self._default_forward(x)
+        if self.forward_module is not None:
+            x = self.forward_module(x)
         return x.out(release)
 
     def step_x(self, x: IO, t: IO) -> IO:
@@ -142,6 +146,7 @@ class DiffTargetPropLearner(TargetPropLearner):
         Returns:
             IO: The target for the preceding layer
         """
+        # TODO: Make it so x and t can have multiple values
         y = x._(self).y
         t_reverse = self.reverse(x, t)
         y_reverse = self.reverse(x, y)

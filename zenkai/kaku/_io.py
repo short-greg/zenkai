@@ -21,7 +21,9 @@ class IO(object):
     Container for the inputs, outputs, and targets of a learning machine
     """
 
-    def __init__(self, *x, detach: bool = False, names: typing.List[str] = None, meta: typing.Dict=None):
+    def __init__(
+        self, *x, detach: bool = False, names: typing.List[str] = None, meta: typing.Dict=None
+    ):
         """Wrap the inputs
 
         Args:

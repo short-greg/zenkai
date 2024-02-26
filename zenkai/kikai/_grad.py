@@ -92,7 +92,9 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
         return self.criterion.assess(y, t, reduction_override)
 
-    def grad_assess(self, x: IO, y: IO, t: IO, reduction_override: str=None) -> Assessment:
+    def grad_assess(
+        self, x: IO, y: IO, t: IO, reduction_override: str=None
+    ) -> Assessment:
         if self.grad_criterion is None:
             return self.assess_y(y, t, reduction_override)
         if isinstance(self.grad_criterion, XCriterion):
@@ -130,16 +132,17 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             return IO(self.module(x.f))
         return x
 
-    def forward(self, x: IO, release: bool = True, batch_idx: Idx = None) -> IO:
+    def forward(
+        self, x: IO, release: bool = True, batch_idx: Idx = None
+    ) -> IO:
         
         x.freshen()
         x_idx = batch_idx(x) if batch_idx is not None else x
         y = x._(self).y = self.forward_nn(x_idx)
         return y.out(release)
     
-    def zero_x_grad(self, x: IO):
-
-        self.optim.zero_x(x)
-
-    def zero_theta(self):
-        self.optim.zero_theta()
+    def unaccumulate(self, x: IO=None, theta: bool=True):
+        if x is not None:
+            self.optim.zero_x(x)
+        if theta:
+            self.optim.zero_theta()

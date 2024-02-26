@@ -545,6 +545,9 @@ class StdLearningMachine(LearningMachine):
 
     def accumulate(self, x: IO, t: IO):
         return self._step_theta.accumulate(x, t)
+    
+    def unaccumulate(self, x: IO=None, theta: bool=True):
+        pass
 
 
 class NullLearner(LearningMachine):
