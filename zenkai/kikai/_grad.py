@@ -16,19 +16,13 @@ from ..kaku import (
     Criterion,
     StepTheta,
     StepX,
-    idx_io,
     Assessment,
     OptimFactory,
-    acc_dep,
-    ThLoss,
     XCriterion,
     CompOptim,
     forward_dep
 )
-from ..mod import Lambda
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
-from ..mod import Null
-from ._null import NullStepTheta
 from ..utils import checkattr
 
 
