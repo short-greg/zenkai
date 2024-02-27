@@ -295,9 +295,7 @@ class IO(object):
         updated = []
         lr = lr if lr is not None else 1.0
         for x_i in self:
-            if x_i.grad is None:
-                next
-            if isinstance(x_i, torch.Tensor):
+            if isinstance(x_i, torch.Tensor) and x_i.grad is not None:
                 if x_i.grad is None:
                     x_i = x_i.clone()
                 else:

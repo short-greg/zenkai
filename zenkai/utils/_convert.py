@@ -175,15 +175,23 @@ def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
     return chain(model.parameters() for model in models)
 
 
-def apply_to_parameters(parameters: typing.Iterator[torch.nn.parameter.Parameter], f):
+def apply_to_parameters(
+    parameters: typing.Iterator[torch.nn.parameter.Parameter], f
+):
     """Apply a function to the parameters
 
     Args:
         parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
         f : The function to apply
     """
-    if isinstance(parameters, typing.List):
-        parameters = chain(*parameters)
+    if isinstance(parameters, nn.Module):
+        parameters = parameters.parameters()
+    
+    elif isinstance(parameters, typing.List):
+        parameters = chain(
+            *(parameter.parameters() if isinstance(parameter, nn.Module) else parameter for parameter in parameters)
+        )
+
     for p in parameters:
         p.data = f(p.data)
 
