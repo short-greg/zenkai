@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 # 3rd Party
 import torch
+import torch.nn as nn
 
 
 # Local
@@ -259,3 +260,9 @@ class RegTargetPropCriterion(TargetPropCriterion):
         ) + self._reg_criterion(
             x.sub(1), x.sub(0).detach(), reduction_override=reduction_override
         )
+
+
+
+# 1) Regular target prop
+# 2) difference target prop
+# 3) denoising
