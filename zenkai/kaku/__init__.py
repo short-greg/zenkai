@@ -41,11 +41,12 @@ from ._machine import (
     acc_dep,
     forward_dep,
     step_dep,
-    ForwardHook
+    ForwardHook,
+    SetYHook
 )
 from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
-    OptimFactory, optimf, Fit, PopulationOptim
+    OptimFactory, optimf, Fit, PopulationOptim, CompOptim
 )
 from ._state import IDable, MyState, State, StateKeyError, Meta
 from ._populate import (

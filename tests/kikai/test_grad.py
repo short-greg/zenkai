@@ -3,36 +3,39 @@
 # 3rd party
 import torch
 from torch import nn
-from zenkai import OptimFactory, ThLoss, utils
+from zenkai import OptimFactory, ThLoss, CompOptim
 
 # local
-from zenkai.kaku import IO
+from zenkai.kaku import IO, Idx
 from zenkai.kikai import _grad
+from zenkai import utils
 
 
 class THGradLearnerT1(_grad.GradLearner):
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
-            [linear],
+            linear,
             criterion=ThLoss(nn.MSELoss),
-            optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
+            optim=OptimFactory(torch.optim.Adam, lr=1e-2).comp(),
         )
-        self.linear = linear
 
 
-class THGradLearnerT2(_grad.GradLoopLearner):
+class THGradLearnerT2(_grad.GradLearner):
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             linear,
             criterion=ThLoss(nn.MSELoss),
-            theta_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
-            x_optim_factory=OptimFactory(torch.optim.Adam, lr=1e-2),
+            optim=CompOptim(
+                OptimFactory(torch.optim.Adam, lr=1e-2),
+                OptimFactory(torch.optim.Adam, lr=1e-2)
+            )
         )
 
 
 class TestGradLearner1:
+
     def test_assess_y_uses_correct_reduction(self):
 
         learner = THGradLearnerT1(2, 3)
@@ -100,12 +103,13 @@ class TestTHGradLoopLearner:
     def test_step_x_updates_x_repeated(self):
 
         learner = THGradLearnerT2(2, 3)
-        x = IO(torch.rand(2, 2))
+        x = IO(torch.rand(4, 2))
         og_x = x.clone()
-        t = IO(torch.rand(2, 3))
-        learner.forward(x)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        t = IO(torch.rand(4, 3))
+        idx = Idx([0, 1])
+        learner.forward(x,batch_idx=idx)
+        learner.accumulate(x, t, batch_idx=idx)
+        learner.step(x, t, batch_idx=idx)
         x = learner.step_x(x, t)
         x = learner.step_x(x, t)
         assert (x.f != og_x.f).any()
@@ -130,6 +134,7 @@ class TestTHGradLoopLearner:
         before = utils.get_model_parameters(learner)
         learner.forward(x)
         learner.accumulate(x, t)
+        learner.forward(x)
         learner.accumulate(x, t)
         learner.step(x, t)
         after = utils.get_model_parameters(learner)
@@ -137,15 +142,19 @@ class TestTHGradLoopLearner:
 
 
 class TestCriterionGrad:
+
     def test_criterion_grad_step_produces_correct_shape(self):
 
-        learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
+        learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
         learner.step(IO(torch.rand(3, 4)), IO(torch.randint(0, 4, (3,))))
         assert True
 
     def test_criterion_grad_step_x_produces_correct_shape(self):
 
-        learner = _grad.CriterionGrad(ThLoss("CrossEntropyLoss"))
+        learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
         x = IO(torch.rand(3, 4))
-        x_prime = learner.step_x(x, IO(torch.randint(0, 4, (3,))))
+        learner(x)
+        t = IO(torch.randint(0, 4, (3,)))
+        learner.accumulate(x, t)
+        x_prime = learner.step_x(x, t)
         assert (x.f != x_prime.f).any()

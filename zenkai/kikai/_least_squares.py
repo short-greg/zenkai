@@ -19,6 +19,7 @@ from ..kaku import (
     ThLoss,
     update_io,
     OptimFactory,
+    forward_dep
 )
 from ..utils import to_np, to_th_as
 from ._grad import GradStepTheta
@@ -284,7 +285,7 @@ class GradLeastSquaresLearner(LearningMachine):
         loss: Criterion = None,
         lam_x: float = 1e-4,
     ):
-        """_summary_
+        """
 
         Args:
             in_features (int): The number of features into the linear model
@@ -303,10 +304,13 @@ class GradLeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
-        self._step_theta = GradStepTheta(self, optim_factory, reduction="mean")
+        self._step_theta = GradStepTheta(
+            self, 'y', self, optim_factory, ThLoss('MSELoss')
+        )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
-        assessment = self._loss.assess(y, t, reduction_override=reduction_override)
+        assessment = self._loss.assess(
+            y, t, reduction_override=reduction_override)
         return assessment
 
     def accumulate(self, x: IO, t: IO):
@@ -316,7 +320,9 @@ class GradLeastSquaresLearner(LearningMachine):
         return self._step_x.step_x(x, t)
 
     def forward(self, x: IO, release: bool = True) -> IO:
-        return IO(self._linear(x.f), detach=release)
+        x.freshen()
+        y = x._(self).y = IO(self._linear(x.f))
+        return y.out(release)
 
     def step(self, x: IO, t: typing.Union[IO, None]):
 

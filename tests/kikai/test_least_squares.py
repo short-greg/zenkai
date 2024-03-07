@@ -97,6 +97,7 @@ class TestLeastSquaresGrad:
         x, t, y = conn2
         learner = _least_squares.GradLeastSquaresLearner(3, 2, False, True)
         before = get_model_parameters(learner)
+        learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
         assert (before != get_model_parameters(learner)).any()

@@ -2,8 +2,44 @@ import torch
 
 from zenkai import utils
 from zenkai.kaku import IO
-from zenkai.kikai._iterable import IterStepTheta, IterStepX, IterHiddenStepTheta
+from zenkai.kikai._iterable import (
+    IterStepTheta, IterStepX, IterHiddenStepTheta, 
+    IdxLoop, IOLoop
+)
 from ..kaku.test_machine import SimpleLearner
+
+
+class TestIdxLooop:
+
+    def test_idx_loop_loops_over_io(self):
+
+        torch.manual_seed(3)
+        x = IO(torch.rand(10, 2))
+
+        idx_loop = IdxLoop(2)
+        idxs = set()
+        for idx in idx_loop.loop(x):
+            idxs = idxs.union(idx.idx.tolist())
+
+        assert set(range(10)) == idxs
+
+    def test_io_loop_loops_over_all_ios(self):
+
+        torch.manual_seed(3)
+        x = IO(torch.rand(10, 2))
+        t = IO(torch.rand(10, 2))
+
+        io_loop = IOLoop(2, shuffle=False)
+        xis = []
+        tis = []
+        for x_i, t_i in io_loop.loop(x, t):
+            xis.append(x_i.f)
+            tis.append(t_i.f)
+        
+        xis = torch.concat(xis, dim=0)
+        tis = torch.concat(tis, dim=0)
+        assert (x.f == xis).all()
+        assert (t.f == tis).all()
 
 
 class TestIterStepTheta:

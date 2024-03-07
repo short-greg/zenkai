@@ -159,10 +159,10 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
     """Convenience function to retrieve the parameters of a model
 
     Args:
-        model (nn.Module): _description_
+        model (nn.Module): 
 
     Returns:
-        torch.Tensor: _description_
+        torch.Tensor: 
     """
     try:
         return parameters_to_vector(model.parameters())
