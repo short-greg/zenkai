@@ -6,6 +6,7 @@ import numpy as np
 
 # for reinforcement learning => would probably do some modifications
 
+
 class BatchMemory(object):
 
     def __init__(self, samples: typing.List[str], singular: typing.List[str]=None):

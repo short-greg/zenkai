@@ -211,7 +211,13 @@ def set_model_grads(model: nn.Module, theta_grad: typing.List[typing.Union[torch
     for p, grad in zip(model, theta_grad):
         # finish = start + p.numel()
         # cur = theta_grad[start:finish].reshape(p.shape)
-        p.grad = grad.detach()
+        if grad is not None:
+            grad = grad.detach()
+
+        if p.grad is not None:
+            p.grad.data = grad.detach()
+        else:
+            p.grad = grad
         # start = finish
 
 
