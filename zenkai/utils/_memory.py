@@ -100,6 +100,7 @@ class BatchMemory(object):
         """
 
         to_keep = self._order[self._order != idx]
+        self._order = self._order[to_keep]
         self._order[self._order > idx] -= 1
 
         for name, singular in self._singular.items():
@@ -124,7 +125,6 @@ class BatchMemory(object):
         chosen[idx] = True
 
         chosen_order = self._order[chosen]
-        print(~chosen)
         self._order = self._order[~chosen]
 
         self._batch_count = (
@@ -177,7 +177,6 @@ class BatchMemory(object):
         if self._order is None:
             raise ValueError(f'No elements are been added to the memory')
         for name, sample in self._samples.items():
-            print(sample.shape, idx)
             result[name] = sample[idx]
         
         chosen_singular = self._order[idx]
@@ -204,9 +203,18 @@ class BatchMemory(object):
         """
         return len(self._order) if self._order is not None else 0
 
+    @property
     def n_batches(self) -> int:
         """
         Returns:
             int: The number of batches
         """
         return self._idx
+
+    @property
+    def n_samples(self) -> int:
+        """
+        Returns:
+            int: The number of samples
+        """
+        return len(self)
