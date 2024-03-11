@@ -85,10 +85,7 @@ class TargetPropLearner(LearningMachine):
         """
         state = x._(self)
         if 'reverse_x' in state:
-            print('Set reverse x!')
             return state.reverse_x
-        else: 
-            print('No reverse x')
         if self._cat_x:
             y = IO(x, y)
         
