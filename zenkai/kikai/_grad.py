@@ -19,6 +19,7 @@ from ..kaku import (
     OptimFactory,
     XCriterion,
     CompOptim,
+    ThLoss,
     forward_dep
 )
 from ..utils import get_model_grads, set_model_grads, get_model_parameters
@@ -28,26 +29,28 @@ from ..utils import checkattr
 class GradStepTheta(StepTheta):
 
     def __init__(
-        self, machine: LearningMachine, y_key, module: nn.Module=None, optimf: OptimFactory=None,
-        grad_criterion: typing.Union[XCriterion, Criterion]=None
+        self, module: nn.Module, grad_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
+        
     ):
         super().__init__()
-        self.machine = machine
         self.module = module
         self.optim = optimf(module.parameters()) if optimf is not None else None
+        grad_criterion = grad_criterion or "mean"
+        if isinstance(grad_criterion, str):
+            grad_criterion = ThLoss('MSELoss', grad_criterion)
         self.grad_criterion = grad_criterion
-        self.y_key = y_key
 
     def accumulate(self, x: IO, t: IO, y: IO=None):
         
-        y = x._(self.machine)[self.y_key]
+        if y is None:
+            y = IO(self.module(*x.u))
         if isinstance(self.grad_criterion, XCriterion):
             assessment = self.grad_criterion.assess(x, y, t)
-        elif self.grad_criterion is None:
-            assessment = self.machine.assess_y(y, t)
+        if isinstance(self.grad_criterion, LearningMachine):
+            assessment = self.grad_criterion.assess_y(y, t)
         else:
             assessment = self.grad_criterion.assess(y, t)
-        assessment.backward()
+        assessment.value.backward()
 
     def step(self, x: IO, t: IO):
         if self.optim is not None:
