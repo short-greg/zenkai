@@ -1,10 +1,9 @@
 # 1st party
 import typing
-from abc import abstractproperty, abstractmethod
+from abc import abstractmethod
 
 # 3rd Party
 import torch.nn as nn
-import torch
 
 # Local
 from ..kaku import (

@@ -175,53 +175,62 @@ def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
     return chain(model.parameters() for model in models)
 
 
-def apply_to_parameters(parameters: typing.Iterator[torch.nn.parameter.Parameter], f):
+def apply_to_parameters(
+    parameters: typing.Iterator[torch.nn.parameter.Parameter], f
+):
     """Apply a function to the parameters
 
     Args:
         parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
         f : The function to apply
     """
-    if isinstance(parameters, typing.List):
-        parameters = chain(*parameters)
+    if isinstance(parameters, nn.Module):
+        parameters = parameters.parameters()
+    
+    elif isinstance(parameters, typing.List):
+        parameters = chain(
+            *(parameter.parameters() if isinstance(parameter, nn.Module) else parameter for parameter in parameters)
+        )
+
     for p in parameters:
         p.data = f(p.data)
 
 
-def update_model_parameters(model: nn.Module, theta: torch.Tensor):
+def update_model_parameters(
+        model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter]], theta: torch.Tensor):
     """Convenience function to update the parameters of a model
 
     Args:
         model (nn.Module): Model to update parameters for
         theta (torch.Tensor): The new parameters for the model
     """
-    vector_to_parameters(theta, model.parameters())
+    if isinstance(model, torch.nn.Module):
+        model = model.parameters()
+    vector_to_parameters(theta, model)
 
 
-def set_model_grads(model: nn.Module, theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
+def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
     """Set the gradients of a module to the values specified by theta_grad
 
     Args:
         model (nn.Module): The module to update gradients for or a callable that returns parameters
         theta_grad (torch.Tensor): The gradient values to update with
     """
-    start = 0
     if isinstance(model, nn.Module):
         model = model.parameters()
+    elif isinstance(model, torch.Tensor):
+        model = [model]
     for p, grad in zip(model, theta_grad):
-        # finish = start + p.numel()
-        # cur = theta_grad[start:finish].reshape(p.shape)
         if grad is not None:
             grad = grad.detach()
 
         if p.grad is not None:
-            p.grad.data = grad.detach()
+            p.grad.data = grad
         else:
             p.grad = grad
-        # start = finish
 
 
-def update_model_grads(model: nn.Module, theta_grad: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True):
+def update_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True):
     """Update the gradients of a module
 
     Args:
@@ -232,9 +241,41 @@ def update_model_grads(model: nn.Module, theta_grad: typing.List[typing.Union[to
     # start = 0
     if isinstance(model, nn.Module):
         model = model.parameters()
+    elif isinstance(model, torch.Tensor):
+        model = [model]
 
     for p, grad in zip(model, theta_grad):
         
+        if grad is None and not to_add:
+            p.grad = None
+        
+        if p.grad is None:
+            if grad is not None:
+                p.grad = grad.detach()
+        else:
+            if grad is not None and to_add:
+                p.grad.data = p.grad.data + grad.detach()
+            elif grad is not None:
+                p.grad.data = grad.detach() 
+
+
+def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], t: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True, lr: float=1.0):
+    """Update the gradients of a module
+
+    Args:
+        model (nn.Module): The module to update gradients for
+        theta_grad (torch.Tensor): The gradient values to update with
+        to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
+    """
+    # start = 0
+    if isinstance(model, nn.Module):
+        model = model.parameters()
+    elif isinstance(model, torch.Tensor):
+        model = [model]
+
+    for p, t_i in zip(model, t):
+        
+        grad = ((p - t_i) * lr).detach()
         if grad is None and not to_add:
             p.grad = None
         
@@ -264,7 +305,10 @@ def checkattr(name: str):
     return _wrap
 
 
-def get_model_grads(model: nn.Module, clone: bool=True) -> typing.Union[torch.Tensor, None]:
+MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
+
+
+def get_model_grads(model: MODEL_P, clone: bool=True) -> typing.Union[torch.Tensor, None]:
     """Get all of the gradients in a module
 
     Args:
@@ -277,6 +321,8 @@ def get_model_grads(model: nn.Module, clone: bool=True) -> typing.Union[torch.Te
     grads = []
     if isinstance(model, nn.Module):
         model = model.parameters()
+    elif isinstance(model, torch.Tensor):
+        model = [model]
 
     for p in model:
         # if p.grad is None:
@@ -291,6 +337,35 @@ def get_model_grads(model: nn.Module, clone: bool=True) -> typing.Union[torch.Te
     if len(grads) == 0:
         return None
     return grads
+
+
+def regularize_params(model: MODEL_P, f) -> torch.Tensor:
+    """Convenience function to regularize parameters
+
+    Args:
+        model (MODEL_P): The model or parameters to regularize
+        f: regularization function
+
+    Returns:
+        torch.Tensor: the regularization value
+    """
+
+    regularization = None
+    if isinstance(model, nn.Module):
+        model = model.parameters()
+    elif isinstance(model, torch.Tensor):
+        model = [model]
+
+    for p in model:
+        
+        cur = f(p)
+        if cur.dim() != 0:
+            raise RuntimeError('The regularization function did not output a reduced value of dim 0')
+        if regularization is None:
+            regularization = cur
+        else:
+            regularization = regularization + cur
+    return p
 
 
 def undo_cat1d(model: nn.Module, x: torch.Tensor) -> torch.Tensor:

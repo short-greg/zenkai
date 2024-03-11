@@ -30,5 +30,6 @@ from ._convert import (
     undo_cat1d,
     cat_1d,
     undo_grad,
-    checkattr
+    checkattr,
+    update_model_grads_with_t
 )
