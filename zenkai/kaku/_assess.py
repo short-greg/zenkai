@@ -562,6 +562,54 @@ class XCriterion(nn.Module):
     ) -> torch.Tensor:
         pass
 
+
+class CompositeXCriterion(XCriterion):
+
+    def __init__(self, criterions: typing.List[typing.Union[Criterion, XCriterion]]):
+        super().__init__()
+        self.criterions = criterions
+
+    def forward(
+        self, x: IO, y: IO, t: IO, reduction_override: str = None
+    ) -> torch.Tensor:
+        
+        losses = []
+        for criterion in self.criterions:
+            if isinstance(criterion, XCriterion):
+                losses.append(
+                    criterion(x, y, t, reduction_override=reduction_override)
+                )
+            else:
+                losses.append(
+                    criterion(y, t, reduction_override=reduction_override)
+                )
+        return sum(losses)
+
+
+class CompositeCriterion(Criterion):
+
+    def __init__(self, criterions: typing.List[Criterion]):
+        """Create multiple criterions
+
+        Args:
+            criterions (typing.List[Criterion]): Cr
+        """
+        super().__init__()
+        self.criterions = criterions
+
+    def forward(
+        self, y: IO, t: IO, reduction_override: str = None
+    ) -> torch.Tensor:
+        
+        losses = []
+        for criterion in self.criterions:
+            losses.append(
+                criterion(y, t, reduction_override)
+            )
+        return sum(losses)
+
+
+
 # TODO: Make it easy to create an "XCriterion"
 
 LOSS_MAP = {}
@@ -699,7 +747,6 @@ class PopulationAssessment(Assessment):
         return PopulationAssessment(
             pop_assessment, assessment.maximize
         )
-
 
 
 class AssessmentLog(object):

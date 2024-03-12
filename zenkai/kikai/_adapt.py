@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from abc import abstractmethod, ABC
-from ..kaku import StepTheta, StepX, LearningMachine, IO, Criterion, XCriterion, OptimFactory
+from ..kaku import StepTheta, StepX, LearningMachine, IO, Criterion, XCriterion, OptimFactory, Reduction
 from .. import utils
 from torch.autograd import Function
 import typing
@@ -152,7 +152,7 @@ class StepNNAdapt(LearnerAdapt):
 class CriterionNNAdapt(LearnerAdapt):
 
     def __init__(
-        self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion], 
+        self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion]=None, 
         optim: OptimFactory=None, to_step_x: bool=False
     ):
         super().__init__()
@@ -183,7 +183,7 @@ class CriterionNNAdapt(LearnerAdapt):
                 with torch.enable_grad():
                     x, y = ctx.saved_tensors
                     t = (y - grad_output).detach()
-                    loss = self.criterion(IO(y), IO(t))
+                    loss = self.assess(x, y, t)
 
                     if to_step_x:
                         loss.backward()
@@ -200,6 +200,17 @@ class CriterionNNAdapt(LearnerAdapt):
                 return grad
             
         self._exec = Exec
+
+    def assess(self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, reduction_override: str=None) -> torch.Tensor:
+
+        if self.criterion is None:
+            return Reduction[reduction_override or 'mean'].reduce((y - t).pow(2))
+
+        if isinstance(self.criterion, XCriterion):
+            return self.criterion(
+                IO(x), IO(y), IO(t), reduction_override=reduction_override)
+        return self.criterion(
+            IO(y), IO(t), reduction_override=reduction_override)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
