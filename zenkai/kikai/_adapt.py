@@ -1,10 +1,21 @@
+# 1st party
+from abc import abstractmethod
+import typing
+
+# 3rd party
 import torch.nn as nn
 import torch
-from abc import abstractmethod, ABC
-from ..kaku import StepTheta, StepX, LearningMachine, IO, Criterion, XCriterion, OptimFactory, Reduction
-from .. import utils
 from torch.autograd import Function
-import typing
+
+
+# Local
+from ..kaku import (
+    StepTheta, StepX, 
+    LearningMachine, IO, 
+    Criterion, XCriterion, 
+    OptimFactory, Reduction
+)
+from .. import utils
 
 
 # TODO: Think how to make this more extensible so it can take

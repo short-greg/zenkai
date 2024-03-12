@@ -43,7 +43,11 @@ class GradStepTheta(StepTheta):
     def accumulate(self, x: IO, t: IO, y: IO=None):
         
         if y is None:
-            y = IO(self.module(*x.u))
+            if isinstance(self.module, LearningMachine):
+                y = self.module(x)
+            else:
+                y = IO(self.module(*x.u))
+        
         if isinstance(self.grad_criterion, XCriterion):
             assessment = self.grad_criterion.assess(x, y, t)
         if isinstance(self.grad_criterion, LearningMachine):
