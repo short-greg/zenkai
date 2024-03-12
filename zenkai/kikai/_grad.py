@@ -142,3 +142,9 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             self.optim.zero_x(x)
         if theta:
             self.optim.zero_theta()
+
+
+# TODO:
+
+# def mid_grad()
+# def grad(module: nn.Module, optimf, )
