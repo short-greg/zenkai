@@ -593,7 +593,6 @@ def decay(
         return new_v
     return decay * cur_v + (1 - decay) * new_v
 
-
 class SignSTE(torch.autograd.Function):
     """Use to clip the grad between two values
     Useful for smooth maximum/smooth minimum
@@ -650,19 +649,3 @@ def binary_ste(x: torch.Tensor) -> torch.Tensor:
 
 def sign_ste(x: torch.Tensor) -> torch.Tensor:
     return SignSTE.apply(x)
-
-
-# def calc_correlation_mae(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
-#     """Calculate the mean absolute error in correlation
-
-#     Args:
-#         x1 (torch.Tensor)
-#         x2 (torch.Tensor)
-
-#     Returns:
-#         torch.Tensor: The correlation MAE
-#     """
-
-#     corr1 = torch.corrcoef(torch.flatten(x1, 1))
-#     corr2 = torch.corrcoef(torch.flatten(x2, 1))
-#     return torch.abs(corr1 - corr2).mean()

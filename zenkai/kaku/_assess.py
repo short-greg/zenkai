@@ -69,6 +69,7 @@ class Reduction(Enum):
         loss: torch.Tensor,
         dim=None,
         keepdim: bool = False,
+        reduction_override: str=None
     ) -> torch.Tensor:
         """Reduce a loss by the Reduction
 
@@ -83,26 +84,30 @@ class Reduction(Enum):
         Returns:
             torch.Tensor: The reduced loss
         """
+        if reduction_override is not None:
+            reduction = Reduction[reduction_override]
+        else:
+            reduction = self
 
-        if self == self.none:
+        if reduction == self.none:
             return loss
-        if self == self.mean and dim is None:
+        if reduction == self.mean and dim is None:
             return loss.mean()
-        if self == self.sum and dim is None:
+        if reduction == self.sum and dim is None:
             return loss.sum()
-        if self == self.mean:
+        if reduction == self.mean:
             return loss.mean(dim=dim, keepdim=keepdim)
-        if self == self.sum:
+        if reduction == self.sum:
             return loss.sum(dim=dim, keepdim=keepdim)
-        if self == self.batchmean and dim is None:
+        if reduction == self.batchmean and dim is None:
             return loss.sum() / loss.size(0)
-        if self == self.batchmean:
+        if reduction == self.batchmean:
             return loss.sum(dim=dim, keepdim=keepdim) / loss.size(0)
-        if self == self.samplemeans:
+        if reduction == self.samplemeans:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).mean(dim=1, keepdim=keepdim)
-        if self == self.samplesums:
+        if reduction == self.samplesums:
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).sum(dim=1, keepdim=keepdim)
