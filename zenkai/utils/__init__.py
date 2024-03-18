@@ -6,17 +6,11 @@ from ._convert import (
     flatten_dim0,
     deflatten_dim0,
     freshen,
-    get_model_parameters,
     to_np,
     to_signed_neg,
     to_th,
     to_th_as,
     to_zero_neg,
-    update_model_parameters,
-    apply_to_parameters,
-    update_model_grads,
-    get_model_grads,
-    set_model_grads,
     module_factory,
     decay,
     collapse_k,
@@ -24,8 +18,24 @@ from ._convert import (
     unsqueeze_to,
     align_to,
     undo_cat1d,
-    cat_1d,
-    undo_grad,
+    cat1d,
     checkattr,
-    update_model_grads_with_t
+)
+from ._params import (
+    get_model_parameters,
+    update_model_parameters,
+    apply_to_parameters,
+    update_model_grads,
+    get_model_grads,
+    set_model_grads,
+    update_model_grads_with_t,
+    undo_grad,
+
+)
+from ._ste import (
+
+    binary_ste,
+    BinarySTE,
+    sign_ste,
+    SignSTE
 )
