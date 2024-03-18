@@ -12,6 +12,8 @@ from ._assess import (
     PopulationAssessment,
     AssessmentLog, 
     reduce_assessment,
+    CompositeCriterion,
+    CompositeXCriterion
 )
 
 from ._io import (

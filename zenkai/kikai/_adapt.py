@@ -1,49 +1,45 @@
+# 1st party
+from abc import abstractmethod
+import typing
+
+# 3rd party
 import torch.nn as nn
 import torch
-from abc import abstractmethod, ABC
-from ..kaku import StepTheta, StepX, LearningMachine, IO, Criterion, XCriterion, OptimFactory
-from .. import utils
 from torch.autograd import Function
-import typing
+
+
+# Local
+from ..kaku import (
+    StepTheta, StepX, 
+    LearningMachine, IO, 
+    Criterion, XCriterion, 
+    OptimFactory, Reduction
+)
+from .. import utils
 
 
 # TODO: Think how to make this more extensible so it can take
 # more inputs
 
 
-class LearnerWrap(nn.Module):
+class LearnerAdapt(nn.Module):
+
+    def __init__(
+        self, inputs: typing.Union[str, typing.List[str]]='x', outputs: typing.Union[str, typing.List[str]]='y'
+    ):
+        super().__init__()
+        self._inputs = inputs
+        self._outputs = outputs
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         pass
 
-    @abstractmethod
-    def update(self, grad: torch.Tensor, state=None):
-        pass
 
-    @abstractmethod
-    def backward(self, grad: torch.Tensor, state=None):
-        pass
-
-
-class SwapOutput(Function):
-
-    @staticmethod
-    def forward(ctx, x: torch.Tensor, y: torch.Tensor):
-
-        # ctx.save_for_backward(input)
-        return y.clone()
-
-    @staticmethod
-    def backward(ctx, grad_output):
-
-        return grad_output, None
-
-
-class LearnerNNWrap(LearnerWrap):
+class LearnerNNAdapt(LearnerAdapt):
 
     def __init__(
-        self, learner: LearningMachine, to_step: bool=False, to_step_x: bool=False
+        self, learner: LearningMachine, to_step: bool=False, to_step_x: bool=True
     ):
         super().__init__()
         self.learner = learner
@@ -51,6 +47,9 @@ class LearnerNNWrap(LearnerWrap):
         self.to_step_x = to_step_x
     
         class Exec(Function):
+            # TODO: figure out a better way to save the IO for "backward"
+            # Currently it is not that straightforward because it contains 
+            # a meta object that might contain tensors.
 
             @staticmethod
             def forward(ctx, x: torch.Tensor) -> torch.Tensor:
@@ -58,29 +57,35 @@ class LearnerNNWrap(LearnerWrap):
                     x_clone = x.clone().detach()
                     x_clone.requires_grad_()
                     x_clone.retain_grad()
-                    y_base = self.learner(IO(x_clone))
-                
-                    ctx.save_for_backward(IO(x_clone), y_base)
+                    x_io = IO(x_clone)
+                    y_base = self.learner(x_io)
+                    ctx.x = x_io
+                    ctx.y = y_base
 
-                return y_base.clone().detach()
+                return y_base.f.clone().detach()
 
             @staticmethod
             def backward(ctx, grad_output):
 
                 with torch.enable_grad():
-                    x, y = ctx.saved_tensors
+                    x = ctx.x
+                    y = ctx.y
                     t = y.f - grad_output
-                    x = IO(x)
                     t = IO(t)
 
                     if not self.to_step_x:
-                        with utils.undo_grad([self.module]):
-                            loss2 = 0.5 * (y - t).pow(2).sum()
-                            loss2.backward(retain_graph=True)
-                            grad = x.grad
+                        # TODO: Check if there si an error with the
+                        # grad function because it is not guaranteed you
+                        # can backprop through learner
 
                         with utils.undo_grad([x.f]):
-                            self.step_theta.accumulate(x, t)
+                            self.learner.accumulate(x, t)
+
+                        with utils.undo_grad([self.learner]):
+                            cur_y = self.learner(x, release=False)
+                            loss2 = 0.5 * (cur_y.f - t.f).pow(2).sum()
+                            loss2.backward()
+                            grad = x.f.grad
                     else:
                         self.learner.accumulate(x, t)
                         x_prime = self.learner.step_x(x, t)
@@ -102,7 +107,7 @@ class LearnerNNWrap(LearnerWrap):
 # TODO: Handle the x gradients
 
 
-class StepNNWrap(LearnerWrap):
+class StepNNAdapt(LearnerAdapt):
 
     def __init__(
         self, module: nn.Module, step_theta: StepTheta, 
@@ -155,10 +160,10 @@ class StepNNWrap(LearnerWrap):
         return self._exec.apply(x)
 
 
-class CriterionNNWrap(LearnerWrap):
+class CriterionNNAdapt(LearnerAdapt):
 
     def __init__(
-        self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion], 
+        self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion]=None, 
         optim: OptimFactory=None, to_step_x: bool=False
     ):
         super().__init__()
@@ -189,7 +194,7 @@ class CriterionNNWrap(LearnerWrap):
                 with torch.enable_grad():
                     x, y = ctx.saved_tensors
                     t = (y - grad_output).detach()
-                    loss = self.criterion(IO(y), IO(t))
+                    loss = self.assess(x, y, t)
 
                     if to_step_x:
                         loss.backward()
@@ -206,6 +211,17 @@ class CriterionNNWrap(LearnerWrap):
                 return grad
             
         self._exec = Exec
+
+    def assess(self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, reduction_override: str=None) -> torch.Tensor:
+
+        if self.criterion is None:
+            return Reduction[reduction_override or 'mean'].reduce((y - t).pow(2))
+
+        if isinstance(self.criterion, XCriterion):
+            return self.criterion(
+                IO(x), IO(y), IO(t), reduction_override=reduction_override)
+        return self.criterion(
+            IO(y), IO(t), reduction_override=reduction_override)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         

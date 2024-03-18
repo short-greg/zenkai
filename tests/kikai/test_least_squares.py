@@ -93,6 +93,7 @@ class TestLeastSquaresStepX:
 
 
 class TestLeastSquaresGrad:
+    
     def test_step_with_optimize(self, linear2, conn2):
         x, t, y = conn2
         learner = _least_squares.GradLeastSquaresLearner(3, 2, False, True)

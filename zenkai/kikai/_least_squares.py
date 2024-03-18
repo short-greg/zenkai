@@ -305,7 +305,7 @@ class GradLeastSquaresLearner(LearningMachine):
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
         self._step_theta = GradStepTheta(
-            self, 'y', self, optim_factory, ThLoss('MSELoss')
+            self, grad_criterion=ThLoss('MSELoss'), optimf=optim_factory
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -314,7 +314,7 @@ class GradLeastSquaresLearner(LearningMachine):
         return assessment
 
     def accumulate(self, x: IO, t: IO):
-        self._step_theta.accumulate(x, t)
+        self._step_theta.accumulate(x, t, y=x._(self).y)
 
     def step_x(self, x: IO, t: IO) -> IO:
         return self._step_x.step_x(x, t)
