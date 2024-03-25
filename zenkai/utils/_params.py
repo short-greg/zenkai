@@ -148,11 +148,13 @@ def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[tor
 MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
 
 
-def get_model_grads(model: MODEL_P, clone: bool=True) -> typing.Union[torch.Tensor, None]:
+def get_model_grads(model: MODEL_P, clone: bool=True, flat_cat: bool=False) -> typing.Union[typing.List[torch.Tensor], torch.Tensor, None]:
     """Get all of the gradients in a module
 
     Args:
         model (nn.Module): the module to get grads for
+        clone: Whether to clone the gradient
+        flat_cat: Whether to flatten and concatenate the output
 
     Returns:
         torch.Tensor or None: the grads flattened. Returns None if any of the grads have not been set
@@ -165,17 +167,16 @@ def get_model_grads(model: MODEL_P, clone: bool=True) -> typing.Union[torch.Tens
         model = [model]
 
     for p in model:
-        # if p.grad is None:
-        #     grads.append(None)
-        #     continue
         if p.grad is not None and clone:
             grad = p.grad.data.clone()
         else:
             grad = p.grad
         grads.append(grad)
-        # grads.append(p.grad.flatten())
     if len(grads) == 0:
         return None
+    
+    if flat_cat:
+        return torch.concat([p.flatten() for p in grads])
     return grads
 
 
