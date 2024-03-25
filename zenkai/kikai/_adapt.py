@@ -153,7 +153,6 @@ class StepNNAdapt(LearnerAdapt):
             
         self._exec = Exec
     
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         x.requires_grad_(True)
@@ -164,7 +163,7 @@ class CriterionNNAdapt(LearnerAdapt):
 
     def __init__(
         self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion]=None, 
-        optim: OptimFactory=None, to_step_x: bool=False
+        optim: OptimFactory=None, to_step_x: bool=True
     ):
         super().__init__()
         self.module = module
@@ -176,6 +175,12 @@ class CriterionNNAdapt(LearnerAdapt):
 
         class Exec(Function):
 
+            # TODO: allow for multiple xs
+            # IO(x)
+            # IO.freshen()
+            # IO(y_base)
+            # *xio.u *yio.u
+            # 
             @staticmethod
             def forward(ctx, x: torch.Tensor) -> torch.Tensor:
                 with torch.enable_grad():
@@ -223,6 +228,7 @@ class CriterionNNAdapt(LearnerAdapt):
         return self.criterion(
             IO(y), IO(t), reduction_override=reduction_override)
 
+    # figure out how to "override this"
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         x.requires_grad_(True)

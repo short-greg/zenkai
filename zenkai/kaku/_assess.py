@@ -69,7 +69,7 @@ class Reduction(Enum):
         loss: torch.Tensor,
         dim=None,
         keepdim: bool = False,
-        reduction_override: str=None
+        reduction_override: str = None
     ) -> torch.Tensor:
         """Reduce a loss by the Reduction
 
@@ -89,7 +89,12 @@ class Reduction(Enum):
         else:
             reduction = self
 
-        if reduction == self.none:
+        if reduction_override is not None:
+            return Reduction[reduction_override].reduce(
+                loss, dim=dim, keepdim=keepdim
+            )
+
+        if self == self.none:
             return loss
         if reduction == self.mean and dim is None:
             return loss.mean()
@@ -469,7 +474,7 @@ class AssessmentDict(dict):
 class Criterion(nn.Module):
     """Base class for evaluating functions"""
 
-    def __init__(self, reduction: str = "mean", maximize: bool = False):
+    def __init__(self, base: nn.Module=None, reduction: str = "mean", maximize: bool = False):
         """Evaluate the output of a learning machine
 
         Args:
@@ -479,6 +484,7 @@ class Criterion(nn.Module):
         super().__init__()
         self.reduction = reduction
         self._maximize = maximize
+        self._base = base
 
     @property
     def maximize(self) -> bool:
@@ -521,15 +527,16 @@ class Criterion(nn.Module):
         """
         return Assessment(self.forward(x, t, reduction_override), self._maximize)
 
-    @abstractmethod
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        pass
+        if self._base is not None:
+            return self._base(x, t, reduction_override)
+        raise RuntimeError('The criterion evaluation has not been defined')
 
 
 class XCriterion(nn.Module):
     """Base class for evaluating functions that rely on the input to the module as well"""
 
-    def __init__(self, reduction: str = "mean", maximize: bool = False):
+    def __init__(self, base: nn.Module=None, reduction: str = "mean", maximize: bool = False):
         """Evaluate the output of a learning machine
 
         Args:
@@ -539,6 +546,7 @@ class XCriterion(nn.Module):
         super().__init__()
         self.reduction = reduction
         self._maximize = maximize
+        self._base = base
 
     @property
     def maximize(self) -> bool:
@@ -561,11 +569,13 @@ class XCriterion(nn.Module):
         """
         return Assessment(self.forward(x, y, t, reduction_override), self._maximize)
 
-    @abstractmethod
     def forward(
         self, x: IO, y: IO, t: IO, reduction_override: str = None
     ) -> torch.Tensor:
-        pass
+        
+        if self._base is not None:
+            return self._base(x, y, t, reduction_override)
+        raise RuntimeError('The criterion evaluation has not been defined')
 
 
 class CompositeXCriterion(XCriterion):
@@ -614,7 +624,6 @@ class CompositeCriterion(Criterion):
         return sum(losses)
 
 
-
 # TODO: Make it easy to create an "XCriterion"
 
 LOSS_MAP = {}
@@ -656,7 +665,7 @@ class ThLoss(Criterion):
         Raises:
             KeyError: if there is no loss named with the name passed in
         """
-        super().__init__(reduction, maximize)
+        super().__init__(reduction=reduction, maximize=maximize)
         if isinstance(base_criterion, str):
             try:
                 base_criterion = lookup_loss(base_criterion)
