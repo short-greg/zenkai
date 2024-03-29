@@ -148,7 +148,9 @@ def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[tor
 MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
 
 
-def get_model_grads(model: MODEL_P, clone: bool=True, flat_cat: bool=False) -> typing.Union[typing.List[torch.Tensor], torch.Tensor, None]:
+def get_model_grads(
+    model: MODEL_P, clone: bool=True, flat_cat: bool=False
+) -> typing.Union[typing.List[torch.Tensor], torch.Tensor, None]:
     """Get all of the gradients in a module
 
     Args:
