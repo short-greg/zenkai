@@ -1,6 +1,7 @@
 # 1st party
 from abc import abstractmethod
 import typing
+from typing_extensions import Self
 
 # 3rd party
 import torch.nn as nn
@@ -16,13 +17,14 @@ from ..kaku import (
     OptimFactory, Reduction
 )
 from .. import utils
+from functools import partial
 
 
 # TODO: Think how to make this more extensible so it can take
 # more inputs
 
 
-class LearnerAdapt(nn.Module):
+class AdaptBase(nn.Module):
 
     def __init__(
         self, inputs: typing.Union[str, typing.List[str]]='x', outputs: typing.Union[str, typing.List[str]]='y'
@@ -36,7 +38,7 @@ class LearnerAdapt(nn.Module):
         pass
 
 
-class LearnerNNAdapt(LearnerAdapt):
+class LearnerAdapt(AdaptBase):
 
     def __init__(
         self, learner: LearningMachine, to_step: bool=False, to_step_x: bool=True
@@ -107,7 +109,7 @@ class LearnerNNAdapt(LearnerAdapt):
 # TODO: Handle the x gradients
 
 
-class StepNNAdapt(LearnerAdapt):
+class StepAdapt(AdaptBase):
 
     def __init__(
         self, module: nn.Module, step_theta: StepTheta, 
@@ -159,17 +161,17 @@ class StepNNAdapt(LearnerAdapt):
         return self._exec.apply(x)
 
 
-class CriterionNNAdapt(LearnerAdapt):
+class ModAdapt(AdaptBase):
 
     def __init__(
-        self, module: nn.Module, criterion: typing.Union[XCriterion, Criterion]=None, 
+        self, module: nn.Module=None, criterion: typing.Union[XCriterion, Criterion]=None, 
         optim: OptimFactory=None, to_step_x: bool=True
     ):
         super().__init__()
         self.module = module
         self.criterion = criterion
         self.optim = optim(
-            self.module.parameters()
+            self.parameters()
         ) if optim is not None else None
         self.to_step_x = to_step_x
 
@@ -187,7 +189,7 @@ class CriterionNNAdapt(LearnerAdapt):
                     x_clone = x.clone().detach()
                     x_clone.requires_grad_()
                     x_clone.retain_grad()
-                    y_base = self.module(x_clone)
+                    y_base = self.forward_nn(x_clone)
                 
                     ctx.save_for_backward(x_clone, y_base)
 
@@ -228,8 +230,135 @@ class CriterionNNAdapt(LearnerAdapt):
         return self.criterion(
             IO(y), IO(t), reduction_override=reduction_override)
 
+    def forward_nn(self, x: torch.Tensor) -> torch.Tensor:
+        if self.module is None:
+            return x
+        return self.module(x)
+
     # figure out how to "override this"
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         x.requires_grad_(True)
         return self._exec.apply(x)
+
+
+class HookGrad(object):
+    """Use to alter the gradients of a function 
+    after the initial gradient has been computed
+    on the backward pass
+    """
+
+    def __init__(
+        self, *grad_hook: typing.Callable[[torch.Tensor, Self, int], torch.Tensor]
+    ):
+        """
+        
+        Args:
+            grad_hook (function): The hook to use for updating the gradient on the backward pass
+        """
+        self.grad_hook = grad_hook
+        self._x = None
+        self._y = None
+        self._grad_out = None
+        self._x_count = None
+        self._y_count = None
+
+    @property
+    def x(self) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The inputs of the hooked function
+        """
+        return self._x
+
+    @property
+    def y(self) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The outputs of the hooked function
+        """
+
+        return self._y
+
+    @property
+    def grad_out(self) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """The output gradients for the function
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The gradients
+        """
+        if isinstance(self._y, typing.Tuple):
+            return tuple(
+                self._grad_out[i]
+                for i in range(len(self._y))
+            )
+        return self._grad_out[0]
+
+    @property
+    def t(self) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """Compute the "targets" for the function using
+        the gradients
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The targets
+        """
+
+        if isinstance(self._y, typing.Tuple):
+            return tuple(
+                y_i - grad_i
+                for y_i, grad_i in zip(self._y, self.grad_out)
+            )
+        return self._y - self.grad_out
+
+    def pre(self, *x: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """The pre function that is called on all
+        the inputs of the function to 'hook'
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned x values
+        """
+
+        self._x_count = len(x)
+        self._x = tuple(
+            x_i.clone() for x_i in x
+        ) if self._x_count > 1 else x[0].clone()
+
+        for i, (x_i, grad_hook_i) in enumerate(zip(x, self.grad_hook)):
+            x_i.register_hook(
+                partial(grad_hook_i, hook=self, idx=i)
+            )
+        
+        return self._x
+    
+    def post(self, *y: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """The post function that is called on all
+        the outputs of the function to 'hook'
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned y values
+        """
+
+        self._y = tuple(
+            y_i.clone() for y_i in y
+        ) if len(y) > 1 else y[0].clone()
+
+        for i, y_i in enumerate(y):
+            y_i.register_hook(
+                partial(self.post_grad, idx=i)
+            )
+        return self._y
+    
+    def post_grad(self, grad: torch.Tensor, idx: int) -> torch.Tensor:
+        """Post hook that is called on the y functions
+
+        Args:
+            grad (torch.Tensor): The gradient
+            idx (int): The index for y value
+
+        Returns:
+            torch.Tensor: The gradient
+        """
+        if self._grad_out is None:
+            self._grad_out = {}
+        self._grad_out[idx] = grad
+        return grad

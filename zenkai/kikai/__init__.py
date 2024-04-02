@@ -67,6 +67,6 @@ from ._target_prop import (
     TargetPropLearner, DiffTargetPropLearner
 )
 from ._adapt import (
-    StepNNAdapt, LearnerAdapt, LearnerNNAdapt,
-    CriterionNNAdapt
+    StepAdapt, AdaptBase, LearnerAdapt,
+    ModAdapt
 )
