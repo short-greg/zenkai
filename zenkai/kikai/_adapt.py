@@ -253,6 +253,7 @@ class HookState:
         self._grad_out: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
         self._x_count: int = None
         self._y_count: int = None
+        self.state = {}
 
     def set_x(self, *x: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
 
@@ -270,7 +271,7 @@ class HookState:
     def y_count(self) -> int:
         return self._y_count
 
-    def set_y(self, *y: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def set_y(self, *y: torch.Tensor, out_hooks=None) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
 
         self._y_count = len(y)
         self._y = tuple(
@@ -278,8 +279,9 @@ class HookState:
         ) if self._y_count > 1 else y[0].clone()
 
         for i, y_i in enumerate(y):
+            out_hook = self.set_grad if out_hooks is None or out_hooks[i] is None else out_hooks[i]
             y_i.register_hook(
-                partial(self.set_grad, idx=i)
+                partial(out_hook, idx=i)
             )
         
         return self._y
@@ -344,14 +346,15 @@ class HookGrad(object):
     """
 
     def __init__(
-        self, *grad_hook: typing.Callable[[torch.Tensor, Self, int], torch.Tensor]
+        self, grad_hooks: typing.List[typing.Callable[[torch.Tensor, Self, int], torch.Tensor]], out_hooks: typing.List[typing.Callable[[torch.Tensor, int], torch.Tensor]]=None
     ):
         """
         
         Args:
             grad_hook (function): The hook to use for updating the gradient on the backward pass
         """
-        self.grad_hook = grad_hook
+        self.grad_hooks = grad_hooks
+        self.out_hooks = out_hooks
 
     def pre(self, *x: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The pre function that is called on all
@@ -365,7 +368,7 @@ class HookGrad(object):
 
         x_tup = (x,) if hook_state.x_count == 1 else x
         for i, (x_i, grad_hook_i) in enumerate(
-            zip(x_tup, self.grad_hook)
+            zip(x_tup, self.grad_hooks)
         ):
             
             if grad_hook_i is not None:
@@ -382,7 +385,7 @@ class HookGrad(object):
         Returns:
             typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned y values
         """
-        y = hook_state.set_y(*y)
+        y = hook_state.set_y(*y, out_hooks=self.out_hooks)
 
         return y
     
