@@ -2,6 +2,7 @@
 from abc import abstractmethod
 import typing
 from typing_extensions import Self
+from dataclasses import dataclass
 
 # 3rd party
 import torch.nn as nn
@@ -241,9 +242,6 @@ class ModAdapt(AdaptBase):
         x.requires_grad_(True)
         return self._exec.apply(x)
 
-from dataclasses import dataclass
-
-
 
 @dataclass
 class HookState:
@@ -387,19 +385,6 @@ class HookGrad(object):
         y = hook_state.set_y(*y)
 
         return y
-    
-    # def post_grad(self, grad: torch.Tensor, idx: int, hook_state: HookState) -> torch.Tensor:
-    #     """Post hook that is called on the y functions
-
-    #     Args:
-    #         grad (torch.Tensor): The gradient
-    #         idx (int): The index for y value
-
-    #     Returns:
-    #         torch.Tensor: The gradient
-    #     """
-    #     hook_state.set_grad(grad, idx)
-    #     return grad
     
     def f(self, f: typing.Callable, *x) -> torch.Tensor:
 
