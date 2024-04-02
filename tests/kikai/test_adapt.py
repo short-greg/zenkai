@@ -244,7 +244,7 @@ class Wrap2F(nn.Module):
         hook = adapt.HookGrad(self.hook_grad)
         
         x = self.linear1(x)
-        return hook.f(
+        return hook.__call__(
             self.linear2, x
         )
 
@@ -315,4 +315,3 @@ class TestWrapped:
         y.sum().backward()
         assert wrap3.called == 0
         assert wrap3.called2 == 1
-

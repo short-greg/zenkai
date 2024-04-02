@@ -386,7 +386,7 @@ class HookGrad(object):
 
         return y
     
-    def f(self, f: typing.Callable, *x) -> torch.Tensor:
+    def __call__(self, f: typing.Callable, *x) -> torch.Tensor:
 
         state = HookState()
         if len(x) == 1:
@@ -399,3 +399,32 @@ class HookGrad(object):
         if not isinstance(y, typing.Tuple):
             y = (y,)
         return self.post(*y, hook_state=state)
+
+
+class NullHookGrad(object):
+    """Use in place of HookGrad if no hooks should 
+    be used
+    """
+
+    def pre(self, *x: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """The pre function that is called on all
+        the inputs of the function to 'hook'
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned x values
+        """
+        return x if len(x) > 1 else x[0]
+    
+    def post(self, *y: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """The post function that is called on all
+        the outputs of the function to 'hook'
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned y values
+        """
+        return y if len(y) > 1 else y[0]
+
+    def __call__(self, f: typing.Callable, *x) -> torch.Tensor:
+        if len(x) == 1:
+            return f(x)
+        return f(*x)
