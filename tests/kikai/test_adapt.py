@@ -195,9 +195,13 @@ class Wrap1(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         hook = adapt.HookGrad(self.hook_grad)
+        hook_state = adapt.HookState()
         
         x = self.linear1(x)
-        return hook.post(self.linear2(hook.pre(x)))
+        return hook.post(
+            self.linear2(hook.pre(
+                x, hook_state=hook_state)
+            ), hook_state=hook_state)
 
 
 class Wrap2(nn.Module):
@@ -214,11 +218,36 @@ class Wrap2(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
+        hook_state = adapt.HookState()
         hook = adapt.HookGrad(self.hook_grad)
         
         x = self.linear1(x)
-        return hook.post(self.linear2(hook.pre(x)))
+        return hook.post(
+            self.linear2(hook.pre(
+                x, hook_state=hook_state)
+            ), hook_state=hook_state)
         
+class Wrap2F(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.linear1 = nn.Linear(2, 4)
+        self.linear2 = nn.Linear(4, 2)
+        self.called = False
+
+    def hook_grad(self, grad, hook: adapt.HookGrad, idx: int):
+        self.called = True
+        return hook.x.clone()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        
+        hook = adapt.HookGrad(self.hook_grad)
+        
+        x = self.linear1(x)
+        return hook.f(
+            self.linear2, x
+        )
+
 
 class Wrap3(nn.Module):
 
@@ -239,13 +268,16 @@ class Wrap3(nn.Module):
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         
+        hook_state = adapt.HookState()
         hook = adapt.HookGrad(self.hook_grad1, self.hook_grad2)
         
         x1 = self.linear1(x1)
         x2 = self.linear1(x2)
-        x1, x2 = hook.pre(x1, x2)
+        x1, x2 = hook.pre(
+            x1, x2, hook_state=hook_state
+        )
         y = x1 + x2
-        return hook.post(y)
+        return hook.post(y, hook_state=hook_state)
 
 
 class TestWrapped:
@@ -266,7 +298,15 @@ class TestWrapped:
         y.sum().backward()
         assert wrap2.called
 
-    def test_backpropagate_successful_after_returning_x(self):
+    def test_backpropagate_successful_with_hookf_after_returning_x(self):
+
+        wrap2 = Wrap2F()
+        x = torch.rand(4, 2)
+        y = wrap2(x)
+        y.sum().backward()
+        assert wrap2.called
+
+    def test_backpropagate_successful_after_returning_x_with_two_inputs(self):
 
         wrap3 = Wrap3()
         x = torch.rand(4, 2)

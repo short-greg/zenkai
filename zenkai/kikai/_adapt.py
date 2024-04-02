@@ -241,27 +241,55 @@ class ModAdapt(AdaptBase):
         x.requires_grad_(True)
         return self._exec.apply(x)
 
+from dataclasses import dataclass
 
-class HookGrad(object):
-    """Use to alter the gradients of a function 
-    after the initial gradient has been computed
-    on the backward pass
-    """
 
-    def __init__(
-        self, *grad_hook: typing.Callable[[torch.Tensor, Self, int], torch.Tensor]
-    ):
-        """
+
+@dataclass
+class HookState:
+
+    def __init__(self):
+
+        self._x: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
+        self._y: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
+        self._grad_out: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
+        self._x_count: int = None
+        self._y_count: int = None
+
+    def set_x(self, *x: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+
+        self._x_count = len(x)
+        self._x = tuple(
+            x_i.clone() for x_i in x
+        ) if self._x_count > 1 else x[0].clone()
+        return self._x
+    
+    @property
+    def x_count(self) -> int:
+        return self._x_count
+
+    @property
+    def y_count(self) -> int:
+        return self._y_count
+
+    def set_y(self, *y: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+
+        self._y_count = len(y)
+        self._y = tuple(
+            y_i.clone() for y_i in y
+        ) if self._y_count > 1 else y[0].clone()
+
+        for i, y_i in enumerate(y):
+            y_i.register_hook(
+                partial(self.set_grad, idx=i)
+            )
         
-        Args:
-            grad_hook (function): The hook to use for updating the gradient on the backward pass
-        """
-        self.grad_hook = grad_hook
-        self._x = None
-        self._y = None
-        self._grad_out = None
-        self._x_count = None
-        self._y_count = None
+        return self._y
+    
+    def set_grad(self, grad: torch.Tensor, idx: int):
+        if self._grad_out is None:
+            self._grad_out = {}
+        self._grad_out[idx] = grad
 
     @property
     def x(self) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
@@ -310,7 +338,24 @@ class HookGrad(object):
             )
         return self._y - self.grad_out
 
-    def pre(self, *x: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+
+class HookGrad(object):
+    """Use to alter the gradients of a function 
+    after the initial gradient has been computed
+    on the backward pass
+    """
+
+    def __init__(
+        self, *grad_hook: typing.Callable[[torch.Tensor, Self, int], torch.Tensor]
+    ):
+        """
+        
+        Args:
+            grad_hook (function): The hook to use for updating the gradient on the backward pass
+        """
+        self.grad_hook = grad_hook
+
+    def pre(self, *x: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The pre function that is called on all
         the inputs of the function to 'hook'
 
@@ -318,47 +363,54 @@ class HookGrad(object):
             typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned x values
         """
 
-        self._x_count = len(x)
-        self._x = tuple(
-            x_i.clone() for x_i in x
-        ) if self._x_count > 1 else x[0].clone()
+        x = hook_state.set_x(*x)
 
-        for i, (x_i, grad_hook_i) in enumerate(zip(x, self.grad_hook)):
-            x_i.register_hook(
-                partial(grad_hook_i, hook=self, idx=i)
-            )
+        x_tup = (x,) if hook_state.x_count == 1 else x
+        for i, (x_i, grad_hook_i) in enumerate(
+            zip(x_tup, self.grad_hook)
+        ):
+            
+            if grad_hook_i is not None:
+                x_i.register_hook(
+                    partial(grad_hook_i, hook=hook_state, idx=i)
+                )
         
-        return self._x
+        return x
     
-    def post(self, *y: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def post(self, *y: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The post function that is called on all
         the outputs of the function to 'hook'
 
         Returns:
             typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned y values
         """
+        y = hook_state.set_y(*y)
 
-        self._y = tuple(
-            y_i.clone() for y_i in y
-        ) if len(y) > 1 else y[0].clone()
-
-        for i, y_i in enumerate(y):
-            y_i.register_hook(
-                partial(self.post_grad, idx=i)
-            )
-        return self._y
+        return y
     
-    def post_grad(self, grad: torch.Tensor, idx: int) -> torch.Tensor:
-        """Post hook that is called on the y functions
+    # def post_grad(self, grad: torch.Tensor, idx: int, hook_state: HookState) -> torch.Tensor:
+    #     """Post hook that is called on the y functions
 
-        Args:
-            grad (torch.Tensor): The gradient
-            idx (int): The index for y value
+    #     Args:
+    #         grad (torch.Tensor): The gradient
+    #         idx (int): The index for y value
 
-        Returns:
-            torch.Tensor: The gradient
-        """
-        if self._grad_out is None:
-            self._grad_out = {}
-        self._grad_out[idx] = grad
-        return grad
+    #     Returns:
+    #         torch.Tensor: The gradient
+    #     """
+    #     hook_state.set_grad(grad, idx)
+    #     return grad
+    
+    def f(self, f: typing.Callable, *x) -> torch.Tensor:
+
+        state = HookState()
+        if len(x) == 1:
+            x = self.pre(x[0], hook_state=state)
+            y = f(x)
+        else:
+            x = self.pre(*x, hook_state=state)
+            y = f(*x)
+        
+        if not isinstance(y, typing.Tuple):
+            y = (y,)
+        return self.post(*y, hook_state=state)
