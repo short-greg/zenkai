@@ -442,7 +442,7 @@ class WrapNN(object):
 
         return y
     
-    def __call__(self, f: typing.Callable, *x) -> torch.Tensor:
+    def wrap(self, f: typing.Callable, *x) -> torch.Tensor:
 
         state = WrapState()
         if len(x) == 1:
@@ -487,7 +487,14 @@ class NullWrapNN(object):
         """
         return y if len(y) > 1 else y[0]
 
-    def __call__(self, f: typing.Callable, *x) -> torch.Tensor:
+    def wrap(self, f: typing.Callable, *x) -> torch.Tensor:
         if len(x) == 1:
             return f(x)
         return f(*x)
+
+    def f(self, f: typing.Callable) -> typing.Callable[[torch.Tensor], torch.Tensor]:
+
+        def _(*x: torch.Tensor) -> torch.Tensor:
+
+            return self(f, *x)
+        return _

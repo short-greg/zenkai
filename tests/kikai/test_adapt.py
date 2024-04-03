@@ -244,7 +244,7 @@ class Wrap2F(nn.Module):
         hook = adapt.WrapNN([self.hook_grad])
         
         x = self.linear1(x)
-        return hook.__call__(
+        return hook.wrap(
             self.linear2, x
         )
 
