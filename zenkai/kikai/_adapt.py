@@ -327,9 +327,11 @@ class WrapState:
 
         for i, y_i in enumerate(y):
             out_hook = self.set_grad if out_hooks is None or out_hooks[i] is None else out_hooks[i]
-            y_i.register_hook(
-                partial(out_hook, idx=i)
-            )
+
+            if y_i.requires_grad:
+                y_i.register_hook(
+                    partial(out_hook, idx=i)
+                )
         
         return self._y
     
@@ -424,7 +426,7 @@ class WrapNN(object):
             zip(x_tup, self.grad_hooks)
         ):
             
-            if grad_hook_i is not None:
+            if grad_hook_i is not None and x_i.requires_grad:
                 x_i.register_hook(
                     partial(grad_hook_i, hook=hook_state, idx=i)
                 )
