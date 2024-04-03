@@ -4,9 +4,9 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "zenkai"
-version = "0.0.2"
+version = "0.0.3"
 description = "A framework for flexibly developing beyond bakcpropagation."
-homepage = "https://github.com/yourusername/your-repository"
+homepage = "https://github.com/short-greg/zenkai"
 repository = "https://github.com/short-greg/zenkai"
 documentation = "https://zenkai.readthedocs.com"
 authors = ["Greg Short <g.short@kurenai.waseda.jp>"]
