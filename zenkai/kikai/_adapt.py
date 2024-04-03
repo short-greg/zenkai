@@ -271,7 +271,7 @@ class NNAdapt(AdaptBase):
 
 
 @dataclass
-class HookState:
+class WrapState:
 
     def __init__(self):
         """Store the state of the grad hook
@@ -392,7 +392,7 @@ class HookState:
         return self._y - self.grad_out
 
 
-class HookGrad(object):
+class WrapNN(object):
     """Use to alter the gradients of a function 
     after the initial gradient has been computed
     on the backward pass
@@ -409,7 +409,7 @@ class HookGrad(object):
         self.grad_hooks = grad_hooks
         self.out_hooks = out_hooks
 
-    def pre(self, *x: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def pre(self, *x: torch.Tensor, hook_state: WrapState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The pre function that is called on all
         the inputs of the function to 'hook'
 
@@ -431,7 +431,7 @@ class HookGrad(object):
         
         return x
     
-    def post(self, *y: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def post(self, *y: torch.Tensor, hook_state: WrapState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The post function that is called on all
         the outputs of the function to 'hook'
 
@@ -444,7 +444,7 @@ class HookGrad(object):
     
     def __call__(self, f: typing.Callable, *x) -> torch.Tensor:
 
-        state = HookState()
+        state = WrapState()
         if len(x) == 1:
             x = self.pre(x[0], hook_state=state)
             y = f(x)
@@ -455,14 +455,21 @@ class HookGrad(object):
         if not isinstance(y, typing.Tuple):
             y = (y,)
         return self.post(*y, hook_state=state)
+    
+    def f(self, f: typing.Callable) -> typing.Callable[[torch.Tensor], torch.Tensor]:
+
+        def _(*x: torch.Tensor) -> torch.Tensor:
+
+            return self(f, *x)
+        return _
 
 
-class NullHookGrad(object):
+class NullWrapNN(object):
     """Use in place of HookGrad if no hooks should 
     be used
     """
 
-    def pre(self, *x: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def pre(self, *x: torch.Tensor, hook_state: WrapState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The pre function that is called on all
         the inputs of the function to 'hook'
 
@@ -471,7 +478,7 @@ class NullHookGrad(object):
         """
         return x if len(x) > 1 else x[0]
     
-    def post(self, *y: torch.Tensor, hook_state: HookState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def post(self, *y: torch.Tensor, hook_state: WrapState) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
         """The post function that is called on all
         the outputs of the function to 'hook'
 

@@ -188,14 +188,14 @@ class Wrap1(nn.Module):
         self.linear2 = nn.Linear(4, 2)
         self.called = False
 
-    def hook_grad(self, grad, hook: adapt.HookGrad, idx: int):
+    def hook_grad(self, grad, hook: adapt.WrapNN, idx: int):
         self.called = True
         return grad
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
-        hook = adapt.HookGrad([self.hook_grad])
-        hook_state = adapt.HookState()
+        hook = adapt.WrapNN([self.hook_grad])
+        hook_state = adapt.WrapState()
         
         x = self.linear1(x)
         return hook.post(
@@ -212,14 +212,14 @@ class Wrap2(nn.Module):
         self.linear2 = nn.Linear(4, 2)
         self.called = False
 
-    def hook_grad(self, grad, hook: adapt.HookGrad, idx: int):
+    def hook_grad(self, grad, hook: adapt.WrapNN, idx: int):
         self.called = True
         return hook.x.clone()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
-        hook_state = adapt.HookState()
-        hook = adapt.HookGrad([self.hook_grad])
+        hook_state = adapt.WrapState()
+        hook = adapt.WrapNN([self.hook_grad])
         
         x = self.linear1(x)
         return hook.post(
@@ -235,13 +235,13 @@ class Wrap2F(nn.Module):
         self.linear2 = nn.Linear(4, 2)
         self.called = False
 
-    def hook_grad(self, grad, hook: adapt.HookGrad, idx: int):
+    def hook_grad(self, grad, hook: adapt.WrapNN, idx: int):
         self.called = True
         return hook.x.clone()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
-        hook = adapt.HookGrad([self.hook_grad])
+        hook = adapt.WrapNN([self.hook_grad])
         
         x = self.linear1(x)
         return hook.__call__(
@@ -258,18 +258,18 @@ class Wrap3(nn.Module):
         self.called = None
         self.called2 = None
 
-    def hook_grad1(self, grad, hook: adapt.HookGrad, idx: int):
+    def hook_grad1(self, grad, hook: adapt.WrapNN, idx: int):
         self.called = idx
         return hook.x[idx].clone()
 
-    def hook_grad2(self, grad, hook: adapt.HookGrad, idx: int):
+    def hook_grad2(self, grad, hook: adapt.WrapNN, idx: int):
         self.called2 = idx
         return hook.x[idx].clone()
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         
-        hook_state = adapt.HookState()
-        hook = adapt.HookGrad([self.hook_grad1, self.hook_grad2])
+        hook_state = adapt.WrapState()
+        hook = adapt.WrapNN([self.hook_grad1, self.hook_grad2])
         
         x1 = self.linear1(x1)
         x2 = self.linear1(x2)
