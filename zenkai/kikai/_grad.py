@@ -22,8 +22,6 @@ from ..kaku import (
     ThLoss,
     forward_dep
 )
-from ..utils import get_model_grads, set_model_grads, get_model_parameters
-from ..utils import checkattr
 
 
 class GradStepTheta(StepTheta):
@@ -148,7 +146,5 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             self.optim.zero_theta()
 
 
-# TODO:
-
-# def mid_grad()
-# def grad(module: nn.Module, optimf, )
+# TODO: Add functions for creating grad modules
+# grad(module, optimf)

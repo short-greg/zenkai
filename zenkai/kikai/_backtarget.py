@@ -18,11 +18,19 @@ class BackTarget(LearningMachine):
 
     def __init__(
         self,
-        module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]],
+        module: typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]]=None,
         criterion: Criterion = None,
     ) -> None:
+        """Simply "backpropagate" the target. Use if the module is a reshape function
+
+        Args:
+            module (typing.Union[nn.Module, typing.Callable[[torch.Tensor], torch.Tensor]]): The module to use
+            criterion (Criterion, optional): The criterion for evaluation. Defaults to None.
+        """
         super().__init__()
-        self.module = module if isinstance(module, nn.Module) else Lambda(module)
+        if module is not None and not isinstance(module, nn.Module):
+            module = Lambda(module)
+        self.module = module
         self.criterion = criterion or ThLoss("MSELoss")
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
@@ -30,7 +38,10 @@ class BackTarget(LearningMachine):
 
     def forward(self, x: IO, release: bool = True) -> IO:
         x.freshen()
-        y = x._(self).y = self.module(*x.u)
+        if self.module is not None:
+            y = x._(self).y = self.module(*x.u)
+        else:
+            y = x._(self).y = x.clone()
         return IO(y).out(release=release)
 
     def step(self, x: IO, t: IO) -> IO:

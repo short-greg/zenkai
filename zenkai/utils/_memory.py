@@ -4,7 +4,7 @@ import typing
 import numpy as np
 
 
-# for reinforcement learning => would probably do some modifications
+# TODO: for reinforcement learning => would probably do some modifications
 
 
 class BatchMemory(object):

@@ -73,7 +73,7 @@ class TestCriterionNNAdapt(object):
 
     def test_learner_adapt_updates_learner(self):
 
-        learner = adapt.ModAdapt(
+        learner = adapt.NNAdapt(
             nn.Linear(2, 4), zenkai.ThLoss('MSELoss'), to_step_x=True
         )
         module = nn.Linear(4, 2)
@@ -93,7 +93,7 @@ class TestCriterionNNAdapt(object):
 
     def test_learner_adapt_updates_learner_in_second_layer(self):
 
-        learner = adapt.ModAdapt(
+        learner = adapt.NNAdapt(
             nn.Linear(4, 2), zenkai.ThLoss('MSELoss'), to_step_x=True
         )
         module = nn.Linear(2, 4)

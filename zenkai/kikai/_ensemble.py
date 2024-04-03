@@ -82,7 +82,7 @@ class VoterPopulator(object):
     """Populator that uses multiple outputs from votes"""
 
     def __init__(self, voter: Voter, x_name: str):
-        """initializer
+        """Create a population of values based on x
 
         Args:
             voter (Voter): the module to use for voting

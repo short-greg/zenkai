@@ -105,6 +105,7 @@ class GTE(ValueConstraint):
 
 
 class FuncObjective(Objective):
+
     def __init__(
         self,
         f: typing.Callable[[typing.Any], torch.Tensor],

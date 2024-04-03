@@ -68,5 +68,5 @@ from ._target_prop import (
 )
 from ._adapt import (
     StepAdapt, AdaptBase, LearnerAdapt,
-    ModAdapt
+    NNAdapt, NullHookGrad, HookGrad, HookState
 )

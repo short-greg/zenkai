@@ -14,6 +14,7 @@ from .. import utils
 
 
 class ScikitWrapper(nn.Module):
+
     def __init__(
         self,
         sklearn_estimator: BaseEstimator,
@@ -22,6 +23,15 @@ class ScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ):
+        """Wrap a sklearn estimator in an nn module
+
+        Args:
+            sklearn_estimator (BaseEstimator): The estimator to wrap
+            in_features (int, optional): The number of input features. Defaults to 1.
+            out_features (int, optional): The number of output features. Defaults to None.
+            backup (nn.Module, optional): A backup module (for use on first pass when no estimator has been trained). Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype for the output. Defaults to None.
+        """
         super().__init__()
         self._estimator = sklearn_estimator
         self._in_features = in_features
@@ -126,6 +136,7 @@ class ScikitWrapper(nn.Module):
 
 
 class MultiOutputScikitWrapper(nn.Module):
+
     def __init__(
         self,
         sklearn_estimator: typing.Union[MultiOutputClassifier, MultiOutputRegressor],
@@ -134,6 +145,15 @@ class MultiOutputScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ):
+        """Wrap a Sklearn Estimator with multiple outputs
+
+        Args:
+            sklearn_estimator (typing.Union[MultiOutputClassifier, MultiOutputRegressor]): The estimator to wrap
+            in_features (int, optional): The number of input features. Defaults to 1.
+            out_features (int, optional): The number of output features. Defaults to None.
+            backup (nn.Module, optional): The backup module to use if estimator has not been trained yet. Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype of the output. Defaults to None.
+        """
         super().__init__()
 
         self._estimator = sklearn_estimator
@@ -318,6 +338,12 @@ class MultiOutputScikitWrapper(nn.Module):
 
 class LinearBackup(nn.Module):
     def __init__(self, in_features: int, out_features: int = None):
+        """Backup module to use on first pass
+
+        Args:
+            in_features (int): The number of inputs
+            out_features (int, optional): The number of outputs. Defaults to None.
+        """
         super().__init__()
 
         self._linear = nn.Linear(in_features, (out_features or 1))
@@ -334,6 +360,13 @@ class LinearBackup(nn.Module):
 
 class MulticlassBackup(nn.Module):
     def __init__(self, in_features: int, n_classes: int, out_features: int = None):
+        """Backup modlue for multple classes
+
+        Args:
+            in_features (int): The number of input features
+            n_classes (int): The number of classes
+            out_features (int, optional): The number of output features. Defaults to None.
+        """
         super().__init__()
 
         self._linear = nn.Linear(in_features, n_classes * (out_features or 1))
@@ -352,6 +385,12 @@ class MulticlassBackup(nn.Module):
 
 class BinaryBackup(nn.Module):
     def __init__(self, in_features: int, out_features: int = None):
+        """Backup for a binary estimator
+
+        Args:
+            in_features (int): The number of input features
+            out_features (int, optional): The number of output features. Defaults to None.
+        """
         super().__init__()
 
         self._linear = nn.Linear(in_features, out_features or 1)

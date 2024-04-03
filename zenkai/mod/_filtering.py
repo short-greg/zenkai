@@ -13,11 +13,26 @@ from functools import singledispatch
 
 @singledispatch
 def to_2dtuple(value: int) -> typing.Tuple[int, int]:
+    """
+
+    Args:
+        value (int): the input
+
+    Returns:
+        typing.Tuple[int, int]: Convert the input value to a 2d tuple
+    """
     return (value, value)
 
 
 @to_2dtuple.register
 def _(value: tuple) -> typing.Tuple[int, int]:
+    """
+    Args:
+        value (tuple): Value to potentially convert
+
+    Returns:
+        typing.Tuple[int, int]: Value is already a 2d tuple so leave the same
+    """
     return value
 
 
@@ -68,6 +83,16 @@ class Stride2D(nn.Module):
         padding: typing.Tuple[int] = None,
         reshape_output: bool = True,
     ):
+        """Stride the input. Makes it possible to "patch"
+        the input and share weights like in a convolutional net
+
+        Args:
+            in_features (int): The number of input features
+            kernel_size (typing.Tuple[int]): The size of the kernel
+            stride (typing.Tuple[int], optional): The stride size. Defaults to None.
+            padding (typing.Tuple[int], optional): The size of the padding. Defaults to None.
+            reshape_output (bool, optional): Whether to reshape the output to non-strided size. Defaults to True.
+        """
 
         super().__init__()
         stride = stride or 1

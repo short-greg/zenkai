@@ -335,6 +335,33 @@ def align_to(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     return source
 
 
+# TODO: Remove once confirming
+# I think this is the same as align to
+def resize_to(tensor1: torch.Tensor, tensor2: torch.Tensor) -> torch.Tensor:
+    """Resize tensor1 to be compatible with tensor2
+
+    Args:
+        tensor1 (torch.Tensor): The tensor to resize
+        tensor2 (torch.Tensor): The tensor to resize to
+
+    Returns:
+        torch.Tensor: The resized tensor
+    """
+    difference = tensor2.dim() - tensor1.dim()
+    if difference < 0:
+        raise ValueError
+
+    shape2 = list(tensor2.shape)
+    reshape = []
+
+    for i, s2 in enumerate(shape2):
+        if len(tensor1.dim()) < i:
+            reshape.append(1)
+        else:
+            reshape.append(s2)
+    return tensor1.repeat(reshape)
+
+
 def decay(
     new_v: torch.Tensor,
     cur_v: typing.Union[torch.Tensor, float, None] = None,

@@ -171,7 +171,9 @@ class MulticlassVoteAggregator(VoteAggregator):
 
 
 class Voter(nn.Module):
-    @abstractproperty
+
+    @property
+    @abstractmethod
     def n_votes(self) -> int:
         """
         Returns:
@@ -179,7 +181,8 @@ class Voter(nn.Module):
         """
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def max_votes(self) -> int:
         """
         Returns:
@@ -199,7 +202,7 @@ class EnsembleVoter(Voter):
         spawner_args: typing.List = None,
         spawner_kwargs: typing.Dict = None,
     ):
-        """_summary_
+        """Create a machine that runs an ensemble of sub machines
 
         Args:
             spawner (typing.Callable[[], nn.Module]): _description_

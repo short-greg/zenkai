@@ -162,12 +162,21 @@ class StepAdapt(AdaptBase):
         return self._exec.apply(x)
 
 
-class ModAdapt(AdaptBase):
+class NNAdapt(AdaptBase):
 
     def __init__(
         self, module: nn.Module=None, criterion: typing.Union[XCriterion, Criterion]=None, 
         optim: OptimFactory=None, to_step_x: bool=True
     ):
+        """Adapt an NN Module. This allows you to make modifications to the computation of the gradient
+
+        Args:
+            module (nn.Module, optional): The module to adapt. If overriding with a forward_nn method, do not need to pass this in. Defaults to None.
+            criterion (typing.Union[XCriterion, Criterion], optional): The criterion for the module. If overriding assess, not needed. Defaults to None.
+            optim (OptimFactory, optional): The optim to use in updating parameters. If externally optimizing this is not needed. Defaults to None.
+            to_step_x (bool, optional): Whether to use the base grad or the adapted grad for x. Defaults to True.
+
+        """
         super().__init__()
         self.module = module
         self.criterion = criterion
@@ -221,6 +230,17 @@ class ModAdapt(AdaptBase):
         self._exec = Exec
 
     def assess(self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor, reduction_override: str=None) -> torch.Tensor:
+        """Assess the output of the module
+
+        Args:
+            x (torch.Tensor): The input to the module
+            y (torch.Tensor): The output of the module
+            t (torch.Tensor): The target for the module (y - grad)
+            reduction_override (str, optional): An override for the reduction of the assessment. Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
 
         if self.criterion is None:
             return Reduction[reduction_override or 'mean'].reduce((y - t).pow(2))
@@ -232,11 +252,18 @@ class ModAdapt(AdaptBase):
             IO(y), IO(t), reduction_override=reduction_override)
 
     def forward_nn(self, x: torch.Tensor) -> torch.Tensor:
+        """Method to compute the output. Can override this method
+
+        Args:
+            x (torch.Tensor): The input
+
+        Returns:
+            torch.Tensor: The output
+        """
         if self.module is None:
             return x
         return self.module(x)
 
-    # figure out how to "override this"
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         x.requires_grad_(True)
@@ -247,7 +274,8 @@ class ModAdapt(AdaptBase):
 class HookState:
 
     def __init__(self):
-
+        """Store the state of the grad hook
+        """
         self._x: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
         self._y: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
         self._grad_out: typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]] = None
@@ -256,7 +284,11 @@ class HookState:
         self.state = {}
 
     def set_x(self, *x: torch.Tensor) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """Set the x value for the grad hook
 
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The value of x
+        """
         self._x_count = len(x)
         self._x = tuple(
             x_i.clone() for x_i in x
@@ -265,14 +297,29 @@ class HookState:
     
     @property
     def x_count(self) -> int:
+        """
+        Returns:
+            int: The number of inputs
+        """
         return self._x_count
 
     @property
     def y_count(self) -> int:
+        """
+        Returns:
+            int: The number of outputs
+        """
         return self._y_count
 
     def set_y(self, *y: torch.Tensor, out_hooks=None) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+        """Set the y value for the grad hook
 
+        Args:
+            out_hooks (optional): The overriden out hooks for y. Defaults to None.
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The value for y
+        """
         self._y_count = len(y)
         self._y = tuple(
             y_i.clone() for y_i in y
@@ -287,6 +334,12 @@ class HookState:
         return self._y
     
     def set_grad(self, grad: torch.Tensor, idx: int):
+        """Set the grad on the hook state. This is the default hook for the output
+
+        Args:
+            grad (torch.Tensor): The grad
+            idx (int): The index of the grad
+        """
         if self._grad_out is None:
             self._grad_out = {}
         self._grad_out[idx] = grad

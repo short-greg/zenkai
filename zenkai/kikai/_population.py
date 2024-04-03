@@ -8,6 +8,7 @@ import torch
 
 # Local
 from ..kaku import IO, LearningMachine, Assessment, Population
+from ..utils import align_to
 
 
 class ParamUpdater(ABC):
@@ -25,32 +26,6 @@ class ParamUpdater(ABC):
     @abstractmethod
     def assess(self, batch_assessment: Assessment) -> typing.Dict[str, Assessment]:
         pass
-
-
-# I think this is the same as align to
-def resize_to(tensor1: torch.Tensor, tensor2: torch.Tensor) -> torch.Tensor:
-    """Resize tensor1 to be compatible with tensor2
-
-    Args:
-        tensor1 (torch.Tensor): The tensor to resize
-        tensor2 (torch.Tensor): The tensor to resize to
-
-    Returns:
-        torch.Tensor: The resized tensor
-    """
-    difference = tensor2.dim() - tensor1.dim()
-    if difference < 0:
-        raise ValueError
-
-    shape2 = list(tensor2.shape)
-    reshape = []
-
-    for i, s2 in enumerate(shape2):
-        if len(tensor1.dim()) < i:
-            reshape.append(1)
-        else:
-            reshape.append(s2)
-    return tensor1.repeat(reshape)
 
 
 class Dim1ParamUpdater(ParamUpdater):
@@ -80,7 +55,7 @@ class Dim1ParamUpdater(ParamUpdater):
         # population assessment = (population_size, batch_size)
         # add the batch dimension
         param_values = self._param.data.reshape(self._k, self._out_features, *self._param.shape[1:])
-        population_assessment = resize_to(population_assessment.value, param_values[:,None])
+        population_assessment = align_to(population_assessment.value, param_values[:,None])
         return {
             self._name: population_assessment.sum(
                 dim=1
@@ -125,7 +100,7 @@ class DimLastParamUpdater(ParamUpdater):
         param_values = self._param.reshape(
             -1, *self._param.shape[1:]
         ).permute(self._update_permutation).detach()
-        population_assessment = resize_to(population_assessment.value, param_values[:,None])
+        population_assessment = align_to(population_assessment.value, param_values[:,None])
         return {
             self._name: population_assessment.sum(
                 dim=1

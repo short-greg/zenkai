@@ -92,6 +92,11 @@ class Lambda(nn.Module):
     """
 
     def __init__(self, f, *args, **kwargs):
+        """Wrap a generic function in a module
+
+        Args:
+            f : The function to wrap
+        """
         super().__init__()
         self._f = f
         self._args = args

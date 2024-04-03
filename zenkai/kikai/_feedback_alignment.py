@@ -10,8 +10,6 @@ from zenkai.kaku import Idx
 # local
 from ..kaku import (
     IO,
-    LearningMachine,
-    Assessment,
     OptimFactory,
     Criterion,
     ThLoss,
