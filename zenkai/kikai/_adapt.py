@@ -330,7 +330,7 @@ class WrapState:
 
             if y_i.requires_grad:
                 y_i.register_hook(
-                    partial(out_hook, idx=i)
+                    partial(out_hook, hook=self, idx=i)
                 )
         
         return self._y
