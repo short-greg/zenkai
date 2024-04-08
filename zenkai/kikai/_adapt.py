@@ -330,12 +330,12 @@ class WrapState:
 
             if y_i.requires_grad:
                 y_i.register_hook(
-                    partial(out_hook, hook=self, idx=i)
+                    partial(out_hook, state=self, idx=i)
                 )
         
         return self._y
     
-    def set_grad(self, grad: torch.Tensor, idx: int):
+    def set_grad(self, grad: torch.Tensor, state: Self, idx: int):
         """Set the grad on the hook state. This is the default hook for the output
 
         Args:
@@ -428,7 +428,7 @@ class WrapNN(object):
             
             if grad_hook_i is not None and x_i.requires_grad:
                 x_i.register_hook(
-                    partial(grad_hook_i, hook=hook_state, idx=i)
+                    partial(grad_hook_i, state=hook_state, idx=i)
                 )
         
         return x
