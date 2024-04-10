@@ -15,7 +15,7 @@ from ._filtering import (
     calc_size2d,
     calc_stride2d,
 )
-from ._noise import (
+from ..tansaku._noise import (
     NoiseReplace,
     ModuleNoise,
     GaussianNoiser,

@@ -14,6 +14,49 @@ def best(assessment: torch.Tensor, maximize: bool, dim: int=-1, keepdim: int=Fal
     return assessment.min(dim=dim, keepdim=keepdim)
 
 
+def gather_selection(param: torch.Tensor, selection: torch.LongTensor, dim: int=-1) -> torch.Tensor:
+    """Gather the selection on a dimension for the selection
+
+    Args:
+        param (torch.Tensor): The param to gather for
+        selection (torch.LongTensor): The selection
+        dim (int, optional): The dimension to gather on. Defaults to -1.
+
+    Returns:
+        torch.Tensor: The chosen parameters
+    """
+    # Convert the negative dimensions
+    if dim < 0:
+        dim = selection.dim() - dim
+    selection = align_to(selection, param)
+    return torch.gather(param, dim, selection)
+
+
+# def split_tensor(x: torch.Tensor, num_splits: int, dim: int=-1) -> typing.Tuple[torch.Tensor]:
+#     """split the tensor dict on a dimension
+
+#     Args:
+#         x (torch.Tensor): the tensor dict to split
+#         dim (int, optional): the dimension to split on. Defaults to -1.
+
+#     Returns:
+#         typing.Tuple[torch.Tensor]: the split tensor dict
+#     """
+#     x.tensor_split()
+#     shape = list(x.shape)
+#     # TODO: Create a utility for this
+#     if dim < 0:
+#         dim = len(shape) + dim
+#     shape[dim] = shape[dim] // num_splits
+#     shape.insert(dim, -1)
+
+#     x = x.reshape(shape)
+#     split_tensors = x.tensor_split(x.size(dim), dim)
+#     return tuple(
+#         t.squeeze(dim) for i, t in enumerate(split_tensors)
+#     )
+
+
 def pop_assess(reducer: typing.Callable[[torch.Tensor, int], torch.Tensor],population_assessment: torch.Tensor, from_dim: int=1) -> torch.Tensor:
 
     population_assessment = population_assessment.transpose(
@@ -100,7 +143,6 @@ class Selector(nn.Module, ABC):
     @abstractmethod
     def forward(self, assessment: torch.Tensor) -> Selection:
         pass
-
 
 
 class BestSelector(nn.Module):
@@ -252,4 +294,3 @@ class ParentSelector(nn.Module):
         selection2 = Selection(
             value[1], selection[1], self._dim
         )
-

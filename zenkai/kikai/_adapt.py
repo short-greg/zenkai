@@ -19,8 +19,6 @@ from ..kaku import (
 )
 from .. import utils
 from functools import partial
-
-
 # TODO: Think how to make this more extensible so it can take
 # more inputs
 
@@ -404,7 +402,6 @@ class WrapNN(object):
         self, grad_hooks: typing.List[typing.Callable[[torch.Tensor, Self, int], torch.Tensor]], out_hooks: typing.List[typing.Callable[[torch.Tensor, int], torch.Tensor]]=None
     ):
         """
-        
         Args:
             grad_hook (function): The hook to use for updating the gradient on the backward pass
         """
