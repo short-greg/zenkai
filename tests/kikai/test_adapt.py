@@ -56,7 +56,9 @@ class TestLearnerAdapt(object):
         module = nn.Linear(2, 4)
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        optim = torch.optim.SGD(chain(module.parameters(), learner.parameters()), lr=1e-2)
+        optim = torch.optim.SGD(
+            chain(module.parameters(), learner.parameters()), lr=1e-2
+        )
 
         y = module(x)
         y = learner(y)
