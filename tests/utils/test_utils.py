@@ -7,6 +7,7 @@ import pytest
 
 from zenkai.utils import _convert
 
+from zenkai.utils import _reshape
 
 class TestToTH:
     def test_to_th_converts_to_correct_dtype(self):
@@ -59,39 +60,39 @@ class TestExpandDim0:
     def test_expand_dim0_returns_correct_size_without_reshape(self):
 
         x = torch.randn(2, 4)
-        x = _convert.expand_dim0(x, 3)
+        x = _reshape.expand_dim0(x, 3)
         assert x.shape[0] == 3
 
     def test_expand_dim0_returns_correct_values_without_reshape(self):
 
         x = torch.randn(2, 4)
-        y = _convert.expand_dim0(x, 3)
+        y = _reshape.expand_dim0(x, 3)
         assert (x[None] == y).all()
 
     def test_expand_dim0_returns_correct_size_with_reshape(self):
 
         x = torch.randn(2, 4)
-        x = _convert.expand_dim0(x, 3, reshape=True)
+        x = _reshape.expand_dim0(x, 3, reshape=True)
         assert x.shape[0] == 6
 
     def test_expand_dim0_raises_error_with_incorrect_k(self):
 
         x = torch.randn(2, 4)
         with pytest.raises(ValueError):
-            _convert.expand_dim0(x, -1, reshape=True)
+            _reshape.expand_dim0(x, -1, reshape=True)
 
 
 class TestFlattenDim0:
     def test_flatten_dim0_combines_first_two_dimensions(self):
 
         x = torch.randn(2, 4, 2)
-        x = _convert.flatten_dim0(x)
+        x = _reshape.flatten_dim0(x)
         assert x.shape[0] == 8
 
     def test_flatten_dim0_leaves_tensor_same_if_one_dimensional(self):
 
         x = torch.randn(2)
-        x = _convert.flatten_dim0(x)
+        x = _reshape.flatten_dim0(x)
         assert x.shape[0] == 2
 
 
@@ -99,7 +100,7 @@ class TestDeflattenDim0:
     def test_deflatten_dim0_undoes_the_flattening(self):
 
         x = torch.randn(8, 2)
-        x = _convert.deflatten_dim0(x, 2)
+        x = _reshape.deflatten_dim0(x, 2)
         assert x.shape[0] == 2
         assert x.shape[1] == 4
 
@@ -122,23 +123,6 @@ class TestFreshen:
 
         x = _convert.freshen(4, True)
         assert x == 4
-
-
-class TestLR:
-
-    def test_lr_update_interpolates_between_current_and_new(self):
-
-        x = torch.rand(2, 4)
-        y = torch.rand(2, 4)
-        z = _convert.lr_update(x, y, 0.2)
-        assert (z == (y * 0.2 + x * 0.8)).all()
-
-    def test_lr_update_returns_new_if_no_learning_rate(self):
-
-        x = torch.rand(2, 4)
-        y = torch.rand(2, 4)
-        z = _convert.lr_update(x, y)
-        assert (z == y).all()
 
 
 class TestBinaryEncoding(object):
@@ -219,7 +203,7 @@ def x_trial_collapsed():
 
 class TestCollapseK:
     def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
-        shape = _convert.collapse_k(x_trial).shape
+        shape = _reshape.collapse_k(x_trial).shape
         assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
 
 
@@ -227,6 +211,6 @@ class TestExpandK:
     def test_collapse_k_collapses_the_trial_dimension(
         self, x_trial_collapsed: torch.Tensor
     ):
-        shape = _convert.expand_k(x_trial_collapsed, N_TRIALS).shape
+        shape = _reshape.expand_k(x_trial_collapsed, N_TRIALS).shape
         assert shape[0] == N_TRIALS
         assert shape[1] == N_SAMPLES

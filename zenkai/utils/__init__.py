@@ -2,9 +2,6 @@
 
 from ._convert import (
     binary_encoding,
-    expand_dim0,
-    flatten_dim0,
-    deflatten_dim0,
     freshen,
     to_np,
     to_signed_neg,
@@ -12,14 +9,19 @@ from ._convert import (
     to_th_as,
     to_zero_neg,
     module_factory,
-    decay,
+    checkattr,
+)
+from ._reshape import (
     collapse_k,
     expand_k,
     unsqueeze_to,
     align_to,
     undo_cat1d,
     cat1d,
-    checkattr,
+    expand_dim0,
+    flatten_dim0,
+    deflatten_dim0,
+
 )
 from ._params import (
     get_model_parameters,

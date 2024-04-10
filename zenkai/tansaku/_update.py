@@ -1,11 +1,8 @@
-# 1st party
-import typing
-
 # 3rd party
 import torch
 
 
-def update_original(
+def rand_update(
     cur: torch.Tensor,
     original: torch.Tensor,
     keep_prob: float,
