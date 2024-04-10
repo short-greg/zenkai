@@ -5,73 +5,52 @@ import torch
 import torch.nn as nn
 
 from ..utils import align_to
+from ..kaku import Reduction
 
 
-def best(assessment: torch.Tensor, maximize: bool, dim: int=-1, keepdim: int=False):
+def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
     
     if maximize:
         return assessment.max(dim=dim, keepdim=keepdim)
     return assessment.min(dim=dim, keepdim=keepdim)
 
 
-def gather_selection(param: torch.Tensor, selection: torch.LongTensor, dim: int=-1) -> torch.Tensor:
+def gather_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=-1) -> torch.Tensor:
     """Gather the selection on a dimension for the selection
 
     Args:
-        param (torch.Tensor): The param to gather for
+        x (torch.Tensor): The value to gather for
         selection (torch.LongTensor): The selection
-        dim (int, optional): The dimension to gather on. Defaults to -1.
+        dim (int, optional): The dimension to gather on for the selection. Defaults to -1.
 
     Returns:
         torch.Tensor: The chosen parameters
     """
     # Convert the negative dimensions
     if dim < 0:
-        dim = selection.dim() - dim
-    selection = align_to(selection, param)
-    return torch.gather(param, dim, selection)
+        dim = selection.dim() + dim
+    selection = align_to(selection, x)
+    print(selection.shape)
+    return torch.gather(x, dim, selection)
 
 
-# def split_tensor(x: torch.Tensor, num_splits: int, dim: int=-1) -> typing.Tuple[torch.Tensor]:
-#     """split the tensor dict on a dimension
+def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Tensor:
 
-#     Args:
-#         x (torch.Tensor): the tensor dict to split
-#         dim (int, optional): the dimension to split on. Defaults to -1.
-
-#     Returns:
-#         typing.Tuple[torch.Tensor]: the split tensor dict
-#     """
-#     x.tensor_split()
-#     shape = list(x.shape)
-#     # TODO: Create a utility for this
-#     if dim < 0:
-#         dim = len(shape) + dim
-#     shape[dim] = shape[dim] // num_splits
-#     shape.insert(dim, -1)
-
-#     x = x.reshape(shape)
-#     split_tensors = x.tensor_split(x.size(dim), dim)
-#     return tuple(
-#         t.squeeze(dim) for i, t in enumerate(split_tensors)
-#     )
-
-
-def pop_assess(reducer: typing.Callable[[torch.Tensor, int], torch.Tensor],population_assessment: torch.Tensor, from_dim: int=1) -> torch.Tensor:
-
-    population_assessment = population_assessment.transpose(
+    value = value.transpose(
         1, 0
     )
-    shape = population_assessment.shape
-    result = reducer(population_assessment.reshape(
-        *shape[:from_dim], -1
-    ), dim=from_dim)
+    shape = value.shape
+    result = Reduction[reduction].reduce(
+        value.reshape(
+            *shape[:from_dim], -1
+        ), dim=from_dim, keepdim=False
+    )
     if from_dim == 1:
         return result[None]
     return result.transpose(1, 0)
 
 
-def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, g: torch.Generator=None) -> torch.Tensor:
+def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=1, replace: bool=False, combine_pop_dim: bool=False, g: torch.Generator=None) -> torch.Tensor:
     # Analyze the output of this better and
     # add better documentation
 
@@ -91,21 +70,20 @@ def select_from_prob(prob: torch.Tensor, k: int, dim: int, replace: bool=False, 
 
     prob = prob.reshape(-1, shape[-1])
     selection = torch.multinomial(prob, k, replace, generator=g)
-
     # remerge the dimension selected on with
     # the items selected is the final dimension
 
     # permute so they are next to one another
     selection = selection.reshape(list(shape[:-1]) + [k])
     permutation = list(range(selection.dim() - 1))
-    permutation.insert(dim, selection.dim() - 1)
+    permutation.insert(pop_dim, selection.dim() - 1)
     selection = selection.permute(permutation)
 
-    # reshape so they are combined
-    select_shape = list(selection.shape)
-    select_shape.pop(dim)
-    select_shape[dim] = -1
-    selection = selection.reshape(select_shape)
+    if combine_pop_dim:
+        select_shape = list(selection.shape)
+        select_shape.pop(pop_dim)
+        select_shape[pop_dim] = -1
+        selection = selection.reshape(select_shape)
 
     return selection
 
@@ -130,11 +108,11 @@ class Selection(nn.Module):
         index = align_to(self.index, x)
         return x.gather(self.dim, index)
 
-    def cat(self, x: torch.Tensor, *cat_to: torch.Tensor):
+    def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=1):
 
         x = self(x)
         return torch.cat(
-            [x, *cat_to]
+            [x, *cat_to], dim=dim
         )
 
 
@@ -176,7 +154,6 @@ class TopSelector(nn.Module):
         return Selection(
             values, indices, self.dim
         )
-
 
 
 class ToProb(nn.Module, ABC):
@@ -296,4 +273,29 @@ class ParentSelector(nn.Module):
         )
 
 
+
+
+# def split_tensor(x: torch.Tensor, num_splits: int, dim: int=-1) -> typing.Tuple[torch.Tensor]:
+#     """split the tensor dict on a dimension
+
+#     Args:
+#         x (torch.Tensor): the tensor dict to split
+#         dim (int, optional): the dimension to split on. Defaults to -1.
+
+#     Returns:
+#         typing.Tuple[torch.Tensor]: the split tensor dict
+#     """
+#     x.tensor_split()
+#     shape = list(x.shape)
+#     # TODO: Create a utility for this
+#     if dim < 0:
+#         dim = len(shape) + dim
+#     shape[dim] = shape[dim] // num_splits
+#     shape.insert(dim, -1)
+
+#     x = x.reshape(shape)
+#     split_tensors = x.tensor_split(x.size(dim), dim)
+#     return tuple(
+#         t.squeeze(dim) for i, t in enumerate(split_tensors)
+#     )
 

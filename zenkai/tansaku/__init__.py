@@ -9,6 +9,15 @@ from ._noise import (
     gausian_noise,
     binary_noise,
 )
+from ._selection import (
+    best, gather_selection,
+    pop_assess, select_from_prob,
+    Selection, Selector,
+    BestSelector, TopSelector,
+    ToFitnessProb, ToProb, ToRankProb, 
+    ParentSelector
+)
+
 # from ._manipulate import SlopeUpdater, SlopeCalculator, Apply, ApplyMomentum
 # from .review_and_remove._sampling import Sampler, BinarySampler, GaussianSampler
 # from ._genetic import (
