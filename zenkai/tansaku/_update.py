@@ -4,7 +4,7 @@ import torch
 
 def rand_update(
     cur: torch.Tensor,
-    original: torch.Tensor,
+    prev: torch.Tensor,
     keep_prob: float,
     batch_equal: bool = False,
 ) -> torch.Tensor:
@@ -12,7 +12,7 @@ def rand_update(
 
     Args:
         candidate (torch.Tensor): the candidate (i.e. updated) value
-        original (torch.Tensor): the original value
+        prev (torch.Tensor): the original value
         keep_prob (float): the probability with which to keep the features in the batch
         batch_equal (bool): whether to have updates be the same for all samples in the batch
     Returns:
@@ -20,29 +20,30 @@ def rand_update(
     """
     shape = cur.shape if not batch_equal else [1, *cur.shape[1:]]
 
-    to_keep = torch.rand(shape, device=cur.device) > keep_prob
-    return (~to_keep).float() * cur + to_keep.float() * original
+    to_keep = torch.rand(shape, device=cur.device) < keep_prob
+    return (~to_keep).float() * cur + to_keep * prev
 
 
-def mix_original(
-    original: torch.Tensor, updated: torch.Tensor, keep_p: float
+def mix_cur(
+    cur: torch.Tensor, prev: torch.Tensor,
+    exp_p: float=1.0
 ) -> torch.Tensor:
     """Keep a certain percentage of values randomly chosen based on keep_p
 
     Args:
-        original (TensorDict): the original tensor dict
+        cur (TensorDict): the original tensor dict
         updated (TensorDict): the updated tensor dict
         keep_p (float): The rate to keep values at
 
     Returns:
         typing.Union[Population, Individual]: The updated tensor dict
     """
-    keep = (torch.rand_like(original) < keep_p)
-    return keep * original + (~keep) * updated
+    keep = torch.rand_like(cur) ** exp_p
+    return keep * cur + (1 - keep) * prev
 
 
 def update_feature(
-    cur: torch.Tensor, original: torch.Tensor, limit: torch.LongTensor, dim: int=-1
+    cur: torch.Tensor, prev: torch.Tensor, limit: torch.LongTensor, dim: int=-1
 ) -> torch.Tensor:
     """Keep a feature dim based on indices
 
@@ -54,10 +55,9 @@ def update_feature(
     Returns:
         Population: The updated population
     """
-    original = original.unsqueeze(1)
-    original = original.clone().transpose(dim, 0)
+    prev = prev.clone().transpose(dim, 0)
     cur = cur.clone().transpose(dim, 0)
-    cur[limit] = original
+    cur[limit] = prev[limit]
     return cur.transpose(dim, 0)
 
 
@@ -98,11 +98,12 @@ def update_var(
     Returns:
         torch.Tensor: 
     """
+    cur_var = ((cur - mean) ** 2).mean(dim=dim, keepdim=True) 
     if var is None:
-        return cur.var(dim=dim, keepdim=True)
+        return cur_var
 
     return (
-        (1 - weight) * ((cur - mean) ** 2).mean(dim=dim, keepdim=True) + weight * var
+        (1 - weight) * cur_var + weight * var
     )
 
 
