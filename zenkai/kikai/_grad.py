@@ -1,9 +1,9 @@
 # 1st party
 import typing
-from abc import abstractmethod
 
 # 3rd Party
 import torch.nn as nn
+import torch
 
 # Local
 from ..kaku import (
@@ -15,7 +15,7 @@ from ..kaku import (
     Criterion,
     StepTheta,
     StepX,
-    Assessment,
+    # Assessment,
     OptimFactory,
     XCriterion,
     CompOptim,
@@ -52,7 +52,7 @@ class GradStepTheta(StepTheta):
             assessment = self.grad_criterion.assess_y(y, t)
         else:
             assessment = self.grad_criterion.assess(y, t)
-        assessment.value.backward()
+        assessment.backward()
 
     def step(self, x: IO, t: IO):
         if self.optim is not None:
@@ -87,12 +87,12 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
 
         self.criterion = criterion
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.criterion.assess(y, t, reduction_override)
 
     def grad_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
-    ) -> Assessment:
+    ) -> torch.Tensor:
         if self.grad_criterion is None:
             return self.assess_y(y, t, reduction_override)
         if isinstance(self.grad_criterion, XCriterion):

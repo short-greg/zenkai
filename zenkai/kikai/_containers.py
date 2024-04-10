@@ -3,13 +3,13 @@ import typing
 from dataclasses import dataclass
 from abc import abstractmethod
 from collections import OrderedDict
-from typing import Any
 
 # 3rd party
 from torch import nn
+import torch
 
 # local
-from ..kaku import IO, LearningMachine, Assessment, Criterion, OptimFactory, XCriterion, ThLoss
+from ..kaku import IO, LearningMachine, Criterion, OptimFactory, XCriterion, ThLoss
 from ._grad import GradLearner
 from ._backtarget import BackTarget
 from ..mod import Lambda
@@ -270,7 +270,7 @@ class GraphLearnerBase(LearningMachine):
         return GraphNode(self, learner, False, target)
     
     @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
 
 
@@ -315,7 +315,7 @@ class AccGraphLearner(GraphLearnerBase):
     """
 
     @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         pass
 
     def accumulate(self, x: IO, t: IO):

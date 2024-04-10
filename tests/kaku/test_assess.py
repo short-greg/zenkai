@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 from zenkai.kaku import _assess as _evaluation, ThLoss, IO, Reduction
-from zenkai.kaku import AssessmentLog, Assessment
+from zenkai.kaku import AssessmentLog
 
 
 class TestReduction:
@@ -43,154 +43,154 @@ class TestReduction:
         assert (x.mean(dim=1) == reduction).all()
 
 
-class TestAssessment:
-    def test_mean_computes_correct_mean_for_dim_of_None(self):
-        t = torch.rand([4])
-        assessment = _evaluation.Assessment(t)
-        assert assessment.mean().item() == t.mean().item()
+# class TestAssessment:
+#     def test_mean_computes_correct_mean_for_dim_of_None(self):
+#         t = torch.rand([4])
+#         assessment = _evaluation.Assessment(t)
+#         assert assessment.mean().item() == t.mean().item()
 
-    def test_mean_computes_correct_mean_for_dim_0(self):
-        t = torch.rand([4, 3])
-        assessment = _evaluation.Assessment(t)
-        assert (assessment.mean(dim=0).value == t.mean(dim=0)).all()
+#     def test_mean_computes_correct_mean_for_dim_0(self):
+#         t = torch.rand([4, 3])
+#         assessment = _evaluation.Assessment(t)
+#         assert (assessment.mean(dim=0).value == t.mean(dim=0)).all()
 
-    def test_mean_computes_correct_mean_for_dim_of_None_with_sum(self):
-        t = torch.rand([4])
-        assessment = _evaluation.Assessment(t)
-        assert assessment.sum().item() == t.sum().item()
+#     def test_mean_computes_correct_mean_for_dim_of_None_with_sum(self):
+#         t = torch.rand([4])
+#         assessment = _evaluation.Assessment(t)
+#         assert assessment.sum().item() == t.sum().item()
 
-    def test_sum_computes_correct_mean_for_dim_0(self):
-        t = torch.rand([4, 3])
-        assessment = _evaluation.Assessment(t)
-        assert (assessment.sum(dim=0).value == t.sum(dim=0)).all()
+#     def test_sum_computes_correct_mean_for_dim_0(self):
+#         t = torch.rand([4, 3])
+#         assessment = _evaluation.Assessment(t)
+#         assert (assessment.sum(dim=0).value == t.sum(dim=0)).all()
 
-    def test_detach_removes_the_grad_requirement(self):
+#     def test_detach_removes_the_grad_requirement(self):
 
-        x = torch.rand([4, 3], requires_grad=True)
-        t = x * 2
-        assessment = _evaluation.Assessment(t)
-        assert assessment.detach().value.requires_grad is False
+#         x = torch.rand([4, 3], requires_grad=True)
+#         t = x * 2
+#         assessment = _evaluation.Assessment(t)
+#         assert assessment.detach().value.requires_grad is False
 
-    def test_numpy_returns_an_ndarray(self):
+#     def test_numpy_returns_an_ndarray(self):
 
-        x = torch.rand([4, 3])
-        assessment = _evaluation.Assessment(x)
-        assert (assessment.numpy() == x.numpy()).all()
+#         x = torch.rand([4, 3])
+#         assessment = _evaluation.Assessment(x)
+#         assert (assessment.numpy() == x.numpy()).all()
 
-    def test_item_returns_the_value_in_scalar_tensor(self):
+#     def test_item_returns_the_value_in_scalar_tensor(self):
 
-        x = torch.tensor(2)
-        assessment = _evaluation.Assessment(x)
-        assert assessment.item() == 2
+#         x = torch.tensor(2)
+#         assessment = _evaluation.Assessment(x)
+#         assert assessment.item() == 2
 
-    def test_item_raises_error_if_not_dim_of_0(self):
+#     def test_item_raises_error_if_not_dim_of_0(self):
 
-        x = torch.tensor([2, 1])
-        assessment = _evaluation.Assessment(x)
-        with pytest.raises(ValueError):
-            assessment.item()
+#         x = torch.tensor([2, 1])
+#         assessment = _evaluation.Assessment(x)
+#         with pytest.raises(ValueError):
+#             assessment.item()
 
-    def test_backward_computes_the_grad_of_the_assessment(self):
+#     def test_backward_computes_the_grad_of_the_assessment(self):
 
-        x = torch.tensor(2.0, requires_grad=True)
-        t = x * 2
-        _evaluation.Assessment(t).mean().backward()
-        assert x.grad is not None
+#         x = torch.tensor(2.0, requires_grad=True)
+#         t = x * 2
+#         _evaluation.Assessment(t).mean().backward()
+#         assert x.grad is not None
 
-    def test_backward_raises_error_if_not_dim_of_0(self):
+#     def test_backward_raises_error_if_not_dim_of_0(self):
 
-        x = torch.tensor([2, 1])
-        assessment = _evaluation.Assessment(x)
-        with pytest.raises(RuntimeError):
-            assessment.backward()
+#         x = torch.tensor([2, 1])
+#         assessment = _evaluation.Assessment(x)
+#         with pytest.raises(RuntimeError):
+#             assessment.backward()
 
-    def test_add_adds_two_assessments(self):
-        t1 = torch.rand([4, 3])
-        t2 = torch.rand([4, 3])
-        assessment1 = _evaluation.Assessment(t1)
-        assessment2 = _evaluation.Assessment(t2)
-        assert ((assessment1 + assessment2).value == t1 + t2).all()
+#     def test_add_adds_two_assessments(self):
+#         t1 = torch.rand([4, 3])
+#         t2 = torch.rand([4, 3])
+#         assessment1 = _evaluation.Assessment(t1)
+#         assessment2 = _evaluation.Assessment(t2)
+#         assert ((assessment1 + assessment2).value == t1 + t2).all()
 
-    def test_batch_mean_calculates(self):
-        t1 = torch.rand([4, 3])
-        t2 = torch.rand([4, 3])
-        assessment1 = _evaluation.Assessment(t1)
-        assessment2 = _evaluation.Assessment(t2)
-        assert ((assessment1 + assessment2).value == t1 + t2).all()
+#     def test_batch_mean_calculates(self):
+#         t1 = torch.rand([4, 3])
+#         t2 = torch.rand([4, 3])
+#         assessment1 = _evaluation.Assessment(t1)
+#         assessment2 = _evaluation.Assessment(t2)
+#         assert ((assessment1 + assessment2).value == t1 + t2).all()
 
-    def test_view_changes_view_of_assessment(self):
-        t1 = torch.rand([4, 3])
-        assessment1 = _evaluation.Assessment(t1)
-        assert ((assessment1.view(-1)).value == t1.view(-1)).all()
+#     def test_view_changes_view_of_assessment(self):
+#         t1 = torch.rand([4, 3])
+#         assessment1 = _evaluation.Assessment(t1)
+#         assert ((assessment1.view(-1)).value == t1.view(-1)).all()
 
-    def test_best_gets_max_value(self):
-        t1 = torch.rand([4, 3]).cumsum(dim=1)
-        assessment1 = _evaluation.Assessment(t1, maximize=True)
-        best, ind = assessment1.best()
-        val, ind = t1.max(dim=0)
-        assert (val == best).all()
+#     def test_best_gets_max_value(self):
+#         t1 = torch.rand([4, 3]).cumsum(dim=1)
+#         assessment1 = _evaluation.Assessment(t1, maximize=True)
+#         best, ind = assessment1.best()
+#         val, ind = t1.max(dim=0)
+#         assert (val == best).all()
 
-    def test_best_gets_min_value(self):
-        t1 = torch.rand([4, 3]).cumsum(dim=1)
-        assessment1 = _evaluation.Assessment(t1, maximize=False)
-        best, ind = assessment1.best()
-        val, ind = t1.min(dim=0)
-        assert (val == best).all()
+#     def test_best_gets_min_value(self):
+#         t1 = torch.rand([4, 3]).cumsum(dim=1)
+#         assessment1 = _evaluation.Assessment(t1, maximize=False)
+#         best, ind = assessment1.best()
+#         val, ind = t1.min(dim=0)
+#         assert (val == best).all()
 
-    def test_stack_stacks_all_tensors(self):
-        t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
-        t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
-        assessment1 = _evaluation.Assessment.stack([t1, t2])
-        assert len(assessment1) == 2
+#     def test_stack_stacks_all_tensors(self):
+#         t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+#         t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+#         assessment1 = _evaluation.Assessment.stack([t1, t2])
+#         assert len(assessment1) == 2
 
-    def test_stack_raises_error_if_not_all_same_direction(self):
-        t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
-        t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=True)
-        with pytest.raises(ValueError):
-            _evaluation.Assessment.stack([t1, t2])
+#     def test_stack_raises_error_if_not_all_same_direction(self):
+#         t1 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=False)
+#         t2 = _evaluation.Assessment(torch.rand([4, 3]).cumsum(dim=1), maximize=True)
+#         with pytest.raises(ValueError):
+#             _evaluation.Assessment.stack([t1, t2])
 
-    def test_to_image(self):
-        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
-        t1_2d = t1.reduce_image(reduction="mean")
-        assert (t1_2d.value == t1.view(4, 12).mean(1).value).all()
+#     def test_to_image(self):
+#         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+#         t1_2d = t1.reduce_image(reduction="mean")
+#         assert (t1_2d.value == t1.view(4, 12).mean(1).value).all()
 
-    def test_to_image_raises_error_if_invalid(self):
-        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
-        with pytest.raises(ValueError):
-            t1.reduce_image(divide_start=0, reduction="mean")
+#     def test_to_image_raises_error_if_invalid(self):
+#         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+#         with pytest.raises(ValueError):
+#             t1.reduce_image(divide_start=0, reduction="mean")
 
-    def test_to_2d(self):
-        t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
-        t1_2d, _, _ = t1.to_2d()
-        assert t1_2d.size(1) == 12
+#     def test_to_2d(self):
+#         t1 = _evaluation.Assessment(torch.rand([4, 3, 4]).cumsum(dim=2), maximize=False)
+#         t1_2d, _, _ = t1.to_2d()
+#         assert t1_2d.size(1) == 12
 
 
-class TestAssessmentDict:
-    def test_getitem_retrieves_all_items(self):
-        assessment = _evaluation.Assessment(torch.rand(2))
-        assessment_dict = _evaluation.AssessmentDict(t=assessment)
-        assert assessment_dict["t"] == assessment
+# class TestAssessmentDict:
+#     def test_getitem_retrieves_all_items(self):
+#         assessment = _evaluation.Assessment(torch.rand(2))
+#         assessment_dict = _evaluation.AssessmentDict(t=assessment)
+#         assert assessment_dict["t"] == assessment
 
-    def test_items_retrieves_all_items(self):
-        assessment = _evaluation.Assessment(torch.rand(2))
-        d_ = dict(_evaluation.AssessmentDict(t=assessment).items())
-        assert d_["t"] == assessment
+#     def test_items_retrieves_all_items(self):
+#         assessment = _evaluation.Assessment(torch.rand(2))
+#         d_ = dict(_evaluation.AssessmentDict(t=assessment).items())
+#         assert d_["t"] == assessment
 
-    def test_values_retrieves_all_values(self):
-        assessment = _evaluation.Assessment(torch.rand(2))
-        d_ = list(_evaluation.AssessmentDict(t=assessment).values())
-        assert d_[0] == assessment
+#     def test_values_retrieves_all_values(self):
+#         assessment = _evaluation.Assessment(torch.rand(2))
+#         d_ = list(_evaluation.AssessmentDict(t=assessment).values())
+#         assert d_[0] == assessment
 
-    def test_mean_computes_all_means(self):
-        assessment = _evaluation.Assessment(torch.rand(2))
-        assessment2 = _evaluation.Assessment(torch.rand(2))
-        result = (
-            _evaluation.AssessmentDict(t=assessment, t2=assessment2)
-            .mean()
-            .sub(["t", "t2"])
-        )
-        assert result["t"].value == assessment.value.mean()
-        assert result["t2"].value == assessment2.value.mean()
+#     def test_mean_computes_all_means(self):
+#         assessment = _evaluation.Assessment(torch.rand(2))
+#         assessment2 = _evaluation.Assessment(torch.rand(2))
+#         result = (
+#             _evaluation.AssessmentDict(t=assessment, t2=assessment2)
+#             .mean()
+#             .sub(["t", "t2"])
+#         )
+#         assert result["t"].value == assessment.value.mean()
+#         assert result["t2"].value == assessment2.value.mean()
 
 
 class TestThLoss:
@@ -237,7 +237,7 @@ class TestThLoss:
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "none")
         evaluation = loss.assess(IO(x), IO(t), "mean")
-        assert isinstance(evaluation, _evaluation.Assessment)
+        assert isinstance(evaluation, _evaluation.torch.Tensor)
 
     def test_maximize_returns_true_if_maximize(self):
 
@@ -260,29 +260,29 @@ class TestLookup:
 class TestAssessmentLog:
     def test_assessment_log_update_adds(self):
         log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
+        assessment = torch.rand(1)[0]
         log.update("x", "name", "validation", assessment)
-        assert log.dict["x"][None]["name"]["validation"].value == assessment.value
+        assert log.dict["x"][None]["name"]["validation"] == assessment
 
     def test_assessment_log_as_assessment_dict_gets_assessment(self):
         log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
+        assessment = torch.rand(1)[0]
         log.update("x", "name", "validation", assessment)
-        assert log.as_assessment_dict()["name_validation"].value == assessment.value
+        assert log.as_assessment_dict()["name_validation"] == assessment
 
     def test_update_overwrites_initial_assessment(self):
         log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        assessment2 = Assessment(torch.rand(1)[0], True)
+        assessment = torch.rand(1)[0]
+        assessment2 = torch.rand(1)[0]
         log.update("x", "name", "validation", assessment)
         log.update("x", "name", "validation", assessment2)
-        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
+        assert log.as_assessment_dict()["name_validation"] == assessment2
 
     def test_update_overwrites_initial_assessment_even_when_keys_are_different(self):
         log = AssessmentLog()
-        assessment = Assessment(torch.rand(1)[0], True)
-        assessment2 = Assessment(torch.rand(1)[0], True)
+        assessment = torch.rand(1)[0]
+        assessment2 = torch.rand(1)[0]
         log.update("x", "name", "validation", assessment)
         log.update("y", "name", "validation", assessment2)
-        assert log.as_assessment_dict()["name_validation"].value == assessment2.value
+        assert log.as_assessment_dict()["name_validation"] == assessment2
 

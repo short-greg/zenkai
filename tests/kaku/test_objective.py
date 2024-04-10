@@ -1,5 +1,5 @@
 import torch
-from zenkai.kaku import Assessment, Reduction
+from zenkai.kaku import Reduction
 from zenkai.kaku._objective import (
     Objective,
     Constraint,
@@ -8,8 +8,8 @@ from zenkai.kaku._objective import (
 
 
 class ObjectiveSample(Objective):
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
-        return Assessment(Reduction[reduction].reduce(kwargs["x"]), self.maximize)
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+        return Reduction[reduction].reduce(kwargs["x"])
 
 
 class EqualityConstraint(Constraint):
@@ -28,7 +28,7 @@ class TestObjective:
         objective = ObjectiveSample(True)
         x = torch.randn(4, 2)
         assessment = objective("mean", x=x)
-        assert (assessment.value).allclose(x.mean())
+        assert (assessment).allclose(x.mean())
 
 
 class TestEqualityConstraint:

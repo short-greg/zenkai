@@ -11,15 +11,14 @@ import scipy.linalg
 # local
 from ..kaku import (
     IO,
-    Assessment,
+    # Assessment,
     LearningMachine,
     StepTheta,
     StepX,
     Criterion,
     ThLoss,
     update_io,
-    OptimFactory,
-    forward_dep
+    OptimFactory
 )
 from ..utils import to_np, to_th_as
 from ._grad import GradStepTheta
@@ -257,7 +256,7 @@ class LeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._loss.assess(y, t, reduction_override=reduction_override)
 
     def step(self, x: IO, t: IO):
@@ -308,7 +307,7 @@ class GradLeastSquaresLearner(LearningMachine):
             self, grad_criterion=ThLoss('MSELoss'), optimf=optim_factory
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         assessment = self._loss.assess(
             y, t, reduction_override=reduction_override)
         return assessment

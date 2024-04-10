@@ -1,8 +1,6 @@
 # 1st Party
 import typing
-from abc import abstractmethod
 from enum import Enum
-import math
 
 # 3rd Party
 import torch
@@ -10,7 +8,6 @@ import torch.nn as nn
 
 # Local
 from ._io import IO
-from ..utils import align_to
 
 
 class Reduction(Enum):
@@ -86,13 +83,11 @@ class Reduction(Enum):
         """
         if reduction_override is not None:
             reduction = Reduction[reduction_override]
+            # return Reduction[reduction_override].reduce(
+            #     loss, dim=dim, keepdim=keepdim
+            # )
         else:
             reduction = self
-
-        if reduction_override is not None:
-            return Reduction[reduction_override].reduce(
-                loss, dim=dim, keepdim=keepdim
-            )
 
         if self == self.none:
             return loss
@@ -121,247 +116,247 @@ class Reduction(Enum):
         raise ValueError(f"{self.value} cannot be reduced.")
 
 
-def _f_assess(assessment: "Assessment", f):
-    def _(*args, **kwargs):
+# def _f_assess(assessment: "Assessment", f):
+#     def _(*args, **kwargs):
 
-        result = f(assessment.value, *args, **kwargs)
-        if isinstance(result, torch.Tensor):
+#         result = f(assessment.value, *args, **kwargs)
+#         if isinstance(result, torch.Tensor):
 
-            return Assessment(result, assessment.maximize)
-        return result
+#             return Assessment(result, assessment.maximize)
+#         return result
 
-    return _
+#     return _
 
 
-class Assessment(object):
-    """
-    An evaluation of the output of a learning machine
+# class Assessment(object):
+#     """
+#     An evaluation of the output of a learning machine
 
-    Attributes
-    ----------
-    value: torch.Tensor
-        The value of the assessment
-    maximize: bool
-        Whether the machine should maximize or minimize the value
-    """
+#     Attributes
+#     ----------
+#     value: torch.Tensor
+#         The value of the assessment
+#     maximize: bool
+#         Whether the machine should maximize or minimize the value
+#     """
 
-    def __init__(self, value: torch.Tensor, maximize: bool = False, name: str = None):
+#     def __init__(self, value: torch.Tensor, maximize: bool = False, name: str = None):
 
-        self.value = value
-        self.maximize = maximize
-        self.name = name
+#         self.value = value
+#         self.maximize = maximize
+#         self.name = name
 
-    def __getitem__(self, key) -> "Assessment":
-        """
-        Args:
-            key (): The index to retrieve an assessment for
+#     def __getitem__(self, key) -> "Assessment":
+#         """
+#         Args:
+#             key (): The index to retrieve an assessment for
 
-        Returns:
-            Assessment: Assessment at the index specified
-        """
-        return Assessment(self.value[key], self.maximize)
+#         Returns:
+#             Assessment: Assessment at the index specified
+#         """
+#         return Assessment(self.value[key], self.maximize)
 
-    def __len__(self) -> int:
-        """
-        Returns:
-            int: The batch size of the assessment. If it is a scalar, it will
-            be 0
-        """
-        return len(self.value) if self.value.dim() != 0 else 0
+#     def __len__(self) -> int:
+#         """
+#         Returns:
+#             int: The batch size of the assessment. If it is a scalar, it will
+#             be 0
+#         """
+#         return len(self.value) if self.value.dim() != 0 else 0
 
-    @property
-    def shape(self) -> torch.Size:
-        return self.value.shape
+#     @property
+#     def shape(self) -> torch.Size:
+#         return self.value.shape
 
-    def update_direction(self, maximize: bool) -> "Assessment":
-        """Change the direction of the assessment to be maximize of minimize
+#     def update_direction(self, maximize: bool) -> "Assessment":
+#         """Change the direction of the assessment to be maximize of minimize
 
-        Args:
-            maximize (bool): Whether to maximize or minimize the assessment
+#         Args:
+#             maximize (bool): Whether to maximize or minimize the assessment
 
-        Returns:
-            Assessment: _description_
-        """
-        # Do not change the assessment
-        if self.maximize == maximize:
-            return Assessment(self.value, maximize)
+#         Returns:
+#             Assessment: _description_
+#         """
+#         # Do not change the assessment
+#         if self.maximize == maximize:
+#             return Assessment(self.value, maximize)
 
-        # convert maximization to minimization or vice versa
-        return Assessment(-self.value, True)
+#         # convert maximization to minimization or vice versa
+#         return Assessment(-self.value, True)
 
-    def __add__(self, other: "Assessment") -> "Assessment":
-        """Add two assessments together
+#     def __add__(self, other: "Assessment") -> "Assessment":
+#         """Add two assessments together
 
-        Args:
-            other (Assessment)
+#         Args:
+#             other (Assessment)
 
-        Returns:
-            Assessment: The
-        """
-        other = other.update_direction(self.maximize)
-        return Assessment(self.value + other.value, self.maximize)
+#         Returns:
+#             Assessment: The
+#         """
+#         other = other.update_direction(self.maximize)
+#         return Assessment(self.value + other.value, self.maximize)
 
-    def __sub__(self, other: "Assessment") -> "Assessment":
-        other = other.update_direction(self.maximize)
-        return Assessment(self.value - other.value, self.maximize)
+#     def __sub__(self, other: "Assessment") -> "Assessment":
+#         other = other.update_direction(self.maximize)
+#         return Assessment(self.value - other.value, self.maximize)
 
-    def __mul__(self, val: float) -> "Assessment":
-        """Multiply the assessment by a value
+#     def __mul__(self, val: float) -> "Assessment":
+#         """Multiply the assessment by a value
 
-        Args:
-            val (float): The value to multiply by
+#         Args:
+#             val (float): The value to multiply by
 
-        Returns:
-            Assessment: The multiplicand
-        """
-        return Assessment(self.value * val, self.maximize)
+#         Returns:
+#             Assessment: The multiplicand
+#         """
+#         return Assessment(self.value * val, self.maximize)
 
-    def __getattr__(self, key: str):
+#     def __getattr__(self, key: str):
 
-        try:
-            f = getattr(torch.Tensor, key)
-            if isinstance(f, typing.Callable):
-                return _f_assess(self, f)
-            return getattr(self.value, key)
-        except KeyError:
-            raise KeyError(f"No key named {key} in AssessmentDict")
+#         try:
+#             f = getattr(torch.Tensor, key)
+#             if isinstance(f, typing.Callable):
+#                 return _f_assess(self, f)
+#             return getattr(self.value, key)
+#         except KeyError:
+#             raise KeyError(f"No key named {key} in AssessmentDict")
 
-    def best(
-        self, dim: int = 0, keepdim: bool = False
-    ) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
-        """Get the best value in the assessment for a dimension
+#     def best(
+#         self, dim: int = 0, keepdim: bool = False
+#     ) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+#         """Get the best value in the assessment for a dimension
 
-        Args:
-            dim (int, optional): The dimension to get the best for. Defaults to 0.
-            keepdim (bool, optional): Whether to keepdim. Defaults to False.
+#         Args:
+#             dim (int, optional): The dimension to get the best for. Defaults to 0.
+#             keepdim (bool, optional): Whether to keepdim. Defaults to False.
 
-        Returns:
-            typing.Tuple[torch.Tensor, torch.LongTensor]:
-        """
-        if self.maximize:
-            return self.value.max(dim=dim, keepdim=keepdim)
-        return self.value.min(dim=dim, keepdim=keepdim)
+#         Returns:
+#             typing.Tuple[torch.Tensor, torch.LongTensor]:
+#         """
+#         if self.maximize:
+#             return self.value.max(dim=dim, keepdim=keepdim)
+#         return self.value.min(dim=dim, keepdim=keepdim)
 
-    def bestk(self, dim: int = 0) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
-        """Get the best value in the assessment for a dimension
+#     def bestk(self, dim: int = 0) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+#         """Get the best value in the assessment for a dimension
 
-        Args:
-            dim (int, optional): The dimension to get the best for. Defaults to 0.
-            keepdim (bool, optional): Whether to keepdim. Defaults to False.
+#         Args:
+#             dim (int, optional): The dimension to get the best for. Defaults to 0.
+#             keepdim (bool, optional): Whether to keepdim. Defaults to False.
 
-        Returns:
-            typing.Tuple[torch.Tensor, torch.LongTensor]:
-        """
-        return self.value.topk(dim=dim, largest=self.maximize)
+#         Returns:
+#             typing.Tuple[torch.Tensor, torch.LongTensor]:
+#         """
+#         return self.value.topk(dim=dim, largest=self.maximize)
 
-    def reduce(self, reduction: str = "mean", dim: int = None, keepdim: bool = False):
-        """
+#     def reduce(self, reduction: str = "mean", dim: int = None, keepdim: bool = False):
+#         """
 
-        Args:
-            reduction (str, optional): The reduction to apply. Defaults to 'mean'.
-            dim (int, optional): The dim to apply the reduction on - only for mean and sum. Defaults to None.
+#         Args:
+#             reduction (str, optional): The reduction to apply. Defaults to 'mean'.
+#             dim (int, optional): The dim to apply the reduction on - only for mean and sum. Defaults to None.
 
-        Returns:
-            Assessment: The reduced assessment
-        """
-        return Assessment(
-            Reduction[reduction].reduce(self.value, dim, keepdim=keepdim),
-            self.maximize,
-        )
+#         Returns:
+#             Assessment: The reduced assessment
+#         """
+#         return Assessment(
+#             Reduction[reduction].reduce(self.value, dim, keepdim=keepdim),
+#             self.maximize,
+#         )
 
-    @classmethod
-    def stack(cls, assessments: typing.Iterable["Assessment"]) -> "Assessment":
-        """Stack multiple assessments
+#     @classmethod
+#     def stack(cls, assessments: typing.Iterable["Assessment"]) -> "Assessment":
+#         """Stack multiple assessments
 
-        Args:
-            assessments (typing.Iterable[Assessment]): Assessments to stack
+#         Args:
+#             assessments (typing.Iterable[Assessment]): Assessments to stack
 
-        Raises:
-            ValueError: if the assessments being stacked are not all optimized in the same direction
+#         Raises:
+#             ValueError: if the assessments being stacked are not all optimized in the same direction
 
-        Returns:
-            Assessment: The stacked assessment
-        """
-        maximize = None
-        values = []
-        for assessment in assessments:
-            if maximize is None:
-                maximize = assessment.maximize
-            if maximize != assessment.maximize:
-                raise ValueError(
-                    f"In order to stack optimizations must be in same direction. "
-                    f"Current is {maximize} previous was {assessment.maximize}"
-                )
-            values.append(assessment.value)
-        return cls(torch.stack(values), maximize)
+#         Returns:
+#             Assessment: The stacked assessment
+#         """
+#         maximize = None
+#         values = []
+#         for assessment in assessments:
+#             if maximize is None:
+#                 maximize = assessment.maximize
+#             if maximize != assessment.maximize:
+#                 raise ValueError(
+#                     f"In order to stack optimizations must be in same direction. "
+#                     f"Current is {maximize} previous was {assessment.maximize}"
+#                 )
+#             values.append(assessment.value)
+#         return cls(torch.stack(values), maximize)
 
-    def to_dict(self, name: str) -> "AssessmentDict":
-        """Convert the Assessment to an AssessmentDict
+#     def to_dict(self, name: str) -> "AssessmentDict":
+#         """Convert the Assessment to an AssessmentDict
 
-        Args:
-            name (str): The name to give the assessment
+#         Args:
+#             name (str): The name to give the assessment
 
-        Returns:
-            AssessmentDict: The resulting assessment dict
-        """
-        return AssessmentDict(**{name: self})
+#         Returns:
+#             AssessmentDict: The resulting assessment dict
+#         """
+#         return AssessmentDict(**{name: self})
 
-    def __iter__(self) -> typing.Iterator["Assessment"]:
-        """Iterate over the values in the assessment for the first dimension
+#     def __iter__(self) -> typing.Iterator["Assessment"]:
+#         """Iterate over the values in the assessment for the first dimension
 
-        Yields:
-            Assessment: Assessment for the current element
-        """
+#         Yields:
+#             Assessment: Assessment for the current element
+#         """
 
-        if self.value.dim() == 0:
-            yield Assessment(self.value, self.maximize)
-        else:
-            for element in self.value:
-                yield Assessment(element, self.maximize)
+#         if self.value.dim() == 0:
+#             yield Assessment(self.value, self.maximize)
+#         else:
+#             for element in self.value:
+#                 yield Assessment(element, self.maximize)
 
-    def reduce_image(
-        self, divide_start: int = 1, reduction: str = "mean"
-    ) -> "Assessment":
+#     def reduce_image(
+#         self, divide_start: int = 1, reduction: str = "mean"
+#     ) -> "Assessment":
 
-        if divide_start < 1:
-            raise ValueError(
-                f"Divide start must be greater than or equal to 1 not {divide_start}"
-            )
+#         if divide_start < 1:
+#             raise ValueError(
+#                 f"Divide start must be greater than or equal to 1 not {divide_start}"
+#             )
 
-        shape = self.value.shape
-        size_dim1 = shape[:divide_start]
-        # size_dim2 = shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
-        size1 = math.prod(shape[:divide_start])
-        reshaped = self.value.reshape(size1, -1)
-        reduced = Reduction[reduction].reduce(reshaped, dim=1)
-        return Assessment(reduced.reshape(size_dim1), maximize=self.maximize)
+#         shape = self.value.shape
+#         size_dim1 = shape[:divide_start]
+#         # size_dim2 = shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
+#         size1 = math.prod(shape[:divide_start])
+#         reshaped = self.value.reshape(size1, -1)
+#         reduced = Reduction[reduction].reduce(reshaped, dim=1)
+#         return Assessment(reduced.reshape(size_dim1), maximize=self.maximize)
 
-    def to_2d(
-        self, divide_start: int = 1
-    ) -> typing.Tuple["Assessment", torch.Size, torch.Size]:
-        """Convert the assessment to a 2d tensor
+#     def to_2d(
+#         self, divide_start: int = 1
+#     ) -> typing.Tuple["Assessment", torch.Size, torch.Size]:
+#         """Convert the assessment to a 2d tensor
 
-        Returns:
-            typing.Tuple['Assessment', torch.Size, torch.Size]: The assessment converted to 2d followed by the base size
-             of the first half and base size of the second half
-        """
-        shape = self.value.shape
-        size_dim1 = shape[:divide_start]
-        size_dim2 = (
-            shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
-        )
-        size1 = math.prod(shape[:divide_start])
-        return (
-            Assessment(self.value.reshape(size1, -1), self.maximize),
-            size_dim1,
-            size_dim2,
-        )
+#         Returns:
+#             typing.Tuple['Assessment', torch.Size, torch.Size]: The assessment converted to 2d followed by the base size
+#              of the first half and base size of the second half
+#         """
+#         shape = self.value.shape
+#         size_dim1 = shape[:divide_start]
+#         size_dim2 = (
+#             shape[divide_start:] if len(shape) > divide_start else torch.Size([1])
+#         )
+#         size1 = math.prod(shape[:divide_start])
+#         return (
+#             Assessment(self.value.reshape(size1, -1), self.maximize),
+#             size_dim1,
+#             size_dim2,
+#         )
 
-    def __str__(self) -> str:
+#     def __str__(self) -> str:
 
-        return f"""
-        Assessment(maximize: {self.maximize}, value: {self.value})
-        """
+#         return f"""
+#         Assessment(maximize: {self.maximize}, value: {self.value})
+#         """
 
 
 def reduce_assessment(
@@ -369,7 +364,7 @@ def reduce_assessment(
     maximize: bool = False,
     reduction: str = "mean",
     dim: int = -1,
-) -> Assessment:
+) -> torch.Tensor:
     """Use to reduce a tensor given a specified reduction
 
     Args:
@@ -381,94 +376,97 @@ def reduce_assessment(
     Returns:
         Assessment: An assessment reduced
     """
-    return Assessment(assessment, maximize).reduce(reduction, dim)
+    return Reduction[reduction].reduce(
+        assessment, dim
+    )
+    # return Assessment(assessment, maximize).reduce(reduction, dim)
 
 
-def _f_assess_dict(assessment_dict: "AssessmentDict", f):
-    def _(*args, **kwargs):
-        updated = {}
-        result = {
-            key: (f(value.value, *args, **kwargs), value.maximize, value.name)
-            for key, value in assessment_dict.items()
-        }
-        assessment_result = True
-        for key, (value, maximize, name) in result.items():
-            if isinstance(value, torch.Tensor):
-                value = Assessment(value, maximize, name)
-            else:
-                assessment_result = False
-            if value is not None:
-                updated[key] = value
+# def _f_assess_dict(assessment_dict: "AssessmentDict", f):
+#     def _(*args, **kwargs):
+#         updated = {}
+#         result = {
+#             key: (f(value.value, *args, **kwargs), value.maximize, value.name)
+#             for key, value in assessment_dict.items()
+#         }
+#         assessment_result = True
+#         for key, (value, maximize, name) in result.items():
+#             if isinstance(value, torch.Tensor):
+#                 value = Assessment(value, maximize, name)
+#             else:
+#                 assessment_result = False
+#             if value is not None:
+#                 updated[key] = value
 
-        if len(updated) == 0:
-            return None
+#         if len(updated) == 0:
+#             return None
 
-        if assessment_result is False:
-            return updated
+#         if assessment_result is False:
+#             return updated
 
-        return AssessmentDict(**updated)
+#         return AssessmentDict(**updated)
 
-    return _
+#     return _
 
 
-class AssessmentDict(dict):
-    """Use to store a set of assessments"""
+# class AssessmentDict(dict):
+#     """Use to store a set of assessments"""
 
-    def __init__(self, assessment=None, **kwargs: Assessment):
-        """Create the assessment dict"""
-        if assessment is not None and len(kwargs) > 0:
-            raise RuntimeError("Cannot pass kwargs if passing assessment")
-        if isinstance(assessment, typing.Generator):
-            if len(kwargs) != 0:
-                raise RuntimeError("Cannot pass kwargs if passing assessment")
-            super().__init__(assessment)
-        elif isinstance(assessment, typing.Dict):
-            super().__init__(assessment)
-        else:
-            super().__init__(**kwargs)
+#     def __init__(self, assessment=None, **kwargs: Assessment):
+#         """Create the assessment dict"""
+#         if assessment is not None and len(kwargs) > 0:
+#             raise RuntimeError("Cannot pass kwargs if passing assessment")
+#         if isinstance(assessment, typing.Generator):
+#             if len(kwargs) != 0:
+#                 raise RuntimeError("Cannot pass kwargs if passing assessment")
+#             super().__init__(assessment)
+#         elif isinstance(assessment, typing.Dict):
+#             super().__init__(assessment)
+#         else:
+#             super().__init__(**kwargs)
 
-    def __getattr__(self, key: str):
-        """Retrieve the value for an attribute"""
+#     def __getattr__(self, key: str):
+#         """Retrieve the value for an attribute"""
 
-        if key in self:
-            return self[key]
+#         if key in self:
+#             return self[key]
 
-        try:
-            f = getattr(torch.Tensor, key)
-            return _f_assess_dict(self, f)
-        except KeyError:
-            raise KeyError(f"No key named {key} in AssessmentDict")
+#         try:
+#             f = getattr(torch.Tensor, key)
+#             return _f_assess_dict(self, f)
+#         except KeyError:
+#             raise KeyError(f"No key named {key} in AssessmentDict")
 
-    def sub(self, keys: typing.List[str]) -> "AssessmentDict":
-        """Get a subset of keys"""
-        return AssessmentDict({key: self[key] for key in keys})
+#     def sub(self, keys: typing.List[str]) -> "AssessmentDict":
+#         """Get a subset of keys"""
+#         return AssessmentDict({key: self[key] for key in keys})
 
-    def apply(
-        self, f: typing.Callable, filter: typing.List[str] = None
-    ) -> "AssessmentDict":
-        """
+#     def apply(
+#         self, f: typing.Callable, filter: typing.List[str] = None
+#     ) -> "AssessmentDict":
+#         """
 
-        Args:
-            f (typing.Callable): The function to apply
-            filter (typing.List[str], optional): A list of keys to filter by. Defaults to None.
+#         Args:
+#             f (typing.Callable): The function to apply
+#             filter (typing.List[str], optional): A list of keys to filter by. Defaults to None.
 
-        Returns:
-            AssessmentDict:
-        """
-        return AssessmentDict(
-            {
-                key: f(value)
-                for key, value in self.items()
-                if filter is None or key in filter
-            }
-        )
+#         Returns:
+#             AssessmentDict:
+#         """
+#         return AssessmentDict(
+#             {
+#                 key: f(value)
+#                 for key, value in self.items()
+#                 if filter is None or key in filter
+#             }
+#         )
 
-    def value_dict(self) -> typing.Dict[str, torch.Tensor]:
-        """
-        Returns:
-            typing.Dict[str, torch.Tensor]: The
-        """
-        return {key: assessment.value for key, assessment in self.items()}
+#     def value_dict(self) -> typing.Dict[str, torch.Tensor]:
+#         """
+#         Returns:
+#             typing.Dict[str, torch.Tensor]: The
+#         """
+#         return {key: assessment.value for key, assessment in self.items()}
 
 
 class Criterion(nn.Module):
@@ -514,7 +512,7 @@ class Criterion(nn.Module):
 
         return Reduction[reduction].reduce(value)
 
-    def assess(self, x: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """Calculate the assessment
 
         Args:
@@ -525,7 +523,7 @@ class Criterion(nn.Module):
         Returns:
             Assessment: The assessment resulting from the objective
         """
-        return Assessment(self.forward(x, t, reduction_override), self._maximize)
+        return self.forward(x, t, reduction_override)
 
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         if self._base is not None:
@@ -556,7 +554,7 @@ class XCriterion(nn.Module):
         """
         return self._maximize
 
-    def assess(self, x: IO, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess(self, x: IO, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """Calculate the assessment
 
         Args:
@@ -565,9 +563,9 @@ class XCriterion(nn.Module):
             reduction_override (str, optional): The . Defaults to None.
 
         Returns:
-            Assessment: The assessment resulting from the objective
+            torch.Tensor: The assessment resulting from the objective
         """
-        return Assessment(self.forward(x, y, t, reduction_override), self._maximize)
+        return self.forward(x, y, t, reduction_override)
 
     def forward(
         self, x: IO, y: IO, t: IO, reduction_override: str = None
@@ -708,59 +706,57 @@ class ThLoss(Criterion):
             )
         )
 
+# class PopulationAssessment(Assessment):
+#     """Convenience class to make it easier to work with assessments
+#     of populations. It assumes that the first dimension is the population
+#     dimension.
+#     """
 
-
-class PopulationAssessment(Assessment):
-    """Convenience class to make it easier to work with assessments
-    of populations. It assumes that the first dimension is the population
-    dimension.
-    """
-
-    @property
-    def k(self) -> int:
-        """The population size
-        """
-        return self.value.shape[0]
+#     @property
+#     def k(self) -> int:
+#         """The population size
+#         """
+#         return self.value.shape[0]
     
-    @property
-    def batch_size(self) -> int:
-        """The batch size if any
-        """
-        return self.shape[1] if self.dim() > 1 else 0
+#     @property
+#     def batch_size(self) -> int:
+#         """The batch size if any
+#         """
+#         return self.shape[1] if self.dim() > 1 else 0
     
-    @property
-    def feature_shape(self) -> torch.Size:
-        """The shape of the feature dimensions
-        """
-        return self.shape[2:]
+#     @property
+#     def feature_shape(self) -> torch.Size:
+#         """The shape of the feature dimensions
+#         """
+#         return self.shape[2:]
 
-    def from_index(
-        self, assessment: Assessment, 
-        index: torch.LongTensor, k: int, pop_dim: int=0
-    ) -> 'PopulationAssessment':
-        """
+#     def from_index(
+#         self, assessment: Assessment, 
+#         index: torch.LongTensor, k: int, pop_dim: int=0
+#     ) -> 'PopulationAssessment':
+#         """
 
-        Args:
-            assessment (Assessment): The base assessment. Probably a 
-            populationassessment
-            index (torch.LongTensor): The index to create the assessment by 
-            k (int): the population size
-            pop_dim (int, optional): . Defaults to 0.
+#         Args:
+#             assessment (Assessment): The base assessment. Probably a 
+#             populationassessment
+#             index (torch.LongTensor): The index to create the assessment by 
+#             k (int): the population size
+#             pop_dim (int, optional): . Defaults to 0.
 
-        Returns:
-            PopulationAssessment: The assessment expanded to a population assessment
-        """
-        index = align_to(
-            index, assessment.value
-        )
-        shape = list(index.shape)
-        shape.insert(pop_dim, k)
-        pop_assessment = torch.zeros(shape)
+#         Returns:
+#             PopulationAssessment: The assessment expanded to a population assessment
+#         """
+#         index = align_to(
+#             index, assessment.value
+#         )
+#         shape = list(index.shape)
+#         shape.insert(pop_dim, k)
+#         pop_assessment = torch.zeros(shape)
         
-        pop_assessment.scatter(index, assessment.value)
-        return PopulationAssessment(
-            pop_assessment, assessment.maximize
-        )
+#         pop_assessment.scatter(index, assessment.value)
+#         return PopulationAssessment(
+#             pop_assessment, assessment.maximize
+#         )
 
 
 class AssessmentLog(object):
@@ -771,7 +767,7 @@ class AssessmentLog(object):
         """Instantiate the assessments"""
 
         self._log: typing.Dict[
-            typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, Assessment]]]
+            typing.Any, typing.Dict[str, typing.Dict[str, typing.Dict[str, torch.Tensor]]]
         ] = {}
 
     def update(
@@ -779,7 +775,7 @@ class AssessmentLog(object):
         id,
         obj_name: str,
         assessment_name: str,
-        assessment: Assessment,
+        assessment: torch.Tensor,
         sub_id=None,
         replace: bool = False,
         to_cpu: bool = True,
@@ -790,7 +786,7 @@ class AssessmentLog(object):
         Args:
             id : The unique identifier for the layer
             name (str): The name of the layer/operation. Can also include time step info etc
-            assessment (Assessment): The assessment dict to update with
+            assessment (torch.Tensor): The assessment to update with
             replace (bool, optional): Whether to replace the current assessment 
                 dict for the key/name. Defaults to False.
             to_cpu (bool): Whether to convert to cpu or not
@@ -830,11 +826,11 @@ class AssessmentLog(object):
 
         self._log[id][sub_id].clear()
 
-    def as_assessment_dict(self) -> AssessmentDict:
+    def as_assessment_dict(self) -> typing.Dict[str, torch.Tensor]:
         """
 
         Returns:
-            typing.Dict[str, Assessment]: The assessment log converted to a dictionary of assessments
+            typing.Dict[str, torch.Tensor]: The assessment log converted to a dictionary of assessments
         """
 
         result = {}
@@ -847,5 +843,5 @@ class AssessmentLog(object):
                         for name, assessment in val3.items()
                     }
                     result.update(cur)
-        return AssessmentDict(**result)
+        return result
 

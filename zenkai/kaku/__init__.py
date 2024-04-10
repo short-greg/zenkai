@@ -2,14 +2,14 @@
 
 from ._assess import (
     LOSS_MAP,
-    Assessment,
+    # Assessment,
     Criterion,
     Reduction,
     ThLoss,
-    AssessmentDict,
+    # AssessmentDict,
     Criterion,
     XCriterion,
-    PopulationAssessment,
+    # PopulationAssessment,
     AssessmentLog, 
     reduce_assessment,
     CompositeCriterion,
@@ -51,9 +51,9 @@ from ._optimize import (
     OptimFactory, optimf, Fit, PopulationOptim, CompOptim
 )
 from ._state import IDable, MyState, State, StateKeyError, Meta
-from ._populate import (
-    Population, PopulationIndexer, Individual, TensorDict
-)
+# from ._populate import (
+#     Population, PopulationIndexer, Individual, TensorDict
+# )
 from ._objective import (
     Objective,
     Constraint,

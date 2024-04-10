@@ -2,8 +2,11 @@
 import typing
 from abc import ABC, abstractmethod
 
+# 3rd party
+import torch
+
 # local
-from ...kaku import IO, StepXHook, StepHook, LearningMachine, Assessment, Meta
+from ...kaku import IO, StepXHook, StepHook, LearningMachine, Meta
 
 
 class LayerAssessor(ABC):
@@ -20,7 +23,7 @@ class LayerAssessor(ABC):
         pass
 
     @abstractmethod
-    def assessment(self) -> Assessment:
+    def assessment(self) -> torch.Tensor:
         pass
 
 
@@ -98,7 +101,7 @@ class StepXLayerAssessor(LayerAssessor):
         """
         self._.post = self._learning_machine.assess(x, t).prepend("Post")
 
-    def assessment(self) -> typing.Tuple[Assessment, Assessment]:
+    def assessment(self) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         return self._.get('pre'), self._.get("post")
 
 
@@ -146,7 +149,7 @@ class StepFullLayerAssessor(LayerAssessor):
             self._learning_machine(x), t
         ).prepend("Post")
 
-    def assessment(self) -> typing.Tuple[Assessment, Assessment]:
+    def assessment(self) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         """Retrieve the assessment
         
         Returns:

@@ -5,7 +5,7 @@ import torch.optim
 from torch import nn
 
 # local
-from zenkai.kaku import IO, Assessment
+from zenkai.kaku import IO
 from zenkai.kaku import _state as state2
 
 

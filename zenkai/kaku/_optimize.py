@@ -16,8 +16,7 @@ import torch.optim as optim
 
 # local
 from ._machine import LearningMachine
-from ._assess import PopulationAssessment, Criterion, Assessment
-from ._populate import Population
+from ._assess import Criterion
 from ._io import IO
 
 
@@ -310,12 +309,12 @@ class PopulationOptim(ABC):
     @abstractmethod
     def assess(
         self, learning_machine: LearningMachine, x: IO, t: IO,
-    ) -> PopulationAssessment:
+    ) -> torch.Tensor:
         pass
 
     @abstractmethod
     def accumulate(
-        self, assessment: PopulationAssessment
+        self, assessment: torch.Tensor
     ):
         raise NotImplementedError
     
@@ -326,7 +325,7 @@ class PopulationOptim(ABC):
     @abstractmethod
     def params(
         self, key: str=None
-    ) -> typing.Union[Population, torch.Tensor]:
+    ) -> typing.Union[torch.Tensor, torch.Tensor]:
         pass
 
 
@@ -336,10 +335,10 @@ class Fit(ABC):
     @abstractmethod
     def optim_iter(
         self, objective: Criterion, **kwargs
-    ) -> typing.Iterator[Assessment]:
+    ) -> typing.Iterator[torch.Tensor]:
         raise NotImplementedError
 
-    def optim(self, objective: Criterion, **kwargs) -> Assessment:
+    def optim(self, objective: Criterion, **kwargs) -> torch.Tensor:
         for assessment in self.optim_iter(objective, **kwargs):
             pass
         return assessment

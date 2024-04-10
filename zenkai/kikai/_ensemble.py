@@ -11,8 +11,6 @@ from ..kaku import (
     IO,
     LearningMachine,
 )
-from ..kaku import Individual, Population
-from ..mod import Voter
 
 
 class EnsembleLearner(LearningMachine):
@@ -78,32 +76,29 @@ class EnsembleLearnerVoter(nn.Module):
         return y.f
 
 
-class VoterPopulator(object):
-    """Populator that uses multiple outputs from votes"""
+# class VoterPopulator(object):
+#     """Populator that uses multiple outputs from votes"""
 
-    def __init__(self, voter: Voter, x_name: str):
-        """Create a population of values based on x
+#     def __init__(self, voter: Voter, x_name: str):
+#         """Create a population of values based on x
 
-        Args:
-            voter (Voter): the module to use for voting
-            x_name (str): the name of the input into x
-        """
-        self.voter = voter
-        self.x_name = x_name
+#         Args:
+#             voter (Voter): the module to use for voting
+#             x_name (str): the name of the input into x
+#         """
+#         self.voter = voter
+#         self.x_name = x_name
 
-    def __call__(self, individual: Individual) -> Population:
-        """Populator function
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         """Populator function
 
-        Args:
-            individual (Individual): the individual to populate based on
+#         Args:
+#             x (torch.Tensor): the individual to populate based on
 
-        Returns:
-            Population: The resulting population
-        """
-        x = individual[self.x_name]
-        y = self.voter(x)
-        result = {self.x_name: y}
-        return Population(**result)
+#         Returns:
+#             torch.Tensor: The resulting population
+#         """
+#         return self.voter(x)
 
-    def spawn(self) -> "VoterPopulator":
-        return VoterPopulator(self.voter, self.x_name)
+#     def spawn(self) -> "VoterPopulator":
+#         return VoterPopulator(self.voter, self.x_name)

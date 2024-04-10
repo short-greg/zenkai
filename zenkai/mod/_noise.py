@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import Assessment
 from ..utils import get_model_parameters, update_model_parameters
 
 
@@ -267,12 +266,12 @@ class AssessmentDist(ABC):
 
     @abstractmethod
     def __call__(
-        self, assessment: Assessment, x: torch.Tensor
+        self, assessment: torch.Tensor, x: torch.Tensor, maximize: bool=False
     ) -> typing.Union[torch.Tensor, torch.Tensor]:
         """
 
         Args:
-            assessment (Assessment): the assessment. Must be of dimension [k, batch]
+            assessment (torch.Tensor): the assessment. Must be of dimension [k, batch]
             x (torch.Tensor): the input to assess. must be of dimension
               [k, batch, feature]
 
@@ -297,13 +296,13 @@ class EqualsAssessmentDist(AssessmentDist):
 
         self.equals_value = equals_value
 
-    def __call__(self, assessment: Assessment, x: torch.Tensor) -> torch.Tensor:
+    def __call__(self, assessment: torch.Tensor, x: torch.Tensor, maximize: bool=False) -> torch.Tensor:
         """Calculate the assessment distribution of the input
 
         Args:
-            assessment (Assessment): The assessment of the
+            assessment (torch.Tensor): The assessment of the
             x (torch.Tensor): the input tensor
-
+            maximize (bool): whether to maximize or minimize
         Raises:
             ValueError: The dimension of value is not 3
             ValueError: The dimension of x is not 3
@@ -311,12 +310,12 @@ class EqualsAssessmentDist(AssessmentDist):
         Returns:
             typing.Tuple[torch.Tensor, torch.Tensor] : mean, std
         """
-        if assessment.value.dim() != 2:
+        if assessment.dim() != 2:
             raise ValueError("Value must have dimension of 2 ")
         if x.dim() == 3:
-            value = assessment.value[:, :, None]
+            value = assessment[:, :, None]
         else:
-            value = assessment.value
+            value = assessment
         if x.dim() not in (2, 3):
             raise ValueError("Argument x must have dimension of 2 or 3")
         equals = (x == self.equals_value).type_as(x)
@@ -329,12 +328,12 @@ class EqualsAssessmentDist(AssessmentDist):
         )
 
     def sample(
-        self, assessment: Assessment, x: torch.Tensor, n_samples: int = None
+        self, assessment: torch.Tensor, x: torch.Tensor, n_samples: int = None
     ) -> torch.Tensor:
         """Generate a sample from the distribution
 
         Args:
-            assessment (Assessment): The assessment
+            assessment (torch.Tensor): The assessment
             x (torch.Tensor): The input
             n_samples (int, optional): the number of samples. Defaults to None.
 
@@ -344,7 +343,7 @@ class EqualsAssessmentDist(AssessmentDist):
         mean, std = self(assessment, x)
         return gaussian_sample(mean, std, n_samples)
 
-    def mean(self, assessment: Assessment, x: torch.Tensor) -> torch.Tensor:
+    def mean(self, assessment: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         """Calculate the mean from the distribution
 
         Args:

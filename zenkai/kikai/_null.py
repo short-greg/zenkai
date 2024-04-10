@@ -1,8 +1,9 @@
 # 3rd Party
-from zenkai.kaku._assess import Assessment, Criterion, ThLoss
+import torch
 
 # Local
 from ..kaku import IO, StepTheta, StepX, LearningMachine
+from ..kaku._assess import Criterion, ThLoss
 
 
 class NullStepTheta(StepTheta):
@@ -26,7 +27,7 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
         super().__init__()
         self.criterion = criterion or ThLoss("MSELoss")
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.criterion.assess(y, t, reduction_override)
 
     def forward(self, x: IO, release: bool = True) -> IO:

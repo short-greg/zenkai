@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ..kaku import LearningMachine, State, IO, Criterion, forward_dep
+from ..kaku import LearningMachine, IO, Criterion, forward_dep
 from ..utils import unsqueeze_to
 
 
@@ -52,7 +52,7 @@ class GaussianDecorator(object):
 
         assessment = self.criterion.assess(y, t, reduction_override=None)
         assessment = assessment.view(assessment.shape[0], -1).mean(1)
-        unsqueezed = unsqueeze_to(assessment.value, x) * self.weight
+        unsqueezed = unsqueeze_to(assessment, x) * self.weight
         return x_prime + torch.randn_like(x) * unsqueezed
 
 

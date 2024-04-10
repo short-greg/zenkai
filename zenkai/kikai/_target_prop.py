@@ -1,4 +1,5 @@
 # 3rd Party
+import torch
 import torch.nn as nn
 
 # Local
@@ -7,7 +8,7 @@ from ..kaku import (
     SetYHook,
     LearningMachine,
     StepTheta,
-    Assessment,
+    # Assessment,
     ThLoss,
     Criterion
 )
@@ -37,7 +38,7 @@ class TargetPropLearner(LearningMachine):
         self._criterion = criterion or ThLoss('MSELoss')
         self.forward_hook(SetYHook(self.y_name))
 
-    def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> Assessment:
+    def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         return self._criterion.assess(x, t, reduction_override)
 
     @property

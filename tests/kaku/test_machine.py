@@ -8,7 +8,7 @@ from torch import nn
 from zenkai import utils
 
 # local
-from zenkai.kaku import IO, IDable, Assessment
+from zenkai.kaku import IO, IDable
 from zenkai.kaku import _machine as core
 from zenkai.kaku import _assess
 
@@ -33,7 +33,7 @@ class SimpleLearner(core.LearningMachine):
         self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.loss.assess(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO) -> IO:
@@ -66,7 +66,7 @@ class SimpleAccLearner(core.LearningMachine):
         self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.loss.assess(y, t, reduction_override)
 
     def accumulate(self, x: IO, t: IO) -> IO:
@@ -97,7 +97,7 @@ class SimpleAccLearner(core.LearningMachine):
 class DummyHook(core.LearnerPostHook):
 
     def __call__(
-        self, x: IO, t: IO, y: IO, assessment: Assessment
+        self, x: IO, t: IO, y: IO, assessment: torch.Tensor
     ) -> typing.Tuple[IO, IO]:
         
         x._(self).hi = 'hi'
@@ -186,7 +186,7 @@ class LayeredLearner(core.LearningMachine):
         self.m1 = m1
         self.m2 = m2
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.m2.assess_y(y, t, reduction_override=reduction_override)
 
     def step_x(self, x: IO, t: IO) -> IO:
@@ -276,7 +276,7 @@ class DependentLearner(core.LearningMachine):
         self.loss = _assess.ThLoss(nn.MSELoss, reduction="mean")
         self.optim = torch.optim.SGD(self.parameters(), lr=1e-1)
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> core.Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.loss.assess(y, t, reduction_override)
 
     @core.step_dep("stepped")

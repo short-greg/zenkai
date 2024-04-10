@@ -102,7 +102,7 @@ class GeneticNNLearner(LearningMachine):
 
         self.network.zero_grad()
         assessment = self.assess_y(y, t, reduction_override=self.reduction)
-        assessment.value.backward()
+        assessment.backward()
 
     @acc_dep("y", True)
     def step_x(self, x: IO, t: IO) -> IO:

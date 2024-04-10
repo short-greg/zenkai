@@ -23,7 +23,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ._assess import Assessment, Criterion, Reduction
+from ._assess import Criterion, Reduction
 from ._state import IDable, Meta
 from ._io import IO, Idx
 from functools import wraps
@@ -60,7 +60,7 @@ class LearnerPostHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, x: IO, t: IO, y: IO, assessment: Assessment
+        self, x: IO, t: IO, y: IO, assessment: torch.Tensor
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -289,7 +289,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         return tuple(io_i.to(device) for io_i in io)
 
     @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         """Assess the learning machine
 
         Args:
@@ -299,7 +299,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
               the reduction by. If None will not override. Defaults to None.
 
         Returns:
-            Assessment: The assessment of the machine
+            torch.Tensor: The assessment of the machine
         """
         pass
 
@@ -309,7 +309,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         t: IO,
         reduction_override: str = None,
         release: bool = False,
-    ) -> Assessment:
+    ) -> torch.Tensor:
         """Assess the learning machine
 
         Args:
@@ -321,7 +321,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
               Defaults to False.
 
         Returns:
-            Assessment: The assessment of the machine
+            torch.Tensor: The assessment of the machine
         """
         y = self(x, release=release)
         return self.assess_y(y, t, reduction_override=reduction_override)
@@ -437,7 +437,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         t: IO,
         reduction_override: str = None,
         get_y: bool = False,
-    ) -> Assessment:
+    ) -> torch.Tensor:
         """Learn method . This includes cleanup and initialization so it is easier to use in practice
         than step
 
@@ -448,7 +448,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             clear_state (bool, optional): Whether to clear teh state for the machine. Defaults to False.
 
         Returns:
-            Assessment: 
+            torch.Tensor: The assessment from learning 
         """
         # if not self.training:
         self.train()
@@ -484,7 +484,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
         t: IO,
         reduction_override: str = None,
         get_y: bool = False,
-    ) -> Assessment:
+    ) -> torch.Tensor:
         """Assess the machine in "testing" mode
 
         Args:
@@ -492,7 +492,7 @@ class LearningMachine(IDable, StepTheta, StepX, nn.Module, ABC):
             t (IO): the output to the machine
 
         Returns:
-            Assessment: The assessment
+            torch.Tensor: The assessment
         """
         # if self.training:
         self.eval()
@@ -529,11 +529,11 @@ class StdLearningMachine(LearningMachine):
         self._step_x = step_x
         self._criterion = criterion
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         
         if self._criterion is None:
             # use MSE Loss for the default
-            return Assessment(Reduction.reduce((y.f - t.f).pow(2), reduction_override))
+            return Reduction.reduce((y.f - t.f).pow(2), reduction_override)
 
         return self._criterion.assess(y, t, reduction_override)
 
@@ -564,7 +564,7 @@ class NullLearner(LearningMachine):
         self.loss = loss or Criterion(nn.MSELoss, reduction="none")
         # self.step_x_learner = step_x_learner
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.loss.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO):

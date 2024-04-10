@@ -3,9 +3,10 @@ import typing
 
 # 3rd party
 import torch.nn as nn
+import torch
 
 # local
-from ..kaku import IO, Assessment, LearningMachine, Criterion, ThLoss
+from ..kaku import IO, LearningMachine, Criterion, ThLoss
 from ..mod import Reversible, SequenceReversible
 from ..mod import Lambda
 from ._backtarget import BackTarget
@@ -31,7 +32,7 @@ class ReversibleMachine(LearningMachine):
         self.reversible = reversible
         self.objective = objective
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.objective.assess(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO) -> IO:

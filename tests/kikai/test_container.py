@@ -1,5 +1,5 @@
 import typing
-from zenkai.kaku import IO, Assessment, State
+from zenkai.kaku import IO
 from zenkai.kikai import _containers as containers
 from zenkai.kikai._containers import SStep
 from .test_grad import THGradLearnerT1
@@ -21,7 +21,7 @@ class SampleGraph(containers.GraphLearner):
         self.step_priority = step_priority
         self.target_out = target_out
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.linear3.assess_y(y, t, reduction_override)
 
     def forward(
@@ -47,7 +47,7 @@ class SampleAccGraph(containers.AccGraphLearner):
         self.linear3 = self.add_learner(THGradLearnerT1(4, 4))
         self.target_out = target_out
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.linear3.assess_y(y, t, reduction_override)
 
     def forward(

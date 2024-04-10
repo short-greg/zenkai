@@ -2,7 +2,6 @@ import typing
 from abc import abstractmethod, ABC
 
 import torch
-from . import Assessment
 
 
 class Objective(ABC):
@@ -18,7 +17,7 @@ class Objective(ABC):
         self.maximize = maximize
 
     @abstractmethod
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
         pass
 
 

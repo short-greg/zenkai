@@ -3,9 +3,8 @@ import typing
 
 # 3rd party
 import torch.nn as nn
-import torch
 
-from zenkai.kaku import Idx
+from ..kaku import Idx
 
 # local
 from ..kaku import (

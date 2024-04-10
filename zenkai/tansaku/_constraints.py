@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import Assessment, Criterion, impose, Reduction, IO, Constraint, Objective
+from ..kaku import Criterion, impose, Reduction, IO, Constraint, Objective
 
 
 class NullConstraint(Constraint):
@@ -133,13 +133,13 @@ class FuncObjective(Objective):
         self._maximize = maximize
         self._penalty = penalty if maximize else -penalty
 
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
 
         value = self._f(**kwargs)
         constraint = self._constraint(**kwargs)
         value = impose(value, constraint, self._penalty)
 
-        return Assessment(Reduction[reduction].reduce(value), self._maximize)
+        return Reduction[reduction].reduce(value)
 
 
 class NNLinearObjective(Objective):
@@ -180,7 +180,7 @@ class NNLinearObjective(Objective):
         self._constraint = constraint or NullConstraint()
         self._penalty = penalty if self._criterion.maximize else -penalty
 
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> Assessment:
+    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
 
         w = kwargs["w"]
         b = kwargs.get("b", [None] * len(w))
@@ -195,12 +195,12 @@ class NNLinearObjective(Objective):
                         IO(self._net(self.x.f)), self.t, reduction_override=reduction
                     )
                 )
-        assessment = Assessment.stack(assessments)
+        assessment = torch.stack(assessments)
         constraint = self._constraint(**kwargs)
-        value = impose(assessment.value, constraint, self._penalty)
+        value = impose(assessment, constraint, self._penalty)
         if value.dim() == 3:
             value = value.transpose(2, 1)
-        return Assessment(Reduction[reduction].reduce(value), self._criterion.maximize)
+        return Reduction[reduction].reduce(value)
 
 
 class CriterionObjective(Objective):
@@ -211,7 +211,7 @@ class CriterionObjective(Objective):
         super().__init__()
         self.criterion = criterion
 
-    def __call__(self, reduction: str, **kwargs) -> Assessment:
+    def __call__(self, reduction: str, **kwargs) -> torch.Tensor:
 
         x = IO(kwargs['x'])
         t = IO(kwargs['t'])

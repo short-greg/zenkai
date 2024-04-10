@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator
 # local
 from ..kaku import (
     IO,
-    Assessment,
+    # Assessment,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
     StepX,
@@ -44,7 +44,7 @@ class ScikitMachine(LearningMachine):
         self._step_x = step_x
         self._partial = partial
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, **kwargs):
@@ -157,7 +157,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._partial = partial
         self._preprocessor = preprocessor
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> Assessment:
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, feature_idx: Idx = None, **kwargs):
