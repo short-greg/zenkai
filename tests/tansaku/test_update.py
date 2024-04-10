@@ -150,3 +150,24 @@ class TestUpdateMean:
         new_mean = _update.update_mean(cur, mean)
         
         assert (new_mean == (cur.mean(dim=-1, keepdim=True))).all()
+
+
+class TestCalcSlope:
+
+    def test_calc_slope_outputs_correct_size_with_one_dim(self):
+
+        cur = torch.rand(4, 4)
+        assessment = torch.rand(4)
+
+        slope = _update.calc_slope(cur, assessment)
+        
+        assert slope.shape == torch.Size([4, 4])
+
+    def test_calc_slope_outputs_correct_size_with_two_dims(self):
+
+        cur = torch.rand(4, 4)
+        assessment = torch.rand(4, 4)
+
+        slope = _update.calc_slope(cur, assessment)
+        
+        assert slope.shape == torch.Size([4, 4])

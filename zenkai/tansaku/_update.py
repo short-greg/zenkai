@@ -1,6 +1,9 @@
 # 3rd party
 import torch
 
+# local
+from ..utils import align_to
+
 
 def rand_update(
     cur: torch.Tensor,
@@ -90,8 +93,9 @@ def update_var(
     """Update the mean
 
     Args:
-        cur (torch.Tensor): 
-        std (torch.Tensor): 
+        cur (torch.Tensor): The cur value to update
+        mean (torch.Tensor): The Current mean
+        var (torch.Tensor): The Current variance
         dim (int, optional): . Defaults to -1.
         weight (float, optional): . Defaults to 0.9.
 
@@ -110,7 +114,17 @@ def update_var(
 def update_momentum(
     cur_val: torch.Tensor, prev_val: torch.Tensor, momentum: torch.Tensor=None, a: float=0.9
 ) -> torch.Tensor:
+    """Update the momentum
 
+    Args:
+        cur_val (torch.Tensor): The cur value of the value to calc momentum for
+        prev_val (torch.Tensor): The prev value of the value to calc momentum for
+        momentum (torch.Tensor, optional): The current momentum value. Defaults to None.
+        a (float, optional): The momentum param. Defaults to 0.9.
+
+    Returns:
+        torch.Tensor: The updated momentum value
+    """
     if momentum is None:
         return a * (cur_val - prev_val)
 
@@ -118,6 +132,16 @@ def update_momentum(
 
 
 def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) -> torch.Tensor:
+    """
+
+    Args:
+        cur_val (torch.Tensor): The current value
+        prev_val (torch.Tensor, optional): The previous value output by decay. Defaults to None.
+        decay (float, optional): The amount to decay the previous value by. Defaults to 0.9.
+
+    Returns:
+        torch.Tensor: _description_
+    """
 
     if prev_val is None:
         return cur_val
@@ -126,8 +150,17 @@ def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) 
 
 
 def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
+    """Calculate the slope based on the assessment
 
-    evaluation = assessment.value[:, :, None]
+    Args:
+        val (torch.Tensor): The value
+        assessment (torch.Tensor): The assessment for the value. Must have fewer or the same number of dimensions as val but not be 0-dim
+
+    Returns:
+        torch.Tensor: The slope
+    """
+
+    evaluation = align_to(assessment, val)
     base_shape = val.shape
     val = val.view(
         val.size(0), val.size(1), -1
