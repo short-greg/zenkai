@@ -15,7 +15,6 @@ from ..kaku import (
     Criterion,
     StepTheta,
     StepX,
-    # Assessment,
     OptimFactory,
     XCriterion,
     CompOptim,
@@ -42,7 +41,7 @@ class GradStepTheta(StepTheta):
         
         if y is None:
             if isinstance(self.module, LearningMachine):
-                y = self.module(x)
+                y = self.module(x.spawn(), release=False)
             else:
                 y = IO(self.module(*x.u))
         

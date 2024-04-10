@@ -111,6 +111,16 @@ class IO(object):
             typing.Iterator: Iterator of all of the elements
         """
         return iter(self._x)
+    
+    def spawn(self) -> 'IO':
+        """
+
+        Returns:
+            IO: The IO with a new "meta"
+        """
+        io = IO(*self.x, list(self._names.keys()) if self._names is not None else None)
+        io._freshened = self._freshened
+        return io
 
     def clone(self, detach: bool = True) -> "IO":
         """create a copy of the of all of the tensors

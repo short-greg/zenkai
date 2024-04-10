@@ -100,16 +100,67 @@ class Meta(dict):
             self[key] = value
             return value
         
-    def __call__(self, sub, to_add: bool=True) -> Any:
+    def __call__(self, sub) -> Any:
 
-        if not to_add and sub not in self:
-            raise KeyError(f'There is no sub meta called {sub}')
+        # if not to_add and sub not in self:
+        #     raise KeyError(f'There is no sub meta called {sub}')
         
-        if sub not in self and to_add:
-            self[sub] = Meta()
-        elif not isinstance(self[sub], Meta):
-            raise KeyError(f'Item {sub} is a Meta class')
-        return self[sub]
+        # if sub not in self and to_add:
+        #     self[sub] = 
+        return MyMeta(self, sub)
+        # elif not isinstance(self[sub], Meta):
+        #     raise KeyError(f'Item {sub} is a Meta class')
+        # return self[sub]
+
+
+class MyMeta(object):
+
+    def __init__(self, meta: Meta, base_key):
+
+        object.__setattr__(self, 'meta', meta)
+        object.__setattr__(self, 'base_key', base_key)
+
+        if isinstance(base_key, typing.Tuple):
+            object.__setattr__(self, 'key', self.tuple_key)
+        else:
+            object.__setattr__(self, 'key', self.reg_key)
+
+    def tuple_key(self, sub_key):
+        return (*self.base_key, sub_key)
+        
+    def reg_key(self, sub_key):
+        print(sub_key)
+        return (self.base_key, sub_key)
+
+    def __getattr__(self, sub_key: str):
+
+        return self.meta[self.key(sub_key)]
+
+    def __setattr__(self, sub_key: str, value: Any) -> Any:
+        
+        self.meta[self.key(sub_key)] = value
+        return value
+    
+    def __getitem__(self, sub_key: str):
+
+        return self.meta[self.key(sub_key)]
+
+    def __setitem__(self, sub_key: str, value: Any) -> Any:
+        
+        self.meta[self.key(sub_key)] = value
+        return value
+    
+    def get(self, sub_key: str, default=None):
+
+        return self.meta.get(self.key(sub_key), default)
+
+    def get_or_set(self, sub_key: str, default=None):
+
+        return self.meta.get_or_set(self.key(sub_key), default)
+
+    def __contains__(self, sub_key):
+
+        return self.key(sub_key) in self.meta
 
 
 class State(object):
