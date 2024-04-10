@@ -20,7 +20,6 @@ import typing
 import torch
 
 
-
 def gaussian_sample(
     mean: torch.Tensor, std: torch.Tensor, k: int = None
 ) -> torch.Tensor:
@@ -35,15 +34,16 @@ def gaussian_sample(
     Returns:
         torch.Tensor: The sample or samples generated
     """
-    if k is not None:
-        if k <= 0:
-            raise ValueError(f"Argument {k} must be greater than 0")
-        return (
-            torch.randn([k, *mean.shape], device=mean.device, dtype=mean.dtype)
-            * std[None]
-            + mean[None]
-        )
-    return torch.randn_like(mean) * std + mean
+    if k is None:
+        return torch.randn_like(mean) * std + mean
+
+    if k <= 0:
+        raise ValueError(f"Argument {k} must be greater than 0")
+    return (
+        torch.randn([k, *mean.shape], device=mean.device, dtype=mean.dtype)
+        * std[None]
+        + mean[None]
+    )
 
 
 def gausian_noise(x: torch.Tensor, std: float=1.0, mean: float=0.0) -> torch.Tensor:
@@ -78,7 +78,7 @@ def binary_noise(x: torch.Tensor, flip_p: bool = 0.5, signed_neg: bool = True) -
     return (x - to_flip.float()).abs()
 
 
-def noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
+def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
     """Add noise to a regular tensor
 
     Args:
@@ -90,7 +90,6 @@ def noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size,
     Returns:
         torch.Tensor: The noise added to the Tensor
     """
-
     shape = list(x.shape)
     shape.insert(dim, k)
     x = x.unsqueeze(dim)
@@ -98,7 +97,7 @@ def noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size,
     return f(x, shape, x.dtype, x.device)
 
 
-def noise_cat(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
+def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
     """Add noise to a regular tensor and then concatenate
     the original tensor
 
@@ -121,7 +120,7 @@ def noise_cat(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.S
     )
 
 
-def noise_pop(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
+def noise_pop(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
     """Add noise to a population tensor
 
     Args:
@@ -134,18 +133,18 @@ def noise_pop(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.S
         torch.Tensor: The noise added to the Tensor
     """
 
-    shape = list(x.shape)
-    base_shape = list(x.shape)
+    shape = list(pop.shape)
+    base_shape = list(pop.shape)
     shape.insert(dim + 1, k)
     base_shape[dim] = base_shape[dim] * k
 
-    x = x.unsqueeze(dim + 1)
+    pop = pop.unsqueeze(dim + 1)
 
-    y = f(x, shape, x.dtype, x.device)
+    y = f(pop, shape, pop.dtype, pop.device)
     return y.reshape(base_shape)
 
 
-def noise_cat_pop(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
+def cat_pop_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
     """Add noise to a population tensor and then
     concatenate to the original tensor
 
@@ -525,3 +524,32 @@ class FreezeDropout(nn.Module):
 
         self._cur = f
         return f * x
+
+
+def binary_prob(
+    x: torch.Tensor, loss: torch.Tensor, retrieve_counts: bool = False
+) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+    """
+
+    Args:
+        x (torch.Tensor): The population input
+        loss (torch.Tensor): The loss
+        retrieve_counts (bool, optional): Whether to return the positive
+          and negative counts in the result. Defaults to False.
+
+    Returns:
+        typing.Union[ torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor] ]: _description_
+    """
+    is_pos = (x == 1).unsqueeze(-1)
+    is_neg = ~is_pos
+    pos_count = is_pos.sum(dim=0)
+    neg_count = is_neg.sum(dim=0)
+    positive_loss = (loss[:, :, None] * is_pos.float()).sum(dim=0) / pos_count
+    negative_loss = (loss[:, :, None] * is_neg.float()).sum(dim=0) / neg_count
+    updated = (positive_loss < negative_loss).type_as(x).mean(dim=-1)
+
+    if not retrieve_counts:
+        return updated
+
+    return updated, pos_count.squeeze(-1), neg_count.squeeze(-1)
+
