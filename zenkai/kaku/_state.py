@@ -83,39 +83,64 @@ class DataContainer(object):
 
 class Meta(dict):
 
+    def __setitem__(self, key: str, value: Any) -> None:
+        
+        key = self.key(key)
+        super().__setitem__(key, value)
+        return value
+
+    def __getitem__(self, key: Any) -> Any:
+
+        key = self.key(key)
+        return super().__getitem__(key)
+        
     def __getattr__(self, key: str):
 
-        return self[key]
+        key = self.key(key)
+        return super().__getitem__(key)
 
     def __setattr__(self, key: str, value: Any) -> Any:
         
-        self[key] = value
+        key = self.key(key)
+        super().__setitem__(key, value)
         return value
     
     def get_or_set(self, key: str, value: Any) -> Any:
 
+        key = self.key(key)
         try: 
-            return self[key]
+            return super().__getitem__(key)
         except KeyError:
-            self[key] = value
+            super().__setitem__(key, value)
             return value
         
     def __call__(self, sub) -> Any:
 
-        # if not to_add and sub not in self:
-        #     raise KeyError(f'There is no sub meta called {sub}')
-        
-        # if sub not in self and to_add:
-        #     self[sub] = 
         return MyMeta(self, sub)
-        # elif not isinstance(self[sub], Meta):
-        #     raise KeyError(f'Item {sub} is a Meta class')
-        # return self[sub]
+    
+    @classmethod
+    def key(cls, key) -> typing.Any:
+
+        if isinstance(key, IDable):
+            return id(key)
+        if isinstance(key, typing.Tuple):
+
+            return tuple(
+                id(key_i) if isinstance(key_i, IDable) else key_i
+                for key_i in key
+            )
+        return key
 
 
 class MyMeta(object):
 
     def __init__(self, meta: Meta, base_key):
+        """Use to make meta x more usable
+
+        Args:
+            meta (Meta): The 
+            base_key: The base key for meta
+        """
 
         object.__setattr__(self, 'meta', meta)
         object.__setattr__(self, 'base_key', base_key)
@@ -126,11 +151,10 @@ class MyMeta(object):
             object.__setattr__(self, 'key', self.reg_key)
 
     def tuple_key(self, sub_key):
-        return (*self.base_key, sub_key)
+        return self.meta.key((*self.base_key, sub_key))
         
     def reg_key(self, sub_key):
-        print(sub_key)
-        return (self.base_key, sub_key)
+        return self.meta.key((self.base_key, sub_key))
 
     def __getattr__(self, sub_key: str):
 
