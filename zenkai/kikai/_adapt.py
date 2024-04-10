@@ -331,7 +331,6 @@ class WrapState:
             if y_i.requires_grad:
                 y_i.register_hook(
                     partial(out_hook, state=self, idx=i)
-                    partial(out_hook, state=self, idx=i)
                 )
         
         return self._y
@@ -419,7 +418,6 @@ class WrapNN(object):
         Returns:
             typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]: The cloned x values
         """
-
         x = hook_state.set_x(*x)
 
         x_tup = (x,) if hook_state.x_count == 1 else x
@@ -429,7 +427,6 @@ class WrapNN(object):
             
             if grad_hook_i is not None and x_i.requires_grad:
                 x_i.register_hook(
-                    partial(grad_hook_i, state=hook_state, idx=i)
                     partial(grad_hook_i, state=hook_state, idx=i)
                 )
         
