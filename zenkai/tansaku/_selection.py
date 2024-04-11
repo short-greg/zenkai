@@ -30,27 +30,21 @@ def gather_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=-1) 
     if dim < 0:
         dim = selection.dim() + dim
     selection = align_to(selection, x)
-    print(selection.shape)
     return torch.gather(x, dim, selection)
 
 
 def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Tensor:
 
-    value = value.transpose(
-        1, 0
-    )
     shape = value.shape
     result = Reduction[reduction].reduce(
         value.reshape(
             *shape[:from_dim], -1
         ), dim=from_dim, keepdim=False
     )
-    if from_dim == 1:
-        return result[None]
-    return result.transpose(1, 0)
+    return result
 
 
-def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=1, replace: bool=False, combine_pop_dim: bool=False, g: torch.Generator=None) -> torch.Tensor:
+def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=False, combine_pop_dim: bool=False, g: torch.Generator=None) -> torch.Tensor:
     # Analyze the output of this better and
     # add better documentation
 
@@ -126,10 +120,11 @@ class Selector(nn.Module, ABC):
 class BestSelector(nn.Module):
 
     def __init__(self, dim: int):
+        super().__init__()
 
         self.dim = dim
 
-    def forward(self, assessment: torch.Tensor, maximize: bool) -> Selection:
+    def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
 
         values, indices = best(assessment, maximize, self.dim, True)
         
@@ -141,11 +136,12 @@ class BestSelector(nn.Module):
 class TopSelector(nn.Module):
 
     def __init__(self, k: int, dim: int):
+        super().__init__()
 
         self.k = k
         self.dim = dim
 
-    def forward(self, assessment: torch.Tensor, maximize: bool) -> Selection:
+    def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
 
         values, indices = assessment.topk(
             assessment, self.dim, maximize, True
@@ -166,6 +162,7 @@ class ToProb(nn.Module, ABC):
         Args:
             dim (int, optional): The dimension to use for calculating probability. Defaults to -1.
         """
+        super().__init__()
         self.dim = dim
 
     @abstractmethod

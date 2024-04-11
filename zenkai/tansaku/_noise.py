@@ -6,6 +6,7 @@ on the forward pass
 # 1st party
 import typing
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 # 3rd party
 import torch
@@ -13,11 +14,6 @@ import torch.nn as nn
 
 # local
 from ..utils import get_model_params, update_model_params
-
-import typing
-
-# 3rd party
-import torch
 
 
 def gaussian_sample(
@@ -78,26 +74,34 @@ def binary_noise(x: torch.Tensor, flip_p: bool = 0.5, signed_neg: bool = True) -
     return (x - to_flip.float()).abs()
 
 
-def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
+@dataclass
+class TInfo:
+
+    shape: torch.Size
+    dtype: torch.dtype
+    device: torch.device
+
+
+def noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
     """Add noise to a regular tensor
 
     Args:
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        dim (int, optional): The population dim. Defaults to 1.
+        pop_dim (int, optional): The population dim. Defaults to 1.
 
     Returns:
         torch.Tensor: The noise added to the Tensor
     """
     shape = list(x.shape)
-    shape.insert(dim, k)
-    x = x.unsqueeze(dim)
+    shape.insert(pop_dim, k)
+    x = x.unsqueeze(pop_dim)
 
-    return f(x, shape, x.dtype, x.device)
+    return f(x, TInfo(shape, x.dtype, x.device))
 
 
-def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1) -> torch.Tensor:
+def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
     """Add noise to a regular tensor and then concatenate
     the original tensor
 
@@ -105,29 +109,29 @@ def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.S
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        dim (int, optional): The population dim. Defaults to 1.
+        pop_dim (int, optional): The population dim. Defaults to 1.
 
     Returns:
         torch.Tensor: The noise added to the Tensor
     """
     shape = list(x.shape)
-    shape.insert(dim, k)
-    x = x.unsqueeze(dim)
+    shape.insert(pop_dim, k)
+    x = x.unsqueeze(pop_dim)
 
-    out = f(x, shape, x.dtype, x.device)
+    out = f(x, TInfo(shape, x.dtype, x.device))
     return torch.cat(
-        [x, out], dim=dim
+        [x, out], dim=pop_dim
     )
 
 
-def noise_pop(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
+def pop_noise(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
     """Add noise to a population tensor
 
     Args:
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        dim (int, optional): The population dim. Defaults to 1.
+        pop_dim (int, optional): The population dim. Defaults to 1.
 
     Returns:
         torch.Tensor: The noise added to the Tensor
@@ -135,16 +139,16 @@ def noise_pop(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch
 
     shape = list(pop.shape)
     base_shape = list(pop.shape)
-    shape.insert(dim + 1, k)
-    base_shape[dim] = base_shape[dim] * k
+    shape.insert(pop_dim + 1, k)
+    base_shape[pop_dim] = base_shape[pop_dim] * k
 
-    pop = pop.unsqueeze(dim + 1)
+    pop = pop.unsqueeze(pop_dim + 1)
 
-    y = f(pop, shape, pop.dtype, pop.device)
+    y = f(pop, TInfo(shape, pop.dtype, pop.device))
     return y.reshape(base_shape)
 
 
-def cat_pop_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor], dim: int=1):
+def cat_pop_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0):
     """Add noise to a population tensor and then
     concatenate to the original tensor
 
@@ -152,22 +156,22 @@ def cat_pop_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, tor
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        dim (int, optional): The population dim. Defaults to 1.
+        pop_dim (int, optional): The population dim. Defaults to 1.
 
     Returns:
         torch.Tensor: The noise added to the Tensor
     """
     shape = list(x.shape)
     base_shape = list(x.shape)
-    shape.insert(dim + 1, k)
-    base_shape[dim] = base_shape[dim] * k
+    shape.insert(pop_dim + 1, k)
+    base_shape[pop_dim] = base_shape[pop_dim] * k
 
-    x = x.unsqueeze(dim + 1)
+    x = x.unsqueeze(pop_dim + 1)
 
-    y = f(x, shape, x.dtype, x.device)
+    y = f(x, TInfo(shape, x.dtype, x.device))
     out = y.reshape(base_shape)
     return torch.cat(
-        [y, out], dim=dim
+        [y, out], dim=pop_dim
     )
 
 

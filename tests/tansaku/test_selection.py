@@ -66,7 +66,7 @@ class TestPopAssess:
         assessment = _selection.pop_assess(
             value, 'mean', 1
         )
-        assert (assessment.shape == torch.Size([1, 4]))
+        assert (assessment.shape == torch.Size([3]))
 
     def test_pop_assess_assesses_from_correct_dim_with_two_dims(self):
 
@@ -74,7 +74,7 @@ class TestPopAssess:
         assessment = _selection.pop_assess(
             value, 'mean', 1
         )
-        assert (assessment.shape == torch.Size([1, 4]))
+        assert (assessment.shape == torch.Size([3]))
 
     def test_pop_assess_assesses_from_correct_dim_for_third_dim(self):
 
@@ -109,7 +109,7 @@ class TestSelectFromProb:
         )
 
         assert selected.shape == torch.Size(
-            [2, 6]
+            [4, 3]
         )
 
     def test_select_from_prob_outputs_correct_shape_with_4d(self):

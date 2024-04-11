@@ -8,6 +8,18 @@
 from ._noise import (
     gausian_noise,
     binary_noise,
+    pop_noise,
+    cat_noise,
+    cat_pop_noise,
+    noise,
+    NoiseReplace,
+    ModuleNoise,
+    GaussianNoiser,
+    Explorer,
+    ExplorerNoiser,
+    ExplorerSelector,
+    EqualsAssessmentDist,
+    TInfo
 )
 from ._selection import (
     best, gather_selection,
@@ -29,3 +41,4 @@ from ._constraints import (
     NNLinearObjective,
     NullConstraint,
 )
+from ._params import update_pop_params
