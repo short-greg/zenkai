@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from zenkai.kaku import OptimFactory, IO
-from zenkai.utils import get_model_parameters
+from zenkai.utils import get_model_params
 from zenkai.kikai import _feedback_alignment
 
 
@@ -20,11 +20,11 @@ class TestFALearner:
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        assert (get_model_parameters(net) != before).any()
+        assert (get_model_params(net) != before).any()
 
     def test_fa_learner_does_not_auto_adv_if_false(self):
 
@@ -38,10 +38,10 @@ class TestFALearner:
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
-        assert (get_model_parameters(net) == before).all()
+        assert (get_model_params(net) == before).all()
 
     def test_fa_learner_adv_when_adv_called(self):
 
@@ -55,11 +55,11 @@ class TestFALearner:
         )
         t = IO(torch.rand(3, 4))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        assert (get_model_parameters(net) != before).any()
+        assert (get_model_params(net) != before).any()
 
     def test_fa_learner_updates_x_with_correct_size(self):
 
@@ -95,11 +95,11 @@ class TestDFALearner:
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        assert (get_model_parameters(net) != before).any()
+        assert (get_model_params(net) != before).any()
 
     def test_dfa_learner_does_not_auto_adv_if_false(self):
 
@@ -115,10 +115,10 @@ class TestDFALearner:
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
-        assert (get_model_parameters(net) == before).all()
+        assert (get_model_params(net) == before).all()
 
     def test_dfa_learner_adv_when_adv_called(self):
 
@@ -134,11 +134,11 @@ class TestDFALearner:
         )
         t = IO(torch.rand(3, 3))
         x = IO(torch.rand(3, 3))
-        before = get_model_parameters(net)
+        before = get_model_params(net)
         learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        assert (get_model_parameters(net) != before).any()
+        assert (get_model_params(net) != before).any()
 
     def test_dfa_learner_updates_x_with_correct_size(self):
 

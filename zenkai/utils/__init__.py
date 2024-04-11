@@ -24,14 +24,16 @@ from ._reshape import (
 
 )
 from ._params import (
-    get_model_parameters,
-    update_model_parameters,
-    apply_to_parameters,
+    get_model_params,
+    update_model_params,
+    apply_to_params,
     update_model_grads,
     get_model_grads,
     set_model_grads,
     update_model_grads_with_t,
     undo_grad,
+    PObj,
+    get_params
 
 )
 from ._ste import (

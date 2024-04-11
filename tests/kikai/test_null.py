@@ -12,10 +12,10 @@ class TestNullLearner:
         t = IO(torch.rand(2, 3))
         learner = NullLearner()
 
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner.accumulate(x, t)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before == after) and before is None
 
     def test_step_x_does_not_change_y(self):

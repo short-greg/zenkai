@@ -56,9 +56,9 @@ class TestIterStepTheta:
         learner2(y1)
         learner2.step(y1, t)
 
-        before = utils.get_model_parameters(learner1)
+        before = utils.get_model_params(learner1)
         iter_step.step(x, y1, t)
-        after = utils.get_model_parameters(learner1)
+        after = utils.get_model_params(learner1)
         assert (before != after).any()
 
     def test_iter_hiddenstep_updates_the_parameters_with_two_iterations(self):
@@ -73,9 +73,9 @@ class TestIterStepTheta:
         learner2(y1)
         learner2.step(y1, t)
 
-        before = utils.get_model_parameters(learner1)
+        before = utils.get_model_params(learner1)
         iter_step.step(x, y1, t)
-        after = utils.get_model_parameters(learner1)
+        after = utils.get_model_params(learner1)
         assert (before != after).any()
 
 
@@ -123,8 +123,8 @@ class TestIterStepHidden:
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
         iter_step = IterStepTheta(learner1, 1, 128)
-        before = utils.get_model_parameters(learner1)
+        before = utils.get_model_params(learner1)
         learner1(x)
         iter_step.step(x, t)
-        after = utils.get_model_parameters(learner1)
+        after = utils.get_model_params(learner1)
         assert (before != after).any()

@@ -69,11 +69,11 @@ class TestGradLearner1:
         learner = THGradLearnerT1(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before != after).any()
 
 
@@ -119,11 +119,11 @@ class TestTHGradLoopLearner:
         learner = THGradLearnerT2(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner.forward(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before != after).any()
 
     def test_step_updates_parameters_repeated(self):
@@ -131,13 +131,13 @@ class TestTHGradLoopLearner:
         learner = THGradLearnerT2(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner.forward(x)
         learner.accumulate(x, t)
         learner.forward(x)
         learner.accumulate(x, t)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before != after).any()
 
 

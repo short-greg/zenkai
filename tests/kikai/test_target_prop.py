@@ -30,12 +30,12 @@ class TestTargetPropLearner(object):
         t = zenkai.IO(torch.randn(4, 4))
         y = learner(x)
 
-        before = zenkai.utils.get_model_parameters(learner.forward_module)
+        before = zenkai.utils.get_model_params(learner.forward_module)
         learner.accumulate(x, t)
         learner.step(x, t)
         assert (
             before !=
-            zenkai.utils.get_model_parameters(learner.forward_module)
+            zenkai.utils.get_model_params(learner.forward_module)
         ).any()
 
     def test_target_prop_learner_updates_reverse(self):
@@ -45,12 +45,12 @@ class TestTargetPropLearner(object):
         t = zenkai.IO(torch.randn(4, 4))
         y = learner(x)
 
-        before = zenkai.utils.get_model_parameters(learner.reverse_module)
+        before = zenkai.utils.get_model_params(learner.reverse_module)
         learner.accumulate(x, t)
         learner.step(x, t)
         assert (
             before !=
-            zenkai.utils.get_model_parameters(learner.reverse_module)
+            zenkai.utils.get_model_params(learner.reverse_module)
         ).any()
 
     def test_target_prop_learner_does_not_update_reverse_when_turned_off(self):
@@ -60,13 +60,13 @@ class TestTargetPropLearner(object):
         t = zenkai.IO(torch.randn(4, 4))
         y = learner(x)
 
-        before = zenkai.utils.get_model_parameters(learner.reverse_module)
+        before = zenkai.utils.get_model_params(learner.reverse_module)
         learner.reverse_update(False)
         learner.accumulate(x, t)
         learner.step(x, t)
         assert (
             before ==
-            zenkai.utils.get_model_parameters(learner.reverse_module)
+            zenkai.utils.get_model_params(learner.reverse_module)
         ).all()
     
     def test_target_prop_learner_does_not_update_forward_when_turned_off(self):
@@ -76,13 +76,13 @@ class TestTargetPropLearner(object):
         t = zenkai.IO(torch.randn(4, 4))
         y = learner(x)
 
-        before = zenkai.utils.get_model_parameters(learner.forward_module)
+        before = zenkai.utils.get_model_params(learner.forward_module)
         learner.forward_update(False)
         learner.accumulate(x, t)
         learner.step(x, t)
         assert (
             before ==
-            zenkai.utils.get_model_parameters(learner.forward_module)
+            zenkai.utils.get_model_params(learner.forward_module)
         ).all()
     
     def test_target_prop_learner_returns_valid_x(self):

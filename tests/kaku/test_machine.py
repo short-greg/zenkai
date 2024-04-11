@@ -144,10 +144,10 @@ class TestLearningMachineWithSimpleLearner:
         learner = SimpleLearner(2, 3)
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner(x)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before != after).any()
 
     def test_learn_hook_called_after_learning_and_sets_state_to_hi(self):
@@ -261,10 +261,10 @@ class TestLearningMachineWithComplexLearner:
         learner = LayeredLearner(SimpleLearner(2, 3), SimpleLearner(3, 3))
         x = IO(torch.rand(2, 2))
         t = IO(torch.rand(2, 3))
-        before = utils.get_model_parameters(learner)
+        before = utils.get_model_params(learner)
         learner.forward(x)
         learner.step(x, t)
-        after = utils.get_model_parameters(learner)
+        after = utils.get_model_params(learner)
         assert (before != after).any()
 
 

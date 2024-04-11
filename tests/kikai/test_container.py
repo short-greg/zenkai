@@ -4,7 +4,7 @@ from zenkai.kikai import _containers as containers
 from zenkai.kikai._containers import SStep
 from .test_grad import THGradLearnerT1
 import torch
-from zenkai.utils import get_model_parameters, get_model_grads
+from zenkai.utils import get_model_params, get_model_grads
 
 
 class SampleGraph(containers.GraphLearner):
@@ -75,10 +75,10 @@ class TestGraph:
         t = IO(torch.rand(4, 4))
         graph = SampleGraph()
         graph(x)
-        before = get_model_parameters(graph)
+        before = get_model_params(graph)
         graph.step(x, t)
 
-        assert (before != get_model_parameters(graph)).any()
+        assert (before != get_model_params(graph)).any()
 
     def test_step_x_updates_the_input(self):
 
@@ -97,10 +97,10 @@ class TestGraph:
         t = IO(torch.rand(4, 4))
         graph = SampleGraph(step_priority=True)
         graph(x)
-        before = get_model_parameters(graph)
+        before = get_model_params(graph)
         graph.step(x, t)
 
-        assert (before != get_model_parameters(graph)).any()
+        assert (before != get_model_params(graph)).any()
 
     def test_step_x_updates_the_input_with_step_priority(self):
 
@@ -119,10 +119,10 @@ class TestGraph:
         t = IO(torch.rand(4, 4))
         graph = SampleGraph(target_out=True)
         graph(x)
-        before = get_model_parameters(graph)
+        before = get_model_params(graph)
         graph.step(x, t)
 
-        assert (before != get_model_parameters(graph)).any()
+        assert (before != get_model_params(graph)).any()
 
 
 class TestAccGraph:
@@ -140,11 +140,11 @@ class TestAccGraph:
         t = IO(torch.rand(4, 4))
         graph = SampleAccGraph()
         graph(x)
-        before = get_model_parameters(graph)
+        before = get_model_params(graph)
         graph.accumulate(x, t)
         graph.step(x, t)
 
-        assert (before != get_model_parameters(graph)).any()
+        assert (before != get_model_params(graph)).any()
 
     def test_step_x_updates_the_input(self):
 
@@ -162,8 +162,8 @@ class TestAccGraph:
         t = IO(torch.rand(4, 4))
         graph = SampleAccGraph(target_out=True)
         graph(x)
-        before = get_model_parameters(graph)
+        before = get_model_params(graph)
         graph.accumulate(x, t)
         graph.step(x, t)
 
-        assert (before != get_model_parameters(graph)).any()
+        assert (before != get_model_params(graph)).any()

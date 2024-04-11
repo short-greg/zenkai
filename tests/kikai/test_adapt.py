@@ -22,10 +22,10 @@ class TestLearnerAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer(self):
@@ -42,10 +42,10 @@ class TestLearnerAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer_without_step_x(self):
@@ -64,10 +64,10 @@ class TestLearnerAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
 
@@ -87,10 +87,10 @@ class TestCriterionNNAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer(self):
@@ -107,10 +107,10 @@ class TestCriterionNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
 
@@ -131,10 +131,10 @@ class TestStepNNAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
     def test_stepnn_adapt_updates_learner_in_second_layer(self):
@@ -152,10 +152,10 @@ class TestStepNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
 
@@ -175,10 +175,10 @@ class TestStepNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_parameters(learner)
+        before = zenkai.utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_parameters(learner) != before).any()
+            (zenkai.utils.get_model_params(learner) != before).any()
         )
 
 

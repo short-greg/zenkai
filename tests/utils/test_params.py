@@ -12,9 +12,9 @@ class TestSetModelParameters:
 
         mod1 = nn.Linear(2, 4)
         mod2 = nn.Linear(2, 4)
-        p_utils.update_model_parameters(mod2, p_utils.get_model_parameters(mod1))
+        p_utils.update_model_params(mod2, p_utils.get_model_params(mod1))
         assert (
-            p_utils.get_model_parameters(mod1) == p_utils.get_model_parameters(mod2)
+            p_utils.get_model_params(mod1) == p_utils.get_model_params(mod2)
         ).all()
 
 

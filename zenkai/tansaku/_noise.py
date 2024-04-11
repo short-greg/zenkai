@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ..utils import get_model_parameters, update_model_parameters
+from ..utils import get_model_params, update_model_params
 
 import typing
 
@@ -332,7 +332,7 @@ class ModuleNoise(nn.Module):
             raise ValueError("Weight must be in range (0, 1)")
         self._module_clone = module_clone
         self._weight = weight
-        self._p = get_model_parameters(module_clone)
+        self._p = get_model_params(module_clone)
         self._direction_mean = torch.zeros_like(self._p)
         self._direction_var = torch.zeros_like(self._p)
         self._updated = False
@@ -345,7 +345,7 @@ class ModuleNoise(nn.Module):
             base_module: The module to update
         """
 
-        parameters = get_model_parameters(base_module)
+        parameters = get_model_params(base_module)
         dp = parameters - self._p
         self._direction_var = (
             1 - self._weight
@@ -381,10 +381,10 @@ class ModuleNoise(nn.Module):
             )
             * torch.sqrt(self._direction_var[None])
             + self._direction_mean[None]
-        ) + get_model_parameters(self._module_clone)[None]
+        ) + get_model_params(self._module_clone)[None]
         ys = []
         for x_i, p_i in zip(x, ps):
-            update_model_parameters(self._module_clone, p_i)
+            update_model_params(self._module_clone, p_i)
             ys.append(self._module_clone(x_i))
 
         return torch.cat(ys)

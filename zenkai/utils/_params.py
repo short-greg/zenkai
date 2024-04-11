@@ -11,7 +11,7 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
 
 
-def get_model_parameters(model: nn.Module) -> torch.Tensor:
+def get_model_params(model: nn.Module) -> torch.Tensor:
     """Convenience function to retrieve the parameters of a model
 
     Args:
@@ -26,12 +26,27 @@ def get_model_parameters(model: nn.Module) -> torch.Tensor:
         return None
 
 
-def model_parameters(models: typing.Iterable[nn.Module]) -> typing.Iterator:
+def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
 
     return chain(model.parameters() for model in models)
 
 
-def apply_to_parameters(
+PObj = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor, typing.Callable[[],typing.Iterator[torch.nn.parameter.Parameter]]]
+
+
+def get_params(mod: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
+    
+    if isinstance(mod, nn.Module):
+        return mod.parameters()
+    if isinstance(mod, torch.Tensor):
+        return [mod]
+    if isinstance(mod, typing.Callable):
+        return mod()
+    # assume it is an iterable
+    return mod
+
+
+def apply_to_params(
     parameters: typing.Iterator[torch.nn.parameter.Parameter], f
 ):
     """Apply a function to the parameters
@@ -52,7 +67,7 @@ def apply_to_parameters(
         p.data = f(p.data)
 
 
-def update_model_parameters(
+def update_model_params(
         model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter]], theta: torch.Tensor):
     """Convenience function to update the parameters of a model
 
@@ -72,10 +87,7 @@ def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.para
         model (nn.Module): The module to update gradients for or a callable that returns parameters
         theta_grad (torch.Tensor): The gradient values to update with
     """
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-    elif isinstance(model, torch.Tensor):
-        model = [model]
+    model = get_params(model)
     for p, grad in zip(model, theta_grad):
         if grad is not None:
             grad = grad.detach()
