@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 from zenkai.tansaku._params import update_pop_params, update_pop_grads
-from zenkai.tansaku import BestSelector, pop_assess, pop_noise
+from zenkai.tansaku import BestSelector, pop_assess, add_pop_noise
 from zenkai.utils import get_model_params, get_model_grads
 
 
@@ -36,7 +36,7 @@ class TestPopParams(object):
         selection = selector(assessment)
 
         def update(p):
-            return pop_noise(
+            return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))
 
@@ -59,7 +59,7 @@ class TestPopGrad(object):
         selection = selector(assessment)
 
         def update(p):
-            return pop_noise(
+            return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))
 
@@ -80,7 +80,7 @@ class TestPopGrad(object):
         selection = selector(assessment)
 
         def update(p):
-            return pop_noise(
+            return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))
 

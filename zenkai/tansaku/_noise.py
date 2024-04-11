@@ -81,8 +81,15 @@ class TInfo:
     dtype: torch.dtype
     device: torch.device
 
+    @property
+    def attr(self) -> typing.Dict:
+        return {
+            'dtype': self.dtype,
+            'device': self.device
+        }
 
-def noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
+
+def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
     """Add noise to a regular tensor
 
     Args:
@@ -124,7 +131,7 @@ def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo],
     )
 
 
-def pop_noise(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
+def add_pop_noise(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
     """Add noise to a population tensor
 
     Args:
@@ -171,7 +178,7 @@ def cat_pop_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TIn
     y = f(x, TInfo(shape, x.dtype, x.device))
     out = y.reshape(base_shape)
     return torch.cat(
-        [y, out], dim=pop_dim
+        [x.squeeze(pop_dim + 1), out], dim=pop_dim
     )
 
 
@@ -221,7 +228,7 @@ class GaussianNoiser(ExplorerNoiser):
         )
 
 
-class ExplorerSelector(nn.Module):
+class Exploration(nn.Module):
     """Use to select the noise or the output"""
 
     @abstractmethod
@@ -229,7 +236,7 @@ class ExplorerSelector(nn.Module):
         pass
 
 
-class RandSelector(ExplorerSelector):
+class RandExploration(Exploration):
     """Randomly choose whether to select the noisy value or the original x"""
 
     def __init__(self, select_noise_prob: float):
@@ -265,7 +272,7 @@ class Explorer(nn.Module):
     Explorer is used to explore different inputs to feed into a Module
     """
 
-    def __init__(self, noiser: ExplorerNoiser, selector: ExplorerSelector):
+    def __init__(self, noiser: ExplorerNoiser, exploration: Exploration):
         """Instantiate the explorer with a noiser and selector
 
         Args:
@@ -274,7 +281,7 @@ class Explorer(nn.Module):
         """
         super().__init__()
         self._noiser = noiser
-        self._selector = selector
+        self._exploration = exploration
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -286,7 +293,7 @@ class Explorer(nn.Module):
         """
 
         with torch.no_grad():
-            noisy = self._selector(x, self._noiser(x))
+            noisy = self._exploration(x, self._noiser(x))
         return NoiseReplace.apply(x, noisy)
 
 

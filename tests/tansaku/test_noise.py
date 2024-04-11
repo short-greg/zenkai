@@ -17,11 +17,15 @@ import torch.nn as nn
 from zenkai.tansaku._noise import (
     GaussianNoiser,
     NoiseReplace,
-    RandSelector,
+    RandExploration,
     EqualsAssessmentDist,
     ModuleNoise,
     FreezeDropout,
     Explorer,
+    add_noise,
+    add_pop_noise,
+    cat_noise,
+    cat_pop_noise
 )
 
 
@@ -109,7 +113,81 @@ class TestBinarySampler:
     #     assert ((child["x"] == 1.0) | (child["x"] == -1.0)).all()
 
 
+
+class TestAddNoise(object):
+
+    def test_add_noise_updates_tensor(self):
+
+        x = torch.randn(4, 3)
+
+        torch.manual_seed(1)
+        base_noise = torch.randn(2, 4, 3)
+        torch.manual_seed(1)
+
+        noisy = add_noise(
+            x, 2, lambda x, info: x + torch.randn(info.shape, **info.attr)
+        )
+        assert (noisy == (base_noise + x)).all()
+
+
+class TestCatNoise(object):
+
+    def test_cat_noise_adds_to_tensor(self):
+
+        x = torch.randn(4, 3)
+
+        torch.manual_seed(1)
+        base_noise = torch.randn(2, 4, 3)
+        torch.manual_seed(1)
+
+        noisy = cat_noise(
+            x, 2, lambda x, info: x + torch.randn(info.shape, **info.attr)
+        )
+        assert (noisy == torch.cat([x.unsqueeze(0), (base_noise + x)])).all()
+
+
+class TestAddPopNoise(object):
+
+    def test_cat_noise_adds_to_tensor(self):
+
+        x = torch.randn(2, 4, 3)
+
+        torch.manual_seed(1)
+        base_noise = torch.randn(2, 2, 4, 3)
+        t = (x.unsqueeze(1) + base_noise).reshape(
+            4, 4, 3
+        )
+        torch.manual_seed(1)
+
+        noisy = add_pop_noise(
+            x, 2, lambda x, info: x + torch.randn(info.shape, **info.attr)
+        )
+        
+        assert torch.isclose(noisy, t, atol=1e-4).all()
+
+
+class TestCatPopNoise(object):
+
+    def test_cat_noise_adds_to_tensor(self):
+
+        x = torch.randn(2, 4, 3)
+
+        torch.manual_seed(1)
+        base_noise = torch.randn(2, 2, 4, 3)
+        t = torch.cat([x, (x.unsqueeze(1) + base_noise).reshape(
+            4, 4, 3
+        )])
+        torch.manual_seed(1)
+
+        noisy = cat_pop_noise(
+            x, 2, lambda x, info: x + torch.randn(info.shape, **info.attr)
+        )
+        
+        assert torch.isclose(noisy, t, atol=1e-4).all()
+
+
 class TestNoiseReplace:
+
     def test_explore_returns_correct_grad(self, x: torch.Tensor, noise):
         x.requires_grad_(True)
         y = NoiseReplace.apply(x, noise)
@@ -144,16 +222,16 @@ class TestRandSelector:
     def test_rand_selector_returns_correct_size(
         self, x: torch.Tensor, noise: torch.Tensor
     ):
-        selector = RandSelector(0.1)
+        selector = RandExploration(0.1)
         selected = selector(x, noise)
         assert selected.size() == x.size()
 
     def test_select_noise_prob_is_correct(self):
-        selector = RandSelector(0.1)
+        selector = RandExploration(0.1)
         assert selector.select_noise_prob == 0.1
 
     def test_raises_error_if_sizes_are_incompatible(self, x: torch.Tensor):
-        selector = RandSelector(0.1)
+        selector = RandExploration(0.1)
         with pytest.raises(RuntimeError):
             selector(x, torch.rand(2, 8))
 
@@ -203,7 +281,7 @@ class TestExplorer:
 
         torch.manual_seed(1)
         noiser = GaussianNoiser(0.025)
-        explorer = Explorer(noiser, selector=RandSelector(0.1))
+        explorer = Explorer(noiser, exploration=RandExploration(0.1))
         assert explorer(x).shape == x.shape
         assert (explorer(x) != x).any()
 
@@ -214,7 +292,7 @@ class TestExplorer:
         x.requires_grad_(True)
         x.retain_grad()
         noiser = GaussianNoiser(0.025)
-        explorer = Explorer(noiser, selector=RandSelector(0.1))
+        explorer = Explorer(noiser, exploration=RandExploration(0.1))
         explorer(x).mean().backward()
         assert x.grad is not None
 

@@ -8,16 +8,16 @@
 from ._noise import (
     gausian_noise,
     binary_noise,
-    pop_noise,
+    add_pop_noise,
     cat_noise,
     cat_pop_noise,
-    noise,
+    add_noise,
     NoiseReplace,
     ModuleNoise,
     GaussianNoiser,
     Explorer,
     ExplorerNoiser,
-    ExplorerSelector,
+    Exploration,
     EqualsAssessmentDist,
     TInfo
 )
