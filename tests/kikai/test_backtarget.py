@@ -1,6 +1,6 @@
 import torch
 
-from zenkai import IO, State
+from zenkai import IO
 from zenkai.kikai._reversible import BackTarget
 
 
