@@ -102,7 +102,7 @@ class Selection(nn.Module):
         index = align_to(self.index, x)
         return x.gather(self.dim, index)
 
-    def forward(self, x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
 
         if isinstance(x, torch.Tensor):
             return self.select(x)
@@ -110,7 +110,6 @@ class Selection(nn.Module):
         return tuple(
             self.select(x_i) for x_i in x
         )
-
 
     def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=1):
 
@@ -201,6 +200,34 @@ class ToProb(nn.Module, ABC):
         repeat_shape = [1] * len(prob.shape)
         repeat_shape[self.pop_dim] = k
         return prob.repeat(repeat_shape)
+
+
+class ProbSelector(Selector):
+
+    def __init__(
+        self, k: int, to_prob: ToProb, pop_dim: int=0,
+        replace: bool=False
+    ):
+        super().__init__()
+        self.k = k
+        self.dim = pop_dim
+        self.to_prob = to_prob
+        self.replace = replace
+
+    def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
+        
+        # 
+        probs = self.to_prob(
+            assessment, 1, maximize
+        )
+        indices = select_from_prob(
+            probs, self.k, self.dim, self.replace
+        )
+        # TODO: fix this
+        value = assessment.gather(self._pop_dim, indices)
+        return Selection(
+            value[:,0], indices[:,0], self._pop_dim
+        )
 
 
 class ToFitnessProb(ToProb):
