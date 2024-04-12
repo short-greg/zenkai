@@ -125,12 +125,18 @@ class Selector(nn.Module, ABC):
     def forward(self, assessment: torch.Tensor) -> Selection:
         pass
 
+    def __call__(self, *args: typing.Any, **kwds: typing.Any) -> Selection:
+        return super().__call__(*args, **kwds)
 
-class BestSelector(nn.Module):
+
+class BestSelector(Selector):
 
     def __init__(self, dim: int):
+        """
+        Args:
+            dim (int): 
+        """
         super().__init__()
-
         self.dim = dim
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
@@ -142,7 +148,7 @@ class BestSelector(nn.Module):
         )
 
 
-class TopKSelector(nn.Module):
+class TopKSelector(Selector):
 
     def __init__(self, k: int, dim: int):
         super().__init__()
@@ -153,7 +159,7 @@ class TopKSelector(nn.Module):
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
 
         values, indices = assessment.topk(
-            assessment, self.dim, maximize, True
+            self.k, self.dim, maximize, True
         )
         
         return Selection(
@@ -165,7 +171,7 @@ class ToProb(nn.Module, ABC):
     """Convert the assessment to a probability vector for use in selection
     """
 
-    def __init__(self, pop_dim: int= -1):
+    def __init__(self, pop_dim: int= 0):
         """
 
         Args:
@@ -194,12 +200,19 @@ class ToProb(nn.Module, ABC):
         prob = self.prepare_prob(
             assessment, maximize
         )
-        prob = prob.tranpose(-1, self.pop_dim)
+        permutation = list(range(prob.dim()))
+        prob_sz = permutation.pop(self.pop_dim)
+        permutation.append(prob_sz)
+
+        prob = prob.permute(permutation)
         prob = prob.unsqueeze(self.pop_dim)
 
         repeat_shape = [1] * len(prob.shape)
         repeat_shape[self.pop_dim] = k
         return prob.repeat(repeat_shape)
+    
+    def __call__(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+        return super().__call__(assessment, k, maximize)
 
 
 class ProbSelector(Selector):
@@ -210,7 +223,7 @@ class ProbSelector(Selector):
     ):
         super().__init__()
         self.k = k
-        self.dim = pop_dim
+        self._pop_dim = pop_dim
         self.to_prob = to_prob
         self.replace = replace
 
@@ -221,9 +234,9 @@ class ProbSelector(Selector):
             assessment, 1, maximize
         )
         indices = select_from_prob(
-            probs, self.k, self.dim, self.replace
-        )
-        # TODO: fix this
+            probs, self.k, self._pop_dim, self.replace
+        )[:,0]
+        print(assessment.shape, indices.shape)
         value = assessment.gather(self._pop_dim, indices)
         return Selection(
             value[:,0], indices[:,0], self._pop_dim

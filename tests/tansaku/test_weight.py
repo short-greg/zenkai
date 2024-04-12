@@ -85,6 +85,7 @@ class TestLogWeight:
 
         assert torch.isclose(log_weight, -torch.log(1 - norm_weight)).all()
 
+
 class TestGaussCDFWeight:
 
     def test_log_weight_outputs_correct_value(self):

@@ -1,6 +1,4 @@
 import torch
-
-
 from zenkai.tansaku import _selection
 
 
@@ -198,3 +196,162 @@ class TestSelection:
 
         selected = selection.cat(torch.rand(4, 4, 3), [torch.rand(4, 2, 3)])
         assert selected.shape == torch.Size([4, 4, 3])
+
+
+class TestBestSelector:
+
+    def test_best_selector_outputs_correct_shape(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        selector = _selection.BestSelector(
+            0
+        )
+        selection = selector(assessment)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([1, 4, 2])
+        )
+
+    def test_best_selector_outputs_correct_shape_with_maximize(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        selector = _selection.BestSelector(
+            0
+        )
+        selection = selector(assessment, True)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([1, 4, 2])
+        )
+
+
+class TestTopKSelector:
+
+    def test_topk_selector_outputs_correct_shape(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        selector = _selection.TopKSelector(
+            2, 0
+        )
+        selection = selector(assessment)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([2, 4, 2])
+        )
+
+    def test_topk_selector_outputs_correct_shape_with_maximize(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        selector = _selection.TopKSelector(2, 0)
+        selection = selector(assessment, True)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([2, 4, 2])
+        )
+
+
+class TestToFitnessProb:
+
+    def test_to_fitness_prob_converts_to_prob(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        to_prob = _selection.ToFitnessProb()
+        prob = to_prob(assessment, 2)
+
+        assert (
+            prob.shape == torch.Size([2, 4, 3])
+        )
+
+    def test_to_fitness_prob_converts_to_prob_with_correct_size(self):
+
+        assessment = torch.rand(
+            3, 4, 2
+        )
+        to_prob = _selection.ToFitnessProb()
+        prob = to_prob(assessment, 3)
+
+        assert (
+            prob.shape == torch.Size([3, 4, 2, 3])
+        )
+
+
+class TestToRankProb:
+
+    def test_to_rank_prob_converts_to_prob(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        to_prob = _selection.ToRankProb()
+        prob = to_prob(assessment, 2)
+
+        assert (
+            prob.shape == torch.Size([2, 4, 3])
+        )
+
+    def test_to_rank_prob_converts_to_prob_with_correct_size(self):
+
+        assessment = torch.rand(
+            3, 4, 2
+        )
+        to_prob = _selection.ToRankProb()
+        prob = to_prob(assessment, 3)
+
+        assert (
+            prob.shape == torch.Size([3, 4, 2, 3])
+        )
+
+
+class TestProbSelector:
+
+    def test_prob_selector_outputs_correct_shape(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+
+        assessment = torch.rand(
+            3, 4
+        )
+        to_prob = _selection.ToRankProb()
+
+        selector = _selection.ProbSelector(
+            2, to_prob, 0
+        )
+        selection = selector(assessment)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([2, 4, 2])
+        )
+
+    def test_prob_selector_outputs_correct_shape_with_maximize(self):
+
+        assessment = torch.rand(
+            3, 4
+        )
+        to_prob = _selection.ToRankProb()
+        selector = _selection.ProbSelector(
+            3, to_prob, 0
+        )
+        selection = selector(assessment, True)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([3, 4, 2])
+        )
+
