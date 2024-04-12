@@ -47,34 +47,33 @@ def rank_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> t
 
     # Create the ranks
     ranks = torch.arange(
-        1, weight.shape[pop_dim], 1, device=weight.device
+        1, weight.shape[pop_dim] + 1, 1, device=weight.device
     )
-    ranks = unsqueeze_vector(ranks)
+    ranks = unsqueeze_vector(ranks, weight)
 
     shape = list(weight.shape)
     shape[pop_dim] = 1
     ranks = ranks.repeat(shape)
-
     return ranks.gather(pop_dim, ind).float()
 
 
-def log_weight(normalized_weight: torch.Tensor, maximize: bool=False, eps: float=1e-7) -> torch.Tensor:
+def log_weight(norm_weight: torch.Tensor, maximize: bool=False, eps: float=1e-7) -> torch.Tensor:
     """Use the log scale to calculate weights
 
     Args:
-        normalized_weight (torch.Tensor): Values passed in must be normalized weights
+        norm_weight (torch.Tensor): Values passed in must be normalized weights
 
     Returns:
         torch.Tensor: Unnormalized weights calculated on the log scale
     """
     if not maximize:
-        normalized_weight = 1 - normalized_weight
+        norm_weight = 1 - norm_weight
 
-    return -torch.log(normalized_weight + eps)
+    return -torch.log(norm_weight + eps)
     
 
-def cdf_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
-    """_summary_
+def gauss_cdf_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
+    """Calculate the weight using the Gaussian CDF
 
     Args:
         weight (torch.Tensor): The weights

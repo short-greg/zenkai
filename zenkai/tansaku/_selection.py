@@ -4,7 +4,7 @@ import typing
 import torch
 import torch.nn as nn
 
-from ._utils import align_to
+from ._utils import align
 from ..kaku import Reduction
 from . import _weight as W
 
@@ -30,7 +30,7 @@ def gather_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=-1) 
     # Convert the negative dimensions
     if dim < 0:
         dim = selection.dim() + dim
-    selection = align_to(selection, x)
+    selection = align(selection, x)
     return torch.gather(x, dim, selection)
 
 
@@ -99,7 +99,7 @@ class Selection(nn.Module):
         self.dim = dim
     
     def select(self, x: torch.Tensor) -> torch.Tensor:
-        index = align_to(self.index, x)
+        index = align(self.index, x)
         return x.gather(self.dim, index)
 
     def forward(self, x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
