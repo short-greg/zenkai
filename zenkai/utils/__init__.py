@@ -14,8 +14,6 @@ from ._convert import (
 from ._reshape import (
     collapse_k,
     expand_k,
-    unsqueeze_to,
-    align_to,
     undo_cat1d,
     cat1d,
     expand_dim0,

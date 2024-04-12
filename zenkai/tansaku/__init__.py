@@ -25,7 +25,7 @@ from ._selection import (
     best, gather_selection,
     pop_assess, select_from_prob,
     Selection, Selector,
-    BestSelector, TopSelector,
+    BestSelector, TopKSelector,
     ToFitnessProb, ToProb, ToRankProb, 
     ParentSelector
 )
@@ -42,3 +42,8 @@ from ._constraints import (
     NullConstraint,
 )
 from ._params import update_pop_params
+
+from ._utils import(
+    unsqueeze_to,
+    align_to,
+)

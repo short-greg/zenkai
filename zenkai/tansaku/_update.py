@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ..utils import align_to
+from ._utils import align_to
 
 
 def rand_update(

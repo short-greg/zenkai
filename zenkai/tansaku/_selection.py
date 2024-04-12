@@ -4,8 +4,9 @@ import typing
 import torch
 import torch.nn as nn
 
-from ..utils import align_to
+from ._utils import align_to
 from ..kaku import Reduction
+from . import _weight as W
 
 
 def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
@@ -96,11 +97,20 @@ class Selection(nn.Module):
         self.assessment = assessment
         self.index = index
         self.dim = dim
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        
+    
+    def select(self, x: torch.Tensor) -> torch.Tensor:
         index = align_to(self.index, x)
         return x.gather(self.dim, index)
+
+    def forward(self, x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]) -> torch.Tensor:
+
+        if isinstance(x, torch.Tensor):
+            return self.select(x)
+        
+        return tuple(
+            self.select(x_i) for x_i in x
+        )
+
 
     def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=1):
 
@@ -133,7 +143,7 @@ class BestSelector(nn.Module):
         )
 
 
-class TopSelector(nn.Module):
+class TopKSelector(nn.Module):
 
     def __init__(self, k: int, dim: int):
         super().__init__()
@@ -156,118 +166,145 @@ class ToProb(nn.Module, ABC):
     """Convert the assessment to a probability vector for use in selection
     """
 
-    def __init__(self, dim: int= -1):
+    def __init__(self, pop_dim: int= -1):
         """
 
         Args:
             dim (int, optional): The dimension to use for calculating probability. Defaults to -1.
         """
         super().__init__()
-        self.dim = dim
+        self.pop_dim = pop_dim
 
     @abstractmethod
-    def forward(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+    def prepare_prob(self, assessment: torch.Tensor, maximize: bool=False) -> torch.Tensor:
+        """Convert the assessment to a probability.
+        The output should have the population dimension
+        represent a probability that sums to 1
+
+        Args:
+            assessment (torch.Tensor): The assessment to get the probability for
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            torch.Tensor: The assessment converted to a probability with the population dimension summing to 1
+        """
         pass
+
+    def forward(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+
+        prob = self.prepare_prob(
+            assessment, maximize
+        )
+        prob = prob.tranpose(-1, self.pop_dim)
+        prob = prob.unsqueeze(self.pop_dim)
+
+        repeat_shape = [1] * len(prob.shape)
+        repeat_shape[self.pop_dim] = k
+        return prob.repeat(repeat_shape)
 
 
 class ToFitnessProb(ToProb):
+    """Convert the assessment to a probability vector for use in selection
     """
-    """
 
-    def __init__(
-        self, dim: int = -1, soft: bool=True
-    ):
-        """Convert the assessment to a probability based on the value of the assessment
-
-        Args:
-            dim (int, optional): The dimension to calculate the probability on. Defaults to -1.
-            preprocess (typing.Callable[[Assessment], Assessment], optional): An optional function to preprocess assessment with. Useful if the values are quite close or negative. Defaults to None.
-            soft (bool, optional): Whether to to use softmax for calculating the probabilities. If False it will use the assessment divided by the sum of assessments. Defaults to True.
-        """
-        super().__init__(dim)
-        self.soft = soft
-
-    def forward(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+    def prepare_prob(self, assessment: torch.Tensor, maximize: bool = False) -> torch.Tensor:
         
-        # t = assessment.value
-        if self.soft and not maximize:
-            assessment = -assessment
-        elif not maximize:
-            value = 1 / (value + 1e-5)
-        
-        if self.soft:
-            value = torch.nn.functional.softmax(value, dim=self.dim)
-        else:
-            value = value / value.sum(dim=self.dim, keepdim=True)
-        value = value.unsqueeze(-1)
-        repeat = [1] * value.dim()
-        repeat[-1] = k
-        value = value.repeat(repeat)
-        value = value.transpose(-1, self.dim)
-        return value
+        weight = W.normalize_weight(assessment, self.pop_dim)
+        if maximize:
+            return weight
+        return 1 - weight
 
 
 class ToRankProb(ToProb):
+    """Convert the assessment to a probability vector for use in selection
     """
-    """
-    def __init__(
-        self, dim: int = -1, preprocess_p: typing.Callable[[torch.Tensor], torch.Tensor] =None
-    ):
-        """Convert the assessment to a rank probablity
 
-        Args:
-            dim (int, optional): The dimension to calculate the assessment on. Defaults to -1.
-            preprocess_p (typing.Callable[[Assessment], Assessment], optional): Optional function to preprocess the probabilities with. Defaults to None.
-        """
-        super().__init__(dim)
-        self.preprocess_p = preprocess_p
-
-    def __call__(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+    def prepare_prob(self, assessment: torch.Tensor, maximize: bool = False) -> torch.Tensor:
         
-        _, ranked = assessment.sort(self.dim, maximize)
-        ranks = torch.arange(1, assessment.shape[self.dim] + 1)
-        repeat = []
-        for i in range(assessment.dim()):
-
-            if i < self.dim:
-                repeat.append(assessment.shape[i])
-                ranks = ranks.unsqueeze(0)
-            elif i > self.dim:
-                repeat.append(assessment.shape[i])
-                ranks = ranks.unsqueeze(-1)
-            else:
-                repeat.append(1)
-        ranks = ranks.unsqueeze(-1)
-        repeat.append(k)
-        rank_prob = ranks.repeat(repeat)
-        ranked = align_to(ranked, rank_prob)
-
-        if self.preprocess_p is not None:
-            rank_prob = self.preprocess_p(rank_prob)
-        rank_prob = rank_prob / rank_prob.sum(dim=self.dim, keepdim=True)
-        rank_prob = torch.gather(rank_prob, self.dim, ranked)
-        return rank_prob.transpose(-1, self.dim)
+        weight = W.rank_weight(assessment, self.pop_dim, maximize)
+        return W.normalize_weight(
+            weight, self.pop_dim
+        )
 
 
-class ParentSelector(nn.Module):
+# class ToFitnessProb(ToProb):
+#     """
+#     """
 
-    def __init__(self, pairs: int, to_prob: ToProb):
+#     def __init__(
+#         self, dim: int = -1, soft: bool=True
+#     ):
+#         """Convert the assessment to a probability based on the value of the assessment
 
-        super().__init__()
-        self.pairs = pairs
-        self.to_prob = to_prob
+#         Args:
+#             dim (int, optional): The dimension to calculate the probability on. Defaults to -1.
+#             preprocess (typing.Callable[[Assessment], Assessment], optional): An optional function to preprocess assessment with. Useful if the values are quite close or negative. Defaults to None.
+#             soft (bool, optional): Whether to to use softmax for calculating the probabilities. If False it will use the assessment divided by the sum of assessments. Defaults to True.
+#         """
+#         super().__init__(dim)
+#         self.soft = soft
 
-    def forward(self, assessment: torch.Tensor, maximize: bool=False) -> typing.Tuple[Selection, Selection]:
+#     def forward(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
         
-        probs = self.to_prob(assessment, self.pairs, maximize)
-        selection = select_from_prob(probs, self.pairs, self._dim)
-        value = assessment.gather(self._dim, selection)
-        selection1 = Selection(
-            value[0], selection[0], self._dim
-        )
-        selection2 = Selection(
-            value[1], selection[1], self._dim
-        )
+#         # t = assessment.value
+#         if self.soft and not maximize:
+#             assessment = -assessment
+#         elif not maximize:
+#             value = 1 / (value + 1e-5)
+        
+#         if self.soft:
+#             value = torch.nn.functional.softmax(value, dim=self.dim)
+#         else:
+#             value = value / value.sum(dim=self.dim, keepdim=True)
+#         value = value.unsqueeze(-1)
+#         repeat = [1] * value.dim()
+#         repeat[-1] = k
+#         value = value.repeat(repeat)
+#         value = value.transpose(-1, self.dim)
+#         return value
+
+
+# class ToRankProb(ToProb):
+#     """
+#     """
+#     def __init__(
+#         self, dim: int = -1, preprocess_p: typing.Callable[[torch.Tensor], torch.Tensor] =None
+#     ):
+#         """Convert the assessment to a rank probablity
+
+#         Args:
+#             dim (int, optional): The dimension to calculate the assessment on. Defaults to -1.
+#             preprocess_p (typing.Callable[[Assessment], Assessment], optional): Optional function to preprocess the probabilities with. Defaults to None.
+#         """
+#         super().__init__(dim)
+#         self.preprocess_p = preprocess_p
+
+#     def __call__(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+        
+#         _, ranked = assessment.sort(self.dim, maximize)
+#         ranks = torch.arange(1, assessment.shape[self.dim] + 1)
+#         repeat = []
+#         for i in range(assessment.dim()):
+
+#             if i < self.dim:
+#                 repeat.append(assessment.shape[i])
+#                 ranks = ranks.unsqueeze(0)
+#             elif i > self.dim:
+#                 repeat.append(assessment.shape[i])
+#                 ranks = ranks.unsqueeze(-1)
+#             else:
+#                 repeat.append(1)
+#         ranks = ranks.unsqueeze(-1)
+#         repeat.append(k)
+#         rank_prob = ranks.repeat(repeat)
+#         ranked = align_to(ranked, rank_prob)
+
+#         if self.preprocess_p is not None:
+#             rank_prob = self.preprocess_p(rank_prob)
+#         rank_prob = rank_prob / rank_prob.sum(dim=self.dim, keepdim=True)
+#         rank_prob = torch.gather(rank_prob, self.dim, ranked)
+#         return rank_prob.transpose(-1, self.dim)
+
 
 
 
