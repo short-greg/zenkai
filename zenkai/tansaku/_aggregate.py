@@ -29,75 +29,58 @@ def mean(
     return (x * norm_weight).sum(dim=dim, keepdim=keepdim)
 
 
-# def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
-#     """Calculate the median. 
+def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
+    """Calculate the median. 
 
-#     Note: No interpolation done if using weights
+    Note: No interpolation done if using weights
 
-#     Args:
-#         x (torch.Tensor): _description_
-#         norm_weight (torch.Tensor, optional): Weights to use if computing the weighted median. Defaults to None.
-#         dim (int, optional): Dim to calculate the median on. Defaults to 0.
-#         keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
+    Args:
+        x (torch.Tensor): The x to get the median for
+        q (float): The quantil to retrieve for
+        norm_weight (torch.Tensor, optional): Weights to use if computing the weighted median. Defaults to None.
+        dim (int, optional): Dim to calculate the median on. Defaults to 0.
+        keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
 
-#     Returns:
-#         torch.Tensor: The median
-#     """
+    Returns:
+        torch.Tensor: The median
+    """
 
-#     if norm_weight is None:
-#         return x.median(dim=dim, keepdim=keepdim)[0]
+    if norm_weight is None:
+        return x.quantile(q, dim=dim, keepdim=keepdim)
     
-#     sorted_weight, idx = norm_weight.sort(dim=dim)
+    sorted_values, sorted_idx = x.sort(dim=dim)
+    sorted_weight = norm_weight.gather(dim, sorted_idx)
 
-#     s_shape = list(sorted_weight.shape)
-#     s_shape[dim] = 1
-#     sorted_cum = sorted_weight.cumsum(dim=dim)
-#     sorted_cum = torch.cat([torch.zeros(
-#         s_shape, dtype=x.dtype, device=x.device
-#     ), sorted_cum], dim=dim)
+    sorted_weight = sorted_weight.cumsum(dim)
 
-#     slices_lower = tuple(slice(None, -1) if i == dim else slice(None) for i in range(sorted_cum.dim()))
-#     slices_upper = tuple(slice(1, None) if i == dim else slice(None) for i in range(sorted_cum.dim()))
+    # When using max with torch, the first value that
+    # maximizes it will be returned
+    _, median_idx = (sorted_weight >= q).float().max(dim=dim, keepdim=True)
+    result, result_idx = sorted_values.gather(dim, median_idx), sorted_idx.gather(dim, median_idx)
 
-#     lower = sorted_cum[slices_lower]
-#     upper = sorted_cum[slices_upper]
-
-#     medians = ((lower <= 0.5) & (upper > 0.5)) * (sorted_weight)
+    if keepdim is False:
+        return result.squeeze(dim), result_idx.squeeze(dim)
     
-#     result = medians.max(dim=dim)[0]
-#     print(result)
-#     # idx = torch.abs(sorted_weight - 0.5).min(dim=dim, keepdim=True)[1]
+    return result, result_idx
 
-#     # print(idx)
-#     # result = torch.gather(x, dim, idx)
-#     if keepdim:
-#         return result
+
+def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
+    """Calculate the median. 
+
+    Note: No interpolation done if using weights
+
+    Args:
+        x (torch.Tensor): The x to get the median for
+        norm_weight (torch.Tensor, optional): Weights to use if computing the weighted median. Defaults to None.
+        dim (int, optional): Dim to calculate the median on. Defaults to 0.
+        keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
+
+    Returns:
+        torch.Tensor: The median
+    """
+    if norm_weight is None:
+        return x.median(dim=dim, keepdim=keepdim)
     
-#     return result.squeeze(dim)
-
-
-# def quantile(x: torch.Tensor, quantile: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
-#     """Calculate the specified quantile. 
-
-#     Note: No interpolation done if using weights
-
-#     Args:
-#         x (torch.Tensor): _description_
-#         norm_weight (torch.Tensor, optional): Weights to use if computing the weighted quantile. Defaults to None.
-#         dim (int, optional): Dim to calculate the median on. Defaults to 0.
-#         keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
-
-#     Returns:
-#         torch.Tensor: The median
-#     """
-
-#     if norm_weight is None:
-#         return x.quantile(quantile, dim=dim, keepdim=keepdim)
-    
-#     sorted_weight, idx = norm_weight.sort(dim=dim)
-#     idx = torch.abs(sorted_weight - quantile).min(dim=dim, keep_dim=True)[1]
-#     result = torch.gather(x, dim, idx)
-#     if keepdim:
-#         return result
-#     return result.squeeze(dim)
-
+    return quantile(
+        x, 0.5, norm_weight, dim, keepdim
+    )
