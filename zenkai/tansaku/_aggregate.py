@@ -1,6 +1,6 @@
 import torch
 
-from ._utils import unsqueeze_to
+from ._reshape import unsqueeze_to
 
 
 def mean(

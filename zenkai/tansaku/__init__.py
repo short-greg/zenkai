@@ -42,7 +42,7 @@ from ._constraints import (
 )
 from ._params import update_pop_params
 
-from ._utils import(
+from ._reshape import(
     unsqueeze_to,
     align,
 )

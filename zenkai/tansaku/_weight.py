@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional
 import math
 
-from ._utils import unsqueeze_vector
+from ._reshape import unsqueeze_vector
 
 
 def normalize_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:

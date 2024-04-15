@@ -4,7 +4,7 @@ import typing
 import torch
 import torch.nn as nn
 
-from ._utils import align
+from ._reshape import align
 from ..kaku import Reduction
 from . import _weight as W
 

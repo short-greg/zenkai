@@ -7,7 +7,7 @@ import torch
 
 # local
 from .. import utils
-from . import _utils as tansaku_utils
+from . import _reshape as tansaku_utils
 from ._selection import Selection
 
 
