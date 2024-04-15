@@ -18,7 +18,6 @@ class PopLinear(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
-        print(x.shape, self.w.shape)
         return x @ self.w
 
 
@@ -31,11 +30,10 @@ class TestPopParams(object):
         t = torch.randn(1, 3, 8)
         y = linear(x)
         assessment = pop_assess((y - t).pow(2), 'mean', 1)
-        print('Shape: ', assessment.shape)
         selector = BestSelector(0)
         selection = selector(assessment)
 
-        def update(p):
+        def update(p, assessment):
             return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))
@@ -58,7 +56,7 @@ class TestPopGrad(object):
         selector = BestSelector(0)
         selection = selector(assessment)
 
-        def update(p):
+        def update(p, assessment):
             return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))
@@ -79,7 +77,7 @@ class TestPopGrad(object):
         selector = BestSelector(0)
         selection = selector(assessment)
 
-        def update(p):
+        def update(p, assessment):
             return add_pop_noise(
                 p, 4, lambda x, info: x + torch.randn(
                     info.shape, device=info.device, dtype=info.dtype))

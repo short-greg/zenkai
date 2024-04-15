@@ -110,7 +110,7 @@ class Selection(nn.Module):
         return tuple(
             self.select(x_i) for x_i in x
         )
-
+ 
     def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=1):
 
         x = self(x)

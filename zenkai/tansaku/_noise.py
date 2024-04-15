@@ -136,7 +136,7 @@ def add_pop_noise(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, T
 
     Args:
         x (torch.Tensor): The input to add noise to
-        k (int): The size of the population
+        k (int): The number to generate for each member of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
         pop_dim (int, optional): The population dim. Defaults to 1.
 

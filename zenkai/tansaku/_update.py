@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ._utils import align_to
+from ._utils import align
 
 
 def rand_update(
@@ -160,7 +160,7 @@ def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
         torch.Tensor: The slope
     """
 
-    evaluation = align_to(assessment, val)
+    evaluation = align(assessment, val)
     base_shape = val.shape
     val = val.view(
         val.size(0), val.size(1), -1
