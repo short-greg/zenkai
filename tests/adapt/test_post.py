@@ -1,7 +1,7 @@
 import torch
 
 from zenkai import IO
-from zenkai.kikai import _post
+from zenkai.adapt import _post
 from ..kaku.test_machine import SimpleLearner
 from zenkai.utils import get_model_params
 

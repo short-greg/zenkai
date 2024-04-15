@@ -1,5 +1,6 @@
-from zenkai.kikai import _adapt as adapt, GradStepTheta, GradStepX
-from .test_grad import THGradLearnerT1
+from zenkai.adapt import _adapt as adapt
+from zenkai.kikai import GradStepTheta, GradStepX
+from ..kikai.test_grad import THGradLearnerT1
 import zenkai
 import torch.nn as nn
 import torch
