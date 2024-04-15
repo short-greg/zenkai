@@ -46,3 +46,15 @@ from ._reshape import(
     unsqueeze_to,
     align,
 )
+from ._noise import (
+    NoiseReplace,
+    ModuleNoise,
+    GaussianNoiser,
+    ExplorerNoiser,
+    Exploration,
+    EqualsAssessmentDist,
+    RandExploration,
+    remove_noise,
+    AssessmentDist,
+    FreezeDropout,
+)

@@ -3,7 +3,7 @@ import torch
 from sklearn import linear_model
 import numpy as np
 
-from zenkai.mod import _scikit
+from zenkai.adapt import _scikit_mod
 
 
 class TestScikitRegressor:
@@ -17,7 +17,7 @@ class TestScikitRegressor:
         ).astype(np.float32)
         regressor.fit(training_data[0], training_data[1])
 
-        regressor_wrapper = _scikit.ScikitWrapper.regressor(regressor, 2, 1)
+        regressor_wrapper = _scikit_mod.ScikitWrapper.regressor(regressor, 2, 1)
         regressor_wrapper._fitted = True
         test_data = np.random.randn(4, 2).astype(np.float32), np.random.randn(4).astype(
             np.float32
@@ -34,7 +34,7 @@ class TestScikitRegressor:
         regressor = linear_model.SGDRegressor()
         training_data = torch.randn(4, 2), torch.randn(4, 1)
 
-        regressor_wrapper = _scikit.MultiOutputScikitWrapper.regressor(regressor, 2, 1)
+        regressor_wrapper = _scikit_mod.MultiOutputScikitWrapper.regressor(regressor, 2, 1)
 
         regressor_wrapper.fit(training_data[0], training_data[1])
 
@@ -54,7 +54,7 @@ class TestScikitRegressor:
         np.random.seed(1)
         regressor = linear_model.SGDRegressor()
 
-        regressor_wrapper = _scikit.ScikitWrapper.regressor(regressor, 2, None)
+        regressor_wrapper = _scikit_mod.ScikitWrapper.regressor(regressor, 2, None)
         test_data = np.random.randn(4, 2).astype(np.float32), np.random.randn(4).astype(
             np.float32
         )
@@ -68,7 +68,7 @@ class TestScikitRegressor:
         np.random.seed(1)
         regressor = linear_model.SGDRegressor()
 
-        regressor_wrapper = _scikit.MultiOutputScikitWrapper.regressor(regressor, 2, 3)
+        regressor_wrapper = _scikit_mod.MultiOutputScikitWrapper.regressor(regressor, 2, 3)
         test_data = np.random.randn(4, 2).astype(np.float32), np.random.randn(
             4, 3
         ).astype(np.float32)
@@ -88,7 +88,7 @@ class TestScikitWrapperWithClass:
         ).astype(np.float32)
         classifier.fit(training_data[0], training_data[1])
 
-        classifier_wrapper = _scikit.ScikitWrapper.multiclass(classifier, 2, 4)
+        classifier_wrapper = _scikit_mod.ScikitWrapper.multiclass(classifier, 2, 4)
         classifier_wrapper._fitted = True
         test_data = np.random.randn(4, 4).astype(np.float32), np.random.randint(
             0, 4, (4,)
@@ -104,7 +104,7 @@ class TestScikitWrapperWithClass:
         np.random.seed(1)
         classifier = linear_model.LogisticRegression()
         training_data = torch.randn(16, 4), torch.randint(0, 4, (16, 2))
-        classifier_wrapper = _scikit.MultiOutputScikitWrapper.multiclass(
+        classifier_wrapper = _scikit_mod.MultiOutputScikitWrapper.multiclass(
             classifier, 2, 4, out_features=2
         )
 
@@ -122,7 +122,7 @@ class TestScikitWrapperWithClass:
         np.random.seed(1)
         classifier = linear_model.LogisticRegression()
 
-        classifier_wrapper = _scikit.MultiOutputScikitWrapper.multiclass(
+        classifier_wrapper = _scikit_mod.MultiOutputScikitWrapper.multiclass(
             classifier, 2, 4
         )
         test_data = np.random.randn(4, 2).astype(np.float32), np.random.randn(4).astype(
@@ -137,7 +137,7 @@ class TestScikitWrapperWithClass:
         torch.manual_seed(1)
         np.random.seed(1)
         classifier = linear_model.SGDClassifier()
-        classifier_wrapper = _scikit.MultiOutputScikitWrapper.multiclass(
+        classifier_wrapper = _scikit_mod.MultiOutputScikitWrapper.multiclass(
             classifier, 2, 4
         )
 
@@ -153,7 +153,7 @@ class TestScikitWrapperWithClass:
         torch.manual_seed(1)
         np.random.seed(1)
         classifier = linear_model.SGDClassifier()
-        classifier_wrapper = _scikit.MultiOutputScikitWrapper.binary(classifier, 2, 4)
+        classifier_wrapper = _scikit_mod.MultiOutputScikitWrapper.binary(classifier, 2, 4)
 
         test_data = np.random.randn(4, 2).astype(np.float32), np.random.randn(
             4, 1
@@ -169,7 +169,7 @@ class TestScikitWrapperWithClass:
         torch.manual_seed(1)
         np.random.seed(1)
         classifier = linear_model.LogisticRegression()
-        classifier_wrapper = _scikit.MultiOutputScikitWrapper.binary(classifier, 2, 4)
+        classifier_wrapper = _scikit_mod.MultiOutputScikitWrapper.binary(classifier, 2, 4)
 
         training_data = torch.randn(4, 2), torch.randint(0, 4, (4, 4))
         classifier_wrapper.fit(training_data[0], training_data[1])

@@ -1,12 +1,5 @@
 # flake8: noqa
 
-from ._scikit import (
-    ScikitWrapper,
-    MultiOutputScikitWrapper,
-    LinearBackup,
-    MulticlassBackup,
-    BinaryBackup,
-)
 from ._filtering import (
     Stride2D,
     TargetStride,
@@ -14,18 +7,6 @@ from ._filtering import (
     to_2dtuple,
     calc_size2d,
     calc_stride2d,
-)
-from ..tansaku._noise import (
-    NoiseReplace,
-    ModuleNoise,
-    GaussianNoiser,
-    ExplorerNoiser,
-    Exploration,
-    EqualsAssessmentDist,
-    RandExploration,
-    remove_noise,
-    AssessmentDist,
-    FreezeDropout,
 )
 from ._reversible import (
     Reversible,

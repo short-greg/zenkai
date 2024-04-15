@@ -2,7 +2,7 @@ import torch
 
 from zenkai import utils
 from zenkai.kaku import IO
-from zenkai.kikai._null import NullLearner
+from zenkai.kaku._null import NullLearner
 
 
 class TestNullLearner:

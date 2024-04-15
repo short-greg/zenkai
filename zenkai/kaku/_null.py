@@ -2,8 +2,8 @@
 import torch
 
 # Local
-from ..kaku import IO, StepTheta, StepX, LearningMachine
-from ..kaku._assess import Criterion, ThLoss
+from . import IO, StepTheta, StepX, LearningMachine
+from ._assess import Criterion, ThLoss
 
 
 class NullStepTheta(StepTheta):

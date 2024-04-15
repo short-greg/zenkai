@@ -55,3 +55,6 @@ from ._objective import (
     impose,
     # TODO: keep only the core modules (i.e. the base classes)
 )
+from ._null import (
+    NullLearner, NullStepTheta, NullStepX
+)

@@ -16,7 +16,7 @@ from ..kaku import (
     LearningMachine,
     Criterion,
 )
-from ..mod import ScikitWrapper, MultiOutputScikitWrapper
+from ._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from ..kikai.utils import FeatureLimitGen
 
 

@@ -5,7 +5,7 @@ from sklearn.linear_model import SGDRegressor
 # local
 from zenkai.kaku import IO, StepX, Criterion
 from zenkai.adapt._scikit import ScikitLimitGen, ScikitMachine
-from zenkai.mod._scikit import ScikitWrapper, MultiOutputScikitWrapper
+from zenkai.adapt._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kikai.utils import RandomFeatureIdxGen
 
 
