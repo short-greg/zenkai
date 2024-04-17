@@ -17,7 +17,9 @@ packages = [
     {include="zenkai/tansaku"},
     {include="zenkai/utils"},
     {include="zenkai/kikai"},
-    {include="zenkai/mod"}
+    {include="zenkai/ensemble"},
+    {include="zenkai/scikit"},
+    {include="zenkai/targetprob"}
 ]
 
 

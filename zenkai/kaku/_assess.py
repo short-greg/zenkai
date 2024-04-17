@@ -1,13 +1,17 @@
-# 1st Party
+# 1st party
+import typing
 import typing
 from enum import Enum
 
-# 3rd Party
+# 3rd party
 import torch
 import torch.nn as nn
 
-# Local
+
+# local
 from ._io import IO
+# from ._state import Meta
+# from ._machine import LearningMachine, StepXHook, StepHook
 
 
 class Reduction(Enum):
@@ -461,4 +465,3 @@ class AssessmentLog(object):
                     }
                     result.update(cur)
         return result
-

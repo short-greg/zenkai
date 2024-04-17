@@ -41,7 +41,11 @@ from ._machine import (
     forward_dep,
     step_dep,
     ForwardHook,
-    SetYHook
+    SetYHook,
+    LayerAssessor,
+    StepAssessHook,
+    StepXLayerAssessor,
+    StepFullLayerAssessor
 )
 from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
@@ -57,4 +61,31 @@ from ._objective import (
 )
 from ._null import (
     NullLearner, NullStepTheta, NullStepX
+)
+from ._adapt import (
+    StepAdapt, AdaptBase, LearnerAdapt,
+    NNAdapt, NullWrapNN, WrapNN, WrapState
+)
+from ._post import StackPostStepTheta
+
+from ._containers import (
+    GraphLearner, AccGraphLearner, SStep
+)
+
+from ._grad import (
+    GradLearner,
+    GradStepTheta,
+    GradStepX,
+)
+from ._backtarget import (
+    BackTarget,
+)
+from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX
+
+from ._assess import (
+    Criterion, XCriterion, CompositeCriterion,
+    CompositeXCriterion
+)
+from ._limit import (
+    FeatureLimitGen, RandomFeatureIdxGen
 )

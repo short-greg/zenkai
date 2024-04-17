@@ -41,3 +41,13 @@ from ._ste import (
     sign_ste,
     SignSTE
 )
+
+# from ._filtering import (
+#     Stride2D,
+#     TargetStride,
+#     UndoStride2D,
+#     to_2dtuple,
+#     calc_size2d,
+#     calc_stride2d,
+# )
+from ._wrappers import HookWrapper, GradHook, GaussianGradHook, Lambda

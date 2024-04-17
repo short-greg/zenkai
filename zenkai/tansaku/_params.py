@@ -26,6 +26,7 @@ def update_pop_params(net: utils.PObj, selection: Selection, f: typing.Callable)
         selected = selection(p)
         assessment_i = tansaku_utils.unsqueeze_to(selection.assessment, selected)
         new_p = f(selected, assessment_i)
+        assert p.data.shape == new_p.shape, new_p.shape
         p.data = new_p.detach()
 
 
@@ -42,13 +43,15 @@ def update_pop_grads(net: utils.PObj, selection: Selection, f: typing.Callable):
     for p in utils.get_params(net):
 
         selected = selection(p)
-        assessment_i = tansaku_utils.unsqueeze_to(selection.assessment, selected)
+        assessment_i = tansaku_utils.unsqueeze_to(
+            selection.assessment, selected)
         new_p = f(selected, assessment_i)
         diff = p - new_p
         if p.grad is None:
             p.grad = diff.detach()
         else:
-            p.grad.data += diff.detach()
+            assert p.grad.shape == diff.shape, diff.shape
+            p.grad.data = p.grad.data + diff.detach()
 
 
 # TODO: Add module wrapper to do "forward_pop"

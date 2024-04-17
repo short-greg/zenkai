@@ -2,5 +2,5 @@
 
 __version__ = "0.0.3"
 
-from . import kikai, tansaku, utils, mod
+from . import targetprob, tansaku, utils, ensemble, feedback, scikit
 from .kaku import *

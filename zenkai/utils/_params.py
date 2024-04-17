@@ -43,8 +43,19 @@ def get_params(mod: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
     if isinstance(mod, typing.Callable):
         return mod()
     # assume it is an iterable
-    return mod
+    if isinstance(mod, typing.Iterator):
+        return mod
+    result = []
+    for p in mod:
 
+        if isinstance(p, typing.Iterator):
+            result.append(p) 
+        elif isinstance(p, nn.Module):
+            result.append(p.parameters())
+        else:
+            result.append([p])
+    return chain(*result)
+    
 
 def apply_to_params(
     parameters: typing.Iterator[torch.nn.parameter.Parameter], f
