@@ -12,11 +12,13 @@ from ..kaku import (
     OptimFactory,
     Criterion,
     ThLoss,
+    forward_dep
+)
+from ..utils import (
     Builder,
     UNDEFINED,
     Var,
     Factory,
-    forward_dep
 )
 from .. import utils
 from ..targetprob import Null

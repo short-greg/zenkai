@@ -1,5 +1,5 @@
-from zenkai.kaku import _build
-from .test_machine import SimpleLearner
+from zenkai.utils import _build
+from ..kaku.test_machine import SimpleLearner
 from torch import nn
 import pytest
 

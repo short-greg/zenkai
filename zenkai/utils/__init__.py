@@ -51,3 +51,7 @@ from ._ste import (
 #     calc_stride2d,
 # )
 from ._wrappers import HookWrapper, GradHook, GaussianGradHook, Lambda
+from ._build import (
+    Builder, Factory, BuilderArgs, 
+    BuilderFunctor, Var, UNDEFINED
+)

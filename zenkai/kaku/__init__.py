@@ -17,10 +17,6 @@ from ._io import (
     IO, Idx, update_io, update_tensor, 
     idx_io, idx_th, ToIO, FromIO
 )
-from ._build import (
-    Builder, Factory, BuilderArgs, 
-    BuilderFunctor, Var, UNDEFINED
-)
 from ._machine import (
     # TODO: Separate out hooks
     BatchIdxStepTheta,
