@@ -304,30 +304,6 @@ class _OptimF:
         return OptimFactory(optim, *args, **kwargs)
 
 
-class PopulationOptim(ABC):
-
-    @abstractmethod
-    def assess(
-        self, learning_machine: LearningMachine, x: IO, t: IO,
-    ) -> torch.Tensor:
-        pass
-
-    @abstractmethod
-    def accumulate(
-        self, assessment: torch.Tensor
-    ):
-        raise NotImplementedError
-    
-    @abstractmethod
-    def step(self):
-        raise NotImplementedError
-    
-    @abstractmethod
-    def params(
-        self, key: str=None
-    ) -> typing.Union[torch.Tensor, torch.Tensor]:
-        pass
-
 
 class Fit(ABC):
     """Create an optimizer"""

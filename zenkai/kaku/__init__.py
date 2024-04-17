@@ -49,7 +49,7 @@ from ._machine import (
 )
 from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
-    OptimFactory, optimf, Fit, PopulationOptim, CompOptim
+    OptimFactory, optimf, Fit, CompOptim
 )
 from ._state import IDable, Meta, MyMeta
 from ._objective import (
