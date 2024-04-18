@@ -11,16 +11,6 @@ from ._convert import (
     module_factory,
     checkattr,
 )
-from ._reshape import (
-    collapse_k,
-    expand_k,
-    undo_cat1d,
-    cat1d,
-    expand_dim0,
-    flatten_dim0,
-    deflatten_dim0,
-
-)
 from ._params import (
     get_model_params,
     update_model_params,
@@ -42,14 +32,6 @@ from ._ste import (
     SignSTE
 )
 
-# from ._filtering import (
-#     Stride2D,
-#     TargetStride,
-#     UndoStride2D,
-#     to_2dtuple,
-#     calc_size2d,
-#     calc_stride2d,
-# )
 from ._wrappers import HookWrapper, GradHook, GaussianGradHook, Lambda
 from ._build import (
     Builder, Factory, BuilderArgs, 

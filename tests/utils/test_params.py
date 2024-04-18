@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 from zenkai.utils import _params as p_utils
-from zenkai.utils import undo_cat1d, cat1d
+from zenkai.tansaku._reshape import undo_cat1d, cat1d
 
 
 class TestSetModelParameters:

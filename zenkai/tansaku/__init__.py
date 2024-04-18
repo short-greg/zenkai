@@ -45,6 +45,14 @@ from ._params import update_pop_params
 from ._reshape import(
     unsqueeze_to,
     align,
+    unsqueeze_vector,
+    collapse_k,
+    expand_k,
+    undo_cat1d,
+    cat1d,
+    expand_dim0,
+    flatten_dim0,
+    deflatten_dim0,
 )
 from ._noise import (
     NoiseReplace,

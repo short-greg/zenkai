@@ -84,7 +84,6 @@ def freshen(x: torch.Tensor, requires_grad: bool = True, inplace: bool = False):
 
 def checkattr(name: str):
     # Check that a class has the attribute specified
-
     def _wrap(f):
 
         def _(self, *args, **kwargs):
