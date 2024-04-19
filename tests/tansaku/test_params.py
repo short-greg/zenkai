@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-from zenkai.tansaku._params import update_pop_params, update_pop_grads
+from zenkai.tansaku._params import set_p, acc_g
 from zenkai.tansaku import BestSelector, pop_assess, add_pop_noise
 from zenkai.utils import get_model_params, get_model_grads
 
@@ -40,7 +40,7 @@ class TestPopParams(object):
 
 
         before = get_model_params(linear)
-        update_pop_params(linear, selection, update)
+        set_p(linear, selection, update)
         assert (get_model_params(linear) != before).any()
 
 
@@ -63,7 +63,7 @@ class TestPopGrad(object):
 
 
         before = get_model_grads(linear)
-        update_pop_grads(linear, selection, update)
+        acc_g(linear, selection, update)
         assert (get_model_grads(linear) != before)
 
     def test_update_pop_grads_works_for_pop_linear_with_grads_set(self):
@@ -84,5 +84,5 @@ class TestPopGrad(object):
 
 
         before = get_model_grads(linear, flat_cat=True)
-        update_pop_grads(linear, selection, update)
+        acc_g(linear, selection, update)
         assert (get_model_grads(linear, flat_cat=True) != before).any()

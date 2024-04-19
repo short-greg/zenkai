@@ -40,7 +40,7 @@ from ._constraints import (
     NNLinearObjective,
     NullConstraint,
 )
-from ._params import update_pop_params
+from ._params import set_p
 
 from ._reshape import(
     unsqueeze_to,

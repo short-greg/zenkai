@@ -4,91 +4,12 @@ import math
 import typing
 
 # 3rd party
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
 
-
-def get_model_params(model: nn.Module) -> torch.Tensor:
-    """Convenience function to retrieve the parameters of a model
-
-    Args:
-        model (nn.Module): 
-
-    Returns:
-        torch.Tensor: 
-    """
-    try:
-        return parameters_to_vector(model.parameters())
-    except NotImplementedError:
-        return None
-
-
-def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
-
-    return chain(model.parameters() for model in models)
-
-
-PObj = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor, typing.Callable[[],typing.Iterator[torch.nn.parameter.Parameter]]]
-
-
-def get_params(mod: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
-    
-    if isinstance(mod, nn.Module):
-        return mod.parameters()
-    if isinstance(mod, torch.Tensor):
-        return [mod]
-    if isinstance(mod, typing.Callable):
-        return mod()
-    # assume it is an iterable
-    if isinstance(mod, typing.Iterator):
-        return mod
-    result = []
-    for p in mod:
-
-        if isinstance(p, typing.Iterator):
-            result.append(p) 
-        elif isinstance(p, nn.Module):
-            result.append(p.parameters())
-        else:
-            result.append([p])
-    return chain(*result)
-    
-
-def apply_to_params(
-    parameters: typing.Iterator[torch.nn.parameter.Parameter], f
-):
-    """Apply a function to the parameters
-
-    Args:
-        parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
-        f : The function to apply
-    """
-    if isinstance(parameters, nn.Module):
-        parameters = parameters.parameters()
-    
-    elif isinstance(parameters, typing.List):
-        parameters = chain(
-            *(parameter.parameters() if isinstance(parameter, nn.Module) else parameter for parameter in parameters)
-        )
-
-    for p in parameters:
-        p.data = f(p.data)
-
-
-def update_model_params(
-        model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter]], theta: torch.Tensor):
-    """Convenience function to update the parameters of a model
-
-    Args:
-        model (nn.Module): Model to update parameters for
-        theta (torch.Tensor): The new parameters for the model
-    """
-    if isinstance(model, torch.nn.Module):
-        model = model.parameters()
-    vector_to_parameters(theta, model)
+### These are the OLD functions
 
 
 def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
@@ -98,7 +19,7 @@ def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.para
         model (nn.Module): The module to update gradients for or a callable that returns parameters
         theta_grad (torch.Tensor): The gradient values to update with
     """
-    model = get_params(model)
+    model = get_p(model)
     for p, grad in zip(model, theta_grad):
         if grad is not None:
             grad = grad.detach()
@@ -205,24 +126,236 @@ def get_model_grads(
     return grads
 
 
-def regularize_params(model: MODEL_P, f) -> torch.Tensor:
+
+def get_model_params(model: nn.Module) -> torch.Tensor:
+    """Convenience function to retrieve the parameters of a model
+
+    Args:
+        model (nn.Module): 
+
+    Returns:
+        torch.Tensor: 
+    """
+    try:
+        return parameters_to_vector(model.parameters())
+    except NotImplementedError:
+        return None
+
+
+def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
+
+    return chain(model.parameters() for model in models)
+
+
+### These are the NEW functions
+
+PObj = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor, typing.Callable[[],typing.Iterator[torch.nn.parameter.Parameter]]]
+
+
+def get_p(obj: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
+    
+    if isinstance(obj, nn.Module):
+        return obj.parameters()
+    elif isinstance(obj, torch.Tensor):
+        return [obj]
+    elif isinstance(obj, typing.Callable):
+        return obj()
+    # assume it is an iterable
+    elif isinstance(obj, typing.Iterator):
+        return obj
+    else:
+        result = []
+        for p in obj:
+
+            if isinstance(p, typing.Iterator):
+                result.append(p) 
+            elif isinstance(p, nn.Module):
+                result.append(p.parameters())
+            else:
+                result.append([p])
+    return chain(*result)
+
+
+def to_pvec(obj: PObj) -> torch.Tensor:
+
+    return torch.cat([p_i.flatten() for p_i in get_p(obj)], dim=0)
+
+
+def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
+    start = 0
+    for p in get_p(obj):
+
+        end = start + p.numel()
+        cur_vec = vec[start:end]
+        cur_vec = cur_vec.reshape(p)
+        yield p, cur_vec
+
+
+def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    
+    for p, cur_vec in align_vec(obj, vec):
+        set_grad(p, cur_vec)
+
+
+def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+
+    for p, cur_vec in align_vec(obj, vec):
+        acc_grad(p, cur_vec)
+
+
+def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    
+    for p, cur_vec in align_vec(obj, vec):
+        set_gradt(p, cur_vec)
+
+
+def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+
+    for p, cur_vec in align_vec(obj, vec):
+        acc_gradt(p, cur_vec)
+
+    # return torch.cat([p_i.flatten() for p_i in get_p(obj)], dim=0)
+
+
+# def from_vec(vec: torch.Tensor, ref: PObj):
+
+# def get_pvec(obj: PObj) -> torch.Tensor:
+
+#     try:
+#         return parameters_to_vector(get_p(obj))
+#     except NotImplementedError:
+#         return None
+    
+import pandas as pd
+
+def to_df(name: str, obj: PObj) -> pd.DataFrame:
+
+    return pd.DataFrame(
+        {name: [p for p in get_p(obj)]}
+    )
+
+
+def to_series(obj: PObj) -> pd.DataFrame:
+
+    return pd.Series(
+        [p for p in get_p(obj)]
+    )
+
+
+def get_multp(objs: typing.Iterable[PObj]) -> typing.Tuple[torch.nn.parameter.Parameter]:
+    """Get params in a tuple. Primarily to 
+    make it easier to zip multiple modules
+
+    Args:
+        objs (typing.Iterable[PObj]): The parameter objects to get
+
+    Returns:
+        typing.Iterable[typing.Tuple[torch.nn.parameter.Parameter]]: The tuple of parameters
+    """
+
+    return tuple(
+        get_p(obj) for obj in objs
+    )
+
+
+def loop_p(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
+    """
+
+    Args:
+        obj (PObj): The parameter object to loop over
+
+    Returns:
+        typing.Iterator[torch.nn.parameter.Parameter]: 
+
+    Yields:
+        Iterator[typing.Iterator[torch.nn.parameter.Parameter]]: The parameters
+    """
+
+    for p in get_p(obj):
+        yield p
+
+
+def apply_params(
+    obj: PObj, f
+):
+    """Apply a function to the parameters
+
+    Args:
+        parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
+        f : The function to apply
+    """
+    for p in get_p(obj):
+        p.data = f(p.data).detach()
+
+
+def set_params(
+    cur: torch.Tensor, new_: torch.Tensor
+):
+    cur.data = new_.detach()
+
+
+def acc_params(
+    cur: torch.Tensor, new_: torch.Tensor
+):
+    cur.data = (cur + new_).detach()
+
+
+def set_grad(
+    cur: torch.Tensor, grad: torch.Tensor
+):
+    cur.data.grad = grad.detach()
+    
+
+def set_gradt(
+    cur: torch.Tensor, t: torch.Tensor
+):
+    grad = cur - t
+    cur.data.grad = grad.detach()
+
+
+def acc_grad(
+    cur: torch.Tensor, grad: torch.Tensor
+):
+    if cur.grad is None:
+        cur.grad = grad.detach()
+    else:
+        cur.grad.data = (cur.grad.data + grad).detach()
+
+
+def acc_gradt(
+    cur: torch.Tensor, t: torch.Tensor
+):
+    grad = cur - t
+    if cur.grad is None:
+        cur.grad = grad.detach()
+    else:
+        cur.grad.data = (cur.grad.data + grad).detach()
+
+
+def update_model_params(
+        model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter]], theta: torch.Tensor):
+    """Convenience function to update the parameters of a model
+
+    Args:
+        model (nn.Module): Model to update parameters for
+        theta (torch.Tensor): The new parameters for the model
+    """
+    if isinstance(model, torch.nn.Module):
+        model = model.parameters()
+    vector_to_parameters(theta, model)
+
+
+def reg_p(obj: PObj, f) -> torch.Tensor:
     """Convenience function to regularize parameters
 
     Args:
-        model (MODEL_P): The model or parameters to regularize
-        f: regularization function
+        obj (PObj): The parameter object ot regularize
 
     Returns:
         torch.Tensor: the regularization value
     """
-
     regularization = None
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-    elif isinstance(model, torch.Tensor):
-        model = [model]
-
-    for p in model:
+    for p in get_p(obj):
         
         cur = f(p)
         if cur.dim() != 0:
@@ -275,4 +408,3 @@ class undo_grad(object):
                 update_model_grads(
                     value, stored, False
                 )
-        

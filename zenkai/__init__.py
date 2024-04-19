@@ -4,3 +4,4 @@ __version__ = "0.0.3"
 
 from . import targetprob, tansaku, utils, ensemble, feedback, scikit
 from .kaku import *
+from .utils import _params as params

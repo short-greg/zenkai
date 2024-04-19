@@ -1,13 +1,17 @@
+# 1st party
+import typing
+
 # 3rd party
 import torch
+from torch import nn
 
 # local
 from ._reshape import align
 
 
 def rand_update(
-    cur: torch.Tensor,
-    prev: torch.Tensor,
+    cur_val: torch.Tensor,
+    prev_val: torch.Tensor,
     keep_prob: float,
     batch_equal: bool = False,
 ) -> torch.Tensor:
@@ -21,14 +25,14 @@ def rand_update(
     Returns:
         torch.Tensor: the updated tensor
     """
-    shape = cur.shape if not batch_equal else [1, *cur.shape[1:]]
+    shape = cur_val.shape if not batch_equal else [1, *cur_val.shape[1:]]
 
-    to_keep = torch.rand(shape, device=cur.device) < keep_prob
-    return (~to_keep).float() * cur + to_keep * prev
+    to_keep = torch.rand(shape, device=cur_val.device) < keep_prob
+    return (~to_keep).float() * cur_val + to_keep * prev_val
 
 
 def mix_cur(
-    cur: torch.Tensor, prev: torch.Tensor,
+    cur_val: torch.Tensor, prev_val: torch.Tensor,
     exp_p: float=1.0
 ) -> torch.Tensor:
     """Keep a certain percentage of values randomly chosen based on keep_p
@@ -41,12 +45,12 @@ def mix_cur(
     Returns:
         typing.Union[Population, Individual]: The updated tensor dict
     """
-    keep = torch.rand_like(cur) ** exp_p
-    return keep * cur + (1 - keep) * prev
+    keep = torch.rand_like(cur_val) ** exp_p
+    return keep * cur_val + (1 - keep) * prev_val
 
 
 def update_feature(
-    cur: torch.Tensor, prev: torch.Tensor, limit: torch.LongTensor, dim: int=-1
+    cur_val: torch.Tensor, prev_val: torch.Tensor, limit: torch.LongTensor, dim: int=-1
 ) -> torch.Tensor:
     """Keep a feature dim based on indices
 
@@ -58,10 +62,10 @@ def update_feature(
     Returns:
         Population: The updated population
     """
-    prev = prev.clone().transpose(dim, 0)
-    cur = cur.clone().transpose(dim, 0)
-    cur[limit] = prev[limit]
-    return cur.transpose(dim, 0)
+    prev_val = prev_val.clone().transpose(dim, 0)
+    cur_val = cur_val.clone().transpose(dim, 0)
+    cur_val[limit] = prev_val[limit]
+    return cur_val.transpose(dim, 0)
 
 
 def update_mean(
@@ -147,6 +151,31 @@ def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) 
         return cur_val
     
     return cur_val + prev_val * decay
+
+
+class Updater(nn.Module):
+
+    def __init__(self, update_f: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]=None, *args, **kwargs):
+        """Module that handles updating a tensor with an update function
+
+        Args:
+            update_f (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional): The update function. If it is None, the default behavior will be to do nothing but the behavior can be overridden by sublcasses. Defaults to None.
+        """
+
+        super().__init__()
+        self.update_f = update_f
+        self.args = args
+        self.kwargs = kwargs
+        self.cur_val = None
+
+    def forward(self, x: torch.Tensor):
+
+        if self.update_f is not None:
+            self.cur_val = self.update_f(
+                x, self.cur_val, *self.args, **self.kwargs
+            )
+            return self.cur_val
+        return x
 
 
 def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:

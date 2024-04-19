@@ -14,14 +14,14 @@ from ._convert import (
 from ._params import (
     get_model_params,
     update_model_params,
-    apply_to_params,
+    apply_p,
     update_model_grads,
     get_model_grads,
     set_model_grads,
     update_model_grads_with_t,
     undo_grad,
     PObj,
-    get_params
+    get_p
 
 )
 from ._ste import (
