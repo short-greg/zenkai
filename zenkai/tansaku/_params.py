@@ -11,21 +11,42 @@ from . import _reshape as tansaku_utils
 from ._selection import Selection
 
 
-def loop_p(
-    obj: utils.PObj, selection: Selection, f: typing.Callable
-):
+def loop_select(
+    obj: utils.PObj, selection: Selection
+) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
+    """Loop over a parameter object and call a function
+
+    Args:
+        obj (utils.PObj): The parameter object
+        selection (Selection): The selection for the parameter object
+        f (typing.Callable): The function to execute
+
+    Yields:
+        typing.Tuple[torch.Tensor, torch.Tensor]: The selected parameter and assessment
+    """
     for p in utils.get_p(obj):
 
-        selected = selection(p)
-        assessment_i = tansaku_utils.unsqueeze_to(
-            selection.assessment, selected
+        selected, assessment_i = selection(
+            p, get_assessment=True
         )
-        res = f(selected, assessment_i, selection.n, selection.k)
-        yield res
+        # assessment_i = tansaku_utils.unsqueeze_to(
+        #     selection.assessment, selected
+        # )
+        # if f is not None:
+        #     res = f(selected, assessment_i, selection.n, selection.k)
+        yield selected, assessment_i
 
 
 def to_pvec(obj: utils.PObj, n: int) -> torch.Tensor:
+    """Convert the population parameters to a single tensor
 
+    Args:
+        obj (utils.PObj): 
+        n (int): 
+
+    Returns:
+        torch.Tensor: The tensor representing the 
+    """
     return torch.cat(
         [pi_i.reshape(n, -1) for pi_i in utils.get_p(obj)], 
         dim=0
@@ -33,46 +54,84 @@ def to_pvec(obj: utils.PObj, n: int) -> torch.Tensor:
 
 
 def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
+    """Align the population vector with the object passed in
+
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The vector to align
+
+    Yields:
+        Iterator[typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]]: Each parameter and aligned vector
+    """
     start = 0
     for p in utils.get_p(obj):
 
         end = start + p.numel()
+        # Assume that the first dimension is the
+        # population dimension
         cur_vec = vec[:,start:end]
         cur_vec = cur_vec.reshape(p)
         yield p, cur_vec
 
 
 def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
-    
+    """Set the gradient of a PObj
+
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The gradient vec
+    """
     for p, cur_vec in align_vec(obj, vec):
         utils.set_grad(p, cur_vec)
 
 
 def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    """Accumulate the gradient of a PObj
 
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The gradient vec
+    """
     for p, cur_vec in align_vec(obj, vec):
         utils.acc_grad(p, cur_vec)
 
 
 def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
-    
+    """Set the gradient of a PObj based on a target vector
+
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The target vec
+    """
     for p, cur_vec in align_vec(obj, vec):
         utils.set_gradt(p, cur_vec)
 
 
 def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    """Acc the gradient of a PObj based on a target vector
 
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The target vec
+    """
     for p, cur_vec in align_vec(obj, vec):
         utils.acc_gradt(p, cur_vec)
 
 
-def apply_p(
-    obj: utils.PObj, selection: Selection, f: typing.Callable
-):
-    for _ in loop_p(
-        obj, selection, f
-    ):
-        pass
+# def apply_p(
+#     obj: utils.PObj, selection: Selection, f: typing.Callable
+# ):
+#     """The function to apply
+
+#     Args:
+#         obj (utils.PObj): The parameter object
+#         selection (Selection): The selection for the parameters
+#         f (typing.Callable): The function to apply
+#     """
+#     for _ in loop_select(
+#         obj, selection, f
+#     ):
+#         pass
 
 
 # TODO: Review this

@@ -7,6 +7,7 @@ import torch.nn as nn
 from ._reshape import align
 from ..kaku import Reduction
 from . import _weight as W
+from . import _reshape as tansaku_utils
 
 
 def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
@@ -85,38 +86,71 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
 
 class Selection(nn.Module):
 
-    def __init__(self, assessment: torch.Tensor, index: torch.LongTensor, dim: int=1):
-        """
+    def __init__(self, assessment: torch.Tensor, index: torch.LongTensor, n: int, k: int, dim: int=0):
+        """Module that represents a selection from an index
 
         Args:
-            assessment (torch.Tensor): 
-            index (torch.LongTensor): 
-            dim (int, optional): . Defaults to 1.
+            assessment (torch.Tensor): The assessment to select by
+            index (torch.LongTensor): The index to select by
+            dim (int, optional): The dimension to select on. Defaults to 0 (population dimension).
         """
         super().__init__()
         self.assessment = assessment
         self.index = index
         self.dim = dim
+        self._n = n
+        self._k = k
     
-    def select(self, x: torch.Tensor) -> torch.Tensor:
+    def select(self, x: torch.Tensor, get_assessment: bool=False) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): The x to select
+            get_assessment (bool): Whether to get the assessment
+
+        Returns:
+            torch.Tensor: The selected value
+        """
         index = align(self.index, x)
-        return x.gather(self.dim, index)
+        selected = x.gather(self.dim, index)
+        if get_assessment:
+            assessment = tansaku_utils.unsqueeze_to(
+                self.assessment, selected
+            )
+            return selected, assessment
+        return selected
+    
+    def forward(self, x: torch.Tensor, get_assessment: bool=False) -> torch.Tensor:
+        return self.select(x, get_assessment)
 
-    def forward(self, x: typing.Union[typing.Iterable[torch.Tensor], torch.Tensor]) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor]]:
+    def multi(self, x: typing.Iterable[torch.Tensor]) -> typing.Tuple[torch.Tensor]:
 
-        if isinstance(x, torch.Tensor):
-            return self.select(x)
-        
         return tuple(
             self.select(x_i) for x_i in x
         )
  
-    def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=1):
+    def cat(self, x: torch.Tensor, cat_to: typing.List[torch.Tensor], dim: int=0) -> torch.Tensor:
+        """Concat a value
 
+        Args:
+            x (torch.Tensor): The value to select from
+            cat_to (typing.List[torch.Tensor]): The value to concatenate to
+            dim (int, optional): The dimension to concatenate on. Defaults to 0.
+
+        Returns:
+            torch.Tensor: The concatenated 
+        """
         x = self(x)
         return torch.cat(
             [x, *cat_to], dim=dim
         )
+    
+    @property
+    def n(self) -> int:
+        return self._n
+
+    @property
+    def k(self) -> int:
+        return self._k
 
 
 class Selector(nn.Module, ABC):
@@ -144,7 +178,8 @@ class BestSelector(Selector):
         values, indices = best(assessment, maximize, self.dim, True)
         
         return Selection(
-            values, indices, self.dim
+            values, indices, assessment.size(self.dim), 1
+            self.dim
         )
 
 
@@ -163,7 +198,7 @@ class TopKSelector(Selector):
         )
         
         return Selection(
-            values, indices, self.dim
+            values, indices, assessment.size(self.dim), self.k, self.dim
         )
 
 
@@ -239,7 +274,7 @@ class ProbSelector(Selector):
         print(assessment.shape, indices.shape)
         value = assessment.gather(self._pop_dim, indices)
         return Selection(
-            value[:,0], indices[:,0], self._pop_dim
+            value[:,0], indices[:,0], assessment.size(self.dim), self.k, self._pop_dim
         )
 
 
