@@ -178,7 +178,7 @@ class BestSelector(Selector):
         values, indices = best(assessment, maximize, self.dim, True)
         
         return Selection(
-            values, indices, assessment.size(self.dim), 1
+            values, indices, assessment.size(self.dim), 1,
             self.dim
         )
 
@@ -274,7 +274,7 @@ class ProbSelector(Selector):
         print(assessment.shape, indices.shape)
         value = assessment.gather(self._pop_dim, indices)
         return Selection(
-            value[:,0], indices[:,0], assessment.size(self.dim), self.k, self._pop_dim
+            value[:,0], indices[:,0], assessment.size(self._pop_dim), self.k, self._pop_dim
         )
 
 

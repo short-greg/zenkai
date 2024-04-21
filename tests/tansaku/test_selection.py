@@ -143,7 +143,7 @@ class TestSelection:
         )
         assessment = torch.randn(4, 1)
         selection = _selection.Selection(
-            assessment, index
+            assessment, index, 4, 1
         )
 
         selected = selection(torch.rand(4, 2, 3))
@@ -155,7 +155,7 @@ class TestSelection:
         )
         assessment = torch.randn(4, 1)
         selection = _selection.Selection(
-            assessment, index
+            assessment, index, 4, 1
         )
 
         selected = selection(torch.rand(4, 2))
@@ -167,7 +167,7 @@ class TestSelection:
         )
         assessment = torch.randn(4, 2)
         selection = _selection.Selection(
-            assessment, index
+            assessment, index, 4, 2
         )
 
         selected = selection(torch.rand(4, 4, 3))
@@ -179,7 +179,7 @@ class TestSelection:
         )
         assessment = torch.randn(4, 2, 3)
         selection = _selection.Selection(
-            assessment, index
+            assessment, index, 4, 2
         )
 
         selected = selection(torch.rand(4, 4, 3))
@@ -187,15 +187,15 @@ class TestSelection:
 
     def test_cat_cats_the_selection_with_threed_index(self):
         index = torch.randint(
-            0, 2, (4, 2, 3)
+            0, 4, (2, 2, 3)
         )
         assessment = torch.randn(4, 2, 3)
         selection = _selection.Selection(
-            assessment, index
+            assessment, index, 4, 2
         )
 
-        selected = selection.cat(torch.rand(4, 4, 3), [torch.rand(4, 2, 3)])
-        assert selected.shape == torch.Size([4, 4, 3])
+        selected = selection.cat(torch.rand(4, 2, 3), [torch.rand(4, 2, 3)])
+        assert selected.shape == torch.Size([6, 2, 3])
 
 
 class TestBestSelector:
@@ -354,4 +354,3 @@ class TestProbSelector:
         assert (
             result.shape == torch.Size([3, 4, 2])
         )
-

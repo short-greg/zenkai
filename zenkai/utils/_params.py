@@ -176,9 +176,26 @@ def get_p(obj: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
     return chain(*result)
 
 
+def get_grad(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
+    
+    for p in get_p(obj):
+        return p.grad
+
+
 def to_pvec(obj: PObj) -> torch.Tensor:
 
     return torch.cat([p_i.flatten() for p_i in get_p(obj)], dim=0)
+
+
+def to_gradvec(obj: PObj) -> torch.Tensor:
+
+    result = []
+    for p_i in get_p(obj):
+        if p_i.grad is None:
+            result.append(torch.zeros_like(p_i).flatten())
+        else:
+            result.append(p_i.grad.flatten())
+    return torch.cat(result, dim=0)
 
 
 def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
@@ -191,25 +208,37 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
         yield p, cur_vec
 
 
-def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def set_pvec(obj: PObj, vec: torch.Tensor):
+
+    for p, cur_vec in align_vec(obj, vec):
+        set_params(p, cur_vec)
+
+
+def acc_pvec(obj: PObj, vec: torch.Tensor):
+
+    for p, cur_vec in align_vec(obj, vec):
+        acc_params(p, cur_vec)
+
+
+def set_gradvec(obj: PObj, vec: torch.Tensor):
     
     for p, cur_vec in align_vec(obj, vec):
         set_grad(p, cur_vec)
 
 
-def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def acc_gradvec(obj: PObj, vec: torch.Tensor):
 
     for p, cur_vec in align_vec(obj, vec):
         acc_grad(p, cur_vec)
 
 
-def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def set_gradtvec(obj: PObj, vec: torch.Tensor):
     
     for p, cur_vec in align_vec(obj, vec):
         set_gradt(p, cur_vec)
 
 
-def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def acc_gradtvec(obj: PObj, vec: torch.Tensor):
 
     for p, cur_vec in align_vec(obj, vec):
         acc_gradt(p, cur_vec)
@@ -275,7 +304,7 @@ def loop_p(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
         yield p
 
 
-def apply_params(
+def apply_p(
     obj: PObj, f
 ):
     """Apply a function to the parameters

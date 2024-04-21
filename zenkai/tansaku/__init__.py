@@ -40,8 +40,26 @@ from ._constraints import (
     NNLinearObjective,
     NullConstraint,
 )
-from ._params import set_p
+from ._aggregate import (
+    mean,
+    median,
+    quantile,
+    normalize
+)
 
+from ._params import (
+    loop_select,
+    to_pvec,
+    align_vec,
+    set_gradvec,
+    acc_gradvec,
+    set_gradtvec,
+    acc_gradtvec,
+    set_pvec,
+    acc_pvec
+)
+
+# TODO: Reconsider tehse
 from ._reshape import(
     unsqueeze_to,
     align,

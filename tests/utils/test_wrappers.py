@@ -1,4 +1,4 @@
-from zenkai.utils import _wrappers
+from zenkai.kaku import _wrappers
 import torch
 import torch.nn as nn
 

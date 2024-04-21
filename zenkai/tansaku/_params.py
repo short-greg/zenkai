@@ -74,6 +74,28 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
         yield p, cur_vec
 
 
+def set_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    """Set the parameters of a PObj
+
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The gradient vec
+    """
+    for p, cur_vec in align_vec(obj, vec):
+        utils.set_pvec(p, cur_vec)
+
+
+def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+    """Accumulate the parameters of a PObj
+
+    Args:
+        obj (PObj): The parameter object
+        vec (torch.Tensor): The gradient vec
+    """
+    for p, cur_vec in align_vec(obj, vec):
+        utils.acc_pvec(p, cur_vec)
+
+
 def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Set the gradient of a PObj
 

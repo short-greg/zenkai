@@ -84,3 +84,11 @@ def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim:
     return quantile(
         x, 0.5, norm_weight, dim, keepdim
     )
+
+
+def normalize(x: torch.Tensor, mean: torch.Tensor=None, std: torch.Tensor=None, dim: int=0) -> torch.Tensor:
+
+    mean = x.mean(dim, keepdim=True) if mean is None else mean
+    std = x.std(dim, keepdim=True) if std is None else std
+
+    return (x - mean) / std
