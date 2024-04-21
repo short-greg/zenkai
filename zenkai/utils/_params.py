@@ -171,6 +171,8 @@ def get_p(obj: PObj) -> typing.Iterable[torch.nn.parameter.Parameter]:
                 result.append(p) 
             elif isinstance(p, nn.Module):
                 result.append(p.parameters())
+            elif isinstance(p, typing.Callable):
+                result.append(p())
             else:
                 result.append([p])
     return chain(*result)
@@ -204,7 +206,7 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
 
         end = start + p.numel()
         cur_vec = vec[start:end]
-        cur_vec = cur_vec.reshape(p)
+        cur_vec = cur_vec.reshape(p.shape)
         yield p, cur_vec
 
 
@@ -332,7 +334,10 @@ def acc_params(
 def set_grad(
     cur: torch.Tensor, grad: torch.Tensor
 ):
-    cur.data.grad = grad.detach()
+    if cur.grad is None:
+        cur.grad = grad.detach()
+    else:
+        cur.grad.data = grad.detach()
     
 
 def set_gradt(
