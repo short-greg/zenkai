@@ -14,7 +14,7 @@ from ..kaku import (
     ThLoss,
     forward_dep
 )
-from ..utils import (
+from ..utils._build import (
     Builder,
     UNDEFINED,
     Var,
