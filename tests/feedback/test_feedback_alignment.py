@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from zenkai.kaku import OptimFactory, IO
-from zenkai.utils import get_model_params
+from zenkai.utils._params import get_model_params
 from zenkai.feedback import _feedback_alignment
 
 

@@ -2,6 +2,7 @@ from zenkai.kaku import _adapt as adapt
 from zenkai.kaku._grad import GradStepTheta, GradStepX
 from .test_grad import THGradLearnerT1
 import zenkai
+from zenkai.utils import _params as param_utils
 import torch.nn as nn
 import torch
 from itertools import chain
@@ -23,10 +24,10 @@ class TestLearnerAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer(self):
@@ -43,10 +44,10 @@ class TestLearnerAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer_without_step_x(self):
@@ -65,10 +66,10 @@ class TestLearnerAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
 
@@ -88,10 +89,10 @@ class TestCriterionNNAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
     def test_learner_adapt_updates_learner_in_second_layer(self):
@@ -108,10 +109,10 @@ class TestCriterionNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
 
@@ -132,10 +133,10 @@ class TestStepNNAdapt(object):
         y = module(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
     def test_stepnn_adapt_updates_learner_in_second_layer(self):
@@ -153,10 +154,10 @@ class TestStepNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
 
@@ -176,10 +177,10 @@ class TestStepNNAdapt(object):
         y = learner(y)
         loss = (y - t).pow(2).mean()
         loss.backward()
-        before = zenkai.utils.get_model_params(learner)
+        before = param_utils.get_model_params(learner)
         optim.step()
         assert (
-            (zenkai.utils.get_model_params(learner) != before).any()
+            (param_utils.get_model_params(learner) != before).any()
         )
 
 

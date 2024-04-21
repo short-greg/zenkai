@@ -5,7 +5,7 @@ from torch import optim
 
 # Local
 from zenkai.kaku._optimize import ParamFilter, OptimFactory, NullOptim, optimf
-from zenkai.utils import get_model_params
+from zenkai.utils._params import get_model_params
 
 
 class TestParamFilter:

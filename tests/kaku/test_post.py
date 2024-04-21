@@ -3,7 +3,7 @@ import torch
 from zenkai import IO
 from zenkai.kaku import _post
 from .test_machine import SimpleLearner
-from zenkai.utils import get_model_params
+from zenkai.utils._params import get_model_params
 
 
 class TestStackPostStepTheta:

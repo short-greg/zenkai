@@ -11,49 +11,49 @@ from ._convert import (
     module_factory,
     checkattr,
 )
-from ._params import (
-    # TODO: Remove these functions
-    get_model_params,
-    get_model_grads,
-    set_model_grads,
-    update_model_grads,
-    update_model_params,
-    model_params,
-    update_model_grads_with_t,
+# from ._params import (
+#     # TODO: Remove these functions
+#     get_model_params,
+#     get_model_grads,
+#     set_model_grads,
+#     update_model_grads,
+#     update_model_params,
+#     model_params,
+#     update_model_grads_with_t,
 
-    # These are the new functions
-    get_p,
-    to_pvec,
-    align_vec,
-    set_pvec,
-    acc_pvec,
-    set_gradvec,
-    acc_gradvec,
-    set_gradtvec,
-    acc_gradtvec,
+#     # These are the new functions
+#     get_p,
+#     to_pvec,
+#     align_vec,
+#     set_pvec,
+#     acc_pvec,
+#     set_gradvec,
+#     acc_gradvec,
+#     set_gradtvec,
+#     acc_gradtvec,
 
-    to_df,
-    to_series,
-    loop_p,
-    PObj,
-    get_p,
-    apply_p,
-    set_params,
-    acc_params,
-    set_grad,
-    acc_grad,
-    set_gradt,
-    acc_gradt,
+#     to_df,
+#     to_series,
+#     loop_p,
+#     PObj,
+#     get_p,
+#     apply_p,
+#     set_params,
+#     acc_params,
+#     set_grad,
+#     acc_grad,
+#     set_gradt,
+#     acc_gradt,
 
-    reg_p,
+#     reg_p,
 
-    set_gradvec,
-    acc_gradvec,
-    set_gradtvec,
-    acc_gradtvec,
+#     set_gradvec,
+#     acc_gradvec,
+#     set_gradtvec,
+#     acc_gradtvec,
 
-    undo_grad
-)
+#     undo_grad
+# )
 from ._ste import (
 
     binary_ste,

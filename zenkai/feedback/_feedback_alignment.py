@@ -21,6 +21,7 @@ from ..utils import (
     Factory,
 )
 from .. import utils
+from ..utils import _params as param_utils
 from ..targetprob import Null
 from ..kaku._grad import GradLearner
 
@@ -101,7 +102,9 @@ class FALearner(GradLearner):
         self.criterion.assess(y, t).backward()
         y_det = x._(self).y_det
         y2.backward(y_det.grad)
-        utils.set_model_grads(self.net, utils.get_model_grads(self.netB))
+        param_utils.set_model_grads(
+            self.net, param_utils.get_model_grads(self.netB)
+        )
     
     @forward_dep('y')
     def step(self, x: IO, t: IO, batch_idx: Idx = None):
@@ -205,7 +208,7 @@ class DFALearner(GradLearner):
         self.criterion(IO(y), t).backward()
         y2.backward(y_det.grad)
 
-        utils.set_model_grads(self.net, utils.get_model_grads(self.netB))
+        param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))
         assert x.f.grad is not None
     
     @forward_dep('y')

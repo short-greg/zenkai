@@ -142,6 +142,8 @@ class FuncObjective(Objective):
         return Reduction[reduction].reduce(value)
 
 
+# TODO: Decide what to do with this
+
 class NNLinearObjective(Objective):
 
     def __init__(

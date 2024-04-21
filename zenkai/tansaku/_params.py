@@ -5,26 +5,25 @@ import typing
 import torch
 
 # local
-from .. import utils
-from ..utils import PObj
-from . import _reshape as tansaku_utils
+from ..utils import _params as param_utils
+from ..utils._params import PObj
 from ._selection import Selection
 
 
 def loop_select(
-    obj: utils.PObj, selection: Selection
+    obj: PObj, selection: Selection
 ) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
     """Loop over a parameter object and call a function
 
     Args:
-        obj (utils.PObj): The parameter object
+        obj (PObj): The parameter object
         selection (Selection): The selection for the parameter object
         f (typing.Callable): The function to execute
 
     Yields:
         typing.Tuple[torch.Tensor, torch.Tensor]: The selected parameter and assessment
     """
-    for p in utils.get_p(obj):
+    for p in param_utils.get_p(obj):
 
         selected, assessment_i = selection(
             p, get_assessment=True
@@ -37,18 +36,18 @@ def loop_select(
         yield selected, assessment_i
 
 
-def to_pvec(obj: utils.PObj, n: int) -> torch.Tensor:
+def to_pvec(obj: PObj, n: int) -> torch.Tensor:
     """Convert the population parameters to a single tensor
 
     Args:
-        obj (utils.PObj): 
+        obj (PObj): 
         n (int): 
 
     Returns:
         torch.Tensor: The tensor representing the 
     """
     return torch.cat(
-        [pi_i.reshape(n, -1) for pi_i in utils.get_p(obj)], 
+        [pi_i.reshape(n, -1) for pi_i in param_utils.get_p(obj)], 
         dim=0
     )
 
@@ -64,7 +63,7 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
         Iterator[typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]]: Each parameter and aligned vector
     """
     start = 0
-    for p in utils.get_p(obj):
+    for p in param_utils.get_p(obj):
 
         end = start + p.numel()
         # Assume that the first dimension is the
@@ -82,7 +81,7 @@ def set_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The gradient vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.set_pvec(p, cur_vec)
+        param_utils.set_pvec(p, cur_vec)
 
 
 def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
@@ -93,7 +92,7 @@ def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The gradient vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.acc_pvec(p, cur_vec)
+        param_utils.acc_pvec(p, cur_vec)
 
 
 def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
@@ -104,7 +103,7 @@ def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The gradient vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.set_grad(p, cur_vec)
+        param_utils.set_grad(p, cur_vec)
 
 
 def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
@@ -115,7 +114,7 @@ def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The gradient vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.acc_grad(p, cur_vec)
+        param_utils.acc_grad(p, cur_vec)
 
 
 def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
@@ -126,7 +125,7 @@ def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The target vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.set_gradt(p, cur_vec)
+        param_utils.set_gradt(p, cur_vec)
 
 
 def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
@@ -137,7 +136,7 @@ def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The target vec
     """
     for p, cur_vec in align_vec(obj, vec):
-        utils.acc_gradt(p, cur_vec)
+        param_utils.acc_gradt(p, cur_vec)
 
 
 # def apply_p(

@@ -1,6 +1,6 @@
 import torch
 
-from zenkai import utils
+from zenkai.utils import _params as utils
 from zenkai.kaku import IO
 from zenkai.kaku._iterable import (
     IterStepTheta, IterStepX, IterHiddenStepTheta, 

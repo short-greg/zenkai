@@ -18,6 +18,7 @@ from . import (
     OptimFactory, Reduction
 )
 from .. import utils
+from ..utils import _params as param_utils
 from functools import partial
 # TODO: Think how to make this more extensible so it can take
 # more inputs
@@ -79,10 +80,10 @@ class LearnerAdapt(AdaptBase):
                         # grad function because it is not guaranteed you
                         # can backprop through learner
 
-                        with utils.undo_grad([x.f]):
+                        with param_utils.undo_grad([x.f]):
                             self.learner.accumulate(x, t)
 
-                        with utils.undo_grad([self.learner]):
+                        with param_utils.undo_grad([self.learner]):
                             cur_y = self.learner(x, release=False)
                             loss2 = 0.5 * (cur_y.f - t.f).pow(2).sum()
                             loss2.backward()
@@ -142,7 +143,7 @@ class StepAdapt(AdaptBase):
                     t = (y - grad_output).detach()
                     self.step_theta.accumulate(IO(x), IO(t))
                     if self.step_x is None:
-                        with utils.undo_grad([self.module]):
+                        with param_utils.undo_grad([self.module]):
                             loss2 = 0.5 * (y - t).pow(2).sum()
                             loss2.backward(retain_graph=True)
                             grad = x.grad
@@ -214,10 +215,10 @@ class NNAdapt(AdaptBase):
                     if to_step_x:
                         loss.backward()
                     else:
-                        with utils.undo_grad([self.module]):
+                        with param_utils.undo_grad([self.module]):
                             loss2 = 0.5 * (y - t).pow(2).sum()
                             loss2.backward(retain_graph=True)
-                        with utils.undo_grad([x]):
+                        with param_utils.undo_grad([x]):
                             loss.backward()
                     grad = x.grad
                 if self.optim is not None:

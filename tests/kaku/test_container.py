@@ -4,7 +4,7 @@ from zenkai.kaku import _containers as containers
 from zenkai.kaku._containers import SStep
 from .test_grad import THGradLearnerT1
 import torch
-from zenkai.utils import get_model_params, get_model_grads
+from zenkai.utils._params import get_model_params, get_model_grads
 
 
 class SampleGraph(containers.GraphLearner):

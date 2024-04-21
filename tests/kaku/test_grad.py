@@ -8,7 +8,7 @@ from zenkai import OptimFactory, ThLoss, CompOptim
 # local
 from zenkai.kaku import IO, Idx
 from zenkai.kaku import _grad
-from zenkai import utils
+from zenkai.utils import _params as utils
 
 
 class THGradLearnerT1(_grad.GradLearner):

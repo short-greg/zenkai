@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ..utils import get_model_params, update_model_params
+from ..utils._params import get_model_params, update_model_params
 
 
 def gaussian_sample(

@@ -5,7 +5,7 @@ import torch
 import torch.optim
 from torch import nn
 
-from zenkai import utils
+from zenkai.utils import _params as utils
 
 # local
 from zenkai.kaku import IO, IDable
