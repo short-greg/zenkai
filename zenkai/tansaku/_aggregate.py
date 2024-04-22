@@ -5,7 +5,7 @@ from ._reshape import unsqueeze_to
 
 def mean(
     x: torch.Tensor, 
-    norm_weight: torch.Tensor=None, 
+    weight: torch.Tensor=None, 
     dim: int=0, 
     keepdim: bool=True
 ) -> torch.Tensor:
@@ -13,20 +13,20 @@ def mean(
 
     Args:
         x (torch.Tensor): Tensor to calculate the mean on
-        norm_weight (torch.Tensor, optional): Normalized weights to use (sum to 1) if computing the weighted mean. Defaults to None.
+        weight (torch.Tensor, optional): The weights to use (sum to 1) if computing the weighted mean. Defaults to None.
         dim (int, optional): The dim to calculate the mean on. Defaults to 0.
 
     Returns:
         torch.Tensor: The mean of the tensor
     """
 
-    if norm_weight is None:
+    if weight is None:
         return x.mean(dim=dim, keepdim=keepdim)
     
-    norm_weight = unsqueeze_to(
-        norm_weight, x
+    weight = unsqueeze_to(
+        weight, x
     )
-    return (x * norm_weight).sum(dim=dim, keepdim=keepdim)
+    return (x * weight).sum(dim=dim, keepdim=keepdim)
 
 
 def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
