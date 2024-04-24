@@ -213,7 +213,7 @@ def calc_scale(cur_val: torch.Tensor, ref: torch.Tensor, scale: float=None) -> t
         torch.Tensor: The resulting scale to multiply by
     """
 
-    rate = (ref / cur_val) 
+    rate = (ref.abs() / cur_val.abs()) 
     if scale is not None:
         rate = rate * scale
     return rate

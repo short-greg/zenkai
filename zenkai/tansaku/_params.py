@@ -40,14 +40,30 @@ def to_pvec(obj: PObj, n: int) -> torch.Tensor:
     """Convert the population parameters to a single tensor
 
     Args:
-        obj (PObj): 
-        n (int): 
+        obj (PObj): The object to get the parameters for
+        n (int): The number of members
 
     Returns:
         torch.Tensor: The tensor representing the 
     """
     return torch.cat(
         [pi_i.reshape(n, -1) for pi_i in param_utils.get_p(obj)], 
+        dim=0
+    )
+
+
+def to_gradvec(obj: PObj, n: int) -> torch.Tensor:
+    """Convert the population parameters to a single tensor
+
+    Args:
+        obj (PObj): The object to get the parameters for
+        n (int): The number of members
+
+    Returns:
+        torch.Tensor: The tensor representing the 
+    """
+    return torch.cat(
+        [pi_i.grad.reshape(n, -1) for pi_i in param_utils.get_p(obj)], 
         dim=0
     )
 
