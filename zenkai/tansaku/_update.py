@@ -200,3 +200,20 @@ def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
     )
     slope = ssy / ssx
     return slope.reshape(base_shape)
+
+
+def calc_scale(cur_val: torch.Tensor, ref: torch.Tensor, scale: float=None) -> torch.Tensor:
+    """
+    Args:
+        cur_val (torch.Tensor): The cur val
+        ref (torch.Tensor): The reference to set it to
+        scale (float, optional): The amount to scale the rate by. Should be less than 1. Defaults to None.
+
+    Returns:
+        torch.Tensor: The resulting scale to multiply by
+    """
+
+    rate = (ref / cur_val) 
+    if scale is not None:
+        rate = rate * scale
+    return rate
