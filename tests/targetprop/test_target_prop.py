@@ -19,7 +19,7 @@ class TargetPropExample1(targetprob.TargetPropLearner):
             nn.Linear(out_features, in_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.ThLoss('MSELoss')
         )
         super().__init__(
-            forward, reverse, forward, reverse, False
+            forward, reverse, forward, reverse, cat_x=False
         )
         
 

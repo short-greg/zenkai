@@ -23,7 +23,7 @@ class TargetPropLearner(LearningMachine):
 
     def __init__(
         self, forward_module: nn.Module=None, reverse_module: nn.Module=None, 
-        forward_step_theta: StepTheta=None, reverse_step_theta: StepTheta=None, criterion: Criterion=None
+        forward_step_theta: StepTheta=None, reverse_step_theta: StepTheta=None, criterion: Criterion=None, cat_x: bool=True
     ) -> None:
         """
         Create a target prop learner for doing target propagation
@@ -54,6 +54,7 @@ class TargetPropLearner(LearningMachine):
         self._reverse_step_theta = reverse_step_theta
         self._criterion = criterion or ThLoss('MSELoss')
         self.forward_hook(SetYHook(self.y_name))
+        self.cat_x = cat_x
 
     def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         return self._criterion.assess(x, t, reduction_override)
@@ -91,7 +92,7 @@ class TargetPropLearner(LearningMachine):
         if self._forward_step_theta is not None:
             self._forward_step_theta.step(x, t)
 
-    def get_rev_x(self, x: IO, y: IO) -> IO:
+    def get_rev_x(self, x: IO, y: IO, mod: bool=True) -> IO:
         """
         Args:
             x (IO): The input of the machine
@@ -104,7 +105,14 @@ class TargetPropLearner(LearningMachine):
         state = x._(self)
         if 'reverse_x' in state:
             return state.reverse_x
-        y = IO(x, y)
+        if self.cat_x and not mod:
+            y = IO(x, y)
+        elif self.cat_x:
+            y = (x.f, y.f)
+        elif mod:
+            y = y.f
+        else:
+            y = y
         
         state.reverse_x = y
         return y
@@ -163,7 +171,7 @@ class TargetPropLearner(LearningMachine):
         state = x._(self)
         if self._reverse_module is not None:
             if isinstance(self._reverse_module, LearningMachine):
-                x_out = self._reverse_module(self.get_rev_x(x, y))
+                x_out = self._reverse_module(self.get_rev_x(x, y, False))
             else:
                 x_out = IO(self._reverse_module(*self.get_rev_x(x, y)))
         else:

@@ -93,5 +93,3 @@ def normalize(x: torch.Tensor, mean: torch.Tensor=None, std: torch.Tensor=None, 
     std = x.std(dim, keepdim=True) if std is None else std
 
     return (x - mean) / std
-
-
