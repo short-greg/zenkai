@@ -14,7 +14,7 @@ def mean(
 
     Args:
         x (torch.Tensor): Tensor to calculate the mean on
-        norm_weight (torch.Tensor, optional): Normalized weights to use (sum to 1) if computing the weighted mean. Defaults to None.
+        weight (torch.Tensor, optional): The weights to use if computing the weighted mean (sum to 1). Defaults to None.
         dim (int, optional): The dim to calculate the mean on. Defaults to 0.
 
     Returns:

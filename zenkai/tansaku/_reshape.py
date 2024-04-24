@@ -38,6 +38,21 @@ def unsqueeze_vector(source: torch.Tensor, align_to: torch.Tensor, dim: int=0) -
     return source
 
 
+def shape_as(source: torch.Tensor, n: int) -> torch.Size:
+    """Get the shape of a non-population source and add in the population size
+
+    Args:
+        source (torch.Tensor): The tensor to base the shape off of
+        n (int): The population size
+
+    Returns:
+        torch.Size: The size with the population
+    """
+    shape = list(source.shape)
+    shape.insert(0, n)
+    return torch.Size(shape)
+
+
 def align(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     """Unsqueeze a tensor to align with another tensor that has more dimensions
     Will only work if source has fewer dimensions than align to and all of those dimensions

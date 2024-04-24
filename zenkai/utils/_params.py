@@ -207,6 +207,7 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
         end = start + p.numel()
         cur_vec = vec[start:end]
         cur_vec = cur_vec.reshape(p.shape)
+        start = end
         yield p, cur_vec
 
 
