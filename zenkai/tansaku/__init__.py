@@ -59,6 +59,16 @@ from ._params import (
     acc_pvec
 )
 
+from ._module import (
+    PopModule
+)
+
+from ._update import (
+    Updater, update_feature, update_mean,
+    update_momentum, update_var, rand_update, decay,
+    calc_scale, calc_slope, mix_cur
+)
+
 # TODO: Reconsider tehse
 from ._reshape import(
     unsqueeze_to,
