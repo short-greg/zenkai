@@ -27,7 +27,6 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
 
 """
 
-from . import utils
 from ._least_squares import (
     LeastSquaresLearner, LeastSquaresRidgeSolver,
     LeastSquaresSolver, LeastSquaresStandardSolver,

@@ -170,7 +170,10 @@ class Updater(nn.Module):
 
     def forward(self, x: torch.Tensor):
 
-        if self.update_f is not None:
+        if self.cur_val is None:
+            self.cur_val = x
+
+        elif self.update_f is not None:
             self.cur_val = self.update_f(
                 x, self.cur_val, *self.args, **self.kwargs
             )
