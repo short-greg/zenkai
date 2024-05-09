@@ -79,6 +79,13 @@ class Meta(dict):
 
         key = self.key(key)
         return super().__getitem__(key)
+    
+    def sub(self, key: str):
+
+        self._subs = self._subs or {}
+        if key not in self._subs:
+            self._subs[key] = Meta()
+        return self._subs[key]
 
     def __setattr__(self, key: str, value: Any) -> Any:
         
