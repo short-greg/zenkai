@@ -46,6 +46,33 @@ class TestIO:
         io2 = io[1, 0]
         assert io2[0] == io.j
 
+    def test_flatten_produces_flattened_io(self):
+
+        data =  torch.rand(2, 2)
+        io = _lm2.IO(
+            {'k': data, 'j': 2}, {0: 'k'}
+        )
+        flattened = io.flatten()
+        # position
+        assert flattened[0] == 0
+        assert flattened[1] == 'k'
+        assert flattened[2] is data
+        assert flattened[3] == 'j'
+        assert flattened[4] == 2
+
+    def test_deflatten_produces_reconstructs_io(self):
+
+        data =  torch.rand(2, 2)
+        io = _lm2.IO(
+            {'k': data, 'j': 2}, {0: 'k'}
+        )
+        flattened = io.flatten()
+        io_d = _lm2.IO.deflatten(flattened)
+        # position
+        assert io_d['k'] is io['k']
+        assert io_d['j'] == io['j']
+        assert io_d[0] is io[0]
+
 
 def simple_f(x: torch.Tensor, y: torch.Tensor):
     pass
@@ -125,7 +152,6 @@ class TestIOFactory:
         assert io['args0'] is y
         assert io['x2'] == 2
 
-
     def test_io_factory_has_two_values_for_simple_f_kwargs_in_class(self):
 
         factory = _lm2.io_factory(F.simple_f_w_kwargs)
@@ -139,3 +165,65 @@ class TestIOFactory:
         assert io['y'] is y
         assert io['args0'] is y
         assert io['x2'] == 2
+
+
+class GradLM(_lm2.LM):
+
+    def __init__(self):
+        super().__init__()
+
+        self.w = torch.nn.parameter.Parameter(
+            torch.rand(2, 4)
+        )
+        self.optim = torch.optim.Adam([self.w])
+
+    def acc(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta):
+        
+        (state.__y__ - t[0]).pow(2).sum().backward()
+
+    def step(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta):
+        
+        self.optim.step()
+        self.optim.zero_grad()
+    
+    def step_x(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta) -> _lm2.IO:
+        return x.grad()
+    
+    def forward_nn(self, x: torch.Tensor, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
+        return x @ self.w * mul
+
+
+class TestLM:
+
+    def test_forward_outputs_correct_value(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        y = mod(x)
+        t = x @ mod.w
+        assert (y == t).all()
+
+    def test_forward_outputs_correct_value_with_multiplier(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        y = mod(x, mul=2.0)
+        t = (x @ mod.w) * 2.0
+        assert (y == t).all()
+
+    def test_y_has_grad_fn_after_update(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        y = mod(x, mul=2.0)
+        assert y.grad_fn is not None
+
+    def test_backward_updates_the_grads(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        y = mod(x, mul=2.0)
+        t = torch.rand(4, 4)
+        print(y.grad_fn)
+        (y - t).pow(2).sum().backward()
+        assert mod.w.grad is not None
