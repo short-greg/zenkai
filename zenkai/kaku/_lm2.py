@@ -19,119 +19,6 @@ from .. import utils
 
 class IO(tuple):
 
-    # def __init__(
-    #     self, data: typing.Tuple
-    # ): 
-    #     self._data = data
-    #     # object.__setattr__(self, '_data', data or {})
-    #     # object.__setattr__(self, '_idx', idx or {})
-    #     # object.__setattr__(self, '_rev_idx', {})
-
-    #     # self._rev_idx = {
-    #     #     v: k for k, v in self._idx.items()
-    #     # }
-
-    # def __getitem__(self, idx) -> typing.Union[typing.Any, 'IO']:
-    #     """
-
-    #     Args:
-    #         idx (int | tuple): The index to the item to retrieve
-
-    #     Raises:
-    #         IndexError: If invalid indx
-
-    #     Returns:
-    #         typing.Union[typing.Any, 'IO']: IO if idx is iterable else
-    #          one element
-    #     """
-    #     if isinstance(idx, str):
-    #         return self._data[idx]
-    #     if isinstance(idx, int):
-    #         return self._data[self._idx[idx]]
-
-    #     return IO.pos(
-    #         *[self._data[self._idx[idx_i]] if isinstance(idx_i, int) else self._data[idx_i]
-                
-    #             for idx_i in idx]
-    #     )
-
-    # def __getattr__(self, key):
-
-    #     return self._data[key]
-    
-    # def get(self, key, default) -> typing.Any:
-    #     """Get a value from the IO
-
-    #     Args:
-    #         key : The key to retrieve
-    #         default: The default value
-
-    #     Returns:
-    #         typing.Any: The value for key
-    #     """
-    #     return self._data.get(key, default)
-    
-    # def items(self) -> typing.Iterator[typing.Tuple[str, typing.Any]]:
-    #     """Loop over the items in the IO
-
-    #     Returns:
-    #         typing.Iterator[str | int, typing.Any]: The IO iterator
-
-    #     Yields:
-    #         Iterator[typing.Iterator[str, typing.Any]]: The items in the IO
-    #     """
-    #     for key, value in self._data.items():
-    #         yield key, value
-
-    # def args(self) -> typing.Tuple:
-
-    #     return tuple(
-    #         self._data[self._idx[i]] for i in range(len(self._idx))
-    #     )
-    
-    # def kwargs(self) -> typing.Dict:
-
-    #     return {
-    #         k: v for k, v in self._data.items() if k not in self._rev_idx
-    #     }
-
-    # def flatten(self) -> typing.List:
-
-    #     res = []
-    #     added = set()
-        
-    #     for i in range(len(self._idx)):
-    #         res.append(
-    #             self._idx[i]
-    #         )
-    #         res.append(
-    #             self._data[self._idx[i]]
-    #         )
-    #         added.add(self._idx[i])
-    #     if len(self._idx) == 0:
-    #         i = None
-    #     pos = i
-    #     for k, v in self._data.items():
-    #         if k in added:
-    #             continue
-    #         res.append(k)
-    #         res.append(v)
-    #     res.insert(0, pos)
-    #     return res
-    
-    # @classmethod
-    # def deflatten(self, flattened: typing.List) -> 'IO':
-
-    #     pos = flattened[0]
-    #     keys = flattened[1:-1:2]
-    #     vals = flattened[2:None:2]
-        
-    #     idx = {i: key for i, key in enumerate(keys) if i <= pos}
-    #     data = dict(
-    #         zip(keys, vals)
-    #     )
-    #     return IO(data, idx)
-
     def __getitem__(self, idx) -> typing.Union[typing.Any, 'IO']:
 
         if isinstance(idx, typing.Iterable):
@@ -156,20 +43,7 @@ class IO(tuple):
             val - x_prime[i] if i < len(x_prime) else None 
             for i, val in enumerate(self)
         )
-
-        # res = {}
-
-        # for key, value in self.items():
-        #     t_value = x_prime.get(key)
-        #     if isinstance(t_value, torch.Tensor):
-        #         res[key] = value - t_value
-        #     else:
-        #         res[key] = value
-        # return IO(
-        #     res, self._idx
-        # )
-
-
+    
     def grad(self) -> 'IO':
         """Calculate dx from an updated x's grad
 
@@ -181,18 +55,6 @@ class IO(tuple):
         return IO(
             x.grad if isinstance(x, torch.Tensor) else x for x in self
         )
-
-        # res = {}
-
-        # for key, value in self.items():
-            
-        #     if isinstance(value, torch.Tensor) and value.grad is not None:
-        #         res[key] = value.grad
-        #     else:
-        #         res[key] = None
-        # return IO(
-        #     res, self._idx
-        # )
 
     def t(self, dy: typing.Iterable) -> 'IO':
         """Use to calculate a t from an updated y
@@ -207,95 +69,12 @@ class IO(tuple):
             val - dy[i] if i < len(dy) and isinstance(dy[i], torch.Tensor) else None
             for i, val in enumerate(self)
         )
-        # res = {}
-
-        # for key, value in self.items():
-        #     dx_value = dy.get(key)
-        #     if isinstance(dx_value, torch.Tensor):
-        #         res[key] = value - dx_value
-        #     else:
-        #         res[key] = value
-        # return IO(
-        #     res, self._idx
-        # )
-    
-    # @classmethod
-    # def pos(cls, *x) -> 'IO':
-
-    #     return IO(
-    #         {f'_{i}': x_i for i, x_i in enumerate(x)},
-    #         {i: f'_{i}' for i in range(len(x))}
-    #     )
-
 
 def to_grad(flattened_dx: typing.List) -> typing.List:
 
     return tuple(
         dx if isinstance(dx, torch.Tensor) else None for dx in flattened_dx
     )
-
-
-# def io_factory(func):
-#     signature = inspect.signature(func)
-#     params = signature.parameters
-    
-#     arg_fields = []
-
-#     var_kwarg = None
-#     var_arg = None
-#     fields = []
-#     arg_count = 0
-    
-#     # add in the default values?
-
-#     for var_name in params:
-#         param = params[var_name]
-#         if var_name == 'self' or var_name == 'cls':
-#             continue
-#         if param.kind == inspect.Parameter.VAR_POSITIONAL:
-#             var_arg = var_name
-#         elif param.kind == inspect.Parameter.VAR_KEYWORD:
-#             var_kwarg = var_name
-#         elif param.default != inspect.Parameter.empty:
-#             # raise RuntimeError('Keyword only arguments are not allowed')
-#             fields.append(var_name)
-#         else:
-#             arg_fields.append(var_name)
-#             arg_count += 1
-
-#     def _(*args, **kwargs) -> IO:
-        
-#         idx = {}
-#         data = {}
-
-#         for i, v in enumerate(args):
-#             if i < arg_count:
-#                 idx[i] = arg_fields[i]
-#                 data[arg_fields[i]] = v
-#             else:
-#                 cur_k = var_arg + str(i)
-#                 idx[i] = cur_k
-#                 data[cur_k] = v
-
-#         for k, v in kwargs.items():
-#             if k == var_arg:
-#                 for i, v_i in enumerate(v):
-#                     cur_k = var_arg + str(i)
-#                     idx[i] = cur_k
-#                     data[cur_k] = v_i
-#             elif k == var_kwarg:
-#                 for k_i, v_i in v.items():
-#                     data[k_i] = v_i
-#             elif k in arg_fields:
-#                 idx[arg_fields.index(k)] = k
-#                 data[k] = v
-#             elif k in fields:
-#                 data[k] = v
-#         return IO(
-#             data, idx
-#         )
-        
-#     return _
 
 
 class Mode(Enum):
