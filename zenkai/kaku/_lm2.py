@@ -30,6 +30,21 @@ class IO(tuple):
             return res
         
         return IO(res)
+    
+    def clone(self, requires_grad: bool=False, detach: bool=True) -> 'IO':
+
+        res = []
+        for x in self:
+            if isinstance(x, torch.Tensor):
+                if detach:
+                    x = x.detach()
+                res.append(x.requires_grad_(requires_grad))
+            else:
+                res.append(
+                    x
+                )
+
+        return IO(res)
 
     def dx(self, x_prime: typing.Iterable) -> 'IO':
         """Calculate dx from an updated x
@@ -172,7 +187,7 @@ class LM(nn.Module, ABC):
                         ctx._multi_out = True
                     else:
                         ctx._multi_out = False
-                        y = IO(y,)
+                        y = IO((y,))
                     state._x = x
                     state._y = y
                     ctx._mode = mode
@@ -243,7 +258,8 @@ class LM(nn.Module, ABC):
         # flattened = [v.requires_grad_() if isinstance(v, torch.Tensor) else v for v in io.flatten()]
         
         # Have to flatten io to use with F
-        return self.__F__.apply(mode, kwargs, *x.flatten())
+        x = [x_i.requires_grad_(True) for x_i in x]
+        return self.__F__.apply(mode, kwargs, *x)
 
 
 # # First check
