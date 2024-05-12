@@ -76,10 +76,10 @@ class TestIO:
 
 class GradLM(_lm2.LM):
 
-    def __init__(self):
+    def __init__(self, in_features=2, out_features=4):
         super().__init__()
         self.w = torch.nn.parameter.Parameter(
-            torch.rand(2, 4)
+            torch.rand(in_features, out_features)
         )
         self.optim = torch.optim.Adam([self.w])
 
@@ -88,6 +88,10 @@ class GradLM(_lm2.LM):
 
     def acc(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs):
         
+        # x = torch.randn_like(x[0])
+        # t = torch.randn_like(t[0])
+        # x = x[0]
+        t = t[0]
         (state._y[0] - t[0]).pow(2).sum().backward()
 
     def step(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs):
@@ -96,7 +100,7 @@ class GradLM(_lm2.LM):
         self.optim.zero_grad()
     
     def step_x(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs) -> _lm2.IO:
-        return x.grad()
+        return x.acc_grad()
     
     def forward_nn(self, x: _lm2.IO, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
         return x[0] @ self.w * mul
@@ -110,7 +114,6 @@ class TestLM:
         mod = GradLM()
         y = mod(x)
         t = x @ mod.w
-        print(y, t)
         assert torch.isclose(y, t).all()
 
     def test_forward_outputs_correct_value_with_multiplier(self):
@@ -134,6 +137,73 @@ class TestLM:
         mod = GradLM()
         y = mod(x, mul=2.0)
         t = torch.rand(4, 4)
-        print(y.grad_fn)
-        (y - t).pow(2).sum().backward()
+        (y - t).pow(2).mean().backward()
+
+        y = x @ mod.w
+        (y - t).pow(2).mean().backward()
+
         assert mod.w.grad is not None
+
+    def test_backward_with_step_updates_the_weights(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        y = mod(x, mul=2.0, mode=_lm2.Mode.WithStep)
+        before = mod.w.clone()
+        t = torch.rand(4, 4)
+        (y - t).pow(2).sum().backward()
+        assert (mod.w != before).any()
+
+    def test_backward_with_chained_step_updates_the_weights(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM(2, 4)
+        mod2 = GradLM(4, 4)
+        y = mod(x, mul=2.0)
+        y2 = mod2(y)
+        t = torch.rand(4, 4)
+        (y2 - t).pow(2).sum().backward()
+        assert (mod.w.grad is not None)
+        assert (mod2.w.grad is not None)
+
+    def test_learn_updates_the_weights(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        before = mod.w.clone()
+        assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+        assert (mod.w != before).any()
+        assert isinstance(assessment, torch.Tensor)
+
+    def test_test_does_not_update_weights_and_gets_assessment(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        before = mod.w.clone()
+        assessment = mod.test(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+        assert (mod.w == before).all()
+        assert isinstance(assessment, torch.Tensor)
+
+    def test_step_updates_the_weights_after_acc(self):
+
+        x = _lm2.IO([torch.rand(4, 2)])
+        mod = GradLM()
+        state = _lm2.Meta()
+        mod.forward_io(x, state, mul=2.0)
+        t = _lm2.IO([torch.rand(4, 4)])
+        mod.acc(x, t, state, mul=2.0)
+        mod.step(x, t, state, mul=2.0)
+        assert (mod.w.grad is not None)
+
+    def test_backward_with_chained_step_does_not_updates_the_weights_if_only_stepx(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM(2, 4)
+        mod2 = GradLM(4, 4)
+        y = mod(x, mul=2.0, mode=_lm2.Mode.OnlyStepX)
+        y2 = mod2(y, mode=_lm2.Mode.OnlyStepX)
+        t = torch.rand(4, 4)
+        (y2 - t).pow(2).sum().backward()
+        assert (mod.w.grad is None)
+        assert (mod2.w.grad is None)
+

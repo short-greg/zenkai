@@ -9,6 +9,7 @@ import inspect
 from enum import Enum
 from ._state import Meta
 from dataclasses import dataclass
+from typing_extensions import Self
 
 from .. import utils
 
@@ -45,6 +46,23 @@ class IO(tuple):
                 )
 
         return IO(res)
+    
+    def detach_(self) -> Self:
+
+        for x in self:
+            if isinstance(x, torch.Tensor):
+                x.detach_()
+
+        return self
+
+    def freshen_(self, requires_grad: bool=True, retains_grad: bool=True) -> Self:
+        for x in self:
+            if isinstance(x, torch.Tensor):
+                x.detach_()
+                x.requires_grad_(requires_grad)
+                if retains_grad:
+                    x.retain_grad()
+        return self
 
     def dx(self, x_prime: typing.Iterable) -> 'IO':
         """Calculate dx from an updated x
@@ -58,7 +76,22 @@ class IO(tuple):
             val - x_prime[i] if i < len(x_prime) else None 
             for i, val in enumerate(self)
         )
-    
+
+    def acc_grad(self) -> 'IO':
+        """Calculate dx from an updated x's grad
+
+        Use in step_x if different x's are tested in dx
+
+        Returns:
+            IO: The IO with the updated x
+        """
+        return IO(
+            x - x.grad 
+            if isinstance(x, torch.Tensor) and x.grad is not None 
+            else x 
+            for x in self
+        )
+
     def grad(self) -> 'IO':
         """Calculate dx from an updated x's grad
 
@@ -71,7 +104,7 @@ class IO(tuple):
             x.grad if isinstance(x, torch.Tensor) else x for x in self
         )
 
-    def t(self, dy: typing.Iterable) -> 'IO':
+    def t(self, dy: typing.Iterable) -> Self:
         """Use to calculate a t from an updated y
 
         Args:
@@ -84,6 +117,7 @@ class IO(tuple):
             val - dy[i] if i < len(dy) and isinstance(dy[i], torch.Tensor) else None
             for i, val in enumerate(self)
         )
+        
 
 def to_grad(flattened_dx: typing.List) -> typing.List:
 
@@ -164,69 +198,66 @@ def out(x, multi: bool=True) -> typing.Union[typing.Any, typing.Tuple]:
     return x[0].detach() if isinstance(x[0], torch.Tensor) else x[0]
 
 
+class F(Function):
+
+    @staticmethod
+    def forward(ctx, self, mode: Mode, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
+
+        # ensure cloned and detached
+        # set grad to enabled
+        ctx.self = self
+        with torch.enable_grad():
+            x = IO(args).clone(True)
+
+            state = Meta()
+            y = self.forward_nn(x, state=state, **kwargs)
+            if isinstance(y, typing.Tuple):
+                y = IO(y)
+                ctx._multi_out = True
+            else:
+                ctx._multi_out = False
+                y = IO((y,))
+            state._x = x
+            state._y = y
+            ctx._mode = mode
+            dump_state(ctx, state)
+            ctx._kwargs = kwargs
+        
+        return out(y, ctx._multi_out)
+    
+    @staticmethod
+    def backward(ctx, *grad_outputs: typing.Any) -> typing.Any:
+        
+        self = ctx.self
+        # calculate t
+        with torch.enable_grad():
+            mode = ctx._mode
+            state = load_state(ctx)
+            x: IO = state._x
+            y = state._y
+            kwargs = ctx._kwargs
+
+            t = y.t(grad_outputs).detach_()
+
+            if mode == Mode.WithStep:
+                self.acc(x, t, state, **kwargs)
+                x_prime = self.step_x(x, t, state, **kwargs)
+                self.step(x, t, state, **kwargs)
+            elif mode == Mode.Default:
+                self.acc(x, t, state, **kwargs)
+                x_prime = self.step_x(x, t, state, **kwargs)
+            elif mode == Mode.StepPriority:
+                self.acc(x, t, state, **kwargs)
+                self.step(x, t, state, **kwargs)
+                x_prime = self.step_x(x, t, state, **kwargs)
+            elif mode == Mode.OnlyStepX:
+                x_prime = self.step_x(x, t, state, **kwargs)
+            
+            return None, None, None, *x.dx(x_prime)
+
+
 class LM(nn.Module, ABC):
 
-    def __init__(self):
-
-        super().__init__()
-
-        class F(Function):
-
-            @staticmethod
-            def forward(ctx, mode: Mode, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
-
-                # ensure cloned and detached
-                # set grad to enabled
-                with torch.enable_grad():
-                    x = IO(args).clone(True)
-
-                    state = Meta()
-                    y = self.forward_nn(x, state=state, **kwargs)
-                    if isinstance(y, typing.Tuple):
-                        y = IO(y)
-                        ctx._multi_out = True
-                    else:
-                        ctx._multi_out = False
-                        y = IO((y,))
-                    state._x = x
-                    state._y = y
-                    ctx._mode = mode
-                    dump_state(ctx, state)
-                    ctx._kwargs = kwargs
-                
-                return out(y, ctx._multi_out)
-            
-            @staticmethod
-            def backward(ctx, *grad_outputs: typing.Any) -> typing.Any:
-                
-                # calculate t
-                with torch.enable_grad():
-                    mode = ctx._mode
-                    state = load_state(ctx)
-                    x = state._x
-                    y = state._y
-                    kwargs = ctx._kwargs
-
-                    t = y.t(grad_outputs)
-
-                    if mode == Mode.WithStep:
-                        self.acc(x, t, state, **state.kwargs)
-                        dx = self.step_x(x, t, state, **kwargs)
-                        self.step(x, t, state, **kwargs)
-                    elif mode == Mode.Default:
-                        self.acc(x, t, state, **kwargs)
-                        dx = self.step_x(x, t, state, **kwargs)
-                    elif mode == Mode.StepPriority:
-                        self.acc(x, t, state, **kwargs)
-                        self.step(x, t, state, **kwargs)
-                        dx = self.step_x(x, t, state, **kwargs)
-                    elif mode == Mode.OnlyStepX:
-                        dx = self.step_x(x, t, state, **kwargs)
-                    
-                    return None, None, *dx
-
-        self.__F__ = F
-    
     @abstractmethod
     def assess_y(self, y: IO, t: IO, override: str=None) -> torch.Tensor:
         pass
@@ -247,16 +278,34 @@ class LM(nn.Module, ABC):
     def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         pass
 
+    def forward_io(self, x: IO, state: Meta, **kwargs) -> IO:
+
+        x.freshen_()
+        y = state._y = IO(self.forward_nn(x, state, **kwargs))
+        return y
+    
+    def learn(self, x: IO, t: IO, **kwargs) -> torch.Tensor:
+
+        y = self(*x, mode=Mode.WithStep, **kwargs)
+        if not isinstance(y, typing.Tuple):
+            y = (y,)
+        assessment = self.assess_y(IO(y), t)
+        assessment.backward()
+        return assessment
+
+    def test(self, x: IO, t: IO, **kwargs) -> torch.Tensor:
+
+        y = self(*x, mode=Mode.WithStep, **kwargs)
+        if not isinstance(y, typing.Tuple):
+            y = (y,)
+        return self.assess_y(IO(y), t)
+
     def forward(
         self, *x, mode: Mode=Mode.Default, **kwargs
     ) -> IO:
-        if not hasattr(self, '__F__'):
-            raise RuntimeError(
-                'Backward function does not exist for Learning Machine'
-            )
         # io = self.IO(*x, **kwargs)
         # flattened = [v.requires_grad_() if isinstance(v, torch.Tensor) else v for v in io.flatten()]
         
         # Have to flatten io to use with F
         x = [x_i.requires_grad_(True) for x_i in x]
-        return self.__F__.apply(mode, kwargs, *x)
+        return F.apply(self, mode, kwargs, *x)
