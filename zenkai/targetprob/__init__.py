@@ -37,7 +37,7 @@ from ._target_prop import (
     TargetPropLearner, DiffTargetPropLearner
 )
 
-from ._reversible import ReversibleMachine, reverse
+from ._reversible import ReversibleMachine
 
 from ._reversible_mods import (
     Reversible,

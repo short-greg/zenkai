@@ -539,7 +539,6 @@ def update_io(
     Returns:
         IO: the updated IO
     """
-
     if idx is None:
         idx = Idx()
     destination = idx.update(source, destination, idx_both)

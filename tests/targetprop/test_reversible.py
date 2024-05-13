@@ -2,7 +2,7 @@ import torch
 
 from zenkai import IO, Criterion
 from zenkai.targetprob._reversible import ReversibleMachine, reverse
-from zenkai.kaku._backtarget import BackTarget
+# from zenkai.kaku._backtarget import BackTarget
 from zenkai.targetprob import _reversible_mods
 
 
@@ -31,22 +31,22 @@ class TestReversibleMachine:
         assert (y == t).all()
 
 
-class TestReverse:
-    def test_reverse_produces_backtarget(self):
+# class TestReverse:
+#     # def test_reverse_produces_backtarget(self):
 
-        machine = reverse(lambda x: x.view(2, 4))
-        IO(torch.randn(8))
-        assert isinstance(machine, BackTarget)
+#     #     machine = reverse(lambda x: x.view(2, 4))
+#     #     IO(torch.randn(8))
+#     #     assert isinstance(machine, BackTarget)
 
-    def test_backtarget_reverses_input(self):
+#     def test_backtarget_reverses_input(self):
 
-        machine = reverse(lambda x: x.view(2, 4))
-        x = IO(torch.randn(8))
-        y = machine(x)
-        x_prime = machine.step_x(x, y)
-        assert (x_prime.f == x.f).all()
+#         machine = reverse(lambda x: x.view(2, 4))
+#         x = IO(torch.randn(8))
+#         y = machine(x)
+#         x_prime = machine.step_x(x, y)
+#         assert (x_prime.f == x.f).all()
 
-    def test_reverse_produces_reversible(self):
+#     def test_reverse_produces_reversible(self):
 
-        machine = reverse(_reversible_mods.SignedToBool())
-        assert isinstance(machine, ReversibleMachine)
+#         machine = reverse(_reversible_mods.SignedToBool())
+#         assert isinstance(machine, ReversibleMachine)

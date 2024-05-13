@@ -7,22 +7,13 @@ from torch import nn
 from torch.utils import data as torch_data
 
 # local
-from ._io import IO, update_io, Idx
-from ._machine import (
-    StepTheta, OutDepStepTheta,
-    StepX, BatchIdxStepTheta, BatchIdxStepX
+from ._io2 import IO2 as IO, Idx2 as Idx
+from ._lm2 import (
+    StepTheta2 as StepTheta, OutDepStepTheta,
+    StepX2 as StepX, BatchIdxStepTheta, BatchIdxStepX,
+    LM
 )
-
-# from . import (
-#     IO,
-#     BatchIdxStepTheta,
-#     BatchIdxStepX,
-#     update_io,
-#     StepTheta,
-#     OutDepStepTheta,
-#     StepX,
-#     Idx,
-# )
+from ._state import Meta
 
 
 class IdxLoop(object):
@@ -104,7 +95,7 @@ class IOLoop(object):
 class IterStepTheta(StepTheta):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(self, base_step: StepTheta, n_epochs: int = 1, batch_size: int = None):
+    def __init__(self, learner: LM, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -113,35 +104,42 @@ class IterStepTheta(StepTheta):
         """
         super().__init__()
 
-        self.base_step = base_step
+        self.learner = learner
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: Meta, **kwargs):
         """
 
         Args:
             x (IO): The input value for the layer
             t (IO): the output value for the layer
         """
+        theta_state = state.sub('theta')
         loop = IdxLoop(self.batch_size, True)
         for _ in range(self.n_epochs):
             for idx in loop.loop(x):
 
                 # TODO: Consider how to handle this so I .
                 # Use BatchIdxStep after all <- override the step method
-                if isinstance(self.base_step, BatchIdxStepTheta):
-                    self.base_step.accumulate(x, t, batch_idx=idx)
-                    self.base_step.step(x, t, batch_idx=idx)
+                if isinstance(self.learner, BatchIdxStepTheta):
+                    self.learner.forward_io(
+                        x, theta_state
+                    )
+                    self.learner.accumulate(x, t, theta_state, batch_idx=idx)
+                    self.learner.step(x, t, theta_state, batch_idx=idx)
                 else:
-                    self.base_step.accumulate(idx(x), idx(t))
-                    self.base_step.step(idx(x), idx(t))
+                    self.learner.forward_io(
+                        idx(x), theta_state
+                    )
+                    self.learner.accumulate(idx(x), idx(t), theta_state)
+                    self.learner.step(idx(x), idx(t), theta_state)
 
 
 class IterStepX(StepX):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(self, base_step: StepX, n_epochs: int = 1, batch_size: int = None):
+    def __init__(self, learner: LM, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -149,11 +147,11 @@ class IterStepX(StepX):
             batch_size (int, optional): . Defaults to None.
         """
         super().__init__()
-        self.base_step = base_step
+        self.learner = learner
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: Meta, **kwargs) -> IO:
         """
 
         Args:
@@ -161,17 +159,37 @@ class IterStepX(StepX):
             t (IO): the output value for the layer
         """
         loop = IdxLoop(self.batch_size, True)
+        x_state = state.sub('x')
         for _ in range(self.n_epochs):
             for idx in loop.loop(x):
 
-                if isinstance(self.base_step, BatchIdxStepX):
-                    updated_x = self.base_step.step_x(x, t, idx)
-                else:
-                    updated_x = self.base_step.step_x(
-                        idx(x, detach=True), idx(t, detach=True)
-                    )
+                # TODO: Have to go forward somehow
 
-                x = update_io(updated_x, x, idx)
+                if isinstance(self.learner, BatchIdxStepX):
+                    self.learner.forward_io(
+                        x, x_state
+                    )
+                    self.learner.accumulate(
+                        x, t, x_state
+                    )
+                    updated_x = self.learner.step_x(x, t, idx), x_state
+                else:
+                    x_i = idx(x, detach=True)
+                    t_i = idx(t, detach=True)
+                    self.learner.forward_io(
+                        x_i, x_state
+                    )
+                    self.learner.accumulate(
+                        x_i, t_i, x_state
+                    )
+                    updated_x = self.learner.step_x(
+                        x_i, t_i, x_state
+                    )
+                
+                print(updated_x.f, x.f)
+                x = idx.update(updated_x, x, idx)
+
+                # x = update_io(updated_x, x, idx)
         return x
 
 
@@ -180,9 +198,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
     def __init__(
         self,
-        update: StepTheta,
-        net: nn.Module,
-        outgoing: StepX = None,
+        update: LM,
+        outgoing: LM = None,
         n_epochs: int = 1,
         x_iterations: int = 1,
         theta_iterations: int = 1,
@@ -193,9 +210,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
         """initializer
 
         Args:
-            step_theta (StepTheta): update function being wrapped
-            outgoing (StepX): update function for step_x
-            net (nn.Module): The network for the module
+            step_theta (LearningMachine): update function being wrapped
+            outgoing (LearningMachine): update function for step_x
             n_epochs (int, optional): number of epochs. Defaults to 1.
             x_iterations (int, optional): . Defaults to 1.
             theta_iterations (int, optional): . Defaults to 1.
@@ -206,7 +222,6 @@ class IterHiddenStepTheta(OutDepStepTheta):
         super().__init__()
         self.update = update
         self.outgoing = outgoing
-        self.net = net
         self.n_epochs = n_epochs
         self.x_iterations = x_iterations
         self.theta_iterations = theta_iterations
@@ -215,7 +230,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self.tie_in_t = tie_in_t
 
     def step(
-        self, x: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
+        self, x: IO, t: IO, state: Meta, outgoing_t: IO = None, outgoing_x: IO = None
     ) -> IO:
         """
 
@@ -235,37 +250,68 @@ class IterHiddenStepTheta(OutDepStepTheta):
         x_loop = IdxLoop(self.x_batch_size, True)
 
         outgoing_x = outgoing_x or t
+        x_state = state.sub('x_state')
+        theta_state = state.sub('theta_state')
 
         for i in range(self.n_epochs):
 
             if outgoing_t is not None and self.outgoing is not None:
-
+                
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
                         if isinstance(self.outgoing, BatchIdxStepX):
+                            self.outgoing.forward_io(
+                                outgoing_x, x_state
+                            )
                             x_idx = self.outgoing.step_x(
-                                outgoing_x, outgoing_t, batch_idx=idx
+                                outgoing_x, outgoing_t, 
+                                x_state,
+                                batch_idx=idx
                             )
                         else:
                             # BUG: FIX HERE. It is doing a step_x
                             # without going forward
-                            x_idx = self.outgoing.step_x(
-                                idx(outgoing_x), idx(outgoing_t)
+                            x_i = idx(outgoing_x)
+                            t_i = idx(outgoing_t)
+                            self.outgoing.forward_io(
+                                x_i, x_state
                             )
-                        outgoing_x = update_io(x_idx, outgoing_x, idx, detach=True)
+                            x_idx = self.outgoing.step_x(
+                                x_i, t_i,
+                                x_state
+                            )
+
+                        outgoing_x = idx.update(
+                            x_idx, outgoing_x, idx
+                        ).detach()
+                        # outgoing_x = update_io(x_idx, outgoing_x, idx, detach=True)
 
                 t = outgoing_x
 
             for _ in range(self.theta_iterations):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
+                    
                     if isinstance(self.update, BatchIdxStepTheta):
-                        self.update.accumulate(x, t, batch_idx=idx)
-                        self.update.step(x, t, batch_idx=idx)
+    
+                        self.update.forward_io(
+                            x, theta_state
+                        )
+                        self.update.accumulate(x, t, theta_state, batch_idx=idx)
+                        self.update.step(x, t, theta_state, batch_idx=idx)
                     else:
-                        self.update.accumulate(idx(x), idx(t))
-                        self.update.step(idx(x), idx(t))
+
+                        x_i = idx(x)
+                        t_i = idx(t)
+                        self.update.forward_io(
+                            x_i, theta_state
+                        )
+                        print(theta_state)
+                        self.update.accumulate(
+                            x_i, t_i, theta_state
+                        )
+                        self.update.step(x_i, t_i, theta_state)
 
             if self.tie_in_t and i < (self.n_epochs - 1):
-                outgoing_x = self.net(x)
+                outgoing_x = self.update.forward_io(x, theta_state)
         return t

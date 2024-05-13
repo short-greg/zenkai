@@ -1,20 +1,22 @@
 # 1st party
-import torch.nn as nn
-import torch.nn.functional
+import typing
 
 # 3rd party
 from sklearn.base import BaseEstimator
+import torch
+from torch import nn
 
 # local
-from ..kaku import (
-    IO,
+from ..kaku._lm2 import (
+    IO2 as IO,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
-    StepX,
-    Idx,
-    LearningMachine,
-    Criterion,
+    StepX2 as StepX,
+    Idx2 as Idx,
+    LM as LearningMachine
 )
+from ..kaku._state import Meta
+from ..kaku import Criterion
 from ._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from ..kaku import FeatureLimitGen
 
@@ -46,7 +48,7 @@ class ScikitMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, **kwargs):
+    def step(self, x: IO, t: IO, state: Meta, **kwargs):
         """Update the estimator
 
         Args:
@@ -60,7 +62,7 @@ class ScikitMachine(LearningMachine):
         else:
             self._module.fit(x.f, t.f, **kwargs)
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: Meta, **kwargs) -> IO:
         """Update the estimator
 
         Args:
@@ -73,23 +75,27 @@ class ScikitMachine(LearningMachine):
         """
         if self._step_x is None:
             return x
-        return self._step_x.step_x(x, t)
+        return self._step_x.step_x(x, t, state, **kwargs)
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        """
+    def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
 
-        Args:
-            x (IO): input to the machine
-            release (bool, optional): Whether to release the output. Defaults to True.
+        return self._module(x[0])
 
-        Returns:
-            IO: output of the machine
-        """
+    # def forward_nn(self, x: IO, release: bool = True) -> IO:
+    #     """
 
-        x = x.f
+    #     Args:
+    #         x (IO): input to the machine
+    #         release (bool, optional): Whether to release the output. Defaults to True.
 
-        y = IO(self._module(x))
-        return y.out(release=release)
+    #     Returns:
+    #         IO: output of the machine
+    #     """
+
+    #     x = x.f
+
+    #     y = IO(self._module(x))
+    #     return y.out(release=release)
 
     @property
     def fitted(self) -> bool:
@@ -159,7 +165,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, feature_idx: Idx = None, **kwargs):
+    def step(self, x: IO, t: IO, state: Meta, feature_idx: Idx = None, **kwargs):
         """Update the estimator
 
         Args:
@@ -168,25 +174,26 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             feature_idx (Idx, optional): . Defaults to None.
 
         """
+        x = x.f
         if self._preprocessor is not None:
-            x = IO(self._preprocessor(*x))
+            x = self._preprocessor(x)
 
         if self._partial:
             self._module.partial_fit(
-                x.f,
+                x,
                 t.f,
                 feature_idx.tolist() if feature_idx is not None else None,
                 **kwargs
             )
         else:
             self._module.fit(
-                x.f,
+                x,
                 t.f,
                 feature_idx.tolist() if feature_idx is not None else None,
                 **kwargs
             )
 
-    def step_x(self, x: IO, t: IO, feature_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, state: Meta, feature_idx: Idx = None) -> IO:
         """Update the estimator
 
         Args:
@@ -199,25 +206,32 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """
         if self._step_x is None:
             return x
-        return self._step_x.step_x(x, t, feature_idx)
+        return self._step_x.step_x(x, t, state, feature_idx)
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        """
-
-        Args:
-            x (IO): input to the machine
-            release (bool, optional): Whether to release the output. Defaults to True.
-
-        Returns:
-            IO: output of the machine
-        """
-
+    def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        
         x = x.f
         if self._preprocessor is not None:
             x = self._preprocessor(x)
+        return self._module(x)
 
-        y = IO(self._module(x))
-        return y.out(release=release)
+    # def forward(self, x: IO, release: bool = True) -> IO:
+    #     """
+
+    #     Args:
+    #         x (IO): input to the machine
+    #         release (bool, optional): Whether to release the output. Defaults to True.
+
+    #     Returns:
+    #         IO: output of the machine
+    #     """
+
+    #     x = x.f
+    #     if self._preprocessor is not None:
+    #         x = self._preprocessor(x)
+
+    #     y = IO(self._module(x))
+    #     return y.out(release=release)
 
     @property
     def fitted(self) -> bool:

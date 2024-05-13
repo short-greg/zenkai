@@ -1,22 +1,26 @@
+# 1st Party
+import typing
+
 # 3rd Party
 import torch
 
 # Local
-from . import IO, StepTheta, StepX, LearningMachine
+from ._lm2 import IO2 as IO, StepTheta2 as StepTheta, StepX2 as StepX, LM as LearningMachine
 from ._assess import Criterion, ThLoss
+from ._state import Meta
 
 
 class NullStepTheta(StepTheta):
     """Step that does not update theta"""
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: Meta, **kwargs):
         pass
 
 
 class NullStepX(StepX):
     """Step that does not update theta"""
 
-    def step_x(self, x: IO, t: IO):
+    def step_x(self, x: IO, t: IO, state: Meta, **kwargs):
         return x
 
 
@@ -27,8 +31,8 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
         super().__init__()
         self.criterion = criterion or ThLoss("MSELoss")
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    def assess_y(self, y: IO, t: IO, state: Meta, reduction_override: str = None) -> torch.Tensor:
         return self.criterion.assess(y, t, reduction_override)
 
-    def forward(self, x: IO, release: bool = True) -> IO:
+    def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         return x

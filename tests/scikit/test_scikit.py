@@ -3,7 +3,9 @@ import torch
 from sklearn.linear_model import SGDRegressor
 
 # local
-from zenkai.kaku import IO, StepX, Criterion
+from zenkai.kaku._io2 import iou, IO2 as IO
+from zenkai.kaku._lm2 import StepX2 as StepX
+from zenkai.kaku import Criterion, Meta
 from zenkai.scikit._scikit import ScikitLimitGen, ScikitMachine
 from zenkai.scikit._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kaku import RandomFeatureIdxGen
@@ -21,15 +23,16 @@ class TestSklearnMultiMachine(object):
         machine = ScikitMachine(
             regressor, NullStepX(), Criterion("MSELoss"), partial=True
         )
-        x1 = IO(torch.randn(8, 3))
-        t1 = IO(torch.randn(8, 2))
-        x2 = IO(torch.randn(8, 3))
-        t2 = IO(torch.randn(8, 2))
+        x1 = iou(torch.randn(8, 3))
+        t1 = iou(torch.randn(8, 2))
+        x2 = iou(torch.randn(8, 3))
+        t2 = iou(torch.randn(8, 2))
+        state = Meta()
 
-        machine.step(x1, t1)
+        machine.step(x1, t1, state)
         # TODO: add Limit
-        machine.step(x2, t2)
-        y = machine(IO(torch.rand(8, 3)))
+        machine.step(x2, t2, state)
+        y = machine.forward_io(iou(torch.rand(8, 3)), state)
         assert y.f.shape == torch.Size([8, 2])
 
 
@@ -38,15 +41,16 @@ class TestSklearnMachine(object):
         torch.manual_seed(1)
         regressor = ScikitWrapper.regressor(SGDRegressor(), 3)
         machine = ScikitMachine(regressor, NullStepX(), Criterion("MSELoss"))
-        x1 = IO(torch.randn(8, 3))
-        t1 = IO(torch.randn(8))
-        x2 = IO(torch.randn(8, 3))
-        t2 = IO(torch.randn(8))
+        state = Meta()
+        x1 = iou(torch.randn(8, 3))
+        t1 = iou(torch.randn(8))
+        x2 = iou(torch.randn(8, 3))
+        t2 = iou(torch.randn(8))
 
-        machine.step(x1, t1)
+        machine.step(x1, t1, state)
         # TODO: add Limit
-        machine.step(x2, t2)
-        y = machine(IO(torch.rand(8, 3)))
+        machine.step(x2, t2, state)
+        y = machine.forward_io(iou(torch.rand(8, 3)), state)
         assert y.f.shape == torch.Size([8])
 
 

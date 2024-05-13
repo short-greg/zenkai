@@ -104,7 +104,7 @@ class GradLM(_lm2.LM):
     
     def forward_nn(self, x: _lm2.IO2, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
         return x[0] @ self.w * mul
-
+    
 
 class TestLM:
 

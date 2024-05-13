@@ -8,8 +8,8 @@ import torch
 # local
 from ..kaku import IO, LearningMachine, Criterion, ThLoss
 from ._reversible_mods import Reversible, SequenceReversible
-from ..utils import Lambda
-from ..kaku._backtarget import BackTarget
+# from ..utils import Lambda
+# from ..kaku._backtarget import BackTarget
 
 
 class ReversibleMachine(LearningMachine):
@@ -59,29 +59,29 @@ class ReversibleMachine(LearningMachine):
         return IO(self.reversible(x.f)).out(release)
 
 
-def reverse(f, criterion: Criterion = None) -> typing.Union[ReversibleMachine, BackTarget]:
-    """Convenicence function to create a reverse for cases where
-    not much customization is needed. Especially for operations that do not
-    have parameters and they can either be reversed through the backward operation or
-    through a 'reverse' method. If it is a Reversible then a ReversibleMachine will be created. Otherwise,
-    a BackTarget will be created
+# def reverse(f, criterion: Criterion = None) -> typing.Union[ReversibleMachine, BackTarget]:
+#     """Convenicence function to create a reverse for cases where
+#     not much customization is needed. Especially for operations that do not
+#     have parameters and they can either be reversed through the backward operation or
+#     through a 'reverse' method. If it is a Reversible then a ReversibleMachine will be created. Otherwise,
+#     a BackTarget will be created
 
-    Args:
-        f : The Function or NNModule to create a BackTarget or ReversibleMachine for
-        criterion (Criterion, optional): The criterion. Defaults to None.
+#     Args:
+#         f : The Function or NNModule to create a BackTarget or ReversibleMachine for
+#         criterion (Criterion, optional): The criterion. Defaults to None.
 
-    Returns:
-        typing.Union[ReversibleMachine, BackTarget]: The Reversible machine to optimize
-    """
-    if criterion is None:
-        criterion = ThLoss('MSELoss', 'mean', weight=0.5)
-    if isinstance(f, Reversible):
-        return ReversibleMachine(
-            f, criterion
-        )
+#     Returns:
+#         typing.Union[ReversibleMachine, BackTarget]: The Reversible machine to optimize
+#     """
+#     if criterion is None:
+#         criterion = ThLoss('MSELoss', 'mean', weight=0.5)
+#     if isinstance(f, Reversible):
+#         return ReversibleMachine(
+#             f, criterion
+#         )
 
-    if not isinstance(f, nn.Module):
-        f = Lambda(f)
-    return BackTarget(
-        f, criterion
-    )
+#     if not isinstance(f, nn.Module):
+#         f = Lambda(f)
+#     return BackTarget(
+#         f, criterion
+#     )

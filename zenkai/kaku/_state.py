@@ -64,6 +64,11 @@ class StateData:
 
 class Meta(dict):
 
+    def __init__(self, *args, **kwargs):
+
+        object.__setattr__(self, '_subs', {})
+        super().__init__(*args, **kwargs)
+
     def __setitem__(self, key: str, value: Any) -> None:
         
         key = self.key(key)
@@ -82,7 +87,6 @@ class Meta(dict):
     
     def sub(self, key: str):
 
-        self._subs = self._subs or {}
         if key not in self._subs:
             self._subs[key] = Meta()
         return self._subs[key]
