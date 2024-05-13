@@ -24,7 +24,7 @@ import torch.nn as nn
 
 # local
 from ._assess import Criterion, Reduction
-from ._state import IDable, Meta
+from ._state import IDable, State
 from ._io import IO, Idx
 from functools import wraps
 
@@ -78,7 +78,7 @@ class StepX(ABC):
         self._base_step_x = self.step_x
         self.step_x = self._step_x_hook_runner
         if '_' not in self.__dict__:
-            self._ = Meta()
+            self._ = State()
 
     @abstractmethod
     def step_x(self, x: IO, t: IO) -> IO:
@@ -130,7 +130,7 @@ class StepTheta(ABC):
         self.accumulate = self._accumulate_hook_runner
         self._accumulate_hooks = []
         if '_' not in self.__dict__:
-            self._ = Meta()
+            self._ = State()
 
     def accumulate(self, x: IO, t: IO):
         pass
@@ -796,7 +796,7 @@ class StepXLayerAssessor(LayerAssessor):
         else:
             self._learning_machine.step_prehook(self._pre_hook)
             self._learning_machine.step_posthook(self._post_hook)
-        self._ = Meta()
+        self._ = State()
 
     def pre(self, x: IO, t: IO, *args, **kwargs):
         """The assessment before the step

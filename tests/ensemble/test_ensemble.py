@@ -1,9 +1,10 @@
 import torch
 from torch import nn
-from zenkai.kaku import IO
+from zenkai.kaku._io2 import IO2 as IO, iou
 from zenkai.ensemble._ensemble import EnsembleLearner
 from zenkai.ensemble._ensemble_mod import StochasticVoter
 from ..kaku.test_grad import THGradLearnerT1
+from zenkai.kaku._state import State
 
 
 # class TestVoterPopulator:
@@ -26,6 +27,7 @@ from ..kaku.test_grad import THGradLearnerT1
 
 
 class DummyEnsembleLearner(EnsembleLearner):
+
     def __init__(self, in_features: int, out_features: int, n_learners: int):
 
         super().__init__()
@@ -33,37 +35,39 @@ class DummyEnsembleLearner(EnsembleLearner):
             THGradLearnerT1(in_features, out_features) for i in range(n_learners)
         ]
 
-    def vote(self, x: IO, release: bool = True) -> IO:
+    def vote(self, x: IO, state: State) -> IO:
 
-        votes = [learner(x, release).f for learner in self._learners]
-        return IO(torch.stack(votes))
+        votes = [learner.forward_io(x, state.sub(i)).f for i, learner in enumerate(self._learners)]
+        return iou(torch.stack(votes))
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return torch.tensor(1)
 
-    def reduce(self, x: IO, release: bool = True) -> IO:
-        return IO(torch.mean(x.f, dim=0)).out(release)
+    def reduce(self, x: IO, state: State) -> IO:
+        return iou(torch.mean(x.f, dim=0))
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: State):
 
-        for learner in self._learners:
-            learner.step(x, t)
+        for i, learner in enumerate(self._learners):
+            learner.step(x, t, state.sub(i))
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
 
         x_primes = []
-        for learner in self._learners:
-            x_primes.append(learner.step(x, t).f)
-        return IO(sum(x_primes))
+        for i, learner in enumerate(self._learners):
+            x_primes.append(learner.step(x, t, state.sub(i)).f)
+        return iou(sum(x_primes))
 
 
 class TestEnsembleLearnerVoter:
     def test_forward_produces_result_of_correct_shape(self):
 
+        state = State()
         learner = DummyEnsembleLearner(2, 3, 3)
-        assert learner(IO(torch.rand(3, 2))).f.shape == torch.Size([3, 3])
+        assert learner.forward_io(iou(torch.rand(3, 2)), state).f.shape == torch.Size([3, 3])
 
     def test_vote_results_in_three_votes(self):
 
+        state = State()
         learner = DummyEnsembleLearner(2, 3, 3)
-        assert learner.vote(IO(torch.rand(4, 2))).f.size(0) == 3
+        assert learner.vote(iou(torch.rand(4, 2)), state).f.size(0) == 3

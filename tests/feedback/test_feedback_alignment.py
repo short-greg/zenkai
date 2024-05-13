@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-from zenkai.kaku import OptimFactory, IO
+from zenkai.kaku import OptimFactory
+from zenkai.kaku._io2 import IO2 as IO, iou
+from zenkai.kaku._state import State
 from zenkai.utils._params import get_model_params
 from zenkai.feedback import _feedback_alignment
 
@@ -18,12 +20,13 @@ class TestFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 4))
-        x = IO(torch.rand(3, 3))
+        t = iou(torch.rand(3, 4))
+        x = iou(torch.rand(3, 3))
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        state = State()
+        learner.forward_io(x, state)
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
         assert (get_model_params(net) != before).any()
 
     def test_fa_learner_does_not_auto_adv_if_false(self):
@@ -36,11 +39,12 @@ class TestFALearner:
             criterion="MSELoss",
             activation=nn.Sigmoid(),
         )
-        t = IO(torch.rand(3, 4))
-        x = IO(torch.rand(3, 3))
+        state = State()
+        t = iou(torch.rand(3, 4))
+        x = iou(torch.rand(3, 3))
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
+        learner.forward_io(x, state)
+        learner.accumulate(x, t, state)
         assert (get_model_params(net) == before).all()
 
     def test_fa_learner_adv_when_adv_called(self):
@@ -53,12 +57,14 @@ class TestFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 4))
-        x = IO(torch.rand(3, 3))
+        t = iou(torch.rand(3, 4))
+        x = iou(torch.rand(3, 3))
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        state = State()
+
+        learner.forward_io(x, state)
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
         assert (get_model_params(net) != before).any()
 
     def test_fa_learner_updates_x_with_correct_size(self):
@@ -71,17 +77,18 @@ class TestFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 4))
-        x = IO(torch.rand(3, 3))
-        learner(x)
-        learner.accumulate(x, t)
-        x_prime = learner.step_x(x, t)
+        t = iou(torch.rand(3, 4))
+        x = iou(torch.rand(3, 3))
+        state = State()
+        learner.forward_io(x, state)
+        learner.accumulate(x, t, state)
+        x_prime = learner.step_x(x, t, state)
         assert (x_prime.f != x.f).any()
 
 
 class TestDFALearner:
 
-    def test_dfa__learner_updates_the_parameters(self):
+    def test_dfa_learner_updates_the_parameters(self):
 
         net = nn.Linear(3, 4)
         learner = _feedback_alignment.DFALearner(
@@ -93,12 +100,14 @@ class TestDFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 3))
-        x = IO(torch.rand(3, 3))
+        t = iou(torch.rand(3, 3))
+        x = iou(torch.rand(3, 3))
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        state = State()
+        out_t = _feedback_alignment.OutT(t)
+        learner.forward_io(x, state, out_t=out_t)
+        learner.accumulate(x, t, state, out_t=out_t)
+        learner.step(x, t, state, out_t=out_t)
         assert (get_model_params(net) != before).any()
 
     def test_dfa_learner_does_not_auto_adv_if_false(self):
@@ -113,11 +122,13 @@ class TestDFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 3))
-        x = IO(torch.rand(3, 3))
+        t = iou(torch.rand(3, 3))
+        x = iou(torch.rand(3, 3))
+        state = State()
+        out_t = _feedback_alignment.OutT(t=t)
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
+        learner.forward_io(x, state, out_t=out_t)
+        learner.accumulate(x, t, state, out_t=out_t)
         assert (get_model_params(net) == before).all()
 
     def test_dfa_learner_adv_when_adv_called(self):
@@ -132,12 +143,14 @@ class TestDFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 3))
-        x = IO(torch.rand(3, 3))
+        t = iou(torch.rand(3, 3))
+        x = iou(torch.rand(3, 3))
+        state = State()
+        out_t = _feedback_alignment.OutT(t=t)
         before = get_model_params(net)
-        learner(x)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        learner.forward_io(x, state, out_t=out_t)
+        learner.accumulate(x, t, state, out_t=out_t)
+        learner.step(x, t, state, out_t=out_t)
         assert (get_model_params(net) != before).any()
 
     def test_dfa_learner_updates_x_with_correct_size(self):
@@ -152,9 +165,11 @@ class TestDFALearner:
             activation=nn.Sigmoid(),
             criterion="MSELoss",
         )
-        t = IO(torch.rand(3, 3))
-        x = IO(torch.rand(3, 3))
-        learner(x)
-        learner.accumulate(x, t)
-        x_prime = learner.step_x(x, t)
+        t = iou(torch.rand(3, 3))
+        x = iou(torch.rand(3, 3))
+        state = State()
+        out_t = _feedback_alignment.OutT(t=t)
+        learner.forward_io(x, state, out_t=out_t)
+        learner.accumulate(x, t, state, out_t=out_t)
+        x_prime = learner.step_x(x, t, state, out_t=out_t)
         assert (x_prime.f != x.f).any()

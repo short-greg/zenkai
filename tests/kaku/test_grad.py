@@ -8,7 +8,7 @@ from zenkai import OptimFactory, ThLoss, CompOptim
 # local
 from zenkai.kaku._lm2 import IO2 as IO, iou, Idx2 as Idx
 from zenkai.kaku import _grad
-from zenkai.kaku import Meta
+from zenkai.kaku import State
 from zenkai.utils import _params as utils
 
 
@@ -57,7 +57,7 @@ class TestGradLearner1:
 
         learner = THGradLearnerT1(2, 3)
         x = iou(torch.rand(2, 2))
-        state = Meta()
+        state = State()
         y = learner.forward_io(x, state)
         assert y[0].grad_fn is None
 
@@ -67,7 +67,7 @@ class TestGradLearner1:
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
         x_ = x.clone(True)
-        state = Meta()
+        state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
@@ -80,7 +80,7 @@ class TestGradLearner1:
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
         before = utils.get_model_params(learner)
-        state = Meta()
+        state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
@@ -105,7 +105,7 @@ class TestTHGradLoopLearner:
         x = iou(torch.rand(2, 2))
         og_x = x.clone()
         t = iou(torch.rand(2, 3))
-        state = Meta()
+        state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
@@ -119,7 +119,7 @@ class TestTHGradLoopLearner:
         og_x = x.clone()
         t = iou(torch.rand(4, 3))
         idx = Idx([0, 1])
-        state = Meta()
+        state = State()
         learner.forward_io(x, state, batch_idx=idx)
         learner.accumulate(x, t, state, batch_idx=idx)
         learner.step(x, t, state, batch_idx=idx)
@@ -132,7 +132,7 @@ class TestTHGradLoopLearner:
         learner = THGradLearnerT2(2, 3)
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
-        state = Meta()
+        state = State()
         before = utils.get_model_params(learner)
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
@@ -146,7 +146,7 @@ class TestTHGradLoopLearner:
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
         before = utils.get_model_params(learner)
-        state = Meta()
+        state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.forward_io(x, state)
@@ -160,7 +160,7 @@ class TestCriterionGrad:
 
     def test_criterion_grad_step_produces_correct_shape(self):
 
-        state = Meta()
+        state = State()
         learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
         learner.step(iou(torch.rand(3, 4)), iou(torch.randint(0, 4, (3,))), state)
         assert True
@@ -169,7 +169,7 @@ class TestCriterionGrad:
 
         learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
 
-        state = Meta()
+        state = State()
         x = iou(torch.rand(3, 4))
         learner.forward_io(x, state)
         t = iou(torch.randint(0, 4, (3,)))

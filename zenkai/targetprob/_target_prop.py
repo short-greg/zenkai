@@ -5,137 +5,59 @@ import torch
 import torch.nn as nn
 
 # Local
-from ..kaku import (
-    IO,
-    SetYHook,
-    LearningMachine,
-    StepTheta,
-    ThLoss,
-    Criterion
-)
 from ..kaku import GradLearner, CompOptim
 
+from ..kaku import (
+    Criterion,
+    ThLoss
+)
+from ..kaku._state import State
+from ..kaku._io2 import (
+    IO2 as IO, iou
+)
+from ..kaku._lm2 import (
+    LM,
+    StepTheta2 as StepTheta,
+    StepX2 as StepX,
+    SetYHook
+)
 
-class TargetPropLearner(LearningMachine):
+
+class TargetPropLearner(LM):
     """
     """
     y_name = 'y'
 
     def __init__(
-        self, forward_module: nn.Module=None, reverse_module: nn.Module=None, 
-        forward_step_theta: StepTheta=None, reverse_step_theta: StepTheta=None, criterion: Criterion=None, cat_x: bool=True
+        self, forward_learner: LM, reverse_learner: LM, cat_x: bool=True
     ) -> None:
         """
         Create a target prop learner for doing target propagation
 
         Args:
-            forward_module (nn.Module, optional): The module to output to the next layer. Defaults to None.
-            reverse_module (nn.Module, optional): The module to reconstruct. Defaults to None.
-            forward_step_theta (StepTheta, optional): The update for forward. If it is none and forward module is a learning machine, the step theta for that will be used. Defaults to None.
-            reverse_step_theta (StepTheta, optional): The update for reverse. If it is none and reverse module is a learning machine, the step theta for that will be used. Defaults to None.
-            criterion (Criterion, optional): The criterion for use for the input. Defaults to None.
+
         """
         super().__init__()
         self._reverse_update = True
         self._forward_update = True
-        self._forward_module = forward_module
-        self._reverse_module = reverse_module
-        if forward_step_theta is None and isinstance(
-            forward_module, LearningMachine
-        ):
-            forward_step_theta = forward_module
-
-        if reverse_step_theta is None and isinstance(
-            reverse_module, LearningMachine
-        ):
-            reverse_step_theta = reverse_module
+        self._forward_learner = forward_learner
+        self._reverse_learner = reverse_learner
             
-        self._forward_step_theta = forward_step_theta
-        self._reverse_step_theta = reverse_step_theta
-        self._criterion = criterion or ThLoss('MSELoss')
+        self.forward_step_theta = True
+        self.reverse_step_theta = True
         self.forward_hook(SetYHook(self.y_name))
         self.cat_x = cat_x
 
     def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
-        return self._criterion.assess(x, t, reduction_override)
+        return self._forward_learner.assess_y(x, t, reduction_override)
 
-    @property
-    def forward_step_theta(self) -> StepTheta:
-        return self._forward_step_theta
+    def rev_x(self, x: IO, y: IO) -> IO:
 
-    @property
-    def reverse_step_theta(self) -> StepTheta:
-        return self._reverse_step_theta
-
-    @property
-    def forward_module(self) -> nn.Module:
-        return self._forward_module
-
-    @property
-    def reverse_module(self) -> nn.Module:
-        return self._reverse_module
-
-    def accumulate_reverse(self, x: IO, y: IO, t: IO):
-        if self._reverse_step_theta is not None:
-            self._reverse_step_theta.accumulate(self.get_rev_x(x, y), x)
-    
-    def accumulate_forward(self, x: IO, t: IO):
-        if self._forward_step_theta is not None:
-            self._forward_step_theta.accumulate(x, t)
-
-    def step_reverse(self, x: IO, y: IO, t: IO):
-        if self._reverse_step_theta is not None:
-            self._reverse_step_theta.step(self.get_rev_x(x, y), x)
-    
-    def step_forward(self, x: IO, t: IO):
-
-        if self._forward_step_theta is not None:
-            self._forward_step_theta.step(x, t)
-
-    def get_rev_x(self, x: IO, y: IO, mod: bool=True) -> IO:
-        """
-        Args:
-            x (IO): The input of the machine
-            y (IO): The output fo the machine
-
-        Returns:
-            IO: The input to the reverse model
-
-        """
-        state = x._(self)
-        if 'reverse_x' in state:
-            return state.reverse_x
-        if self.cat_x and not mod:
-            y = IO(x, y)
-        elif self.cat_x:
-            y = (x.f, y.f)
-        elif mod:
-            y = y.f
-        else:
-            y = y
-        
-        state.reverse_x = y
+        if self.cat_x:
+            return iou([x.f, y.f])
         return y
-    
-    def reverse_update(self, update: bool=True):
-        """Set whether to update the reverse model
 
-        Args:
-            update (bool, optional): Whether to update the reverse model. Defaults to True.
-        """
-        self._reverse_update = update
-        return self
-
-    def forward_update(self, update: bool=True):
-        """Set whether to update the forward model
-
-        Args:
-            update (bool, optional): Whether to update the reverse model. Defaults to True.
-        """
-        self._forward_update = update
-        return self
-
-    def accumulate(self, x: IO, t: IO):
+    def accumulate(self, x: IO, t: IO, state: State):
         """Accumulate the forward and/or reverse model
 
         Args:
@@ -143,15 +65,13 @@ class TargetPropLearner(LearningMachine):
             t (IO): The target
         """
         if self._forward_update:
-            self.accumulate_forward(x, t)
+            self.accumulate_forward(x, t, state.sub('forward'))
         if self._reverse_update:
-            state = x._(self)
-            y = state[self.y_name]
-            if 'y_rev' not in state:
-                self.reverse(x, y, t)
-            self.accumulate_reverse(x, y, t)
+            x_rev = self.rev_x(x, state._y)
+            self._reverse_learner.forward_io(x_rev, t, state.sub('reverse'))
+            self._reverse_learner.accumulate(self.rev_x(x, state._y), t, state.sub('reverse'))
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: State):
         """Update the forward and/or reverse model
 
         Args:
@@ -159,32 +79,12 @@ class TargetPropLearner(LearningMachine):
             t (IO): The target
         """
         if self._forward_update:
-            self.step_forward(x, t)
+            self._forward_learner.step(x, t, state.sub('forward'))
         if self._reverse_update:
-            state = x._(self)
-            y = state[self.y_name]
-            if 'y_rev' not in state:
-                self.reverse(x, y, t)
-            self.step_reverse(x, y, t)
+            x_rev = self.rev_x(x, state._y)
+            self._reverse_learner.step(x_rev, t, state.sub('reverse'))
 
-    def reverse(self, x: IO, y: IO, release: bool=True) -> IO:
-        state = x._(self)
-        if self._reverse_module is not None:
-            if isinstance(self._reverse_module, LearningMachine):
-                x_out = self._reverse_module(self.get_rev_x(x, y, False))
-            else:
-                x_out = IO(self._reverse_module(*self.get_rev_x(x, y)))
-        else:
-            x_out = x
-        state.y_rev = x_out
-        return x_out.out(release)
-
-    def forward(self, x: IO, release: bool=True) -> IO:
-        if self._forward_module is not None:
-            x = self._forward_module(x)
-        return x.out(release)
-
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """The default behavior of Target Propagation is to simply call the reverse function with x and t
 
         Args:
@@ -194,7 +94,17 @@ class TargetPropLearner(LearningMachine):
         Returns:
             IO: The target for the preceding layer
         """
-        return self.reverse(x, t)
+        x = self.rev_x(x, t)
+        return self._reverse_learner.forward_io(x, state.sub('reverse'))
+
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Tuple | typing.Any:
+        
+        y = self._forward_learner.forward_io(
+            x, state, False
+        )
+        if len(y) > 1:
+            return y[0]
+        return tuple(y)
 
 
 class LinearRec(nn.Module):
@@ -312,7 +222,7 @@ class DiffTargetPropLearner(TargetPropLearner):
     to get the target
     """
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """The default behavior of Target Propagation is to simply call the reverse function with x and t
 
         Args:
@@ -323,15 +233,17 @@ class DiffTargetPropLearner(TargetPropLearner):
             IO: The target for the preceding layer
         """
         # TODO: Make it so x and t can have multiple values
-        y = x._(self).y
-        t_reverse = self.reverse(x, t)
-        y_reverse = self.reverse(x, y)
+        
+        x1 = self.rev_x(x, t)
+        x2 = self.rev_x(x, state._y)
+        t_reverse = self._reverse_learner.forward_io(x1, state.sub('reverse'))
+        y_reverse = self._reverse_learner.forward_io(x2, state.sub('reverse'))
         diff = t_reverse.f - y_reverse.f
         return IO(x.f + diff, detach=True)
 
 
 def create_grad_target_prop(
-    machine: LearningMachine, in_features_rev: int, out_features_rev: int, h_rev: typing.List[int], 
+    machine: LM, in_features_rev: int, out_features_rev: int, h_rev: typing.List[int], 
     act: typing.Union[str, typing.Callable[[], nn.Module]], 
     norm: typing.Union[str, typing.Callable[[int], nn.Module]],
     criterion: Criterion, optim: CompOptim=None,
@@ -340,7 +252,7 @@ def create_grad_target_prop(
     """Creates a target prop learner with a linear model for reversing
 
     Args:
-        machine (LearningMachine): The machine to use target prop for updating x
+        machine (LM): The machine to use target prop for updating x
         in_features_rev (int): The in features for the reverse model
         out_features_rev (int): The out features for the reverse model
         h_rev (typing.List[int]): The hidden features for the reverse model

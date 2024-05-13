@@ -54,7 +54,6 @@ class StateKeyError(KeyError):
     pass
 
 
-
 @dataclass
 class StateData:
 
@@ -62,7 +61,7 @@ class StateData:
     keep: bool = False
 
 
-class Meta(dict):
+class State(dict):
 
     def __init__(self, *args, **kwargs):
 
@@ -88,7 +87,7 @@ class Meta(dict):
     def sub(self, key: str):
 
         if key not in self._subs:
-            self._subs[key] = Meta()
+            self._subs[key] = State()
         return self._subs[key]
 
     def __setattr__(self, key: str, value: Any) -> Any:
@@ -126,7 +125,7 @@ class Meta(dict):
 
 class MyMeta(object):
 
-    def __init__(self, meta: Meta, base_key):
+    def __init__(self, meta: State, base_key):
         """Use to make meta x more usable
 
         Args:

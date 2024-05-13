@@ -2,7 +2,7 @@ import torch
 
 from zenkai.utils import _params as utils
 from zenkai.kaku._io2 import IO2 as IO, iou
-from zenkai.kaku._state import Meta
+from zenkai.kaku._state import State
 from zenkai.kaku._null import NullLearner
 
 
@@ -14,7 +14,7 @@ class TestNullLearner:
         t = iou(torch.rand(2, 3))
         learner = NullLearner()
 
-        state = Meta()
+        state = State()
         before = utils.get_model_params(learner)
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
@@ -28,7 +28,7 @@ class TestNullLearner:
         t = iou(torch.rand(2, 3))
         learner = NullLearner()
 
-        state = Meta()
+        state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         x_prime = learner.step_x(x, t, state)
@@ -39,6 +39,6 @@ class TestNullLearner:
         x = iou(torch.rand(2, 2))
         learner = NullLearner()
 
-        state = Meta()
+        state = State()
         y = learner.forward_io(x, state)
         assert (y.f == x.f).all()

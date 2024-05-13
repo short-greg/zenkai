@@ -5,7 +5,7 @@ from sklearn.linear_model import SGDRegressor
 # local
 from zenkai.kaku._io2 import iou, IO2 as IO
 from zenkai.kaku._lm2 import StepX2 as StepX
-from zenkai.kaku import Criterion, Meta
+from zenkai.kaku import Criterion, State
 from zenkai.scikit._scikit import ScikitLimitGen, ScikitMachine
 from zenkai.scikit._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from zenkai.kaku import RandomFeatureIdxGen
@@ -27,7 +27,7 @@ class TestSklearnMultiMachine(object):
         t1 = iou(torch.randn(8, 2))
         x2 = iou(torch.randn(8, 3))
         t2 = iou(torch.randn(8, 2))
-        state = Meta()
+        state = State()
 
         machine.step(x1, t1, state)
         # TODO: add Limit
@@ -41,7 +41,7 @@ class TestSklearnMachine(object):
         torch.manual_seed(1)
         regressor = ScikitWrapper.regressor(SGDRegressor(), 3)
         machine = ScikitMachine(regressor, NullStepX(), Criterion("MSELoss"))
-        state = Meta()
+        state = State()
         x1 = iou(torch.randn(8, 3))
         t1 = iou(torch.randn(8))
         x2 = iou(torch.randn(8, 3))

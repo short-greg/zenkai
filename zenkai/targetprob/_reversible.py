@@ -6,11 +6,22 @@ import torch.nn as nn
 import torch
 
 # local
-from ..kaku import IO, LearningMachine, Criterion, ThLoss
 from ._reversible_mods import Reversible, SequenceReversible
-# from ..utils import Lambda
-# from ..kaku._backtarget import BackTarget
 
+
+from ..kaku import (
+    Criterion
+)
+from ..kaku._state import State
+from ..kaku._io2 import (
+    IO2 as IO, iou
+)
+from ..kaku._lm2 import (
+    LM as LearningMachine,
+    StepTheta2 as StepTheta,
+    StepX2 as StepX,
+
+)
 
 class ReversibleMachine(LearningMachine):
     """Machine that executes a reverse operation to update x"""
@@ -35,7 +46,7 @@ class ReversibleMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self.objective.assess(y, t, reduction_override)
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x
 
         Args:
@@ -44,9 +55,9 @@ class ReversibleMachine(LearningMachine):
         Returns:
             IO: The updated input
         """
-        return IO(self.reversible.reverse(t.f), detach=True)
+        return iou(self.reversible.reverse(t.f), detach=True)
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: State):
         """These layers do not have parameters so the internal mechanics are not updated
 
         Args:
@@ -55,8 +66,10 @@ class ReversibleMachine(LearningMachine):
         """
         pass
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        return IO(self.reversible(x.f)).out(release)
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        return self.reversible(x.f)
+    # def forward(self, x: IO, release: bool = True) -> IO:
+    #     return iou(self.reversible(x.f))
 
 
 # def reverse(f, criterion: Criterion = None) -> typing.Union[ReversibleMachine, BackTarget]:

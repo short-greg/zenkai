@@ -86,7 +86,7 @@ class GradLM(_lm2.LM):
     def assess_y(self, y: _lm2.IO2, t: _lm2.IO2, override: str = None) -> torch.Tensor:
         return (y[0] - t[0]).pow(2).mean()
 
-    def accumulate(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs):
+    def accumulate(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.State, **kwargs):
         
         # x = torch.randn_like(x[0])
         # t = torch.randn_like(t[0])
@@ -94,15 +94,15 @@ class GradLM(_lm2.LM):
         t = t[0]
         (state._y[0] - t[0]).pow(2).sum().backward()
 
-    def step(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs):
+    def step(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.State, **kwargs):
         
         self.optim.step()
         self.optim.zero_grad()
     
-    def step_x(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs) -> _lm2.IO2:
+    def step_x(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.State, **kwargs) -> _lm2.IO2:
         return x.acc_grad()
     
-    def forward_nn(self, x: _lm2.IO2, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
+    def forward_nn(self, x: _lm2.IO2, state: _lm2.State, mul: float=1.0) -> torch.Tensor:
         return x[0] @ self.w * mul
     
 
@@ -188,7 +188,7 @@ class TestLM:
 
         x = _lm2.IO2([torch.rand(4, 2)])
         mod = GradLM()
-        state = _lm2.Meta()
+        state = _lm2.State()
         mod.forward_io(x, state, mul=2.0)
         t = _lm2.IO2([torch.rand(4, 4)])
         mod.accumulate(x, t, state, mul=2.0)

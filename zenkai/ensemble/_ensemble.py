@@ -1,23 +1,24 @@
 # TODO: Add modules for ensemble
 # 1st party
 from abc import abstractmethod
+from typing import Any, Tuple
 
 # 3rd party
 import torch.nn as nn
 import torch
 
+
 # local
-from ..kaku import (
-    IO,
-    LearningMachine,
-)
+from zenkai.kaku._io2 import IO2 as IO
+from ..kaku._state import State
+from ..kaku._lm2 import LM as LearningMachine
 
 
 class EnsembleLearner(LearningMachine):
     """Base class for A LearningMachine that optimizes over an ensemble of otehr machines"""
 
     @abstractmethod
-    def vote(self, x: IO, release: bool = True) -> IO:
+    def vote(self, x: IO, state: State) -> IO:
         """Get all of the votes
 
         Args:
@@ -30,7 +31,7 @@ class EnsembleLearner(LearningMachine):
         pass
 
     @abstractmethod
-    def reduce(self, x: IO, release: bool = True) -> IO:
+    def reduce(self, x: IO, state: State) -> IO:
         """Aggregate the votes
 
         Args:
@@ -42,17 +43,21 @@ class EnsembleLearner(LearningMachine):
         """
         pass
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        """Votes and then reduces based on the vote
+    def forward_nn(self, x: IO, state: State, **kwargs) -> Tuple | Any:
+        
+        return self.reduce(self.vote(x, state), state) 
 
-        Args:
-            x (IO): the input
-            release (bool, optional): whether to release. Defaults to True.
+    # def forward(self, x: IO, release: bool = True) -> IO:
+    #     """Votes and then reduces based on the vote
 
-        Returns:
-            IO: the output
-        """
-        return self.reduce(self.vote(x, release=False), release=release)
+    #     Args:
+    #         x (IO): the input
+    #         release (bool, optional): whether to release. Defaults to True.
+
+    #     Returns:
+    #         IO: the output
+    #     """
+    #     return self.reduce(self.vote(x, release=False), release=release)
 
 
 class EnsembleLearnerVoter(nn.Module):

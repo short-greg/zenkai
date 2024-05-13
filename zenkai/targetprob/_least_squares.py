@@ -10,15 +10,19 @@ import scipy.linalg
 
 # local
 from ..kaku import (
-    IO,
-    # Assessment,
-    LearningMachine,
-    StepTheta,
-    StepX,
     Criterion,
     ThLoss,
-    update_io,
     OptimFactory
+)
+from ..kaku._state import State
+from ..kaku._io2 import (
+    IO2 as IO, iou
+)
+from ..kaku._lm2 import (
+    LM as LearningMachine,
+    StepTheta2 as StepTheta,
+    StepX2 as StepX,
+
 )
 from ..utils import to_np, to_th_as
 from ..kaku._grad import GradStepTheta
@@ -171,7 +175,7 @@ class LeastSquaresStepTheta(StepTheta):
         if bias is not None:
             self.linear.bias.data = bias
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: State):
         self._optimize(x.f, t.f)
 
 
@@ -211,7 +215,7 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         """Update x
 
         Args:
@@ -221,8 +225,9 @@ class LeastSquaresStepX(StepX):
             Conn: The connection with x updated
         """
         x_prime = self._optimize(x.f, t.f)
+        return iou(x_prime)
 
-        return update_io(IO(x_prime), x)
+        # return update_io(IO(x_prime), x)
 
 
 class LeastSquaresLearner(LearningMachine):
@@ -259,15 +264,21 @@ class LeastSquaresLearner(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._loss.assess(y, t, reduction_override=reduction_override)
 
-    def step(self, x: IO, t: IO):
-        self._step_theta.step(x, t)
+    def step(self, x: IO, t: IO, state: State):
+        self._step_theta.step(x, t, state)
 
-    def step_x(self, x: IO, t: IO) -> IO:
-        return self._step_x.step_x(x, t)
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return self._step_x.step_x(x, t, state)
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        x.freshen(False)
-        return IO(self._linear(x.f), detach=release)
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Tuple | typing.Any:
+        return iou(
+            self._linear(x.f)
+        )
+        # return super().forward_nn(x, state, **kwargs)
+
+    # def forward(self, x: IO, release: bool = True) -> IO:
+    #     x.freshen(False)
+    #     return IO(self._linear(x.f), detach=release)
 
 
 class GradLeastSquaresLearner(LearningMachine):

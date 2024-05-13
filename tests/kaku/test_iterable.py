@@ -2,7 +2,7 @@ import torch
 
 from zenkai.utils import _params as utils
 from zenkai.kaku._io2 import IO2 as IO, iou
-from zenkai.kaku._state import Meta
+from zenkai.kaku._state import State
 from zenkai.kaku._iterable import (
     IterStepX, IterHiddenStepTheta, 
     IdxLoop, IOLoop, IterStepTheta
@@ -48,7 +48,7 @@ class TestIterStepTheta:
     def test_iter_hiddenstep_updates_the_parameters_with_one_iteration(self):
 
         torch.manual_seed(3)
-        state = Meta()
+        state = State()
         learner1 = GradLM(2, 3)
         learner2 = GradLM(3, 3)
         x = iou(torch.rand(2, 2))
@@ -70,7 +70,7 @@ class TestIterStepTheta:
         learner2 = GradLM(3, 3)
         x = iou(torch.rand(4, 2))
         t = iou(torch.rand(4, 3))
-        state = Meta()
+        state = State()
         iter_step = IterHiddenStepTheta(learner1, learner2, 2, 1, 1)
         y1 = learner1.forward_io(x, state)
         learner2.forward_io(y1, state)
@@ -93,7 +93,7 @@ class TestIterStepX:
         t = iou(torch.rand(2, 3))
 
         iter_step = IterStepX(learner2, 1, 128)
-        state = Meta()
+        state = State()
         y1 = learner1.forward_io(x, state)
         learner2.forward_io(y1, state)
         learner2.step(y1, t, state)
@@ -111,7 +111,7 @@ class TestIterStepX:
         t = iou(torch.rand(4, 3))
 
         iter_step = IterStepX(learner2, 2, 128)
-        state = Meta()
+        state = State()
         y1 = learner1.forward_io(x, state.sub('1'))
         learner2.forward_io(y1, state.sub('2'))
         learner2.step(y1, t, state.sub('2'))
@@ -122,14 +122,14 @@ class TestIterStepX:
 
 
 class TestIterStepHidden:
-    
+
     def test_iter_outstep_updates_the_parameters_with_one_iteration(self):
 
         torch.manual_seed(1)
         learner1 = GradLM(2, 3)
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
-        state = Meta()
+        state = State()
         iter_step = IterStepTheta(learner1, 1, 128)
         before = utils.get_model_params(learner1)
         learner1.forward_io(x, state.sub('1'))

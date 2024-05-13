@@ -15,7 +15,7 @@ from ..kaku._lm2 import (
     Idx2 as Idx,
     LM as LearningMachine
 )
-from ..kaku._state import Meta
+from ..kaku._state import State
 from ..kaku import Criterion
 from ._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper
 from ..kaku import FeatureLimitGen
@@ -48,7 +48,7 @@ class ScikitMachine(LearningMachine):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: Meta, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the estimator
 
         Args:
@@ -62,7 +62,7 @@ class ScikitMachine(LearningMachine):
         else:
             self._module.fit(x.f, t.f, **kwargs)
 
-    def step_x(self, x: IO, t: IO, state: Meta, **kwargs) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         """Update the estimator
 
         Args:
@@ -77,7 +77,7 @@ class ScikitMachine(LearningMachine):
             return x
         return self._step_x.step_x(x, t, state, **kwargs)
 
-    def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
 
         return self._module(x[0])
 
@@ -165,7 +165,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def step(self, x: IO, t: IO, state: Meta, feature_idx: Idx = None, **kwargs):
+    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
         """Update the estimator
 
         Args:
@@ -193,7 +193,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
                 **kwargs
             )
 
-    def step_x(self, x: IO, t: IO, state: Meta, feature_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None) -> IO:
         """Update the estimator
 
         Args:
@@ -208,7 +208,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             return x
         return self._step_x.step_x(x, t, state, feature_idx)
 
-    def forward_nn(self, x: IO, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         
         x = x.f
         if self._preprocessor is not None:

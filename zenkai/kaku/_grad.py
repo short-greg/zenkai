@@ -13,7 +13,7 @@ from ._lm2 import (
     StepTheta2 as StepTheta, StepX2 as StepX, forward_dep,
     LM as LearningMachine
 )
-from ._state import Meta
+from ._state import State
 from ._optimize import (
     CompOptim, OptimFactory
 )
@@ -36,7 +36,7 @@ class GradStepTheta(StepTheta):
             grad_criterion = ThLoss('MSELoss', grad_criterion)
         self.grad_criterion = grad_criterion
 
-    def accumulate(self, x: IO, t: IO, state: Meta, y: IO=None, **kwargs):
+    def accumulate(self, x: IO, t: IO, state: State, y: IO=None, **kwargs):
         
         if y is None:
             if isinstance(self.module, LearningMachine):
@@ -52,7 +52,7 @@ class GradStepTheta(StepTheta):
             assessment = self.grad_criterion.assess(y, t)
         assessment.backward()
 
-    def step(self, x: IO, t: IO, state: Meta, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         if self.optim is not None:
             self.optim.step()
             self.optim.zero_grad()
@@ -99,7 +99,7 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         return self.grad_criterion.assess(y, t, reduction_override)
 
     @forward_dep('_y')
-    def accumulate(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None):
+    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         """
         Args:
             x (IO): The input
@@ -115,12 +115,12 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             t_idx = t
         self.grad_assess(x_idx, state._y, t_idx).backward()
 
-    def step_x(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         x_prime = self.optim.step_x(x, state)
         self.optim.zero_x(x, state)
         return x_prime
 
-    def step(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None):
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         self.optim.step_theta()
         self.optim.zero_theta()
 
@@ -129,7 +129,7 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     #         return IO(self.module(x.f))
     #     return x
 
-    def forward_nn(self, x: IO, state: Meta, batch_idx: Idx=None) -> torch.Tensor:
+    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
         x_idx = batch_idx(x) if batch_idx is not None else x
         return self.module(x_idx[0]) if self.module is not None else x_idx[0]
         # if self.module is not None:

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.kaku import IO
+from zenkai.kaku._io2 import IO2 as IO
 from zenkai.targetprob import _least_squares
 from zenkai.utils._params import get_model_params
 

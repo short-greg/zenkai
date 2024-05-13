@@ -47,7 +47,7 @@ from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
     OptimFactory, optimf, Fit, CompOptim
 )
-from ._state import IDable, Meta, MyMeta
+from ._state import IDable, State, MyMeta
 from ._objective import (
     Objective,
     Constraint,

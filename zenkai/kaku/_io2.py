@@ -8,7 +8,7 @@ from torch.autograd.function import Function, once_differentiable
 from collections import namedtuple
 import inspect
 from enum import Enum
-from ._state import Meta
+from ._state import State
 from dataclasses import dataclass
 from typing_extensions import Self
 

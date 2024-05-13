@@ -13,7 +13,7 @@ from ._lm2 import (
     StepX2 as StepX, BatchIdxStepTheta, BatchIdxStepX,
     LM
 )
-from ._state import Meta
+from ._state import State
 
 
 class IdxLoop(object):
@@ -108,7 +108,7 @@ class IterStepTheta(StepTheta):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, x: IO, t: IO, state: Meta, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         """
 
         Args:
@@ -151,7 +151,7 @@ class IterStepX(StepX):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step_x(self, x: IO, t: IO, state: Meta, **kwargs) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         """
 
         Args:
@@ -230,7 +230,7 @@ class IterHiddenStepTheta(OutDepStepTheta):
         self.tie_in_t = tie_in_t
 
     def step(
-        self, x: IO, t: IO, state: Meta, outgoing_t: IO = None, outgoing_x: IO = None
+        self, x: IO, t: IO, state: State, outgoing_t: IO = None, outgoing_x: IO = None
     ) -> IO:
         """
 

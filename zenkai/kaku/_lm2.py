@@ -8,7 +8,7 @@ from torch.autograd.function import Function, once_differentiable
 from collections import namedtuple
 import inspect
 from enum import Enum
-from ._state import Meta
+from ._state import State
 from dataclasses import dataclass
 from typing_extensions import Self
 
@@ -35,7 +35,7 @@ def acc_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: Meta, *args, **kwargs):
+        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
             
             # TODO: add in x_key
             val = state.get(check_field) if x_key else self._.get(check_field)
@@ -62,7 +62,7 @@ def step_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: Meta, *args, **kwargs):
+        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
 
             val = state.get(check_field) if x_key else self._.get(check_field)
             # val = state.get((self, x if x_key else None, check_field))
@@ -88,7 +88,7 @@ def forward_dep(check_field: str, x_key: bool = True):
     def inner(func):
         
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: Meta, *args, **kwargs):
+        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
 
             # val = state.get((self, x if x_key else None, check_field))
             val = state.get(check_field) if x_key else self._.get(check_field)
@@ -124,7 +124,7 @@ class TId:
     idx: int
 
 
-def dump_state(ctx, state: Meta):
+def dump_state(ctx, state: State):
 
     t = []
     d = {}
@@ -154,7 +154,7 @@ def load_state(ctx):
 
     t = []
 
-    state = Meta()
+    state = State()
     t = ctx.saved_tensors
     storage = ctx.__storage__
 
@@ -187,7 +187,7 @@ class StepXHook2(ABC):
 
     @abstractmethod
     def __call__(
-        self, step_x: "StepX2", x: IO2, x_prime: IO2, t: IO2, state: Meta
+        self, step_x: "StepX2", x: IO2, x_prime: IO2, t: IO2, state: State
     ) -> typing.Tuple[IO2, IO2]:
         pass
 
@@ -196,7 +196,7 @@ class StepHook2(ABC):
 
     @abstractmethod
     def __call__(
-        self, step: "StepTheta2", x: IO2, t: IO2, state: Meta
+        self, step: "StepTheta2", x: IO2, t: IO2, state: State
     ) -> typing.Tuple[IO2, IO2]:
         pass
 
@@ -204,7 +204,7 @@ class StepHook2(ABC):
 class ForwardHook2(ABC):
     
     @abstractmethod
-    def __call__(self, learner: "LM", x: IO2, y: IO2, state: Meta) -> IO2:
+    def __call__(self, learner: "LM", x: IO2, y: IO2, state: State) -> IO2:
         pass
 
 
@@ -213,8 +213,15 @@ class LearnerPostHook2(ABC):
 
     @abstractmethod
     def __call__(
-        self, x: IO2, t: IO2, y: IO2, state: Meta, assessment: torch.Tensor
+        self, x: IO2, t: IO2, y: IO2, state: State, assessment: torch.Tensor
     ) -> typing.Tuple[IO2, IO2]:
+        pass
+
+
+class ForwardHook(ABC):
+    
+    @abstractmethod
+    def __call__(self, learner: "LM", x: IO2, y: IO2) -> IO2:
         pass
 
 
@@ -232,10 +239,10 @@ class StepX2(ABC):
         self.step_x = self._step_x_hook_runner
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: Meta, **kwargs) -> IO2:
+    def step_x(self, x: IO2, t: IO2, state: State, **kwargs) -> IO2:
         pass
 
-    def _step_x_hook_runner(self, x: IO2, t: IO2, state: Meta,  *args, **kwargs) -> IO2:
+    def _step_x_hook_runner(self, x: IO2, t: IO2, state: State,  *args, **kwargs) -> IO2:
         """Call step x wrapped with the hooks
 
         Args:
@@ -244,7 +251,6 @@ class StepX2(ABC):
         Returns:
             IO: the updated x
         """
-
         x_prime = self._base_step_x(x, t, state, *args, **kwargs)
 
         for posthook in self._step_x_posthooks:
@@ -281,11 +287,11 @@ class StepTheta2(ABC):
         self.accumulate = self._accumulate_hook_runner
         self._accumulate_hooks: typing.List[StepHook2] = []
 
-    def accumulate(self, x: IO2, t: IO2, state: Meta, **kwargs):
+    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
         pass
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: Meta, **kwargs):
+    def step(self, x: IO2, t: IO2, state: State, **kwargs):
         """Update the parameters of the network
 
         Args:
@@ -294,7 +300,7 @@ class StepTheta2(ABC):
         """
         pass
 
-    def _accumulate_hook_runner(self, x: IO2, t: IO2, state: Meta, *args, **kwargs):
+    def _accumulate_hook_runner(self, x: IO2, t: IO2, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -317,7 +323,7 @@ class StepTheta2(ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(self, x: IO2, t: IO2, state: Meta, *args, **kwargs):
+    def _step_hook_runner(self, x: IO2, t: IO2, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -345,16 +351,16 @@ class StepTheta2(ABC):
 
 class NullStepX(StepX2):
 
-    def step_x(self, x: IO2, t: IO2, state: Meta, *args, **kwargs) -> IO2:
+    def step_x(self, x: IO2, t: IO2, state: State, *args, **kwargs) -> IO2:
         return x
 
 
 class NullStepTheta(StepTheta2):
 
-    def accumulate(self, x: IO2, t: IO2, state: Meta, **kwargs):
+    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
         pass
 
-    def step(self, x: IO2, t: IO2, state: Meta, **kwargs):
+    def step(self, x: IO2, t: IO2, state: State, **kwargs):
         return
 
 
@@ -362,10 +368,10 @@ class BatchIdxStepTheta(StepTheta2):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: Meta, batch_idx: Idx2 = None, **kwargs):
+    def step(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs):
         pass
 
-    def accumulate(self, x: IO2, t: IO2, state: Meta, batch_idx: Idx2 = None, **kwargs):
+    def accumulate(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs):
         pass
 
 
@@ -373,7 +379,7 @@ class FeatureIdxStepTheta(StepTheta2):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: Meta, feature_idx: Idx2 = None, **kwargs):
+    def step(self, x: IO2, t: IO2, state: State, feature_idx: Idx2 = None, **kwargs):
         pass
 
 
@@ -381,7 +387,7 @@ class BatchIdxStepX(StepX2):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: Meta, batch_idx: Idx2 = None, **kwargs) -> IO2:
+    def step_x(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs) -> IO2:
         pass
 
 
@@ -389,7 +395,7 @@ class FeatureIdxStepX(StepX2):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: Meta, feature_idx: Idx2 = None, **kwargs) -> IO2:
+    def step_x(self, x: IO2, t: IO2, state: State, feature_idx: Idx2 = None, **kwargs) -> IO2:
         pass
 
 
@@ -405,7 +411,7 @@ class F(Function):
         with torch.enable_grad():
             x = IO2(args).clone(True)
 
-            state = Meta()
+            state = State()
             y = self.forward_nn(x, state=state, **kwargs)
             if isinstance(y, typing.Tuple):
                 y = IO2(y)
@@ -459,21 +465,21 @@ class LM(StepTheta2, StepX2, nn.Module, ABC):
         pass
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: Meta, **kwargs):
+    def step(self, x: IO2, t: IO2, state: State, **kwargs):
         pass
 
-    def accumulate(self, x: IO2, t: IO2, state: Meta, **kwargs):
-        pass
-
-    @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: Meta, **kwargs) -> IO2:
+    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
         pass
 
     @abstractmethod
-    def forward_nn(self, x: IO2, state: Meta, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+    def step_x(self, x: IO2, t: IO2, state: State, **kwargs) -> IO2:
         pass
 
-    def forward_io(self, x: IO2, state: Meta, detach: bool=True, **kwargs) -> IO2:
+    @abstractmethod
+    def forward_nn(self, x: IO2, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        pass
+
+    def forward_io(self, x: IO2, state: State, detach: bool=True, **kwargs) -> IO2:
 
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
@@ -550,3 +556,16 @@ class InDepStepX(StepX2):
         
         pass
 
+
+class SetYHook(ForwardHook):
+    """
+    """
+    def __init__(self, y: str='y') -> None:
+        super().__init__()
+        self.y_name = y
+
+    def __call__(self, learner: LM, x: IO2, y: IO2, state: State, **kwargs) -> IO2:
+       
+       state._x = y
+       # x._(learner)[self.y_name] = y
+       return y

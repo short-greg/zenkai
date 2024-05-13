@@ -2,17 +2,18 @@
 import typing
 
 # 3rd party
+from torch._tensor import Tensor
 import torch.nn as nn
+
+from zenkai.kaku._lm2 import IO2 as IO, Idx2 as Idx, forward_dep
 
 from ..kaku import Idx
 
 # local
 from ..kaku import (
-    IO,
     OptimFactory,
     Criterion,
     ThLoss,
-    forward_dep
 )
 from ..utils._build import (
     Builder,
@@ -24,6 +25,13 @@ from .. import utils
 from ..utils import _params as param_utils
 from ..targetprob import Null
 from ..kaku._grad import GradLearner
+
+from dataclasses import dataclass
+
+
+from zenkai.kaku._io2 import IO2 as IO, iou
+from ..kaku._state import State
+from ..kaku._lm2 import LM as LearningMachine
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
@@ -38,7 +46,7 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
         IO: the resulting target
     """
 
-    return IO(y.f, y_prime.f, detach=detach)
+    return iou(y.f, y_prime.f, detach=detach)
 
 
 class FALearner(GradLearner):
@@ -75,17 +83,17 @@ class FALearner(GradLearner):
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         
-    def forward_nn(self, x: IO) -> IO:
+    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> IO:
 
         y = self.net(x.f)
         y = y.detach()
-        x._(self).y_det = y
+        state._y_det = y
         y.requires_grad = True
         y.retain_grad()
-        return IO(self.activation(y))
+        return self.activation(y)
 
-    @forward_dep('y')
-    def accumulate(self, x: IO, t: IO):
+    @forward_dep('_y')
+    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
         """Update the
 
         Args:
@@ -95,20 +103,20 @@ class FALearner(GradLearner):
         Returns:
             IO: the updated target
         """
-        self.optim.prep_x(x)
-        y = x._(self).y
+        self.optim.prep_x(x, state)
+        y = state._y
         y2 = self.netB(x.f)
         
         self.criterion.assess(y, t).backward()
-        y_det = x._(self).y_det
+        y_det = state._y_det
         y2.backward(y_det.grad)
         param_utils.set_model_grads(
             self.net, param_utils.get_model_grads(self.netB)
         )
     
-    @forward_dep('y')
-    def step(self, x: IO, t: IO, batch_idx: Idx = None):
-        super().step(x, t, batch_idx)
+    @forward_dep('_y')
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+        super().step(x, t, state, batch_idx)
         self.netB.zero_grad()
 
     @classmethod
@@ -135,6 +143,11 @@ class FALearner(GradLearner):
             ["net", "netB", "optim_factory", "activation", "criterion"],
             **kwargs
         )
+
+@dataclass
+class OutT:
+
+    t: IO = None
 
 
 class DFALearner(GradLearner):
@@ -178,17 +191,17 @@ class DFALearner(GradLearner):
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
 
-    def forward_nn(self, x: IO) -> IO:
+    def forward_nn(self, x: IO, state: State,  out_t: OutT=None, batch_idx: Idx = None) -> Tensor:
 
         y = self.net(x.f)
         y = y.detach()
-        x._(self).y_det = y
+        state._y_det = y
         y.requires_grad = True
         y.retain_grad()
-        return IO(self.activation(y))
+        return self.activation(y)
 
-    @forward_dep('y')
-    def accumulate(self, x: IO, t: IO):
+    @forward_dep('_y')
+    def accumulate(self, x: IO, t: IO, state: State, out_t: OutT=None, batch_idx: Idx = None):
         """Update the net parameters
 
         Args:
@@ -199,23 +212,33 @@ class DFALearner(GradLearner):
            
             IO: the updated target
         """
-        self.optim.prep_x(x)
+        if out_t.t is None:
+            # TODO: Add warning
+            return
+
+        self.optim.prep_x(x, state)
         y2 = self.netB(x.f)
 
-        y_det = x._(self).y_det
-        y = x._(self).y
+        y_det = state._y_det
+        y = state._y
         y = self.B(y.f)
-        self.criterion(IO(y), t).backward()
+        self.criterion(iou(y), out_t.t).backward()
         y2.backward(y_det.grad)
 
         param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))
         assert x.f.grad is not None
     
-    @forward_dep('y')
-    def step(self, x: IO, t: IO, batch_idx: Idx = None):
+    @forward_dep('_y')
+    def step(self, x: IO, t: IO, state: State, out_t: OutT=None, batch_idx: Idx = None):
         
-        super().step(x, t, batch_idx)
+        super().step(x, t, batch_idx, state)
         self.netB.zero_grad()
+
+    def step_x(self, x: IO, t: IO, state: State, out_t: OutT, batch_idx: Idx = None) -> IO:
+        
+        return super().step_x(
+            x, out_t.t, state, batch_idx
+        )
 
 
 class LinearFABuilder(Builder[FALearner]):

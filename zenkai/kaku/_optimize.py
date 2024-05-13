@@ -17,7 +17,7 @@ import torch.optim as optim
 # local
 from ._lm2 import IO2 as IO
 from ._assess import Criterion
-from ._state import Meta
+from ._state import State
 
 
 
@@ -138,7 +138,7 @@ class CompOptim(object):
             p = model.parameters()
         self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
 
-    def prep_x(self, x: IO, state: Meta, clear: bool=False, **kwarg_overrides):
+    def prep_x(self, x: IO, state: State, clear: bool=False, **kwarg_overrides):
 
         if (
             (clear or state.get('optim') is None) and
@@ -146,7 +146,7 @@ class CompOptim(object):
         ):
             state.optim = self.x_optimf(x, **kwarg_overrides)
 
-    def step_x(self, x: IO, state: Meta):
+    def step_x(self, x: IO, state: State):
 
         if isinstance(self.x_optimf, OptimFactory):
             optim = state.optim
@@ -158,7 +158,7 @@ class CompOptim(object):
         if self.theta_optim is not None:
             self.theta_optim.zero_grad()
 
-    def zero_x(self, x: IO, state: Meta):
+    def zero_x(self, x: IO, state: State):
         if isinstance(self.x_optimf, OptimFactory):
             state.optim.zero_grad()
         else:
