@@ -724,8 +724,6 @@ class SetYHook(ForwardHook):
        return y
 
 
-
-
 class LayerAssessor(ABC):
     """
     Class to use for performing an assessment before and after a step or step_x operation

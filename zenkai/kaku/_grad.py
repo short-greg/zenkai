@@ -6,20 +6,20 @@ import torch.nn as nn
 import torch
 
 # Local
-from ._io import IO
-from ._machine import (
+from ._assess import Criterion
+from ._lm2 import (
     BatchIdxStepTheta, BatchIdxStepX,
-    Idx, Criterion,
-    StepTheta, StepX, forward_dep,
-    LearningMachine
+    Idx2 as Idx, IO2 as IO, iou,
+    StepTheta2 as StepTheta, StepX2 as StepX, forward_dep,
+    LM as LearningMachine
 )
+from ._state import Meta
 from ._optimize import (
     CompOptim, OptimFactory
 )
 from ._assess import (
     XCriterion, Criterion, ThLoss
 )
-
 
 
 class GradStepTheta(StepTheta):
@@ -36,13 +36,13 @@ class GradStepTheta(StepTheta):
             grad_criterion = ThLoss('MSELoss', grad_criterion)
         self.grad_criterion = grad_criterion
 
-    def accumulate(self, x: IO, t: IO, y: IO=None):
+    def accumulate(self, x: IO, t: IO, state: Meta, y: IO=None, **kwargs):
         
         if y is None:
             if isinstance(self.module, LearningMachine):
                 y = self.module(x.spawn(), release=False)
             else:
-                y = IO(self.module(*x.u))
+                y = iou(self.module(*x.u))
         
         if isinstance(self.grad_criterion, XCriterion):
             assessment = self.grad_criterion.assess(x, y, t)
@@ -52,7 +52,7 @@ class GradStepTheta(StepTheta):
             assessment = self.grad_criterion.assess(y, t)
         assessment.backward()
 
-    def step(self, x: IO, t: IO):
+    def step(self, x: IO, t: IO, state: Meta, **kwargs):
         if self.optim is not None:
             self.optim.step()
             self.optim.zero_grad()
@@ -86,6 +86,7 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        print(len(y), y.f.shape)
         return self.criterion.assess(y, t, reduction_override)
 
     def grad_assess(
@@ -97,45 +98,52 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             return self.grad_criterion.assess(x, y, t, reduction_override)
         return self.grad_criterion.assess(y, t, reduction_override)
 
-    @forward_dep('y')
-    def accumulate(self, x: IO, t: IO, batch_idx: Idx = None):
+    @forward_dep('_y')
+    def accumulate(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None):
         """
         Args:
             x (IO): The input
             t (IO): The target
             batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
         """
-        self.optim.prep_x(x)
+        self.optim.prep_x(x, state)
         if batch_idx is not None:
             x_idx = batch_idx(x)
             t_idx = batch_idx(t)
         else:
             x_idx = x
             t_idx = t
-        self.grad_assess(x_idx, x._(self).y, t_idx).backward()
+        self.grad_assess(x_idx, state._y, t_idx).backward()
 
-    def step_x(self, x: IO, t: IO, batch_idx: Idx = None) -> IO:
-        x_prime = self.optim.step_x(x)
-        self.optim.zero_x(x)
+    def step_x(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None) -> IO:
+        x_prime = self.optim.step_x(x, state)
+        self.optim.zero_x(x, state)
         return x_prime
 
-    def step(self, x: IO, t: IO, batch_idx: Idx = None):
+    def step(self, x: IO, t: IO, state: Meta, batch_idx: Idx = None):
         self.optim.step_theta()
         self.optim.zero_theta()
 
-    def forward_nn(self, x: IO) -> IO:
-        if self.module is not None:
-            return IO(self.module(x.f))
-        return x
+    # def forward_nn(self, x: IO) -> IO:
+    #     if self.module is not None:
+    #         return IO(self.module(x.f))
+    #     return x
 
-    def forward(
-        self, x: IO, release: bool = True, batch_idx: Idx = None
-    ) -> IO:
-        
-        x.freshen()
+    def forward_nn(self, x: IO, state: Meta, batch_idx: Idx=None) -> torch.Tensor:
         x_idx = batch_idx(x) if batch_idx is not None else x
-        y = x._(self).y = self.forward_nn(x_idx)
-        return y.out(release)
+        return self.module(x_idx[0]) if self.module is not None else x_idx[0]
+        # if self.module is not None:
+        #     return IO(self.module(x.f))
+        # return x
+
+    # def forward(
+    #     self, x: IO, release: bool = True, batch_idx: Idx = None
+    # ) -> IO:
+        
+    #     x.freshen()
+    #     x_idx = batch_idx(x) if batch_idx is not None else x
+    #     y = x._(self).y = self.forward_nn(x_idx)
+    #     return y.out(release)
     
     def unaccumulate(self, x: IO=None, theta: bool=True):
         if x is not None:

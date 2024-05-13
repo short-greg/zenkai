@@ -8,7 +8,7 @@ class TestIO:
     def test_get_attr_returns_correct_value(self):
 
         data =  torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data, 1]
         )
         assert io[0] is data
@@ -16,7 +16,7 @@ class TestIO:
     def test_getitem_returns_correct_value_for_1(self):
 
         data =  torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data, 1]
         )
         assert io[1] == 1
@@ -24,18 +24,18 @@ class TestIO:
     def test_getitem_returns_io_if_multiple_values(self):
 
         data =  torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data, 1]
         )
         io2 = io[1, 0]
         assert io2[0] == 1
-        assert isinstance(io2, _lm2.IO)
+        assert isinstance(io2, _lm2.IO2)
 
     def test_dx_subtracts_x_prime(self):
 
         data =  torch.rand(2, 2)
         data_prime =  torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data]
         )
         io_prime = io.dx([data_prime])
@@ -45,7 +45,7 @@ class TestIO:
 
         data =  torch.rand(2, 2)
         data_prime = torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data]
         )
         dx = io.dx([data_prime])
@@ -57,7 +57,7 @@ class TestIO:
     def test_grad_returns_0_if_no_grad(self):
 
         data =  torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data]
         )
         grad = io.grad()
@@ -67,7 +67,7 @@ class TestIO:
 
         data = torch.rand(2, 2)
         data.grad = torch.rand(2, 2)
-        io = _lm2.IO(
+        io = _lm2.IO2(
             [data]
         )
         grad = io.grad()
@@ -83,10 +83,10 @@ class GradLM(_lm2.LM):
         )
         self.optim = torch.optim.Adam([self.w])
 
-    def assess_y(self, y: _lm2.IO, t: _lm2.IO, override: str = None) -> torch.Tensor:
+    def assess_y(self, y: _lm2.IO2, t: _lm2.IO2, override: str = None) -> torch.Tensor:
         return (y[0] - t[0]).pow(2).mean()
 
-    def acc(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs):
+    def accumulate(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs):
         
         # x = torch.randn_like(x[0])
         # t = torch.randn_like(t[0])
@@ -94,15 +94,15 @@ class GradLM(_lm2.LM):
         t = t[0]
         (state._y[0] - t[0]).pow(2).sum().backward()
 
-    def step(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs):
+    def step(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs):
         
         self.optim.step()
         self.optim.zero_grad()
     
-    def step_x(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.Meta, **kwargs) -> _lm2.IO:
+    def step_x(self, x: _lm2.IO2, t: _lm2.IO2, state: _lm2.Meta, **kwargs) -> _lm2.IO2:
         return x.acc_grad()
     
-    def forward_nn(self, x: _lm2.IO, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
+    def forward_nn(self, x: _lm2.IO2, state: _lm2.Meta, mul: float=1.0) -> torch.Tensor:
         return x[0] @ self.w * mul
 
 
@@ -148,7 +148,7 @@ class TestLM:
 
         x = torch.rand(4, 2)
         mod = GradLM()
-        y = mod(x, mul=2.0, mode=_lm2.Mode.WithStep)
+        y = mod(x, mul=2.0, mode=_lm2.LMode.WithStep)
         before = mod.w.clone()
         t = torch.rand(4, 4)
         (y - t).pow(2).sum().backward()
@@ -171,7 +171,7 @@ class TestLM:
         x = torch.rand(4, 2)
         mod = GradLM()
         before = mod.w.clone()
-        assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+        assessment = mod.learn(_lm2.IO2([x]), _lm2.IO2([torch.rand(4, 4)]))
         assert (mod.w != before).any()
         assert isinstance(assessment, torch.Tensor)
 
@@ -180,18 +180,18 @@ class TestLM:
         x = torch.rand(4, 2)
         mod = GradLM()
         before = mod.w.clone()
-        assessment = mod.test(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+        assessment = mod.test(_lm2.IO2([x]), _lm2.IO2([torch.rand(4, 4)]))
         assert (mod.w == before).all()
         assert isinstance(assessment, torch.Tensor)
 
     def test_step_updates_the_weights_after_acc(self):
 
-        x = _lm2.IO([torch.rand(4, 2)])
+        x = _lm2.IO2([torch.rand(4, 2)])
         mod = GradLM()
         state = _lm2.Meta()
         mod.forward_io(x, state, mul=2.0)
-        t = _lm2.IO([torch.rand(4, 4)])
-        mod.acc(x, t, state, mul=2.0)
+        t = _lm2.IO2([torch.rand(4, 4)])
+        mod.accumulate(x, t, state, mul=2.0)
         mod.step(x, t, state, mul=2.0)
         assert (mod.w.grad is not None)
 
@@ -200,10 +200,9 @@ class TestLM:
         x = torch.rand(4, 2)
         mod = GradLM(2, 4)
         mod2 = GradLM(4, 4)
-        y = mod(x, mul=2.0, mode=_lm2.Mode.OnlyStepX)
-        y2 = mod2(y, mode=_lm2.Mode.OnlyStepX)
+        y = mod(x, mul=2.0, mode=_lm2.LMode.OnlyStepX)
+        y2 = mod2(y, mode=_lm2.LMode.OnlyStepX)
         t = torch.rand(4, 4)
         (y2 - t).pow(2).sum().backward()
         assert (mod.w.grad is None)
         assert (mod2.w.grad is None)
-

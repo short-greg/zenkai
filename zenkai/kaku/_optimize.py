@@ -15,9 +15,10 @@ import torch.nn.functional
 import torch.optim as optim
 
 # local
-from ._machine import LearningMachine
+from ._lm2 import IO2 as IO
 from ._assess import Criterion
-from ._io import IO
+from ._state import Meta
+
 
 
 class NullOptim(torch.optim.Optimizer):
@@ -137,29 +138,29 @@ class CompOptim(object):
             p = model.parameters()
         self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
 
-    def prep_x(self, x: IO, clear: bool=False, **kwarg_overrides):
+    def prep_x(self, x: IO, state: Meta, clear: bool=False, **kwarg_overrides):
 
         if (
-            (clear or x._(self).get('optim') is None) and
+            (clear or state.get('optim') is None) and
             isinstance(self.x_optimf, OptimFactory)
         ):
-            x._(self).optim = self.x_optimf(x.u, **kwarg_overrides)
+            state.optim = self.x_optimf(x, **kwarg_overrides)
 
-    def step_x(self, x: IO):
+    def step_x(self, x: IO, state: Meta):
 
         if isinstance(self.x_optimf, OptimFactory):
-            optim = x._(self).optim
+            optim = state.optim
             optim.step()
             return x
-        return x.grad_update(self.x_optimf)
+        return x.acc_grad(self.x_optimf)
 
     def zero_theta(self):
         if self.theta_optim is not None:
             self.theta_optim.zero_grad()
 
-    def zero_x(self, x: IO):
+    def zero_x(self, x: IO, state: Meta):
         if isinstance(self.x_optimf, OptimFactory):
-            x._(self).optim.zero_grad()
+            state.optim.zero_grad()
         else:
             x.zero_grad()
 
