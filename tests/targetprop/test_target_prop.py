@@ -122,10 +122,6 @@ class TestTargetPropLearner(object):
         y = learner(x)
         y = learner2(y)
 
-        print(
-            learner.forward_learner.module.weight.grad
-        )
-
         (y - t).pow(2).sum().backward()
 
         assert (
@@ -147,10 +143,6 @@ class TestTargetPropLearner(object):
         t = torch.randn(4, 4)
         y = learner(x)
         y = learner2(y)
-
-        print(
-            learner.forward_learner.module.weight.grad
-        )
 
         (y - t).pow(2).sum().backward()
 
