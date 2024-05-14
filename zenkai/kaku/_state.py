@@ -109,10 +109,6 @@ class State(dict):
 
         for k, v in self._subs.items():
             yield k, v
-
-    def __call__(self, sub) -> Any:
-
-        return MyMeta(self, sub)
     
     @classmethod
     def key(cls, key) -> typing.Any:
@@ -126,58 +122,3 @@ class State(dict):
                 for key_i in key
             )
         return key
-
-
-class MyMeta(object):
-
-    def __init__(self, meta: State, base_key):
-        """Use to make meta x more usable
-
-        Args:
-            meta (Meta): The 
-            base_key: The base key for meta
-        """
-
-        object.__setattr__(self, 'meta', meta)
-        object.__setattr__(self, 'base_key', base_key)
-
-        if isinstance(base_key, typing.Tuple):
-            object.__setattr__(self, 'key', self.tuple_key)
-        else:
-            object.__setattr__(self, 'key', self.reg_key)
-
-    def tuple_key(self, sub_key):
-        return self.meta.key((*self.base_key, sub_key))
-        
-    def reg_key(self, sub_key):
-        return self.meta.key((self.base_key, sub_key))
-
-    def __getattr__(self, sub_key: str):
-
-        return self.meta[self.key(sub_key)]
-
-    def __setattr__(self, sub_key: str, value: Any) -> Any:
-        
-        self.meta[self.key(sub_key)] = value
-        return value
-    
-    def __getitem__(self, sub_key: str):
-
-        return self.meta[self.key(sub_key)]
-
-    def __setitem__(self, sub_key: str, value: Any) -> Any:
-        
-        self.meta[self.key(sub_key)] = value
-        return value
-    
-    def get(self, sub_key: str, default=None):
-
-        return self.meta.get(self.key(sub_key), default)
-
-    def get_or_set(self, sub_key: str, default=None):
-
-        return self.meta.get_or_set(self.key(sub_key), default)
-
-    def __contains__(self, sub_key):
-
-        return self.key(sub_key) in self.meta
