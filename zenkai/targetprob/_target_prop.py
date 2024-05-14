@@ -1,4 +1,5 @@
 import typing
+from typing_extensions import Self
 
 # 3rd Party
 import torch
@@ -19,7 +20,7 @@ from ..kaku._lm2 import (
     LearningMachine,
     StepTheta as StepTheta,
     StepX as StepX,
-    SetYHook
+    SetYHook, LMode
 )
 
 
@@ -38,8 +39,8 @@ class TargetPropLearner(LearningMachine):
 
         """
         super().__init__()
-        self._reverse_update = True
-        self._forward_update = True
+        self.reverse_update = True
+        self.forward_update = True
         self._forward_learner = forward_learner
         self._reverse_learner = reverse_learner
             
@@ -50,6 +51,22 @@ class TargetPropLearner(LearningMachine):
 
     def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         return self._forward_learner.assess_y(x, t, reduction_override)
+
+    @property
+    def forward_learner(self) -> LearningMachine:
+        return self._forward_learner
+    
+    @property
+    def reverse_learner(self) -> LearningMachine:
+        return self._reverse_learner
+
+    def lmode_(self, lmode: LMode, cascade: bool=True) -> Self:
+
+        self._lmode = lmode
+        if cascade:
+            self._reverse_learner.lmode_(lmode)
+            self._forward_learner.lmode_(lmode)
+        return self
 
     def rev_x(self, x: IO, y: IO) -> IO:
 
@@ -64,12 +81,15 @@ class TargetPropLearner(LearningMachine):
             x (IO): The input
             t (IO): The target
         """
-        if self._forward_update:
-            self.accumulate_forward(x, t, state.sub('forward'))
-        if self._reverse_update:
+        if self.forward_update:
+            self._forward_learner.accumulate(x, t, state.sub('forward'))
+        if self.reverse_update:
             x_rev = self.rev_x(x, state._y)
-            self._reverse_learner.forward_io(x_rev, t, state.sub('reverse'))
-            self._reverse_learner.accumulate(self.rev_x(x, state._y), t, state.sub('reverse'))
+            _ = self._reverse_learner.forward_io(
+                x_rev, state.sub('reverse'), True
+            )
+            
+            self._reverse_learner.accumulate(x_rev, x, state.sub('reverse'))
 
     def step(self, x: IO, t: IO, state: State):
         """Update the forward and/or reverse model
@@ -78,11 +98,11 @@ class TargetPropLearner(LearningMachine):
             x (IO): The input
             t (IO): The target
         """
-        if self._forward_update:
+        if self.forward_update:
             self._forward_learner.step(x, t, state.sub('forward'))
-        if self._reverse_update:
+        if self.reverse_update:
             x_rev = self.rev_x(x, state._y)
-            self._reverse_learner.step(x_rev, t, state.sub('reverse'))
+            self._reverse_learner.step(x_rev, x, state.sub('reverse'))
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """The default behavior of Target Propagation is to simply call the reverse function with x and t
@@ -100,7 +120,7 @@ class TargetPropLearner(LearningMachine):
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Tuple | typing.Any:
         
         y = self._forward_learner.forward_io(
-            x, state, False
+            x, state.sub('forward'), False
         )
         if len(y) > 1:
             return y[0]

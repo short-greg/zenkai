@@ -124,27 +124,14 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.optim.step_theta()
         self.optim.zero_theta()
 
-    # def forward_nn(self, x: IO) -> IO:
-    #     if self.module is not None:
-    #         return IO(self.module(x.f))
-    #     return x
-
     def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
         x_idx = batch_idx(x) if batch_idx is not None else x
-        return self.module(x_idx[0]) if self.module is not None else x_idx[0]
-        # if self.module is not None:
-        #     return IO(self.module(x.f))
-        # return x
 
-    # def forward(
-    #     self, x: IO, release: bool = True, batch_idx: Idx = None
-    # ) -> IO:
-        
-    #     x.freshen()
-    #     x_idx = batch_idx(x) if batch_idx is not None else x
-    #     y = x._(self).y = self.forward_nn(x_idx)
-    #     return y.out(release)
-    
+        return (
+            self.module(x_idx[0]) 
+            if self.module is not None else x_idx[0]
+        )
+
     def unaccumulate(self, x: IO=None, theta: bool=True):
         if x is not None:
             self.optim.zero_x(x)

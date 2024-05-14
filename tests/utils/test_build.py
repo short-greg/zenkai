@@ -1,5 +1,5 @@
 from zenkai.utils import _build
-from ..kaku.test_machine import SimpleLearner
+from ..kaku.test_lm2 import GradLM as SimpleLearner
 from torch import nn
 import pytest
 

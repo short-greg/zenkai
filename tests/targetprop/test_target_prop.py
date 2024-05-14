@@ -3,6 +3,7 @@
 from zenkai import targetprob
 from zenkai.kaku import _grad
 import zenkai
+from zenkai import IO, State, iou
 from zenkai.utils import _params as params
 from torch import nn
 import torch
@@ -33,71 +34,76 @@ class TestTargetPropLearner(object):
         t = zenkai.iou(torch.randn(4, 4))
         y = learner.forward_io(x, state)
 
-        before = params.get_model_params(learner.forward_module)
-        learner.accumulate(x, t)
-        learner.step(x, t)
+        before = params.get_model_params(learner.forward_learner)
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
         assert (
             before !=
-            params.get_model_params(learner.forward_module)
+            params.get_model_params(learner._forward_learner)
         ).any()
 
-#     def test_target_prop_learner_updates_reverse(self):
+    def test_target_prop_learner_updates_reverse(self):
 
-#         learner = TargetPropExample1(2, 4)
-#         x = zenkai.IO(torch.randn(4, 2))
-#         t = zenkai.IO(torch.randn(4, 4))
-#         y = learner(x)
+        learner = TargetPropExample1(2, 4)
+        x = iou(torch.randn(4, 2))
+        t = iou(torch.randn(4, 4))
 
-#         before = params.get_model_params(learner.reverse_module)
-#         learner.accumulate(x, t)
-#         learner.step(x, t)
-#         assert (
-#             before !=
-#             params.get_model_params(learner.reverse_module)
-#         ).any()
+        state = State()
+        y = learner.forward_io(x, state)
 
-#     def test_target_prop_learner_does_not_update_reverse_when_turned_off(self):
+        before = params.get_model_params(learner.reverse_learner)
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
+        assert (
+            before !=
+            params.get_model_params(learner.reverse_learner)
+        ).any()
 
-#         learner = TargetPropExample1(2, 4)
-#         x = zenkai.IO(torch.randn(4, 2))
-#         t = zenkai.IO(torch.randn(4, 4))
-#         y = learner(x)
+    def test_target_prop_learner_does_not_update_reverse_when_turned_off(self):
 
-#         before = params.get_model_params(learner.reverse_module)
-#         learner.reverse_update(False)
-#         learner.accumulate(x, t)
-#         learner.step(x, t)
-#         assert (
-#             before ==
-#             params.get_model_params(learner.reverse_module)
-#         ).all()
+        learner = TargetPropExample1(2, 4)
+        x = iou(torch.randn(4, 2))
+        t = iou(torch.randn(4, 4))
+        state = State()
+        y = learner.forward_io(x, state)
+        learner.reverse_update = False
+        before = params.get_model_params(learner.reverse_learner)
+        learner.reverse_update
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
+        assert (
+            before ==
+            params.get_model_params(learner.reverse_learner)
+        ).all()
     
-#     def test_target_prop_learner_does_not_update_forward_when_turned_off(self):
+    def test_target_prop_learner_does_not_update_forward_when_turned_off(self):
 
-#         learner = TargetPropExample1(2, 4)
-#         x = zenkai.IO(torch.randn(4, 2))
-#         t = zenkai.IO(torch.randn(4, 4))
-#         y = learner(x)
+        learner = TargetPropExample1(2, 4)
+        x = iou(torch.randn(4, 2))
+        t = iou(torch.randn(4, 4))
+        state = State()
+        y = learner.forward_io(x, state)
+        learner.forward_update = False
 
-#         before = params.get_model_params(learner.forward_module)
-#         learner.forward_update(False)
-#         learner.accumulate(x, t)
-#         learner.step(x, t)
-#         assert (
-#             before ==
-#             params.get_model_params(learner.forward_module)
-#         ).all()
+        before = params.get_model_params(learner.forward_learner)
+        learner.accumulate(x, t, state)
+        learner.step(x, t, state)
+        assert (
+            before ==
+            params.get_model_params(learner.forward_learner)
+        ).all()
     
-#     def test_target_prop_learner_returns_valid_x(self):
+    def test_target_prop_learner_returns_valid_x(self):
 
-#         learner = TargetPropExample1(2, 4)
-#         x = zenkai.IO(torch.randn(4, 2))
-#         t = zenkai.IO(torch.randn(4, 4))
-#         y = learner(x)
+        learner = TargetPropExample1(2, 4)
+        state = State()
+        x = iou(torch.randn(4, 2))
+        t = iou(torch.randn(4, 4))
+        y = learner.forward_io(x, state)
 
-#         learner.forward_update(False)
-#         learner.accumulate(x, t)
-#         x_prime = learner.step_x(x, t)
-#         assert (
-#             x.f != x_prime.f
-#         ).any()
+        learner.forward_update = False
+        learner.accumulate(x, t, state)
+        x_prime = learner.step_x(x, t, state)
+        assert (
+            x.f != x_prime.f
+        ).any()
