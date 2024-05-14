@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from zenkai.kaku._io2 import IO2 as IO, iou
+from zenkai.kaku._io2 import IO as IO, iou
 from zenkai.ensemble._ensemble import EnsembleLearner
 from zenkai.ensemble._ensemble_mod import StochasticVoter
 from ..kaku.test_grad import THGradLearnerT1

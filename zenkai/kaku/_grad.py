@@ -9,9 +9,9 @@ import torch
 from ._assess import Criterion
 from ._lm2 import (
     BatchIdxStepTheta, BatchIdxStepX,
-    Idx2 as Idx, IO2 as IO, iou,
-    StepTheta2 as StepTheta, StepX2 as StepX, forward_dep,
-    LM as LearningMachine
+    Idx as Idx, IO as IO, iou,
+    StepTheta as StepTheta, StepX as StepX, forward_dep,
+    LearningMachine as LearningMachine
 )
 from ._state import State
 from ._optimize import (

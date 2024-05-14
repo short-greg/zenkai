@@ -15,7 +15,7 @@ import torch.nn.functional
 import torch.optim as optim
 
 # local
-from ._lm2 import IO2 as IO
+from ._lm2 import IO as IO
 from ._assess import Criterion
 from ._state import State
 

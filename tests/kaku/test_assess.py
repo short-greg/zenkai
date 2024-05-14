@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-from zenkai.kaku import _assess as _evaluation, ThLoss, IO, Reduction
+from zenkai.kaku import _assess as _evaluation, ThLoss, IO, iou, Reduction
 from zenkai.kaku import AssessmentLog
 
 
@@ -44,12 +44,13 @@ class TestReduction:
 
 
 class TestThLoss:
+
     def test_th_loss_outputs_correct_loss_with_mse_and_no_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "none")
-        evaluation = loss(IO(x), IO(t))
+        evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="none")(x, t)).all()
 
     def test_th_loss_outputs_correct_loss_with_mse_and_mean_reduction(self):
@@ -57,7 +58,7 @@ class TestThLoss:
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "mean")
-        evaluation = loss(IO(x), IO(t))
+        evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
     def test_th_loss_outputs_correct_loss_with_mseloss_and_mean_reduction(self):
@@ -65,7 +66,7 @@ class TestThLoss:
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "mean")
-        evaluation = loss(IO(x), IO(t))
+        evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
     def test_th_loss_fails_with_invalid_reduction(self):
@@ -78,7 +79,7 @@ class TestThLoss:
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "none")
-        evaluation = loss(IO(x), IO(t), "mean")
+        evaluation = loss(iou(x), iou(t), "mean")
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
     def test_assess_returns_assessment(self):
@@ -86,7 +87,7 @@ class TestThLoss:
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
         loss = ThLoss("MSELoss", "none")
-        evaluation = loss.assess(IO(x), IO(t), "mean")
+        evaluation = loss.assess(iou(x), iou(t), "mean")
         assert isinstance(evaluation, _evaluation.torch.Tensor)
 
     def test_maximize_returns_true_if_maximize(self):
@@ -96,6 +97,7 @@ class TestThLoss:
 
 
 class TestLookup:
+
     def test_lookup_gets_mse_loss(self):
 
         mse_loss = _evaluation.lookup_loss("MSELoss")
@@ -108,6 +110,7 @@ class TestLookup:
 
 
 class TestAssessmentLog:
+
     def test_assessment_log_update_adds(self):
         log = AssessmentLog()
         assessment = torch.rand(1)[0]
@@ -135,4 +138,3 @@ class TestAssessmentLog:
         log.update("x", "name", "validation", assessment)
         log.update("y", "name", "validation", assessment2)
         assert log.as_assessment_dict()["name_validation"] == assessment2
-

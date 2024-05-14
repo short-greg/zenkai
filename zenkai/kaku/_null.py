@@ -5,7 +5,7 @@ import typing
 import torch
 
 # Local
-from ._lm2 import IO2 as IO, StepTheta2 as StepTheta, StepX2 as StepX, LM as LearningMachine
+from ._lm2 import IO as IO, StepTheta as StepTheta, StepX as StepX, LearningMachine as LearningMachine
 from ._assess import Criterion, ThLoss
 from ._state import State
 

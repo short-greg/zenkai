@@ -2,24 +2,21 @@
 import typing
 
 # 3rd party
-import torch.nn as nn
 import torch
 
 # local
 from ._reversible_mods import Reversible, SequenceReversible
-
-
 from ..kaku import (
     Criterion
 )
 from ..kaku._state import State
 from ..kaku._io2 import (
-    IO2 as IO, iou
+    IO as IO, iou
 )
 from ..kaku._lm2 import (
-    LM as LearningMachine,
-    StepTheta2 as StepTheta,
-    StepX2 as StepX,
+    LearningMachine as LearningMachine,
+    StepTheta as StepTheta,
+    StepX as StepX,
 
 )
 
@@ -55,7 +52,7 @@ class ReversibleMachine(LearningMachine):
         Returns:
             IO: The updated input
         """
-        return iou(self.reversible.reverse(t.f), detach=True)
+        return iou(self.reversible.reverse(t.f))
 
     def step(self, x: IO, t: IO, state: State):
         """These layers do not have parameters so the internal mechanics are not updated

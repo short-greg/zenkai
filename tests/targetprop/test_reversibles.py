@@ -5,6 +5,7 @@ from zenkai.targetprob import _reversible_mods
 
 
 class TestNull:
+    
     def test_null_forward(self):
 
         null = _reversible_mods.Null()

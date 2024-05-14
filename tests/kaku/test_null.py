@@ -1,7 +1,7 @@
 import torch
 
 from zenkai.utils import _params as utils
-from zenkai.kaku._io2 import IO2 as IO, iou
+from zenkai.kaku._io2 import IO as IO, iou
 from zenkai.kaku._state import State
 from zenkai.kaku._null import NullLearner
 

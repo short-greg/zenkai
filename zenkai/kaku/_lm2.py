@@ -13,15 +13,12 @@ from dataclasses import dataclass
 from typing_extensions import Self
 
 from .. import utils
-from ._io2 import Idx2, iou, IO2
+from ._io2 import Idx, iou, IO
 
 # args: name, value
 # var args: name, multiple values
 # kwargs: name, value
 # var kwargs: name, value
-
-#
-
 
 
 def acc_dep(check_field: str, x_key: bool = True):
@@ -35,7 +32,7 @@ def acc_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
             
             # TODO: add in x_key
             val = state.get(check_field) if x_key else self._.get(check_field)
@@ -62,7 +59,7 @@ def step_dep(check_field: str, x_key: bool = True):
 
     def inner(func):
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
             val = state.get(check_field) if x_key else self._.get(check_field)
             # val = state.get((self, x if x_key else None, check_field))
@@ -88,7 +85,7 @@ def forward_dep(check_field: str, x_key: bool = True):
     def inner(func):
         
         @wraps(func)
-        def _(self: LM, x: IO2, t: IO2, state: State, *args, **kwargs):
+        def _(self: LearningMachine, x: IO, t: IO, state: State, *args, **kwargs):
 
             # val = state.get((self, x if x_key else None, check_field))
             val = state.get(check_field) if x_key else self._.get(check_field)
@@ -131,7 +128,7 @@ def dump_state(ctx, state: State):
 
     for k, v in state.items():
 
-        if isinstance(v, IO2):
+        if isinstance(v, IO):
             y = []
             for v_i in v:
                 if isinstance(v_i, torch.Tensor):
@@ -140,7 +137,7 @@ def dump_state(ctx, state: State):
                 else:
                     y.append(v_i)
 
-            d[k] = IO2(y)
+            d[k] = IO(y)
         elif isinstance(v, torch.Tensor):
             d[k] = TId(len(t))
             t.append(v)
@@ -160,8 +157,8 @@ def load_state(ctx):
 
     for k, v in storage.items():
         
-        if isinstance(v, IO2):
-            state[k] = IO2(
+        if isinstance(v, IO):
+            state[k] = IO(
                 t[v_i.idx] if isinstance(v_i, TId) else v_i
                 for v_i in v
             )
@@ -182,50 +179,43 @@ def out(x, multi: bool=True) -> typing.Union[typing.Any, typing.Tuple]:
     return x[0].detach() if isinstance(x[0], torch.Tensor) else x[0]
 
 
-class StepXHook2(ABC):
+class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
 
     @abstractmethod
     def __call__(
-        self, step_x: "StepX2", x: IO2, x_prime: IO2, t: IO2, state: State
-    ) -> typing.Tuple[IO2, IO2]:
+        self, step_x: "StepX", x: IO, x_prime: IO, t: IO, state: State
+    ) -> typing.Tuple[IO, IO]:
         pass
 
 
-class StepHook2(ABC):
+class StepHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, step: "StepTheta2", x: IO2, t: IO2, state: State
-    ) -> typing.Tuple[IO2, IO2]:
-        pass
-
-
-class ForwardHook2(ABC):
-    
-    @abstractmethod
-    def __call__(self, learner: "LM", x: IO2, y: IO2, state: State) -> IO2:
-        pass
-
-
-class LearnerPostHook2(ABC):
-    """Use to add additional processing after test has been called"""
-
-    @abstractmethod
-    def __call__(
-        self, x: IO2, t: IO2, y: IO2, state: State, assessment: torch.Tensor
-    ) -> typing.Tuple[IO2, IO2]:
+        self, step: "StepTheta", x: IO, t: IO, state: State
+    ) -> typing.Tuple[IO, IO]:
         pass
 
 
 class ForwardHook(ABC):
     
     @abstractmethod
-    def __call__(self, learner: "LM", x: IO2, y: IO2) -> IO2:
+    def __call__(self, learner: "LearningMachine", x: IO, y, state: State) -> IO:
         pass
 
 
-class StepX2(ABC):
+class LearnerPostHook(ABC):
+    """Use to add additional processing after test has been called"""
+
+    @abstractmethod
+    def __call__(
+        self, x: IO, t: IO, y: IO, assessment: torch.Tensor
+    ) -> typing.Tuple[IO, IO]:
+        pass
+
+
+class StepX(ABC):
     """Base class for updating the input (target)
     Use to decouple the optimization of the input from the learning
     machine definition
@@ -239,10 +229,10 @@ class StepX2(ABC):
         self.step_x = self._step_x_hook_runner
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: State, **kwargs) -> IO2:
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         pass
 
-    def _step_x_hook_runner(self, x: IO2, t: IO2, state: State,  *args, **kwargs) -> IO2:
+    def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
         Args:
@@ -258,7 +248,7 @@ class StepX2(ABC):
 
         return x_prime
 
-    def step_x_hook(self, hook: StepXHook2) -> "StepX2":
+    def step_x_hook(self, hook: StepXHook) -> "StepX":
         """Add hook to call after StepX
 
         Args:
@@ -270,7 +260,7 @@ class StepX2(ABC):
         return self
 
 
-class StepTheta2(ABC):
+class StepTheta(ABC):
     """Base class for updating the parameters
     Use to decouple the optimization of the parameters from the core
     machine definition
@@ -280,18 +270,18 @@ class StepTheta2(ABC):
 
         super().__init__(*args, **kwargs)
         self._step_hook_initialized = True
-        self._step_hooks: typing.List[StepHook2] = []
+        self._step_hooks: typing.List[StepHook] = []
         self._base_step = self.step
         self._base_accumulate = self.accumulate
         self.step = self._step_hook_runner
         self.accumulate = self._accumulate_hook_runner
-        self._accumulate_hooks: typing.List[StepHook2] = []
+        self._accumulate_hooks: typing.List[StepHook] = []
 
-    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
+    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
         pass
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: State, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the parameters of the network
 
         Args:
@@ -300,7 +290,7 @@ class StepTheta2(ABC):
         """
         pass
 
-    def _accumulate_hook_runner(self, x: IO2, t: IO2, state: State, *args, **kwargs):
+    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -312,7 +302,7 @@ class StepTheta2(ABC):
         for posthook in self._accumulate_hooks:
             posthook(self, x, t, state)
 
-    def accumulate_posthook(self, hook: StepHook2) -> "StepTheta2":
+    def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -323,7 +313,7 @@ class StepTheta2(ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(self, x: IO2, t: IO2, state: State, *args, **kwargs):
+    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
@@ -337,7 +327,7 @@ class StepTheta2(ABC):
             x, t = posthook(self, x, t, state)
         return result
 
-    def step_posthook(self, hook: StepHook2) -> "StepTheta2":
+    def step_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -349,79 +339,77 @@ class StepTheta2(ABC):
         return self
 
 
-class NullStepX(StepX2):
+class NullStepX(StepX):
 
-    def step_x(self, x: IO2, t: IO2, state: State, *args, **kwargs) -> IO2:
+    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
         return x
 
 
-class NullStepTheta(StepTheta2):
+class NullStepTheta(StepTheta):
 
-    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
+    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
         pass
 
-    def step(self, x: IO2, t: IO2, state: State, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         return
 
 
-class BatchIdxStepTheta(StepTheta2):
+class BatchIdxStepTheta(StepTheta):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs):
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
         pass
 
-    def accumulate(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs):
+    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
         pass
 
 
-class FeatureIdxStepTheta(StepTheta2):
+class FeatureIdxStepTheta(StepTheta):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: State, feature_idx: Idx2 = None, **kwargs):
+    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
         pass
 
 
-class BatchIdxStepX(StepX2):
+class BatchIdxStepX(StepX):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: State, batch_idx: Idx2 = None, **kwargs) -> IO2:
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs) -> IO:
         pass
 
 
-class FeatureIdxStepX(StepX2):
+class FeatureIdxStepX(StepX):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: State, feature_idx: Idx2 = None, **kwargs) -> IO2:
+    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs) -> IO:
         pass
-
 
 
 class F(Function):
 
     @staticmethod
-    def forward(ctx, self, mode: LMode, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
+    def forward(ctx, self, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
 
         # ensure cloned and detached
         # set grad to enabled
         ctx.self = self
         with torch.enable_grad():
-            x = IO2(args).clone(True)
+            x = IO(args).clone(True)
 
             state = State()
             y = self.forward_nn(x, state=state, **kwargs)
             if isinstance(y, typing.Tuple):
-                y = IO2(y)
+                y = IO(y)
                 ctx._multi_out = True
             else:
                 ctx._multi_out = False
-                y = IO2((y,))
+                y = IO((y,))
             state._x = x
             state._y = y
-            ctx._mode = mode
             dump_state(ctx, state)
             ctx._kwargs = kwargs
         
@@ -433,96 +421,199 @@ class F(Function):
         self = ctx.self
         # calculate t
         with torch.enable_grad():
-            mode = ctx._mode
             state = load_state(ctx)
-            x: IO2 = state._x
+            x: IO = state._x
             y = state._y
             kwargs = ctx._kwargs
 
             t = y.t(grad_outputs).detach_()
 
-            if mode == LMode.WithStep:
+            if self.lmode == LMode.WithStep:
                 self.accumulate(x, t, state, **kwargs)
                 x_prime = self.step_x(x, t, state, **kwargs)
                 self.step(x, t, state, **kwargs)
-            elif mode == LMode.Default:
+            elif self.lmode == LMode.Default:
                 self.accumulate(x, t, state, **kwargs)
                 x_prime = self.step_x(x, t, state, **kwargs)
-            elif mode == LMode.StepPriority:
+            elif self.lmode == LMode.StepPriority:
                 self.accumulate(x, t, state, **kwargs)
                 self.step(x, t, state, **kwargs)
                 x_prime = self.step_x(x, t, state, **kwargs)
-            elif mode == LMode.OnlyStepX:
+            elif self.lmode == LMode.OnlyStepX:
                 x_prime = self.step_x(x, t, state, **kwargs)
             
-            return None, None, None, *x.dx(x_prime)
+            return None, None, *x.dx(x_prime)
 
 
-class LM(StepTheta2, StepX2, nn.Module, ABC):
+class LearningMachine(StepTheta, StepX, nn.Module, ABC):
+
+    def __init__(self, lmode: LMode=LMode.Default):
+
+        super().__init__()
+        self.lmode = lmode
+
+        self._test_posthooks = []
+        self._learn_posthooks = []
+        self._y_hooks = []
+        self._base_learn = self.learn
+        self._base_test = self.test
+        self.learn = self._learn_hook_runner
+        self._base_forward = self.forward_nn
+        self.forward_nn = self._forward_hook_runner
+        self.test = self._test_hook_runner
+
+    def lmode_(self, lmode: LMode) -> Self:
+
+        self.lmode = lmode
+        return self
 
     @abstractmethod
-    def assess_y(self, y: IO2, t: IO2, override: str=None) -> torch.Tensor:
+    def assess_y(self, y: IO, t: IO, override: str=None) -> torch.Tensor:
         pass
 
     @abstractmethod
-    def step(self, x: IO2, t: IO2, state: State, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         pass
 
-    def accumulate(self, x: IO2, t: IO2, state: State, **kwargs):
-        pass
-
-    @abstractmethod
-    def step_x(self, x: IO2, t: IO2, state: State, **kwargs) -> IO2:
+    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
         pass
 
     @abstractmethod
-    def forward_nn(self, x: IO2, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         pass
 
-    def forward_io(self, x: IO2, state: State, detach: bool=True, **kwargs) -> IO2:
+    def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
+        """Add hook to call after forward
+
+        Args:
+            hook (ForwardHook): _description_
+        """
+        self._y_hooks.append(hook)
+        return self
+
+    def learner_hook(
+        self, hook: LearnerPostHook, learn: bool = True, test: bool = True
+    ) -> "LearningMachine":
+        """Add hook to call after learn
+
+        Args:
+            hook (StepXHook): The hook to add
+        """
+        if learn:
+            self._learn_posthooks.append(hook)
+        if test:
+            self._test_posthooks.append(hook)
+        return self
+
+    def _learn_hook_runner(
+        self,
+        x: IO,
+        t: IO,
+        get_y: bool=False
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+        """
+        assessment, y = self._base_learn(
+            x, t, get_y=True
+        )
+
+        for posthook in self._learn_posthooks:
+            posthook(x, t, y, assessment)
+        if get_y:
+            return assessment, y
+        return assessment
+
+    def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
+        """
+
+        Args:
+            x (IO): The input to the module
+            t (IO): The target
+        """
+        y = self._base_forward(x, state, *args, **kwargs)
+        for hook in self._y_hooks:
+            y = hook(self, x, y, state)
+        return y
+
+    def _test_hook_runner(
+        self,
+        x: IO,
+        t: IO,
+        get_y: bool=False
+    ):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+        """
+        assessment, y = self._base_test(x, t, get_y=True)
+
+        for posthook in self._test_posthooks:
+            posthook(x, t, y, assessment)
+
+        if get_y:
+            return assessment, y
+        return assessment
+
+    @abstractmethod
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        pass
+
+    def forward_io(self, x: IO, state: State, detach: bool=True, **kwargs) -> IO:
 
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
-        y = state._y = IO2(y) if isinstance(y, typing.Tuple) else iou(y)
+        y = state._y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
 
         print(type(state))
         if detach:
             return y.detach()
         return y
     
-    def learn(self, x: IO2, t: IO2, **kwargs) -> torch.Tensor:
+    def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> torch.Tensor:
 
-        y = self(*x, mode=LMode.WithStep, **kwargs)
+        y = self(*x, **kwargs)
         if not isinstance(y, typing.Tuple):
             y = (y,)
-        assessment = self.assess_y(IO2(y), t)
+        assessment = self.assess_y(IO(y), t)
         assessment.backward()
+        if get_y:
+            return assessment, y
         return assessment
 
-    def test(self, x: IO2, t: IO2, **kwargs) -> torch.Tensor:
+    def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> torch.Tensor:
 
-        y = self(*x, mode=LMode.WithStep, **kwargs)
+        y = self(*x, **kwargs)
         if not isinstance(y, typing.Tuple):
             y = (y,)
-        return self.assess_y(IO2(y), t)
+
+        assessment = self.assess_y(IO(y), t)
+        if get_y:
+            return assessment, y
+        return assessment
 
     def forward(
-        self, *x, mode: LMode=LMode.Default, **kwargs
-    ) -> IO2:
+        self, *x, **kwargs
+    ) -> IO:
         # io = self.IO(*x, **kwargs)
         # flattened = [v.requires_grad_() if isinstance(v, torch.Tensor) else v for v in io.flatten()]
         
         # Have to flatten io to use with F
         x = [x_i.requires_grad_(True) if isinstance(x_i, torch.Tensor) else x_i for x_i in x]
-        return F.apply(self, mode, kwargs, *x)
+        return F.apply(self, kwargs, *x)
 
 
-class OutDepStepTheta(StepTheta2):
+class OutDepStepTheta(StepTheta):
     """StepTheta that optionally depends on the outgoing module if outgoing_t is specified"""
 
     @abstractmethod
     def step(
-        self, x: IO2, t: IO2, outgoing_t: IO2 = None, outgoing_x: IO2 = None
+        self, x: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
     ):
         """Step that depends on the outgoing machine
 
@@ -535,13 +626,13 @@ class OutDepStepTheta(StepTheta2):
         pass
 
 
-class InDepStepX(StepX2):
+class InDepStepX(StepX):
     """StepX that optionally depends on the incoming module if incoming_x is specified"""
 
     @abstractmethod
     def step_x(
-        self, x: IO2, t: IO2, incoming_x: IO2 = None, incoming_t: IO2 = None
-    ) -> IO2:
+        self, x: IO, t: IO, incoming_x: IO = None, incoming_t: IO = None
+    ) -> IO:
         """
 
         Args:
@@ -564,7 +655,7 @@ class SetYHook(ForwardHook):
         super().__init__()
         self.y_name = y
 
-    def __call__(self, learner: LM, x: IO2, y: IO2, state: State, **kwargs) -> IO2:
+    def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State, **kwargs) -> IO:
        
        state._x = y
        # x._(learner)[self.y_name] = y

@@ -6,7 +6,7 @@ from torch import nn
 from zenkai import OptimFactory, ThLoss, CompOptim
 
 # local
-from zenkai.kaku._lm2 import IO2 as IO, iou, Idx2 as Idx
+from zenkai.kaku._lm2 import IO as IO, iou, Idx as Idx
 from zenkai.kaku import _grad
 from zenkai.kaku import State
 from zenkai.utils import _params as utils

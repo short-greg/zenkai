@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 # local
-from ._io2 import IO2 as IO
+from ._io2 import IO as IO
 # from ._state import Meta
 # from ._machine import LearningMachine, StepXHook, StepHook
 

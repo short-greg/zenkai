@@ -5,7 +5,7 @@ import typing
 from torch._tensor import Tensor
 import torch.nn as nn
 
-from zenkai.kaku._lm2 import IO2 as IO, Idx2 as Idx, forward_dep
+from zenkai.kaku._lm2 import IO as IO, Idx as Idx, forward_dep
 
 from ..kaku import Idx
 
@@ -29,9 +29,9 @@ from ..kaku._grad import GradLearner
 from dataclasses import dataclass
 
 
-from zenkai.kaku._io2 import IO2 as IO, iou
+from zenkai.kaku._io2 import IO as IO, iou
 from ..kaku._state import State
-from ..kaku._lm2 import LM as LearningMachine
+from ..kaku._lm2 import LearningMachine as LearningMachine
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:

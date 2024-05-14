@@ -3,8 +3,8 @@ import torch
 from sklearn.linear_model import SGDRegressor
 
 # local
-from zenkai.kaku._io2 import iou, IO2 as IO
-from zenkai.kaku._lm2 import StepX2 as StepX
+from zenkai.kaku._io2 import iou, IO as IO
+from zenkai.kaku._lm2 import StepX as StepX
 from zenkai.kaku import Criterion, State
 from zenkai.scikit._scikit import ScikitLimitGen, ScikitMachine
 from zenkai.scikit._scikit_mod import ScikitWrapper, MultiOutputScikitWrapper

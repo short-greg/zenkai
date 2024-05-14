@@ -13,23 +13,23 @@ from ..kaku import (
 )
 from ..kaku._state import State
 from ..kaku._io2 import (
-    IO2 as IO, iou
+    IO as IO, iou
 )
 from ..kaku._lm2 import (
-    LM,
-    StepTheta2 as StepTheta,
-    StepX2 as StepX,
+    LearningMachine,
+    StepTheta as StepTheta,
+    StepX as StepX,
     SetYHook
 )
 
 
-class TargetPropLearner(LM):
+class TargetPropLearner(LearningMachine):
     """
     """
     y_name = 'y'
 
     def __init__(
-        self, forward_learner: LM, reverse_learner: LM, cat_x: bool=True
+        self, forward_learner: LearningMachine, reverse_learner: LearningMachine, cat_x: bool=True
     ) -> None:
         """
         Create a target prop learner for doing target propagation
@@ -243,7 +243,7 @@ class DiffTargetPropLearner(TargetPropLearner):
 
 
 def create_grad_target_prop(
-    machine: LM, in_features_rev: int, out_features_rev: int, h_rev: typing.List[int], 
+    machine: LearningMachine, in_features_rev: int, out_features_rev: int, h_rev: typing.List[int], 
     act: typing.Union[str, typing.Callable[[], nn.Module]], 
     norm: typing.Union[str, typing.Callable[[int], nn.Module]],
     criterion: Criterion, optim: CompOptim=None,

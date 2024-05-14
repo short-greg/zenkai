@@ -16,12 +16,12 @@ from ..kaku import (
 )
 from ..kaku._state import State
 from ..kaku._io2 import (
-    IO2 as IO, iou
+    IO as IO, iou
 )
 from ..kaku._lm2 import (
-    LM as LearningMachine,
-    StepTheta2 as StepTheta,
-    StepX2 as StepX,
+    LearningMachine as LearningMachine,
+    StepTheta as StepTheta,
+    StepX as StepX,
 
 )
 from ..utils import to_np, to_th_as
@@ -270,7 +270,7 @@ class LeastSquaresLearner(LearningMachine):
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         return self._step_x.step_x(x, t, state)
 
-    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Tuple | typing.Any:
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         return iou(
             self._linear(x.f)
         )
@@ -323,17 +323,15 @@ class GradLeastSquaresLearner(LearningMachine):
             y, t, reduction_override=reduction_override)
         return assessment
 
-    def accumulate(self, x: IO, t: IO):
-        self._step_theta.accumulate(x, t, y=x._(self).y)
+    def accumulate(self, x: IO, t: IO, state: State):
+        self._step_theta.accumulate(x, t, state.sub('least'), y=state._y)
 
-    def step_x(self, x: IO, t: IO) -> IO:
-        return self._step_x.step_x(x, t)
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        return self._step_x.step_x(x, t, state.sub('grad'))
 
-    def forward(self, x: IO, release: bool = True) -> IO:
-        x.freshen()
-        y = x._(self).y = IO(self._linear(x.f))
-        return y.out(release)
+    def forward_nn(self, x: IO, state: State) -> IO:
+        return self._linear(x.f)
 
-    def step(self, x: IO, t: typing.Union[IO, None]):
+    def step(self, x: IO, t: typing.Union[IO, None], state: State):
 
-        return self._step_theta.step(x, t)
+        return self._step_theta.step(x, t, state.sub('least'), y=state._y)

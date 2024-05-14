@@ -1,36 +1,25 @@
 import typing
-from functools import wraps
 
-from abc import abstractmethod, ABC
 import torch
-import torch.nn as nn
 from torch.autograd.function import Function, once_differentiable
-from collections import namedtuple
-import inspect
-from enum import Enum
-from ._state import State
-from dataclasses import dataclass
 from typing_extensions import Self
 
-from .. import utils
 
+class IO(tuple):
 
-
-class IO2(tuple):
-
-    def __getitem__(self, idx) -> typing.Union[typing.Any, 'IO2']:
+    def __getitem__(self, idx) -> typing.Union[typing.Any, 'IO']:
 
         if isinstance(idx, typing.Iterable):
-            return IO2(
+            return IO(
                 self[i] for i in idx
             )
         res = super().__getitem__(idx)
         if isinstance(idx, slice):
-            return IO2(res)
+            return IO(res)
         
         return res
     
-    def clone(self, requires_grad: bool=False, detach: bool=True) -> 'IO2':
+    def clone(self, requires_grad: bool=False, detach: bool=True) -> 'IO':
 
         res = []
         for x in self:
@@ -44,7 +33,7 @@ class IO2(tuple):
                     x
                 )
 
-        return IO2(res)
+        return IO(res)
     
     def detach_(self) -> Self:
 
@@ -56,7 +45,7 @@ class IO2(tuple):
 
     def detach(self) -> Self:
 
-        return IO2(
+        return IO(
             x.detach() if isinstance(x, torch.Tensor) else x for x in self
         )
 
@@ -69,7 +58,7 @@ class IO2(tuple):
                     x.retain_grad()
         return self
 
-    def dx(self, x_prime: typing.Iterable) -> 'IO2':
+    def dx(self, x_prime: typing.Iterable) -> 'IO':
         """Calculate dx from an updated x
 
         Use in step_x if different x's are tested in dx
@@ -77,12 +66,12 @@ class IO2(tuple):
         Returns:
             IO: The IO with the updated x
         """
-        return IO2(
+        return IO(
             val - x_prime[i] if i < len(x_prime) else None 
             for i, val in enumerate(self)
         )
 
-    def acc_grad(self, lr: float = 1.0) -> 'IO2':
+    def acc_grad(self, lr: float = 1.0) -> 'IO':
         """Calculate dx from an updated x's grad
 
         Use in step_x if different x's are tested in dx
@@ -90,7 +79,7 @@ class IO2(tuple):
         Returns:
             IO: The IO with the updated x
         """
-        return IO2(
+        return IO(
             x - lr * x.grad 
             if isinstance(x, torch.Tensor) and x.grad is not None 
             else x 
@@ -103,7 +92,7 @@ class IO2(tuple):
             if isinstance(x, torch.Tensor) and x.grad is not None:
                 x.grad.data.zero_()
 
-    def grad(self) -> 'IO2':
+    def grad(self) -> 'IO':
         """Calculate dx from an updated x's grad
 
         Use in step_x if different x's are tested in dx
@@ -111,7 +100,7 @@ class IO2(tuple):
         Returns:
             IO: The IO with the updated x
         """
-        return IO2(
+        return IO(
             x.grad if isinstance(x, torch.Tensor) else x for x in self
         )
 
@@ -124,7 +113,7 @@ class IO2(tuple):
         Returns:
             IO: The t to use
         """
-        return IO2(
+        return IO(
             val - dy[i] if i < len(dy) and isinstance(dy[i], torch.Tensor) else None
             for i, val in enumerate(self)
         )
@@ -134,13 +123,13 @@ class IO2(tuple):
         return self[0] if len(self) > 0 else None
 
 
-def iou(*x) -> IO2:
+def iou(*x) -> IO:
 
     # assume it is a return value
-    return IO2(x)
+    return IO(x)
 
 
-class Idx2(object):
+class Idx(object):
     """
     An index for a tensor or IO
     """
@@ -198,17 +187,17 @@ class Idx2(object):
             result.append(self.idx[i.item()])
         return result
 
-    def detach(self) -> "Idx2":
+    def detach(self) -> "Idx":
         """Remove the grad function from the index
 
         Returns:
             Idx: The detached index
         """
         if self.idx is None:
-            return Idx2(dim=self.dim)
-        return Idx2(self.idx.detach(), dim=self.dim)
+            return Idx(dim=self.dim)
+        return Idx(self.idx.detach(), dim=self.dim)
 
-    def update(self, source: IO2, destination: IO2, idx_both: bool = False):
+    def update(self, source: IO, destination: IO, idx_both: bool = False):
         """Update an io in place with the index
 
         Args:
@@ -247,7 +236,7 @@ class Idx2(object):
             destination.data[:] = source
         return destination
 
-    def sub(self, idx: "Idx2") -> "Idx2":
+    def sub(self, idx: "Idx") -> "Idx":
         """Get a sub index of the index
         Args:
             idx (Idx): The index to get the sub index with
@@ -255,15 +244,15 @@ class Idx2(object):
         Returns:
             Idx: This Idx sub-indexed
         """
-        if not isinstance(idx, Idx2):
-            idx = Idx2(idx)
+        if not isinstance(idx, Idx):
+            idx = Idx(idx)
 
         if idx.idx is None:
             return self
         elif self.idx is None:
             return idx
 
-        return Idx2(self.idx[idx.idx])
+        return Idx(self.idx[idx.idx])
 
     def __len__(self) -> int:
         """
@@ -272,7 +261,7 @@ class Idx2(object):
         """
         return len(self.idx)
 
-    def to(self, device) -> "Idx2":
+    def to(self, device) -> "Idx":
         """Change the device of the index if specified
 
         Args:
@@ -285,8 +274,8 @@ class Idx2(object):
             self.idx = self.idx.to(device)
         return self
 
-    def __call__(self, x: IO2, detach: bool = False) -> IO2:
+    def __call__(self, x: IO, detach: bool = False) -> IO:
 
         selected = self.idx_th(*x)
 
-        return IO2(selected)
+        return IO(selected)

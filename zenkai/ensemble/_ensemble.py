@@ -9,9 +9,9 @@ import torch
 
 
 # local
-from zenkai.kaku._io2 import IO2 as IO
+from zenkai.kaku._io2 import IO as IO
 from ..kaku._state import State
-from ..kaku._lm2 import LM as LearningMachine
+from ..kaku._lm2 import LearningMachine as LearningMachine
 
 
 class EnsembleLearner(LearningMachine):

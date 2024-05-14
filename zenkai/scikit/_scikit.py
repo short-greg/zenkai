@@ -8,12 +8,12 @@ from torch import nn
 
 # local
 from ..kaku._lm2 import (
-    IO2 as IO,
+    IO as IO,
     FeatureIdxStepTheta,
     FeatureIdxStepX,
-    StepX2 as StepX,
-    Idx2 as Idx,
-    LM as LearningMachine
+    StepX as StepX,
+    Idx as Idx,
+    LearningMachine as LearningMachine
 )
 from ..kaku._state import State
 from ..kaku import Criterion

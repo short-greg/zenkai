@@ -7,11 +7,11 @@ from torch import nn
 from torch.utils import data as torch_data
 
 # local
-from ._io2 import IO2 as IO, Idx2 as Idx
+from ._io2 import IO as IO, Idx as Idx
 from ._lm2 import (
-    StepTheta2 as StepTheta, OutDepStepTheta,
-    StepX2 as StepX, BatchIdxStepTheta, BatchIdxStepX,
-    LM
+    StepTheta as StepTheta, OutDepStepTheta,
+    StepX as StepX, BatchIdxStepTheta, BatchIdxStepX,
+    LearningMachine
 )
 from ._state import State
 
@@ -95,7 +95,7 @@ class IOLoop(object):
 class IterStepTheta(StepTheta):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(self, learner: LM, n_epochs: int = 1, batch_size: int = None):
+    def __init__(self, learner: LearningMachine, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -139,7 +139,7 @@ class IterStepTheta(StepTheta):
 class IterStepX(StepX):
     """Do multiple iterations on the outer layer"""
 
-    def __init__(self, learner: LM, n_epochs: int = 1, batch_size: int = None):
+    def __init__(self, learner: LearningMachine, n_epochs: int = 1, batch_size: int = None):
         """
         Args:
             learner (LearningMachine): The LearningMachine to optimize
@@ -198,8 +198,8 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
     def __init__(
         self,
-        update: LM,
-        outgoing: LM = None,
+        update: LearningMachine,
+        outgoing: LearningMachine = None,
         n_epochs: int = 1,
         x_iterations: int = 1,
         theta_iterations: int = 1,
