@@ -114,10 +114,7 @@ class TId:
     idx: int
 
 
-def dump_state(ctx, state: State):
-
-    t = []
-    d = {}
+def _dump_state_helper(state: State, t: typing.List, d: typing.Dict):
 
     for k, v in state.items():
 
@@ -136,21 +133,35 @@ def dump_state(ctx, state: State):
             t.append(v)
         else:
             d[k] = v
+    
+    d['__sub__'] = {}
+    for k, sub in state.subs():
+        d['__sub__'][k] = {}
+        _dump_state_helper(sub, t, d['__sub__'][k])
+
+
+def dump_state(ctx, state: State):
+
+    t = []
+    d = {}
+
+    _dump_state_helper(state, t, d)
     ctx.__storage__ = d
     ctx.save_for_backward(*t)
 
 
-def load_state(ctx):
-
-    t = []
-
-    state = State()
-    t = ctx.saved_tensors
-    storage = ctx.__storage__
+def _load_state_helper(state: State, storage, t):
 
     for k, v in storage.items():
+
+        if k == '__sub__':
+            for k2, v2 in v.items():
+                sub = state.sub(k2)
+                _load_state_helper(
+                    sub, v2, t
+                )
         
-        if isinstance(v, IO):
+        elif isinstance(v, IO):
             state[k] = IO(
                 t[v_i.idx] if isinstance(v_i, TId) else v_i
                 for v_i in v
@@ -159,6 +170,17 @@ def load_state(ctx):
             state[k] = t[v.idx]
         else:
             state[k] = v
+
+
+def load_state(ctx):
+
+    t = []
+    state = State()
+
+    t = ctx.saved_tensors
+    storage = ctx.__storage__
+    _load_state_helper(state, storage, t)
+
     return state
 
 
@@ -400,7 +422,7 @@ class F(Function):
                 ctx._multi_out = True
             else:
                 ctx._multi_out = False
-                y = IO((y,))
+                y = iou(y)
             state._x = x
             state._y = y
             dump_state(ctx, state)
@@ -596,12 +618,11 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
     def forward(
         self, *x, **kwargs
     ) -> IO:
-        # io = self.IO(*x, **kwargs)
-        # flattened = [v.requires_grad_() if isinstance(v, torch.Tensor) else v for v in io.flatten()]
         
         # Have to flatten io to use with F
         x = [x_i.requires_grad_(True) if isinstance(x_i, torch.Tensor) else x_i for x_i in x]
-        return F.apply(self, kwargs, *x)
+        y = F.apply(self, kwargs, *x)
+        return y
 
 
 class OutDepStepTheta(StepTheta):

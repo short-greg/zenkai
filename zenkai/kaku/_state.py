@@ -104,7 +104,12 @@ class State(dict):
         except KeyError:
             super().__setitem__(key, value)
             return value
-        
+    
+    def subs(self) -> typing.Iterator:
+
+        for k, v in self._subs.items():
+            yield k, v
+
     def __call__(self, sub) -> Any:
 
         return MyMeta(self, sub)

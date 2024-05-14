@@ -30,7 +30,9 @@ class GradStepTheta(StepTheta):
     ):
         super().__init__()
         self.module = module
-        self.optim = optimf(module.parameters()) if optimf is not None else None
+        self.optim = optimf(
+            module.parameters()
+        ) if optimf is not None else None
         grad_criterion = grad_criterion or "mean"
         if isinstance(grad_criterion, str):
             grad_criterion = ThLoss('MSELoss', grad_criterion)
@@ -82,11 +84,9 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.optim = optim or CompOptim()
         self.optim.prep_theta(self.module)
         self.grad_criterion = grad_criterion
-
         self.criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        print(len(y), y.f.shape)
         return self.criterion.assess(y, t, reduction_override)
 
     def grad_assess(
@@ -127,17 +127,17 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
         x_idx = batch_idx(x) if batch_idx is not None else x
 
-        return (
+        y = (
             self.module(x_idx[0]) 
             if self.module is not None else x_idx[0]
         )
+        return y
 
     def unaccumulate(self, x: IO=None, theta: bool=True):
         if x is not None:
             self.optim.zero_x(x)
         if theta:
             self.optim.zero_theta()
-
 
 # TODO: Add functions for creating grad modules
 # grad(module, optimf)

@@ -3,7 +3,7 @@
 from zenkai import targetprob
 from zenkai.kaku import _grad
 import zenkai
-from zenkai import IO, State, iou
+from zenkai import IO, State, iou, LMode
 from zenkai.utils import _params as params
 from torch import nn
 import torch
@@ -107,3 +107,60 @@ class TestTargetPropLearner(object):
         assert (
             x.f != x_prime.f
         ).any()
+
+    def test_chained_target_prop_updates_forward(self):
+
+        learner = TargetPropExample1(2, 4)
+        learner2 = TargetPropExample1(4, 4)
+
+        learner.lmode_(LMode.WithStep)
+        learner2.lmode_(LMode.WithStep)
+
+        before = params.get_model_params(learner.forward_learner)
+        x = torch.randn(4, 2)
+        t = torch.randn(4, 4)
+        y = learner(x)
+        y = learner2(y)
+
+        print(
+            learner.forward_learner.module.weight.grad
+        )
+
+        (y - t).pow(2).sum().backward()
+
+        assert (
+            before !=
+            params.get_model_params(learner.forward_learner)
+        ).any()
+
+    def test_chained_target_prop_updates_reverse(self):
+
+        learner = TargetPropExample1(2, 4)
+        learner2 = TargetPropExample1(4, 4)
+
+        learner.lmode_(LMode.WithStep)
+        learner2.lmode_(LMode.WithStep)
+
+        before = params.get_model_params(learner.reverse_learner)
+        before2 = params.get_model_params(learner2.reverse_learner)
+        x = torch.randn(4, 2)
+        t = torch.randn(4, 4)
+        y = learner(x)
+        y = learner2(y)
+
+        print(
+            learner.forward_learner.module.weight.grad
+        )
+
+        (y - t).pow(2).sum().backward()
+
+        assert (
+            before !=
+            params.get_model_params(learner.reverse_learner)
+        ).any()
+        assert (
+            before2 !=
+            params.get_model_params(learner2.reverse_learner)
+        ).any()
+
+

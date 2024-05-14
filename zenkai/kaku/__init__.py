@@ -33,7 +33,8 @@ from ._lm2 import (
     forward_dep,
     step_dep,
     ForwardHook,
-    SetYHook
+    SetYHook,
+    LMode
 )
 from ._lm_assess import (
     LayerAssessor,

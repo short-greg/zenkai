@@ -82,6 +82,7 @@ class TargetPropLearner(LearningMachine):
             t (IO): The target
         """
         if self.forward_update:
+            print(state._subs)
             self._forward_learner.accumulate(x, t, state.sub('forward'))
         if self.reverse_update:
             x_rev = self.rev_x(x, state._y)
@@ -122,7 +123,7 @@ class TargetPropLearner(LearningMachine):
         y = self._forward_learner.forward_io(
             x, state.sub('forward'), False
         )
-        if len(y) > 1:
+        if len(y) == 1:
             return y[0]
         return tuple(y)
 
