@@ -40,6 +40,7 @@ class TestNull:
 
 
 class TestSoftmaxReversible:
+    
     def test_softmax_reversible_produces_correct_size_for_forward(self):
 
         torch.manual_seed(1)

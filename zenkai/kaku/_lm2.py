@@ -194,6 +194,18 @@ def out(x, multi: bool=True) -> typing.Union[typing.Any, typing.Tuple]:
     return x[0].detach() if isinstance(x[0], torch.Tensor) else x[0]
 
 
+def set_net_lmode(module: nn.Module, lmode: LMode):
+    """Set the lmode for all sub modules
+
+    Args:
+        module (nn.Module): The module to set for
+        lmode (LMode): The lmode to set to
+    """
+    for m in module.modules():
+        if isinstance(m, LearningMachine):
+            m.lmode_(lmode)
+
+
 class StepXHook(ABC):
     """Use to add additional processing before or after step x"""
 
