@@ -35,7 +35,7 @@ from ._lm2 import (
     ForwardHook,
     SetYHook,
     LMode,
-    set_net_lmode,
+    set_lmode,
 )
 from ._lm_assess import (
     LayerAssessor,

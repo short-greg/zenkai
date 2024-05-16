@@ -17,9 +17,11 @@ pip install zenkai
 Zenkai consists of several packages to more flexibly define and train deep learning machines beyond what is easy to do with Pytorch.
 
 - **zenkai**: The core package. It contains all modules necessary for defining a learning machine.
-- **zenkai.kikai**: Kikai contains different types of learning machines : Hill Climbing, Scikit-learn wrappers, Gradient based machines, etc.
 - **zenkai.tansaku**: Package for adding more exploration to learning. Contains framework for defining and creating population-based optimizers.
-- **zenkai.mods**: Mods contains a variety of utility nn.Modules that are used by the rest of the application. For example, modules for ensemble learning.
+- **zenkai.ensemble**: Package used to create ensemble models within the Zenkai framework.
+- **zenkai.targetprop** Package used for creating systems that use target propagation.
+- **zenkai.feedback** Package for performing various kinds of feedback alignment. 
+- **zenkai.scikit** Package wrapping scikit learn to create Zenkai LeraningMachines using scikit learn modules. 
 - **zenkai.utils**: Utils contains a variety of utility functions that are used by the rest of the application. For example utils for getting and setting parameters or gradients.
 
 Further documentation is available at https://zenkai.readthedocs.io
@@ -54,7 +56,7 @@ class MyLearner(zenkai.LearningMachine):
         return self.loss.assess_dict(x, t, reduction_override)
 
     def step(
-        self, x: IO, t: IO
+        self, x: IO, t: IO, state: State, **kwargs
     ):
         # use to update the parameters of the machine
         # x (IO): The input to update with
@@ -63,28 +65,31 @@ class MyLearner(zenkai.LearningMachine):
         return self._step_theta(x, t)
 
     def step_x(
-        self, x: IO, t: IO
+        self, x: IO, t: IO, state: State, **kwargs
     ) -> IO:
         # use to update the target for the machine
         # step_x is analogous to updateGradInputs in Torch except
         # it calculates "new targets" for the incoming layer
         return self._step_x(x, t)
 
-    def forward(self, x: zenkai.IO, release: bool=False) -> zenkai.IO:
-        y = self.module(x.f)
-        return y.out(release=release)
+    def forward_nn(self, x: zenkai.IO, state: State) -> zenkai.IO:
+        return self.module(x.f)
 
 
 my_learner = MyLearner(...)
 
 for x, t in dataloader:
+    # set the "learning mode" to perform a step
+    zenkai.set_lmode(my_learner, zenkai.LMode.WithStep)
     assessment = my_learner.learn(x, t)
     # outputs the logs stored by the learner
     # print(state.logs)
 
 ```
 
-Learning machines can be stacked by making use of step_x in the training process.
+Learning machines can be stacked by making use of step_x in the training process. 
+
+Note: Since Zenkai has been set up to make use of Torch's backpropagation skills
 
 ```bash
 
@@ -99,8 +104,8 @@ class MyMultilayerLearner(LearningMachine):
         self.layer2 = layer2
 
         # use these hooks to indicate a dependency on another method
-        self.add_step(StepXDep(self, 't1', use_x=True))
-        self.add_step_x(ForwardDep(self, 'y1', use_x=True))
+        self.add_step(StepXDep(self, 't1'))
+        self.add_step_x(ForwardDep(self, 'y1'))
 
     def assess_y(
         self, y: IO, t: IO, reduction_override: str=None
@@ -109,29 +114,29 @@ class MyMultilayerLearner(LearningMachine):
         return self.layer2.assess_y(y, t)
 
     def step(
-        self, x: IO, t: IO
+        self, x: IO, t: IO, state: State, **kwargs
     ):
         # use to update the parameters of the machine
         # x (IO): The input to update with
         # t (IO): the target to update
         # outputs for a connection of two machines
         
-        self.layer2.step(x._(self).y2, x._(self).t1)
-        self.layer1.step(x._(self).y1, t1)
+        self.layer2.step(state._y1, t, state.sub('layer2'))
+        self.layer1.step(state._y2, state._t1, state.sub('layer1'))
 
     def step_x(
         self, x: IO, t: IO
     ) -> IO:
         # use to update the target for the machine
         # it calculates "new targets" for the incoming layer
-        t1 = x._(self).t1 = self.layer2.step_x(x._(self).y2, t)
-        return self.layer1.step_x(x._(self).y1, t1)
+        t1 = state._t1 = self.layer2.step_x(state._y1, t, state.sub('layer1'))
+        return self.layer1.step_x(x, t1, state.sub('layer1'))
 
     def forward(self, x: zenkai.IO, release: bool=True) -> zenkai.IO:
 
         # define the state to be for the self, input pair
-        x = x._(self).y1 = self.layer1(x)
-        x = x._(self).y2 = self.layer2(x, release=release)
+        x = state._y1 = self.layer1(x, state.sub('layer1'))
+        x = state._y2 = self.layer2(x, state.sub('layer2'))
         return x
 
 my_learner = MyLearner(...)

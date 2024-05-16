@@ -14,10 +14,8 @@ Kaku:
 - :mod:`IO` - Class used for input and output
 - :mod:`StepTheta` - Use to update the parameters of a model. LearningMachine inherits this.
 - :mod:`StepX` - Use to get t the next t. LearningMachine inherits this.
+- :mod:`State` - Use to store the learning state with for an interation.
 - :mod:`Hook` - There are a variety of hooks that can be created to extend learning. They can be added to accumulate, step, step_x etc.
-- :mod:`Assessment` - Use to evaluate the network.
-- :mod:`Individual` - Use for population-based optimization. It wraps all of the parameters for an individual.
-- :mod:`Population` - Use for population-based optimization. It is a container of individuals
 - ... and so on.
 
 Key Features and Functions
@@ -45,12 +43,12 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
             # use a Criterion to calculate the loss
             return self.loss(x, t, reduction_override)
 
-         def accumulate(self, x: IO, t: IO):
+         def accumulate(self, x: IO, t: IO, state: State):
             # implement a method to accumulate updates to the parameters
             # not essential to implement.
             pass
 
-         def step(self, x: IO, t: IO):
+         def step(self, x: IO, t: IO, state: State):
             # implement a method to update the parameters
             pass
 
@@ -58,37 +56,36 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
             # implement a method to update x
             return x
 
-         def forward(self, x: IO, release: bool=True) -> IO:
+         def forward(self, x: IO, state: State):
 
             # add 1 and store the result in the state
             # .f retrieves the first element in the IO. 
-            y = x._(self).y = IO(x.f + 1)
-            return y.out(release)
+            return IO(x.f + 1)
 
    # wrap the input and target with the IO class
    # the IO class can also hold multiple inputs
-   x = IO(torch.rand(...))
-   t = IO(torch.rand(...))
+   x = iou(torch.rand(...))
+   t = iou(torch.rand(...))
 
    learning_machine = SimpleLearner()
    # use the assess method to evaluate the quality of the machine.
    # the assess method calls forward and then assess_y
    # the assessment is an evaluation fo the machine and contains
    assessment = learning_machine.assess(x, t)
-   # a direction as to whether it should be maximized or minimized
-   # it wraps a tensor but the __getattr__ method is overridden
-   # so that calling a function will call the function on the tensor
-   print(assessment.maximize)
+   
+   state = State()
 
-   y = learning_machine(x)
+   # use forward_io for passing the io forward, otherwise
+   # for tensors use the regular forward (call function)
+   y = learning_machine.forward_io(x, state)
    # this will accumulate updates to the machine
    # it is not essential to implement this as it might be desirable
    # to solely implement step()
-   learning_machine.accumulate(x, t)
+   learning_machine.accumulate(x, t, state)
    # you can get the target of the previous layer with the step_x() method
-   t_prev = learning_machine.step_x(x, t)
+   t_prev = learning_machine.step_x(x, t, state)
    # you can update the 
-   learning_machine.step(x, t)
+   learning_machine.step(x, t, state)
 
 
 How to Use
@@ -100,16 +97,16 @@ First, the main components of a LearningMachine are as follows
 IO:
 .. code-block:: python
 
-   from zenkai import IO
-   # The IO is 
+   # iou indicates IO unpacked. Since IO is a tuple it requires an iterable
+   # input. The iou function allows to pass a variable arg list
+   from zenkai import iou
 
-   x = IO(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
+   x = iou(torch.tensor([[2, 3], [3, 4]]), torch.tensor([[1, 1], [0 0]]))
    # .f accesses the front (first) element of the IO
    print(x.f) # torch.tensor([[2, 3], [3, 4]])
    # .r accesses the rear (last) element of the IO
    print(x.r) # torch.tensor([[1, 1], [0 0]]])
-   # .u allows access to the tuple storing the values
-   print(x.u[0]) # torch.tensor([[2, 3], [3, 4]]) 
+   print(x[0]) # torch.tensor([[2, 3], [3, 4]]) 
    x.freshen() # detach and retain the gradients. Retaining the gradients is essential for implementing backprop with zenkai
 
 .. .. code-block:: python
@@ -145,10 +142,10 @@ LearningMachine: Show how to implement with gradient descent
 
       # forward will be called if it hasn't already
       @forward_dep('y')
-      def step(self, x: IO, t: IO):
+      def step(self, x: IO, t: IO, state: State):
          # implement a method to update the parameters
          self.optim.zero_grad() 
-         self.assess_y(x._(self).y, t)['loss'].backward()
+         self.assess_y(state._y, t)['loss'].backward()
          self.optim.step()
 
       # step will be called if it hasn't already
@@ -157,11 +154,9 @@ LearningMachine: Show how to implement with gradient descent
          # implement a method to update x
          return IO(x.f - self.x_lr * x.f.grad, detach=True)
 
-      def forward(self, x: IO, release: bool=True) -> IO:
+      def forward_nn(self, x: IO, release: bool=True) -> IO:
 
-         x.freshen()
-         y = x._(self).y = IO(self.linear(x.f))
-         return y.out(release)
+         return self.linear(x.f)
 
 
 Advanced Topics

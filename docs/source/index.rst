@@ -45,28 +45,31 @@ Modules
    :caption: Modules:
 
    modules/kaku
-   modules/kikai
    modules/tansaku
+   modules/ensemble
+   modules/targetprop
+   modules/feedback
+   modules/scikit
    modules/utils
-..    modules/sensei
-..    modules/tako
-
 
 
 :doc:`modules/kaku`
     Develop a LearningMachine and implement all its components
 
-:doc:`modules/kikai`
-    Modules implementing various types of LearningMachines in Zenkai
-
 :doc:`modules/tansaku`
     Implement classes for adding exploration in learning
 
-:doc:`modules/tako`
-    Add flexibility to your models by accessing the internals or querying the output
+:doc:`modules/ensemble`
+    Modules for implementing ensembles
 
-.. :doc:`modules/sensei`
-..     Tools to control how training is done
+:doc:`modules/targetprop`
+    Modules for implementing target propagation
+
+:doc:`modules/feedback`
+    Modules for implementing feedback alignment
+
+:doc:`modules/scikit`
+    Modules for adapting scikit learn classes.
 
 :doc:`modules/utils`
     Global utilities in Zenkai
