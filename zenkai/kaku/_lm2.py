@@ -1,24 +1,20 @@
+# 1st party
 import typing
 from functools import wraps
-
 from abc import abstractmethod, ABC
-import torch
-import torch.nn as nn
-from torch.autograd.function import Function, once_differentiable
-from collections import namedtuple
-import inspect
 from enum import Enum
-from ._state import State
 from dataclasses import dataclass
 from typing_extensions import Self
 
-from .. import utils
-from ._io2 import Idx, iou, IO
+# 3rd party
+import torch
+import torch.nn as nn
+# TODO: add in once_differntiable
+from torch.autograd.function import Function #, once_differentiable
 
-# args: name, value
-# var args: name, multiple values
-# kwargs: name, value
-# var kwargs: name, value
+# local
+from ._state import State
+from ._io2 import Idx, iou, IO
 
 
 def acc_dep(check_field: str):
@@ -110,6 +106,9 @@ class LMode(Enum):
 
 @dataclass
 class TId:
+    """Id for the tensor
+    Used by load state and dump state
+    """
 
     idx: int
 
@@ -141,7 +140,13 @@ def _dump_state_helper(state: State, t: typing.List, d: typing.Dict):
 
 
 def dump_state(ctx, state: State):
+    """function to dump the state to the context
+    Function is recursive so if there are sub states
 
+    Args:
+        ctx (): The context to dump to
+        state (State): the state to dump
+    """
     t = []
     d = {}
 
@@ -172,8 +177,15 @@ def _load_state_helper(state: State, storage, t):
             state[k] = v
 
 
-def load_state(ctx):
+def load_state(ctx) -> State:
+    """function to load the current state from the ctx
 
+    Args:
+        ctx: The context to load from
+
+    Returns:
+        State: The loaded state
+    """
     t = []
     state = State()
 
@@ -185,7 +197,14 @@ def load_state(ctx):
 
 
 def out(x, multi: bool=True) -> typing.Union[typing.Any, typing.Tuple]:
+    """Helper function to output the 
+    Args:
+        x: 
+        multi (bool, optional): . Defaults to True.
 
+    Returns:
+        typing.Union[typing.Any, typing.Tuple]: 
+    """
     if multi:
         return tuple(
             x_i.detach() if isinstance(x_i, torch.Tensor) else x_i 
@@ -365,20 +384,6 @@ class StepTheta(ABC):
         self._step_hooks.append(hook)
         return self
 
-
-class NullStepX(StepX):
-
-    def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
-        return x
-
-
-class NullStepTheta(StepTheta):
-
-    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
-        pass
-
-    def step(self, x: IO, t: IO, state: State, **kwargs):
-        return
 
 
 class BatchIdxStepTheta(StepTheta):
@@ -560,7 +565,6 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
 
     def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
         """
-
         Args:
             x (IO): The input to the module
             t (IO): The target
@@ -673,7 +677,6 @@ class InDepStepX(StepX):
         Returns:
             IO: The updated input
         """
-        
         pass
 
 
@@ -687,5 +690,4 @@ class SetYHook(ForwardHook):
     def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State, **kwargs) -> IO:
        
        state._x = y
-       # x._(learner)[self.y_name] = y
        return y

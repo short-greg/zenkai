@@ -10,6 +10,21 @@ from ._assess import Criterion, ThLoss
 from ._state import State
 
 
+# class NullStepX(StepX):
+
+#     def step_x(self, x: IO, t: IO, state: State, *args, **kwargs) -> IO:
+#         return x
+
+
+# class NullStepTheta(StepTheta):
+
+#     def accumulate(self, x: IO, t: IO, state: State, **kwargs):
+#         pass
+
+#     def step(self, x: IO, t: IO, state: State, **kwargs):
+#         return
+
+
 class NullStepTheta(StepTheta):
     """Step that does not update theta"""
 

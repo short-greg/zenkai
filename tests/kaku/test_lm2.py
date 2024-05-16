@@ -3,77 +3,6 @@ import torch
 from zenkai.kaku import _lm2
 
 
-class TestIO:
-
-    def test_get_attr_returns_correct_value(self):
-
-        data =  torch.rand(2, 2)
-        io = _lm2.IO(
-            [data, 1]
-        )
-        assert io[0] is data
-
-    def test_getitem_returns_correct_value_for_1(self):
-
-        data =  torch.rand(2, 2)
-        io = _lm2.IO(
-            [data, 1]
-        )
-        assert io[1] == 1
-
-    def test_getitem_returns_io_if_multiple_values(self):
-
-        data =  torch.rand(2, 2)
-        io = _lm2.IO(
-            [data, 1]
-        )
-        io2 = io[1, 0]
-        assert io2[0] == 1
-        assert isinstance(io2, _lm2.IO)
-
-    def test_dx_subtracts_x_prime(self):
-
-        data =  torch.rand(2, 2)
-        data_prime =  torch.rand(2, 2)
-        io = _lm2.IO(
-            [data]
-        )
-        io_prime = io.dx([data_prime])
-        assert (io_prime[0] == (data - data_prime)).all()
-
-    def test_t_updates_x_to_t(self):
-
-        data =  torch.rand(2, 2)
-        data_prime = torch.rand(2, 2)
-        io = _lm2.IO(
-            [data]
-        )
-        dx = io.dx([data_prime])
-        t = io.t(dx)
-        print(dx[0])
-
-        assert (t[0] == data_prime).all()
-
-    def test_grad_returns_0_if_no_grad(self):
-
-        data =  torch.rand(2, 2)
-        io = _lm2.IO(
-            [data]
-        )
-        grad = io.grad()
-        assert (grad[0] is None)
-
-    def test_grad_returns_grad(self):
-
-        data = torch.rand(2, 2)
-        data.grad = torch.rand(2, 2)
-        io = _lm2.IO(
-            [data]
-        )
-        grad = io.grad()
-        assert (grad[0] is data.grad)
-
-
 class GradLM(_lm2.LearningMachine):
 
     def __init__(self, in_features=2, out_features=4):
@@ -177,6 +106,16 @@ class TestLM:
         assert (mod.w != before).any()
         assert isinstance(assessment, torch.Tensor)
 
+    def test_learn_updates_the_weights_with_step_priority(self):
+
+        x = torch.rand(4, 2)
+        mod = GradLM()
+        mod.lmode_(_lm2.LMode.StepPriority)
+        before = mod.w.clone()
+        assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+        assert (mod.w != before).any()
+        assert isinstance(assessment, torch.Tensor)
+
     def test_test_does_not_update_weights_and_gets_assessment(self):
 
         x = torch.rand(4, 2)
@@ -211,3 +150,20 @@ class TestLM:
         (y2 - t).pow(2).sum().backward()
         assert (mod.w.grad is None)
         assert (mod2.w.grad is None)
+
+    def test_learning_works_with_a_view(self):
+
+        x = torch.rand(2, 4)
+        x = x.view(4, 2)
+        mod = GradLM(2, 4)
+        mod2 = GradLM(4, 4)
+        mod.lmode_(_lm2.LMode.OnlyStepX)
+        y = mod(x, mul=2.0)
+        mod2.lmode_(_lm2.LMode.OnlyStepX)
+        y2 = mod2(y)
+        t = torch.rand(4, 4)
+        (y2 - t).pow(2).sum().backward()
+        assert (mod.w.grad is None)
+        assert (mod2.w.grad is None)
+
+# TODO: Test with hook
