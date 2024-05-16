@@ -76,13 +76,21 @@ class GradStepX(StepX):
 class GradLearner(LearningMachine):
 
     def __init__(
-        self, module: nn.Module=None, optimf: OptimFactory=None, criterion: Criterion=None,
+        self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
         back_criterion: typing.Union[XCriterion, Criterion]=None
     ):
+        """Create a learner that backpropagates using Torch's grad functionality
+
+        Args:
+            module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
+            optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
+            criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
+            back_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
+        """
         super().__init__()
         self._module = module
         self._optimf = optimf
-        self._optim = optimf.comp()
+        self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(module)
         self._back_criterion = back_criterion
         self._criterion = criterion
@@ -134,12 +142,20 @@ class GradLearner(LearningMachine):
 class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
 
     def __init__(
-        self, module: nn.Module=None, optim: CompOptim=None, criterion: Criterion=None,
+        self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
         back_criterion: typing.Union[XCriterion, Criterion]=None
     ):
+        """Create a learner that backpropagates using Torch's grad functionality and can be used with indices
+
+        Args:
+            module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
+            optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
+            criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
+            back_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
+        """
         super().__init__()
         self._module = module
-        self._optim = optim or CompOptim()
+        self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(self._module)
         self._back_criterion = back_criterion
         self._criterion = criterion

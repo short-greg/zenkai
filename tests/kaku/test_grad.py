@@ -18,7 +18,7 @@ class THGradLearnerT1(_grad.GradIdxLearner):
         super().__init__(
             linear,
             criterion=ThLoss(nn.MSELoss),
-            optim=OptimFactory(torch.optim.Adam, lr=1e-2).comp(),
+            optimf=OptimFactory(torch.optim.Adam, lr=1e-2).comp(),
         )
 
 
@@ -28,7 +28,7 @@ class THGradLearnerT2(_grad.GradIdxLearner):
         super().__init__(
             linear,
             criterion=ThLoss(nn.MSELoss),
-            optim=CompOptim(
+            optimf=CompOptim(
                 OptimFactory(torch.optim.Adam, lr=1e-2),
                 OptimFactory(torch.optim.Adam, lr=1e-2)
             )

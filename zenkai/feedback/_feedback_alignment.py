@@ -75,7 +75,7 @@ class FALearner(GradIdxLearner):
 
         super().__init__(
             module=net,
-            optim=optim_factory.comp(), 
+            optimf=optim_factory.comp(), 
             criterion=criterion
         )
         self.net = net
@@ -182,7 +182,7 @@ class DFALearner(GradIdxLearner):
         
         super().__init__(
             module=net,
-            optim=optim_factory.comp(),
+            optimf=optim_factory.comp(),
             criterion=criterion
         )
         self.net = net
