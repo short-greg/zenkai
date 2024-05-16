@@ -73,9 +73,8 @@ def align(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     return source
 
 
-
-def expand_k(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
-    """expand the trial dimension in the tensor (separates the trial dimension from the sample dimension)
+def separate_batch(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
+    """expand the batch and trial dimension in the tensor (separates the trial dimension from the sample dimension)
 
     Args:
         x (torch.Tensor): The tensor to update
@@ -91,8 +90,8 @@ def expand_k(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
     return x.view(shape)
 
 
-def collapse_k(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
-    """collapse the trial dimension in the tensor (merges the trial dimension with the sample dimension)
+def collapse_batch(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
+    """collapse the batch and population dimension in the tensor (merges the trial dimension with the sample dimension)
 
     Args:
         x (torch.Tensor): The tensor to update
@@ -104,6 +103,45 @@ def collapse_k(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
     if reshape:
         return x.reshape(-1, *x.shape[2:])
     return x.view(-1, *x.shape[2:])
+
+
+def collapse_feature(x: torch.Tensor, reshape: bool=True) -> torch.Tensor:
+    """Collapse the feature dimension and population dimensions into one dimension
+
+    Args:
+        x (torch.Tensor): The tensor to expand
+        reshape (bool, optional): Whether to use reshape or view. Defaults to True.
+
+    Returns:
+        torch.Tensor: The expanded tensor
+    """
+    shape = list(x.shape)
+    shape[1] = shape[1] * shape[2]
+    shape.pop(2)
+    if reshape:
+        return x.reshape(shape)
+    return x.view(shape)
+
+
+def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tensor:
+    """Separate the feature dimension for when
+    the population and feature dimensions have been collapsed
+
+    Args:
+        x (torch.Tensor): The tensor to expand
+        k (int): The population size
+        reshape (bool, optional): Whether to use reshape or view. Defaults to True.
+
+    Returns:
+        torch.Tensor: The expanded tensor
+    """
+    shape = list(x.shape)
+    shape[1] = k
+    shape.insert(2, -1)
+    if reshape:
+        return x.reshape(shape)
+    return x.view(shape)
+
 
 
 def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:

@@ -57,7 +57,7 @@ def x_trial_collapsed():
 
 class TestCollapseK:
     def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
-        shape = _reshape.collapse_k(x_trial).shape
+        shape = _reshape.collapse_batch(x_trial).shape
         assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
 
 
@@ -65,7 +65,7 @@ class TestExpandK:
     def test_collapse_k_collapses_the_trial_dimension(
         self, x_trial_collapsed: torch.Tensor
     ):
-        shape = _reshape.expand_k(x_trial_collapsed, N_TRIALS).shape
+        shape = _reshape.separate_batch(x_trial_collapsed, N_TRIALS).shape
         assert shape[0] == N_TRIALS
         assert shape[1] == N_SAMPLES
 

@@ -69,13 +69,15 @@ from ._update import (
     calc_scale, calc_slope, mix_cur
 )
 
-# TODO: Reconsider tehse
+# TODO: Reconsider these
 from ._reshape import(
     unsqueeze_to,
     align,
     unsqueeze_vector,
-    collapse_k,
-    expand_k,
+    collapse_batch,
+    separate_batch,
+    collapse_feature,
+    separate_feature,
     undo_cat1d,
     cat1d,
     expand_dim0,
