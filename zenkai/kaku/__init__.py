@@ -64,8 +64,9 @@ from ._null import (
     NullLearner, NullStepTheta, NullStepX
 )
 from ._grad import (
-    GradLearner,
+    GradIdxLearner,
     GradStepTheta,
+    GradLearner,
     GradStepX,
 )
 from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX

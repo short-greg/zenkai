@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 # Local
-from ..kaku import GradLearner, CompOptim
+from ..kaku import GradIdxLearner, CompOptim
 
 from ..kaku import (
     Criterion,
@@ -289,11 +289,11 @@ def create_grad_target_prop(
     """
     
     if noise_weight is not None:
-        reverse_learner = GradLearner(
+        reverse_learner = GradIdxLearner(
             LinearRecNoise(out_features_rev, in_features_rev, h_rev, act, norm), optim, criterion
         )
     else:
-        reverse_learner = GradLearner(
+        reverse_learner = GradIdxLearner(
             LinearRec(out_features_rev, in_features_rev, h_rev, act, norm), optim, criterion
         )
 

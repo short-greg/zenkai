@@ -73,30 +73,90 @@ class GradStepX(StepX):
         return x.grad_update(self.x_lr)
 
 
-class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
+class GradLearner(LearningMachine):
+
+    def __init__(
+        self, module: nn.Module=None, optimf: OptimFactory=None, criterion: Criterion=None,
+        back_criterion: typing.Union[XCriterion, Criterion]=None
+    ):
+        super().__init__()
+        self._module = module
+        self._optimf = optimf
+        self._optim = optimf.comp()
+        self._optim.prep_theta(module)
+        self._back_criterion = back_criterion
+        self._criterion = criterion
+
+    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        return self._criterion.assess(y, t, reduction_override)
+
+    def back_assess(
+        self, x: IO, y: IO, t: IO, reduction_override: str=None
+    ) -> torch.Tensor:
+        grad_criterion = self._back_criterion if self._back_criterion is not None else self._criterion
+        if grad_criterion is not None and isinstance(self._back_criterion, XCriterion):
+            return grad_criterion(x, y, t, reduction_override)
+        if grad_criterion is not None:
+            return grad_criterion.assess(y, t, reduction_override)
+
+        return self.assess_y(y, t, reduction_override)
+
+    @forward_dep('_y')
+    def accumulate(self, x: IO, t: IO, state: State):
+        """
+        Args:
+            x (IO): The input
+            t (IO): The target
+            batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
+        """
+        self.back_assess(x, state._y, t).backward()
+
+    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+        return x.acc_grad()
+
+    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+        self._optim.step_theta()
+        self._optim.zero_theta()
+
+    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
+
+        y = (
+            self._module(x[0]) 
+            if self._module is not None else x[0]
+        )
+        return y
+
+    def unaccumulate(self, theta: bool=True):
+
+        self._optim.zero_theta()
+
+
+class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
 
     def __init__(
         self, module: nn.Module=None, optim: CompOptim=None, criterion: Criterion=None,
-        grad_criterion: typing.Union[XCriterion, Criterion]=None
+        back_criterion: typing.Union[XCriterion, Criterion]=None
     ):
         super().__init__()
-        self.module = module
-        self.optim = optim or CompOptim()
-        self.optim.prep_theta(self.module)
-        self.grad_criterion = grad_criterion
-        self.criterion = criterion
+        self._module = module
+        self._optim = optim or CompOptim()
+        self._optim.prep_theta(self._module)
+        self._back_criterion = back_criterion
+        self._criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        return self.criterion.assess(y, t, reduction_override)
+        return self._criterion.assess(y, t, reduction_override)
 
-    def grad_assess(
+    def back_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        if self.grad_criterion is None:
-            return self.assess_y(y, t, reduction_override)
-        if isinstance(self.grad_criterion, XCriterion):
-            return self.grad_criterion.assess(x, y, t, reduction_override)
-        return self.grad_criterion.assess(y, t, reduction_override)
+        grad_criterion = self._back_criterion if self._back_criterion is not None else self._criterion
+        if grad_criterion is not None and isinstance(self._back_criterion, XCriterion):
+            return grad_criterion(x, y, t, reduction_override)
+        if grad_criterion is not None:
+            return grad_criterion.assess(y, t, reduction_override)
+
+        return self.assess_y(y, t, reduction_override)
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
@@ -106,38 +166,38 @@ class GradLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             t (IO): The target
             batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
         """
-        self.optim.prep_x(x, state)
+        self._optim.prep_x(x, state)
         if batch_idx is not None:
             x_idx = batch_idx(x)
             t_idx = batch_idx(t)
         else:
             x_idx = x
             t_idx = t
-        self.grad_assess(x_idx, state._y, t_idx).backward()
+        self.back_assess(x_idx, state._y, t_idx).backward()
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
-        x_prime = self.optim.step_x(x, state)
-        self.optim.zero_x(x, state)
+        x_prime = self._optim.step_x(x, state)
+        self._optim.zero_x(x, state)
         return x_prime
 
     def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
-        self.optim.step_theta()
-        self.optim.zero_theta()
+        self._optim.step_theta()
+        self._optim.zero_theta()
 
     def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
         x_idx = batch_idx(x) if batch_idx is not None else x
 
         y = (
-            self.module(x_idx[0]) 
-            if self.module is not None else x_idx[0]
+            self._module(x_idx[0]) 
+            if self._module is not None else x_idx[0]
         )
         return y
 
     def unaccumulate(self, x: IO=None, theta: bool=True):
         if x is not None:
-            self.optim.zero_x(x)
+            self._optim.zero_x(x)
         if theta:
-            self.optim.zero_theta()
+            self._optim.zero_theta()
 
 # TODO: Add functions for creating grad modules
 # grad(module, optimf)

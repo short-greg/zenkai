@@ -24,7 +24,7 @@ from ..utils._build import (
 from .. import utils
 from ..utils import _params as param_utils
 from ..targetprob import Null
-from ..kaku._grad import GradLearner
+from ..kaku._grad import GradIdxLearner
 
 from dataclasses import dataclass
 
@@ -49,7 +49,7 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
     return iou(y.f, y_prime.f, detach=detach)
 
 
-class FALearner(GradLearner):
+class FALearner(GradIdxLearner):
     """Learner for implementing feedback alignment"""
 
     def __init__(
@@ -103,11 +103,11 @@ class FALearner(GradLearner):
         Returns:
             IO: the updated target
         """
-        self.optim.prep_x(x, state)
+        self._optim.prep_x(x, state)
         y = state._y
         y2 = self.netB(x.f)
         
-        self.criterion.assess(y, t).backward()
+        self._criterion.assess(y, t).backward()
         y_det = state._y_det
         y2.backward(y_det.grad)
         param_utils.set_model_grads(
@@ -150,7 +150,7 @@ class OutT:
     t: IO = None
 
 
-class DFALearner(GradLearner):
+class DFALearner(GradIdxLearner):
     """Learner for implementing feedback alignment."""
 
     def __init__(
@@ -216,13 +216,13 @@ class DFALearner(GradLearner):
             # TODO: Add warning
             return
 
-        self.optim.prep_x(x, state)
+        self._optim.prep_x(x, state)
         y2 = self.netB(x.f)
 
         y_det = state._y_det
         y = state._y
         y = self.B(y.f)
-        self.criterion(iou(y), out_t.t).backward()
+        self._criterion(iou(y), out_t.t).backward()
         y2.backward(y_det.grad)
 
         param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))

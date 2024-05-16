@@ -12,7 +12,7 @@ from zenkai.kaku import State
 from zenkai.utils import _params as utils
 
 
-class THGradLearnerT1(_grad.GradLearner):
+class THGradLearnerT1(_grad.GradIdxLearner):
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
@@ -22,7 +22,7 @@ class THGradLearnerT1(_grad.GradLearner):
         )
 
 
-class THGradLearnerT2(_grad.GradLearner):
+class THGradLearnerT2(_grad.GradIdxLearner):
     def __init__(self, in_features: int, out_features: int):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
@@ -161,13 +161,13 @@ class TestCriterionGrad:
     def test_criterion_grad_step_produces_correct_shape(self):
 
         state = State()
-        learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
+        learner = _grad.GradIdxLearner(criterion=ThLoss("CrossEntropyLoss"))
         learner.step(iou(torch.rand(3, 4)), iou(torch.randint(0, 4, (3,))), state)
         assert True
 
     def test_criterion_grad_step_x_produces_correct_shape(self):
 
-        learner = _grad.GradLearner(criterion=ThLoss("CrossEntropyLoss"))
+        learner = _grad.GradIdxLearner(criterion=ThLoss("CrossEntropyLoss"))
 
         state = State()
         x = iou(torch.rand(3, 4))
