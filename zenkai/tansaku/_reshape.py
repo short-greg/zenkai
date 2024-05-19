@@ -143,7 +143,6 @@ def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tenso
     return x.view(shape)
 
 
-
 def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
     """Expand an input to repeat k times
 
@@ -208,3 +207,58 @@ def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
         [tensor.flatten(0) for tensor in tensors], dim=0
     )
 
+
+class AdaptBatch(nn.Module):
+    """Use to adapt a population of samples for evaluating perturbations
+    of samples. Useful for optimizing "x"
+    """
+
+    def __init__(self, module: nn.Module):
+        """Instantiate the AdaptBatch model
+
+        Args:
+            module (nn.Module): 
+        """
+        super().__init__()
+        self.module = module
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+
+        k = x[0].shape(1)
+        
+        x = tuple(collapse_batch(x_i) for x_i in x)
+        x = self.module(*x)
+        if isinstance(x, typing.Tuple):
+            return tuple(
+                separate_batch(x_i, k) for x_i in x
+            )
+        
+        return separate_batch(x, k)
+
+
+class AdaptFeature(nn.Module):
+    """Use to adapt a population of samples for evaluating perturbations
+    of models. Useful for optimizing the parameters
+    """
+
+    def __init__(self, module: nn.Module):
+        """Adapt module
+
+        Args:
+            module (nn.Module): 
+        """
+        super().__init__()
+        self.module = module
+
+    def forward(self, *x: torch.Tensor) -> torch.Tensor:
+
+        k = x[0].shape(1)
+        
+        x = tuple(collapse_feature(x_i) for x_i in x)
+        x = self.module(*x)
+        if isinstance(x, typing.Tuple):
+            return tuple(
+                separate_feature(x_i, k) for x_i in x
+            )
+        
+        return separate_feature(x, k)
