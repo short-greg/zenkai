@@ -83,7 +83,9 @@ from ._reshape import(
     expand_dim0,
     flatten_dim0,
     deflatten_dim0,
-    shape_as
+    shape_as,
+    AdaptBatch,
+    AdaptFeature
 )
 from ._noise import (
     NoiseReplace,
