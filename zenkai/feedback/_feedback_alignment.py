@@ -75,7 +75,7 @@ class FALearner(GradIdxLearner):
 
         super().__init__(
             module=net,
-            optimf=optim_factory.comp(), 
+            optimf=optim_factory.comp(),
             criterion=criterion
         )
         self.net = net
@@ -94,7 +94,7 @@ class FALearner(GradIdxLearner):
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
-        """Update the
+        """Accumulate the gradients
 
         Args:
             x (IO): the input

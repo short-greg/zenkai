@@ -315,7 +315,7 @@ class GradLeastSquaresLearner(LearningMachine):
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
         self._step_theta = GradStepTheta(
-            self, grad_criterion=ThLoss('MSELoss'), optimf=optim_factory
+            self, learn_criterion=ThLoss('MSELoss'), optimf=optim_factory
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:

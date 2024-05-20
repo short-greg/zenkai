@@ -25,7 +25,7 @@ from ._assess import (
 class GradStepTheta(StepTheta):
 
     def __init__(
-        self, module: nn.Module, grad_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
+        self, module: nn.Module, learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
         
     ):
         super().__init__()
@@ -33,10 +33,10 @@ class GradStepTheta(StepTheta):
         self.optim = optimf(
             module.parameters()
         ) if optimf is not None else None
-        grad_criterion = grad_criterion or "mean"
-        if isinstance(grad_criterion, str):
-            grad_criterion = ThLoss('MSELoss', grad_criterion)
-        self.grad_criterion = grad_criterion
+        learn_criterion = learn_criterion or "mean"
+        if isinstance(learn_criterion, str):
+            learn_criterion = ThLoss('MSELoss', learn_criterion)
+        self.learn_criterion = learn_criterion
 
     def accumulate(self, x: IO, t: IO, state: State, y: IO=None, **kwargs):
         
@@ -46,12 +46,12 @@ class GradStepTheta(StepTheta):
             else:
                 y = iou(self.module(*x.u))
         
-        if isinstance(self.grad_criterion, XCriterion):
-            assessment = self.grad_criterion.assess(x, y, t)
-        if isinstance(self.grad_criterion, LearningMachine):
-            assessment = self.grad_criterion.assess_y(y, t)
+        if isinstance(self.learn_criterion, XCriterion):
+            assessment = self.learn_criterion.assess(x, y, t)
+        if isinstance(self.learn_criterion, LearningMachine):
+            assessment = self.learn_criterion.assess_y(y, t)
         else:
-            assessment = self.grad_criterion.assess(y, t)
+            assessment = self.learn_criterion.assess(y, t)
         assessment.backward()
 
     def step(self, x: IO, t: IO, state: State, **kwargs):
@@ -77,7 +77,7 @@ class GradLearner(LearningMachine):
 
     def __init__(
         self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
-        back_criterion: typing.Union[XCriterion, Criterion]=None
+        learn_criterion: typing.Union[XCriterion, Criterion]=None
     ):
         """Create a learner that backpropagates using Torch's grad functionality
 
@@ -85,24 +85,24 @@ class GradLearner(LearningMachine):
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
             optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
             criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
-            back_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
+            learn_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
         """
         super().__init__()
         self._module = module
         self._optimf = optimf
         self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(module)
-        self._back_criterion = back_criterion
+        self._learn_criterion = learn_criterion
         self._criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def back_assess(
+    def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        grad_criterion = self._back_criterion if self._back_criterion is not None else self._criterion
-        if grad_criterion is not None and isinstance(self._back_criterion, XCriterion):
+        grad_criterion = self._learn_criterion if self._learn_criterion is not None else self._criterion
+        if grad_criterion is not None and isinstance(self._learn_criterion, XCriterion):
             return grad_criterion(x, y, t, reduction_override)
         if grad_criterion is not None:
             return grad_criterion.assess(y, t, reduction_override)
@@ -117,7 +117,7 @@ class GradLearner(LearningMachine):
             t (IO): The target
             batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
         """
-        self.back_assess(x, state._y, t).backward()
+        self.learn_assess(x, state._y, t).backward()
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         return x.acc_grad()
@@ -143,7 +143,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
 
     def __init__(
         self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
-        back_criterion: typing.Union[XCriterion, Criterion]=None
+        learn_criterion: typing.Union[XCriterion, Criterion]=None
     ):
         """Create a learner that backpropagates using Torch's grad functionality and can be used with indices
 
@@ -157,17 +157,17 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._module = module
         self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(self._module)
-        self._back_criterion = back_criterion
+        self._learn_criterion = learn_criterion
         self._criterion = criterion
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
 
-    def back_assess(
+    def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        grad_criterion = self._back_criterion if self._back_criterion is not None else self._criterion
-        if grad_criterion is not None and isinstance(self._back_criterion, XCriterion):
+        grad_criterion = self._learn_criterion if self._learn_criterion is not None else self._criterion
+        if grad_criterion is not None and isinstance(self._learn_criterion, XCriterion):
             return grad_criterion(x, y, t, reduction_override)
         if grad_criterion is not None:
             return grad_criterion.assess(y, t, reduction_override)
@@ -189,7 +189,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         else:
             x_idx = x
             t_idx = t
-        self.back_assess(x_idx, state._y, t_idx).backward()
+        self.learn_assess(x_idx, state._y, t_idx).backward()
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
         x_prime = self._optim.step_x(x, state)
@@ -214,6 +214,3 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             self._optim.zero_x(x)
         if theta:
             self._optim.zero_theta()
-
-# TODO: Add functions for creating grad modules
-# grad(module, optimf)
