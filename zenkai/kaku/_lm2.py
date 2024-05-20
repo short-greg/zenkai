@@ -507,6 +507,11 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
     def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
         pass
 
+    def assess(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+
+        y = self.forward_io(x, State(), reduction_override)
+        return self.assess_y(y, t, reduction_override)
+
     @abstractmethod
     def step(self, x: IO, t: IO, state: State, **kwargs):
         pass
