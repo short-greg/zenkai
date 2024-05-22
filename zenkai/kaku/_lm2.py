@@ -474,7 +474,7 @@ class F(Function):
             elif self.lmode == LMode.OnlyStepX:
                 x_prime = self.step_x(x, t, state, **kwargs)
             
-            return None, None, *x.dx(x_prime)
+            return None, None, *x.dx(x_prime).tensor_only()
 
 
 class LearningMachine(StepTheta, StepX, nn.Module, ABC):
@@ -614,24 +614,25 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
             return y.detach()
         return y
     
-    def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> torch.Tensor:
+    def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
 
         y = self(*x, **kwargs)
         if not isinstance(y, typing.Tuple):
             y = (y,)
-        assessment = self.assess_y(IO(y), t)
+        y = IO(y)
+        assessment = self.assess_y(y, t)
         assessment.backward()
         if get_y:
             return assessment, y
         return assessment
 
-    def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> torch.Tensor:
+    def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
 
         y = self(*x, **kwargs)
         if not isinstance(y, typing.Tuple):
             y = (y,)
-
-        assessment = self.assess_y(IO(y), t)
+        y = IO(y)
+        assessment = self.assess_y(y, t)
         if get_y:
             return assessment, y
         return assessment

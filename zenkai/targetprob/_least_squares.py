@@ -11,7 +11,7 @@ import scipy.linalg
 # local
 from ..kaku import (
     Criterion,
-    ThLoss,
+    NNLoss,
     OptimFactory
 )
 from ..kaku._state import State
@@ -309,13 +309,13 @@ class GradLeastSquaresLearner(LearningMachine):
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
-        self._loss = loss or ThLoss("MSELoss", "mean")
+        self._loss = loss or NNLoss("MSELoss", "mean")
         self._step_x = LeastSquaresStepX(
             self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
         self._step_theta = GradStepTheta(
-            self, learn_criterion=ThLoss('MSELoss'), optimf=optim_factory
+            self, learn_criterion=NNLoss('MSELoss'), optimf=optim_factory
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:

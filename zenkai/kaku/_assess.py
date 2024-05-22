@@ -314,12 +314,12 @@ def lookup_loss(loss_name: str) -> typing.Callable[[], nn.Module]:
     return LOSS_MAP[loss_name]
 
 
-class ThLoss(Criterion):
+class NNLoss(Criterion):
     """Class to wrap a Torch loss module"""
 
     def __init__(
         self,
-        base_criterion: typing.Union[typing.Callable[[str], nn.Module], str],
+        base_criterion: typing.Union[nn.Module, typing.Callable[[str], nn.Module], str],
         reduction: str = "mean",
         weight: float = None,
         loss_kwargs: typing.Dict = None,
@@ -351,6 +351,15 @@ class ThLoss(Criterion):
         return evaluation * self._weight if self._weight is not None else evaluation
 
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+
+        if isinstance(self.base_criterion, nn.Module):
+            if reduction_override is None:
+                return self.base_criterion(
+                    x.f, t.f
+                )
+            raise ValueError(
+                'Cannot override reduction if base_criterion is an instance instead of a factory'
+            )
 
         if self.reduction == "NA":
             reduction = "none"

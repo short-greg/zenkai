@@ -13,7 +13,7 @@ from ..kaku import Idx
 from ..kaku import (
     OptimFactory,
     Criterion,
-    ThLoss,
+    NNLoss,
 )
 from ..utils._build import (
     Builder,
@@ -71,7 +71,7 @@ class FALearner(GradIdxLearner):
             criterion (typing.Union[Criterion, str], optional): The criterion. Defaults to 'mse'.
         """
         if isinstance(criterion, str):
-            criterion = ThLoss(criterion)
+            criterion = NNLoss(criterion)
 
         super().__init__(
             module=net,
@@ -178,7 +178,7 @@ class DFALearner(GradIdxLearner):
                 Defaults to 'mse'.
         """
         if isinstance(criterion, str):
-            criterion = ThLoss(criterion)
+            criterion = NNLoss(criterion)
         
         super().__init__(
             module=net,

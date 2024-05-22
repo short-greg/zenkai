@@ -14,10 +14,10 @@ class TargetPropExample1(targetprob.TargetPropLearner):
     def __init__(self, in_features: int, out_features: int):
 
         forward = _grad.GradIdxLearner(
-            nn.Linear(in_features, out_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.ThLoss('MSELoss')
+            nn.Linear(in_features, out_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.NNLoss('MSELoss')
         )
         reverse  = _grad.GradIdxLearner(
-            nn.Linear(out_features, in_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.ThLoss('MSELoss')
+            nn.Linear(out_features, in_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.NNLoss('MSELoss')
         )
         super().__init__(
             forward, reverse, cat_x=False

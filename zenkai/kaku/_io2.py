@@ -70,6 +70,16 @@ class IO(tuple):
             val - x_prime[i] if i < len(x_prime) else None 
             for i, val in enumerate(self)
         )
+    
+    def tensor_only(self) -> 'IO':
+        """Converts any non-tensor values to None
+
+        Returns:
+            IO: The IO with only tensors
+        """
+        return IO(
+            x_i if isinstance(x_i, torch.Tensor) else None for x_i in self
+        )
 
     def acc_grad(self, lr: float = 1.0) -> 'IO':
         """Calculate dx from an updated x's grad

@@ -4,7 +4,7 @@ from ._assess import (
     LOSS_MAP,
     Criterion,
     Reduction,
-    ThLoss,
+    NNLoss,
     Criterion,
     XCriterion,
     AssessmentLog, 

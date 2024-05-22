@@ -18,7 +18,7 @@ from ._optimize import (
     CompOptim, OptimFactory
 )
 from ._assess import (
-    XCriterion, Criterion, ThLoss
+    XCriterion, Criterion, NNLoss
 )
 
 
@@ -35,7 +35,7 @@ class GradStepTheta(StepTheta):
         ) if optimf is not None else None
         learn_criterion = learn_criterion or "mean"
         if isinstance(learn_criterion, str):
-            learn_criterion = ThLoss('MSELoss', learn_criterion)
+            learn_criterion = NNLoss('MSELoss', learn_criterion)
         self.learn_criterion = learn_criterion
 
     def accumulate(self, x: IO, t: IO, state: State, y: IO=None, **kwargs):

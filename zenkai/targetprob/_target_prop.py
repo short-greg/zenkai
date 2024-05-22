@@ -10,7 +10,7 @@ from ..kaku import GradIdxLearner, CompOptim
 
 from ..kaku import (
     Criterion,
-    ThLoss
+    NNLoss
 )
 from ..kaku._state import State
 from ..kaku._io2 import (

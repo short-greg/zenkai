@@ -6,7 +6,7 @@ import torch
 
 # Local
 from ._lm2 import IO as IO, StepTheta as StepTheta, StepX as StepX, LearningMachine as LearningMachine
-from ._assess import Criterion, ThLoss
+from ._assess import Criterion, NNLoss
 from ._state import State
 
 
@@ -29,7 +29,7 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
 
     def __init__(self, criterion: Criterion = None) -> None:
         super().__init__()
-        self.criterion = criterion or ThLoss("MSELoss")
+        self.criterion = criterion or NNLoss("MSELoss")
 
     def assess_y(self, y: IO, t: IO, state: State, reduction_override: str = None) -> torch.Tensor:
         return self.criterion.assess(y, t, reduction_override)

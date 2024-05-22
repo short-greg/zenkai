@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-from zenkai.kaku import _assess as _evaluation, ThLoss, IO, iou, Reduction
+from zenkai.kaku import _assess as _evaluation, NNLoss, IO, iou, Reduction
 from zenkai.kaku import AssessmentLog
 
 
@@ -49,7 +49,7 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", "none")
+        loss = NNLoss("MSELoss", "none")
         evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="none")(x, t)).all()
 
@@ -57,7 +57,7 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", "mean")
+        loss = NNLoss("MSELoss", "mean")
         evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
@@ -65,20 +65,20 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", "mean")
+        loss = NNLoss("MSELoss", "mean")
         evaluation = loss(iou(x), iou(t))
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
     def test_th_loss_fails_with_invalid_reduction(self):
 
         with pytest.raises(KeyError):
-            ThLoss("XLoss", "mean")
+            NNLoss("XLoss", "mean")
 
     def test_th_loss_outputs_correct_loss_with_mse_and_mean_override_reduction(self):
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", "none")
+        loss = NNLoss("MSELoss", "none")
         evaluation = loss(iou(x), iou(t), "mean")
         assert (evaluation == nn.MSELoss(reduction="mean")(x, t)).all()
 
@@ -86,13 +86,13 @@ class TestThLoss:
 
         x = torch.rand(4, 2)
         t = torch.rand(4, 2)
-        loss = ThLoss("MSELoss", "none")
+        loss = NNLoss("MSELoss", "none")
         evaluation = loss.assess(iou(x), iou(t), "mean")
         assert isinstance(evaluation, _evaluation.torch.Tensor)
 
     def test_maximize_returns_true_if_maximize(self):
 
-        loss = ThLoss("MSELoss", "mean", maximize=True)
+        loss = NNLoss("MSELoss", "mean", maximize=True)
         assert loss.maximize is True
 
 
