@@ -166,8 +166,10 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        grad_criterion = self._learn_criterion if self._learn_criterion is not None else self._criterion
-        if grad_criterion is not None and isinstance(self._learn_criterion, XCriterion):
+        grad_criterion = (
+            self._learn_criterion if self._learn_criterion is not None else self._criterion
+        )
+        if grad_criterion is not None and isinstance(grad_criterion, XCriterion):
             return grad_criterion(x, y, t, reduction_override)
         if grad_criterion is not None:
             return grad_criterion.assess(y, t, reduction_override)
