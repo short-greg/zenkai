@@ -4,6 +4,8 @@ from typing_extensions import Self
 # 3rd Party
 import torch
 import torch.nn as nn
+from dataclasses import dataclass
+from abc import abstractmethod
 
 # Local
 from ..kaku import GradIdxLearner, CompOptim
@@ -24,7 +26,7 @@ from ..kaku._lm2 import (
 )
 
 
-class TargetPropLearner(LearningMachine):
+class TPLayerLearner(LearningMachine):
     """
     """
     y_name = 'y'
@@ -46,7 +48,6 @@ class TargetPropLearner(LearningMachine):
             
         self.forward_step_theta = True
         self.reverse_step_theta = True
-        self.forward_hook(SetYHook(self.y_name))
         self.cat_x = cat_x
 
     def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
@@ -128,7 +129,93 @@ class TargetPropLearner(LearningMachine):
         return tuple(y)
 
 
-class LinearRec(nn.Module):
+class TPForwardLearner(LearningMachine):
+    """
+    """
+    y_name = 'y'
+
+    def __init__(
+        self, reverse: 'Rec'
+    ) -> None:
+        """
+        Create a target prop learner for doing target propagation
+
+        Args:
+
+        """
+        super().__init__()
+        self._reverse = reverse
+
+    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+        """The default behavior of Target Propagation is to simply call the reverse function with x and t
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+
+        Returns:
+            IO: The target for the preceding layer
+        """
+        y = state._rev_y = self._reverse(x)
+        return y
+    
+
+# I can make this a "grad learner"
+# Same with the "forward learner"
+
+class TPReverseLearner(LearningMachine):
+    """
+    """
+    y_name = 'y'
+
+    def __init__(
+        self, reverse: 'Rec'
+    ) -> None:
+        """
+        Create a target prop learner for doing target propagation
+
+        Args:
+
+        """
+        super().__init__()
+        self._reverse = reverse
+
+    @abstractmethod
+    def step_x(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs) -> IO:
+        """The default behavior of Target Propagation is to simply call the reverse function with x and t
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+
+        Returns:
+            IO: The target for the preceding layer
+        """
+        pass
+
+    @abstractmethod
+    def accumulate(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs):
+        pass
+
+    @abstractmethod
+    def step(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs):
+        pass
+
+    @abstractmethod
+    def forward_nn(self, x: IO, state: State, yf: IO=None, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        pass
+
+
+class Rec(nn.Module):
+
+    def update_forward(self, x: IO, y: IO, t: IO):
+        pass
+
+    def forward(self, x: IO, y: IO) -> torch.Tensor:
+        pass
+
+
+class LinearRec(Rec):
 
     def __init__(self, in_features: int, h: typing.List[int], out_features: int, act: typing.Union[typing.Callable, str]=None, norm: typing.Union[typing.Callable[[int], nn.Module], str]=None):
         """
@@ -157,7 +244,7 @@ class LinearRec(nn.Module):
         mods.append(nn.Linear(in_[-1], out_[-1]))
         self.sequential = nn.Sequential(*mods)
 
-    def update_forward(self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor):
+    def update_forward(self, x: IO, y: IO, t: IO):
         """Returns the reconstructed value
 
         Args:
@@ -168,19 +255,20 @@ class LinearRec(nn.Module):
         Returns:
             torch.Tensor: The reconstructed x
         """
-        return self(
-            x, y
-        )
+        return self(x, y)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: IO, y: IO) -> torch.Tensor:
 
-        return self.sequential(y)
+        return self.sequential(y.f)
 
 
 class LinearRecNoise(LinearRec):
     
     def __init__(
-        self, in_features: int, h: typing.List[int], out_features: int, act: typing.Union[typing.Callable, str]=None, norm: typing.Union[typing.Callable[[int], nn.Module], str]=None, weight: float=0.9
+        self, in_features: int, h: typing.List[int], 
+        out_features: int, 
+        act: typing.Union[typing.Callable, str]=None, 
+        norm: typing.Union[typing.Callable[[int], nn.Module], str]=None, weight: float=0.9
     ):
         """
         Args:
@@ -192,11 +280,11 @@ class LinearRecNoise(LinearRec):
             weight (float): The weight on the current value
         """
         super().__init__(in_features, h, out_features, act, norm)
-        self.x_noise = (1 - weight)
-        self.y_noise = (1 - weight)
+        self.x_noise = 0.1
+        self.y_noise = 0.1
         self.weight = weight
 
-    def update_forward(self, x: torch.Tensor, y: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    def update_forward(self, x: IO, y: IO, t: IO) -> torch.Tensor:
         """Updates the noise parameters and returns the reconstructed value
 
         Args:
@@ -207,20 +295,27 @@ class LinearRecNoise(LinearRec):
         Returns:
             torch.Tensor: The reconstructed x
         """
+        x = x + torch.rand_like(x.f) * self.x_noise
+        y = y + torch.rand_like(y.f) * self.y_noise
+
         x_prime = self(
-            x, y
+            iou(x), iou(y)
         )
         self.x_noise = (
-            self.weight * self.x_noise +
-            (1 - self.weight) * (x_prime - x).pow(2).mean(0, keepdim=True)
+            self.weight 
+            * self.x_noise 
+            + (1 - self.weight) 
+            * (x_prime.f - x.f).pow(2).mean(0, keepdim=True)
         )
         self.y_noise = (
-            self.weight * self.y_noise +
-            (1 - self.weight) * (y - t).pow(2).mean(0, keepdim=True)
+            self.weight 
+            * self.y_noise 
+            + (1 - self.weight) 
+            * (y.f - t.f).pow(2).mean(0, keepdim=True)
         )
         return x_prime
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: IO, y: IO) -> IO:
         """Adds noise to x and y and reconstructs
 
         Args:
@@ -230,15 +325,12 @@ class LinearRecNoise(LinearRec):
         Returns:
             torch.Tensor: The reconstructed input
         """
-
-        x = x + torch.rand_like(x) * self.x_noise
-        y = y + torch.rand_like(y) * self.y_noise
         
-        y = torch.cat([x, y], dim=1)
-        return self.sequential(y)
+        y = torch.cat([x.f, y.f], dim=1)
+        return iou(self.sequential(y))
 
 
-class DiffTargetPropLearner(TargetPropLearner):
+class DiffTargetPropLearner(TPLayerLearner):
     """Add the difference between a y prediction and x prediction
     to get the target
     """
@@ -269,7 +361,7 @@ def create_grad_target_prop(
     norm: typing.Union[str, typing.Callable[[int], nn.Module]],
     criterion: Criterion, optim: CompOptim=None,
     diff: bool=False, noise_weight: float=None
-) -> TargetPropLearner:
+) -> TPLayerLearner:
     """Creates a target prop learner with a linear model for reversing
 
     Args:
@@ -302,7 +394,7 @@ def create_grad_target_prop(
             machine, reverse_learner, machine,
             reverse_learner, criterion=criterion 
         )
-    return TargetPropLearner(
+    return TPLayerLearner(
         machine, reverse_learner, machine,
         reverse_learner, criterion=criterion 
     )

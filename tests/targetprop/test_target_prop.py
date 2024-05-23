@@ -9,7 +9,7 @@ from torch import nn
 import torch
 
 
-class TargetPropExample1(targetprob.TargetPropLearner):
+class TargetPropExample1(targetprob.TPLayerLearner):
 
     def __init__(self, in_features: int, out_features: int):
 

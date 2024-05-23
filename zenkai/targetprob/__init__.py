@@ -34,7 +34,7 @@ from ._least_squares import (
     LeastSquaresStepX
 )
 from ._target_prop import (
-    TargetPropLearner, DiffTargetPropLearner
+    TPLayerLearner, DiffTargetPropLearner
 )
 
 from ._reversible import ReversibleMachine
