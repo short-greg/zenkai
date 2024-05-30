@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 # local
-from ._io2 import IO as IO
+from ._io2 import IO as IO, iou
 # from ._state import Meta
 # from ._machine import LearningMachine, StepXHook, StepHook
 
@@ -474,3 +474,28 @@ class AssessmentLog(object):
                     }
                     result.update(cur)
         return result
+
+
+def zip_assess(criterion: Criterion, x: IO, t: IO, reduction_override: str=None, get_h: bool=False) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, typing.List[torch.Tensor]]]:
+    """Loop over x and t and zip their assessments
+
+    Args:
+        criterion (Criterion): The criterion to uze
+        x (IO): The x to loop over
+        t (IO): The t to loop over
+
+    Returns:
+        torch.Tensor: The assessment
+    """
+    result = None
+    results = []
+    for x_i, t_i in zip(x, t):
+        cur = criterion.assess(iou(x_i), iou(t_i), reduction_override)
+        results.append(cur)
+        if result is None:
+            result = cur
+        else:
+            result = result + cur
+    if get_h:
+        return result, results
+    return result

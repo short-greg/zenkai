@@ -1,7 +1,7 @@
 import typing
-
 import torch
-from torch.autograd.function import Function, once_differentiable
+import torch.nn as nn
+from ..utils import freshen
 from typing_extensions import Self
 
 
@@ -287,5 +287,28 @@ class Idx(object):
     def __call__(self, x: IO, detach: bool = False) -> IO:
 
         selected = self.idx_th(*x)
-
         return IO(selected)
+
+
+def pipe(modules: typing.Iterable[nn.Module], x: torch.Tensor, freshen_h: bool=False, get_h: bool=False) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
+    """Send the input through a pipe and get the hidden
+    outputs if needed
+
+    Args:
+        modules (typing.Iterable[nn.Module]): _description_
+        x (torch.Tensor): _description_
+        freshen_h (bool, optional): _description_. Defaults to False.
+        get_h (bool, optional): Whether to get the hidden outputs (as an IO). Defaults to False.
+
+    Returns:
+        typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The output of the last module and optionally the intermediate values
+    """
+    hs = []
+    for m in modules:
+        x = m(x)
+        if get_h:
+            hs.append(x)
+        if freshen_h:
+            x = freshen(x)
+            
+    return x, IO(hs) if get_h else x

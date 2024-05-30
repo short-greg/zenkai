@@ -6,8 +6,6 @@ import typing
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from itertools import chain
 
 # TODO: Organize better
 

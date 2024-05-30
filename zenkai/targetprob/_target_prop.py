@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from abc import abstractmethod
 
 # Local
-from ..kaku import GradIdxLearner, CompOptim
+from ..kaku import GradIdxLearner, CompOptim, GradLearner
 
 from ..kaku import (
     Criterion,
@@ -22,14 +22,13 @@ from ..kaku._lm2 import (
     LearningMachine,
     StepTheta as StepTheta,
     StepX as StepX,
-    SetYHook, LMode
+    LMode
 )
 
 
 class TPLayerLearner(LearningMachine):
     """
     """
-    y_name = 'y'
 
     def __init__(
         self, forward_learner: LearningMachine, reverse_learner: LearningMachine, cat_x: bool=True
@@ -132,7 +131,6 @@ class TPLayerLearner(LearningMachine):
 class TPForwardLearner(LearningMachine):
     """
     """
-    y_name = 'y'
 
     def __init__(
         self, reverse: 'Rec'
@@ -156,20 +154,19 @@ class TPForwardLearner(LearningMachine):
         Returns:
             IO: The target for the preceding layer
         """
-        y = state._rev_y = self._reverse(x)
+        y = state._rev_y = self._reverse(state._y, x)
         return y
-    
 
-# I can make this a "grad learner"
-# Same with the "forward learner"
 
-class TPReverseLearner(LearningMachine):
+# Create the "Grad learner"
+# In general a grad learner
+# difference is that i need to use both yf and t for
+# backpropagation... I'll update the accumulate function
+class TPReverseLearner(GradLearner):
     """
     """
-    y_name = 'y'
-
     def __init__(
-        self, reverse: 'Rec'
+        self, reverse: 'Rec', weight_t: float=0.5, weight_yf: float=0.5
     ) -> None:
         """
         Create a target prop learner for doing target propagation
@@ -179,27 +176,15 @@ class TPReverseLearner(LearningMachine):
         """
         super().__init__()
         self._reverse = reverse
+        self._weight_t = weight_t
+        self._weight_yf = weight_yf
 
-    @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs) -> IO:
-        """The default behavior of Target Propagation is to simply call the reverse function with x and t
-
-        Args:
-            x (IO): The input
-            t (IO): The target
-
-        Returns:
-            IO: The target for the preceding layer
-        """
-        pass
-
-    @abstractmethod
     def accumulate(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs):
-        pass
-
-    @abstractmethod
-    def step(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs):
-        pass
+        
+        assessment = self.criterion.assess(state._y, t)
+        if yf is not None:
+            assessment = self._weight_t * assessment + self._weight_yf * self.criterion.assess(state._y, yf)
+        assessment.backward()
 
     @abstractmethod
     def forward_nn(self, x: IO, state: State, yf: IO=None, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:

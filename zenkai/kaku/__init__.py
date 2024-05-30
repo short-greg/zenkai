@@ -10,11 +10,12 @@ from ._assess import (
     AssessmentLog, 
     reduce_assessment,
     CompositeCriterion,
-    CompositeXCriterion
+    CompositeXCriterion,
+    zip_assess
 )
 from ._io2 import (
     IO as IO, Idx as Idx, 
-    iou
+    iou, pipe
 )
 from ._lm2 import (
     # TODO: Separate out hooks
@@ -73,7 +74,7 @@ from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX
 
 from ._assess import (
     Criterion, XCriterion, CompositeCriterion,
-    CompositeXCriterion
+    CompositeXCriterion, zip_assess
 )
 from ._limit import (
     FeatureLimitGen, RandomFeatureIdxGen
