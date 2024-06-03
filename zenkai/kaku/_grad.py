@@ -92,8 +92,12 @@ class GradLearner(LearningMachine):
         self._optimf = optimf
         self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(module)
-        self._learn_criterion = learn_criterion
-        self._criterion = criterion
+        self._learn_criterion = learn_criterion or NNLoss(
+            'MSELoss', 'sum', 0.5
+        )
+        self._criterion = criterion or NNLoss(
+            'MSELoss'
+        )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
@@ -101,14 +105,13 @@ class GradLearner(LearningMachine):
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        grad_criterion = self._learn_criterion if self._learn_criterion is not None else self._criterion
 
-        if isinstance(grad_criterion, XCriterion):
-            return grad_criterion.assess(x, y, t, reduction_override)
-        if grad_criterion is not None:
-            return grad_criterion.assess(y, t, reduction_override)
-
-        return self.assess_y(y, t, reduction_override)
+        if isinstance(self._learn_criterion, XCriterion):
+            return self._learn_criterion.assess(
+                x, y, t, reduction_override
+            )
+        return self._learn_criterion.assess(
+            y, t, reduction_override)
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State):
@@ -158,8 +161,8 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._module = module
         self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(self._module)
-        self._learn_criterion = learn_criterion
-        self._criterion = criterion
+        self._learn_criterion = learn_criterion or NNLoss('MSELoss', 'sum', weight=0.5)
+        self._criterion = criterion or NNLoss('MSELoss')
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
         return self._criterion.assess(y, t, reduction_override)
@@ -167,16 +170,10 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
-        grad_criterion = (
-            self._learn_criterion if self._learn_criterion is not None else self._criterion
-        )
 
-        if isinstance(grad_criterion, XCriterion):
-            return grad_criterion.assess(x, y, t, reduction_override)
-        if grad_criterion is not None:
-            return grad_criterion.assess(y, t, reduction_override)
-
-        return self.assess_y(y, t, reduction_override)
+        if isinstance(self._learn_criterion, XCriterion):
+            return self._learn_criterion.assess(x, y, t, reduction_override)
+        return self._criterion.assess(y, t, reduction_override)
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
