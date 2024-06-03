@@ -479,7 +479,10 @@ class F(Function):
 
 class LearningMachine(StepTheta, StepX, nn.Module, ABC):
 
-    def __init__(self, lmode: LMode=LMode.Default):
+    def __init__(
+        self, lmode: LMode=LMode.Default, 
+        use_assess: bool=True
+    ):
 
         super().__init__()
         self._lmode = lmode
@@ -493,6 +496,7 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         self._base_forward = self.forward_nn
         self.forward_nn = self._forward_hook_runner
         self.test = self._test_hook_runner
+        self.use_assess = use_assess
 
     @property
     def lmode(self) -> LMode:
@@ -616,14 +620,21 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
     
     def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
 
-        y = self(*x, **kwargs)
-        if not isinstance(y, typing.Tuple):
-            y = (y,)
-        y = IO(y)
-        assessment = self.assess_y(y, t)
-        # self.accumulate(x, t, state, **kwargs)
-        # self.step(x, t, state, **kwargs)
-        assessment.backward()
+        if self.use_assess:
+            y = self(*x, **kwargs)
+            if not isinstance(y, typing.Tuple):
+                y = (y,)
+            y = IO(y)
+            assessment = self.assess_y(y, t)
+            assessment.backward()
+        else:
+            state = State()
+            y = self.forward_io(x, state, **kwargs)
+            assessment = self.assess_y(y, t)
+            self.accumulate(x, t, state, **kwargs)
+            if self.lmode == LMode.WithStep or self.lmode == LMode.StepPriority:
+                self.step(x, t, state, **kwargs)
+
         if get_y:
             return assessment, y
         return assessment
