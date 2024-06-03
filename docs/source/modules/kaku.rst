@@ -11,8 +11,10 @@ Main Contents
 Kaku:
 
 - :mod:`LearningMachine` - The core class for training . This inherits from nn.Module
-- :mod:`IO` - Class used for input and output
+- :mod:`IO` - Subclass of Tuple for storing the input and output of a machine
+- :mod:`Criterion` - Torch module for assessing the output of a learning machine.
 - :mod:`StepTheta` - Use to update the parameters of a model. LearningMachine inherits this.
+- :mod:`OptimFactory` - Use to create optimizers.
 - :mod:`StepX` - Use to get t the next t. LearningMachine inherits this.
 - :mod:`State` - Use to store the learning state with for an interation.
 - :mod:`Hook` - There are a variety of hooks that can be created to extend learning. They can be added to accumulate, step, step_x etc.
@@ -84,7 +86,7 @@ Here is a dummy example of a LearningMachine to illustrate how it is made up
    learning_machine.accumulate(x, t, state)
    # you can get the target of the previous layer with the step_x() method
    t_prev = learning_machine.step_x(x, t, state)
-   # you can update the 
+   # this updates the parameters
    learning_machine.step(x, t, state)
 
 
@@ -158,6 +160,36 @@ LearningMachine: Show how to implement with gradient descent
 
          return self.linear(x.f)
 
+Now, there are several ways that this can be used in learning.
+
+1. Use the learn() method. 
+  .. code-block:: python
+   
+   # learn 
+   learning_machine.learn(x, t)
+2. Use torch's autograd functionality
+
+  .. code-block:: python
+   y = learning_machine(x)
+   (y - t).pow(2).mean().backward()
+
+3. Write out the process by hand
+
+  .. code-block:: python
+   
+   state = State()
+
+   y = learning_machine.forward_io(x, state)
+   learning_machine.accumulate(x, t, state)
+   learning_machine.step(x, t, state)
+
+Core Learning Machines
+==============================
+
+- **GradLearner**: Learner that uses Torch's autograd. Can use this to wrap other types of learning machines.
+- **GradIDXLearner**: A variation of GradLearner that indexes the input.
+- **NullLearner**: Use if the wrapped 'machine' should not have a step function.
+
 
 Advanced Topics
 ==============================
@@ -166,6 +198,9 @@ Beyond these core features. Zenkai offer a wide array of other features
 - **StepXHook**: Use to call before of after step\_x is called.
 - **StepHook**: Use to call before of after step is called.
 - **LayerAssessor**: Use to evaluate the layer before or after.
+- **Limit**: Use for limiting the parameters or inputs that get updated
+- **Objective**: Use for optimization.
+- **Constraint***: Use for defining constraints on the objective.
 - ... and so on.
 
 
