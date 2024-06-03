@@ -39,7 +39,7 @@ class ScikitMachine(LearningMachine):
             loss (Loss): The loss function for the estimator
             preprocessor (nn.Module, optional): Module to preprocess the input sent to the estimator. Defaults to None.
         """
-        super().__init__()
+        super().__init__(use_assess=False)
         self._module = module
         self._criterion = criterion
         self._step_x = step_x
