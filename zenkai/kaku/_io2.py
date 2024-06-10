@@ -225,11 +225,13 @@ class Idx(object):
             else:
                 requires_grad = False
             if self.idx is not None:
-                if idx_both:
-                    source_i = source_i[self.idx]
-                destination_i.data[self.idx] = source_i
+                with torch.no_grad():
+                    if idx_both:
+                        source_i = source_i[self.idx]
+                    
+                    destination_i[self.idx] = source_i
             else:
-                destination_i.data = source_i
+                destination_i.copy_(source_i)
             if requires_grad:
                 destination_i.requires_grad_(True).retain_grad()
         return destination

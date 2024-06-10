@@ -244,22 +244,25 @@ class ParamFilter(optim.Optimizer):
         Args:
             p (typing.Iterable): The parameters to copy to
         """
-        for p_i, mp_i in zip(p, self.filter_params):
-            if isinstance(p_i, nn.parameter.Parameter):
-                p_i.data = mp_i.data
-            else:
-                p_i[:] = mp_i.data
+        with torch.no_grad():
+            for p_i, mp_i in zip(p, self.filter_params):
+                # if isinstance(p_i, nn.parameter.Parameter):
+                p_i.copy_(mp_i)
+                # else:
+                #     p_i[:] = mp_i.data
 
     def step_filter(self):
         """Updates the parameters in the base state"""
         self.filter_optim.zero_grad()
 
         if self._is_first and self.copy_first:
-            for p_i, mp_i in zip(self.active_params, self.filter_params):
-                if isinstance(p_i, nn.parameter.Parameter):
-                    mp_i.data = p_i.data
-                else:
-                    mp_i.data[:] = p_i
+
+            with torch.no_grad():
+                for p_i, mp_i in zip(self.active_params, self.filter_params):
+                    # if isinstance(p_i, nn.parameter.Parameter):
+                    mp_i.copy_(p_i)
+                    # else:
+                    #     mp_i.data[:] = p_i
         else:
             for active, meta in zip(self.active_params, self.filter_params):
                 loss = (0.5 * (meta - active.detach()) ** 2).sum()
@@ -275,8 +278,9 @@ class ParamFilter(optim.Optimizer):
         Args:
             clear_active_state (bool, optional): Whether to clear the active state when transferring. Defaults to True.
         """
-        for active, meta in zip(self.active_params, self.filter_params):
-            active.data = meta.data
+        with torch.no_grad():
+            for active, meta in zip(self.active_params, self.filter_params):
+                active.copy_(meta)
 
         if clear_active_state:
             self.active_optim.state.clear()
@@ -303,7 +307,6 @@ class _OptimF:
 
     def __call__(self, optim, *args: Any, **kwargs: Any) -> Any:
         return OptimFactory(optim, *args, **kwargs)
-
 
 
 class Fit(ABC):

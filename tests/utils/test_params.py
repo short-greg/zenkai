@@ -38,9 +38,15 @@ class TestSetModelGrads:
         grads2 = torch.randn(12)
 
         p_utils.update_model_grads(mod1, undo_cat1d(mod1, grads1), False)
+        
+        new_grads = p_utils.get_model_grads(
+            mod1, flat_cat=True
+        )
         p_utils.update_model_grads(mod1, undo_cat1d(mod1, grads2), True)
-        new_grads = p_utils.get_model_grads(mod1)
-        assert (cat1d(new_grads) == (grads1 + grads2)).all()
+        new_grads = p_utils.get_model_grads(
+            mod1, flat_cat=True
+        )
+        assert torch.isclose(cat1d(new_grads), (grads1 + grads2)).all()
 
     def test_set_model_grads_does_not_add_when_not_set_to_true(self):
 

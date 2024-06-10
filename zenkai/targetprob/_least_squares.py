@@ -163,17 +163,19 @@ class LeastSquaresStepTheta(StepTheta):
         return p[:, :-1], p[:, -1]
 
     def _optimize_dw(self, x: torch.Tensor, t: torch.Tensor):
-        t_delta = t - self.linear.forward(x)
-        dweight, dbias = self.split(self.solver.solve(x, t_delta))
-        self.linear.weight.data = self.linear.weight.data + dweight
-        if dbias is not None:
-            self.linear.bias.data = self.linear.bias.data + dbias
+        with torch.no_grad():
+            t_delta = t - self.linear.forward(x)
+            dweight, dbias = self.split(self.solver.solve(x, t_delta))
+            self.linear.weight.copy_(self.linear.weight + dweight)
+            if dbias is not None:
+                self.linear.bias.copy_(self.linear.bias + dbias)
 
     def _optimize_w(self, x: torch.Tensor, t: torch.Tensor):
-        weight, bias = self.split(self.solver.solve(x, t))
-        self.linear.weight.data = weight
-        if bias is not None:
-            self.linear.bias.data = bias
+        with torch.no_grad():
+            weight, bias = self.split(self.solver.solve(x, t))
+            self.linear.weight.copy_(weight)
+            if bias is not None:
+                self.linear.bias.copy_(bias)
 
     def step(self, x: IO, t: IO, state: State):
         self._optimize(x.f, t.f)

@@ -40,24 +40,27 @@ def update_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.p
         to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
     """
     # start = 0
+
     if isinstance(model, nn.Module):
         model = model.parameters()
     elif isinstance(model, torch.Tensor):
         model = [model]
 
-    for p, grad in zip(model, theta_grad):
-        
-        if grad is None and not to_add:
-            p.grad = None
-        
-        if p.grad is None:
-            if grad is not None:
-                p.grad = grad.detach()
-        else:
-            if grad is not None and to_add:
-                p.grad.data = p.grad.data + grad.detach()
-            elif grad is not None:
-                p.grad.data = grad.detach() 
+    with torch.no_grad():
+
+        for p, grad in zip(model, theta_grad):
+            
+            if grad is None and not to_add:
+                p.grad = None
+            
+            if p.grad is None:
+                if grad is not None:
+                    p.grad = grad.clone()
+            else:
+                if grad is not None and to_add:
+                    p.grad.add_(grad)
+                elif grad is not None:
+                    p.grad.copy_(grad)
 
 
 def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], t: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True, lr: float=1.0):
@@ -82,14 +85,14 @@ def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[tor
         
         if p.grad is None:
             if grad is not None:
-                p.grad = grad.detach()
+                p.grad = grad.clone()
         else:
             if grad is not None and to_add:
                 with torch.no_grad():
-                    p.grad.copy_(p.grad + grad.detach())
+                    p.grad.add_(grad)
             elif grad is not None:
                 with torch.no_grad():
-                    p.grad.copy_(grad.detach())
+                    p.grad.copy_(grad)
 
 
 MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
@@ -333,7 +336,7 @@ def apply_grad(
             if p.grad is None and skip_none:
                 continue
             elif p.grad is None:
-                p.grad = f(p, p.grad)
+                p.grad = f(p, p.grad).clone()
             else:
                 p.grad.copy_(f(p, p.grad))
 
@@ -355,11 +358,12 @@ def acc_params(
 def set_grad(
     cur: torch.Tensor, grad: torch.Tensor
 ):
-    if cur.grad is None:
-        cur.grad = grad.detach()
-    else:
-        with torch.no_grad():
-            cur.grad.copy_(grad.detach())
+    with torch.no_grad():
+        if cur.grad is None:
+            cur.grad = grad.clone()
+        else:
+            with torch.no_grad():
+                cur.grad.copy_(grad.detach())
     
 
 def set_gradt(
@@ -373,22 +377,24 @@ def set_gradt(
 def acc_grad(
     cur: torch.Tensor, grad: torch.Tensor
 ):
-    if cur.grad is None:
-        cur.grad = grad.detach()
-    else:
-        with torch.no_grad():
-            cur.grad.copy_(cur.grad.data + grad)
+    with torch.no_grad():
+        if cur.grad is None:
+            cur.grad = grad.clone()
+        else:
+            with torch.no_grad():
+                cur.grad.copy_(cur.grad + grad)
 
 
 def acc_gradt(
     cur: torch.Tensor, t: torch.Tensor
 ):
     grad = cur - t
-    if cur.grad is None:
-        cur.grad = grad.detach()
-    else:
-        with torch.no_grad():
-            cur.grad.copy_(cur.grad + grad)
+    with torch.no_grad():
+        if cur.grad is None:
+            cur.grad = grad.clone()
+        else:
+            with torch.no_grad():
+                cur.grad.add_(grad)
 
 
 def update_model_params(

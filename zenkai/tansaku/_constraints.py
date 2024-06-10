@@ -184,24 +184,25 @@ class NNLinearObjective(Objective):
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
 
-        w = kwargs["w"]
-        b = kwargs.get("b", [None] * len(w))
-        assessments = []
-        for w_i, b_i in zip(w, b):
-            self._linear.weight.data = w_i
-            if b_i is not None:
-                self._linear.bias.data = b_i
-            with torch.no_grad():
-                assessments.append(
-                    self._criterion.assess(
-                        IO(self._net(self.x.f)), self.t, reduction_override=reduction
+        with torch.no_grad():
+            w = kwargs["w"]
+            b = kwargs.get("b", [None] * len(w))
+            assessments = []
+            for w_i, b_i in zip(w, b):
+                self._linear.weight.copy_(w_i)
+                if b_i is not None:
+                    self._linear.bias.copy_(b_i)
+                with torch.no_grad():
+                    assessments.append(
+                        self._criterion.assess(
+                            IO(self._net(self.x.f)), self.t, reduction_override=reduction
+                        )
                     )
-                )
-        assessment = torch.stack(assessments)
-        constraint = self._constraint(**kwargs)
-        value = impose(assessment, constraint, self._penalty)
-        if value.dim() == 3:
-            value = value.transpose(2, 1)
+            assessment = torch.stack(assessments)
+            constraint = self._constraint(**kwargs)
+            value = impose(assessment, constraint, self._penalty)
+            if value.dim() == 3:
+                value = value.transpose(2, 1)
         return Reduction[reduction].reduce(value)
 
 
