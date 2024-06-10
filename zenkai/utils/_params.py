@@ -320,7 +320,7 @@ def apply_p(
 
 
 def apply_grad(
-    obj: PObj, f
+    obj: PObj, f: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], skip_none: bool=True
 ):
     """Apply a function to the parameters
 
@@ -330,7 +330,12 @@ def apply_grad(
     """
     with torch.no_grad():
         for p in get_p(obj):
-            p.copy_(f(p.grad))
+            if p.grad is None and skip_none:
+                continue
+            elif p.grad is None:
+                p.grad = f(p, p.grad)
+            else:
+                p.grad.copy_(f(p, p.grad))
 
 
 def set_params(

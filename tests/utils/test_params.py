@@ -195,3 +195,37 @@ class TestPVec:
         p_utils.acc_gradvec([mod1, mod2], vec)
         p_utils.acc_gradvec([mod1, mod2], vec)
         assert (mod1.weight.grad == (weight_before * 2)).all()
+
+
+class TestApply:
+
+    def test_apply_updates_the_value_of_p(self):
+
+        model = nn.Linear(2, 3)
+        p_utils.apply_p(
+            model, lambda p: torch.ones_like(p)
+        )
+        assert (model.weight == 1).all()
+
+
+    def test_apply_grad_updates_the_value_of_p_grad(self):
+
+        model = nn.Linear(2, 3)
+        model.weight.grad = torch.zeros_like(
+            model.weight
+        )
+        p_utils.apply_grad(
+            model, lambda p, g: g + 1, True
+        )
+        assert (model.weight.grad == 1.).all()
+
+    def test_apply_grad_updates_the_value_of_p_grad_with_none(self):
+
+        model = nn.Linear(2, 3)
+        model.weight.grad = torch.zeros_like(
+            model.weight
+        )
+        p_utils.apply_grad(
+            model, lambda p, g: torch.ones_like(p), False
+        )
+        assert (model.weight.grad == 1.).all()
