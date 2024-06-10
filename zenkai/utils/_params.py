@@ -25,7 +25,8 @@ def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.para
             grad = grad.detach()
 
         if p.grad is not None:
-            p.grad.data = grad
+            with torch.no_grad():
+                p.grad.copy_(grad)
         else:
             p.grad = grad
 
@@ -84,9 +85,11 @@ def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[tor
                 p.grad = grad.detach()
         else:
             if grad is not None and to_add:
-                p.grad.data = p.grad.data + grad.detach()
+                with torch.no_grad():
+                    p.grad.copy_(p.grad + grad.detach())
             elif grad is not None:
-                p.grad.data = grad.detach() 
+                with torch.no_grad():
+                    p.grad.copy_(grad.detach())
 
 
 MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
@@ -114,7 +117,8 @@ def get_model_grads(
 
     for p in model:
         if p.grad is not None and clone:
-            grad = p.grad.data.clone()
+            with torch.no_grad():
+                grad = p.grad.clone()
         else:
             grad = p.grad
         grads.append(grad)
@@ -125,21 +129,6 @@ def get_model_grads(
         return torch.concat([p.flatten() for p in grads])
     return grads
 
-
-
-def get_model_params(model: nn.Module) -> torch.Tensor:
-    """Convenience function to retrieve the parameters of a model
-
-    Args:
-        model (nn.Module): 
-
-    Returns:
-        torch.Tensor: 
-    """
-    try:
-        return parameters_to_vector(model.parameters())
-    except NotImplementedError:
-        return None
 
 
 def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
@@ -249,14 +238,22 @@ def acc_gradtvec(obj: PObj, vec: torch.Tensor):
     # return torch.cat([p_i.flatten() for p_i in get_p(obj)], dim=0)
 
 
-# def from_vec(vec: torch.Tensor, ref: PObj):
+def get_params(model: nn.Module) -> torch.Tensor:
+    """Convenience function to retrieve the parameters of a model
 
-# def get_pvec(obj: PObj) -> torch.Tensor:
+    Args:
+        model (nn.Module): 
 
-#     try:
-#         return parameters_to_vector(get_p(obj))
-#     except NotImplementedError:
-#         return None
+    Returns:
+        torch.Tensor: 
+    """
+    
+    try:
+        p = get_p(model)
+        return parameters_to_vector(p)
+    except NotImplementedError:
+        return None
+
     
 import pandas as pd
 
@@ -316,20 +313,38 @@ def apply_p(
         parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
         f : The function to apply
     """
-    for p in get_p(obj):
-        p.data = f(p.data).detach()
+    with torch.no_grad():
+        for p in get_p(obj):
+            
+            p.copy_(f(p))
+
+
+def apply_grad(
+    obj: PObj, f
+):
+    """Apply a function to the parameters
+
+    Args:
+        parameters (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
+        f : The function to apply
+    """
+    with torch.no_grad():
+        for p in get_p(obj):
+            p.copy_(f(p.grad))
 
 
 def set_params(
     cur: torch.Tensor, new_: torch.Tensor
 ):
-    cur.data = new_.detach()
+    with torch.no_grad():
+        cur.copy_(new_.detach())
 
 
 def acc_params(
     cur: torch.Tensor, new_: torch.Tensor
 ):
-    cur.data = (cur + new_).detach()
+    with torch.no_grad():
+        cur.copy_(cur + new_)
 
 
 def set_grad(
@@ -338,14 +353,16 @@ def set_grad(
     if cur.grad is None:
         cur.grad = grad.detach()
     else:
-        cur.grad.data = grad.detach()
+        with torch.no_grad():
+            cur.grad.copy_(grad.detach())
     
 
 def set_gradt(
     cur: torch.Tensor, t: torch.Tensor
 ):
     grad = cur - t
-    cur.data.grad = grad.detach()
+    with torch.no_grad():
+        cur.grad.copy_(grad.detach())
 
 
 def acc_grad(
@@ -354,7 +371,8 @@ def acc_grad(
     if cur.grad is None:
         cur.grad = grad.detach()
     else:
-        cur.grad.data = (cur.grad.data + grad).detach()
+        with torch.no_grad():
+            cur.grad.copy_(cur.grad.data + grad)
 
 
 def acc_gradt(
@@ -364,7 +382,8 @@ def acc_gradt(
     if cur.grad is None:
         cur.grad = grad.detach()
     else:
-        cur.grad.data = (cur.grad.data + grad).detach()
+        with torch.no_grad():
+            cur.grad.copy_(cur.grad + grad)
 
 
 def update_model_params(
@@ -434,7 +453,8 @@ class undo_grad(object):
                 isinstance(value, torch.Tensor) or isinstance(value, torch.nn.parameter.Parameter)
             ):
                 if value.grad is not None and stored is not None:
-                    value.grad.data = stored
+                    with torch.no_grad():
+                        value.grad.copy_(stored)
                 elif value.grad is not None:
                     value.grad = None
                 else:
@@ -443,3 +463,13 @@ class undo_grad(object):
                 update_model_grads(
                     value, stored, False
                 )
+
+
+# def from_vec(vec: torch.Tensor, ref: PObj):
+
+# def get_pvec(obj: PObj) -> torch.Tensor:
+
+#     try:
+#         return parameters_to_vector(get_p(obj))
+#     except NotImplementedError:
+#         return None

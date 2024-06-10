@@ -15,11 +15,11 @@ class TestNullLearner:
         learner = NullLearner()
 
         state = State()
-        before = utils.get_model_params(learner)
+        before = utils.get_params(learner)
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        after = utils.get_model_params(learner)
+        after = utils.get_params(learner)
         assert (before == after) and before is None
 
     def test_step_x_does_not_change_y(self):

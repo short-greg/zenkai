@@ -1,13 +1,10 @@
 # 1st party
 import typing
+from dataclasses import dataclass
 
 # 3rd party
 from torch._tensor import Tensor
 import torch.nn as nn
-
-from zenkai.kaku._lm2 import IO as IO, Idx as Idx, forward_dep
-
-from ..kaku import Idx
 
 # local
 from ..kaku import (
@@ -21,15 +18,16 @@ from ..utils._build import (
     Var,
     Factory,
 )
-from .. import utils
 from ..utils import _params as param_utils
 from ..targetprob import Null
 from ..kaku._grad import GradIdxLearner
+from ..kaku._lm2 import IO as IO, Idx as Idx, forward_dep
+from ..kaku._io2 import IO as IO, iou
+from ..kaku import Idx
 
-from dataclasses import dataclass
 
 
-from zenkai.kaku._io2 import IO as IO, iou
+
 from ..kaku._state import State
 from ..kaku._lm2 import LearningMachine as LearningMachine
 

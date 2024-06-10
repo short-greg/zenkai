@@ -34,12 +34,12 @@ class TestTargetPropLearner(object):
         t = zenkai.iou(torch.randn(4, 4))
         y = learner.forward_io(x, state)
 
-        before = params.get_model_params(learner.forward_learner)
+        before = params.get_params(learner.forward_learner)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
         assert (
             before !=
-            params.get_model_params(learner._forward_learner)
+            params.get_params(learner._forward_learner)
         ).any()
 
     def test_target_prop_learner_updates_reverse(self):
@@ -51,12 +51,12 @@ class TestTargetPropLearner(object):
         state = State()
         y = learner.forward_io(x, state)
 
-        before = params.get_model_params(learner.reverse_learner)
+        before = params.get_params(learner.reverse_learner)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
         assert (
             before !=
-            params.get_model_params(learner.reverse_learner)
+            params.get_params(learner.reverse_learner)
         ).any()
 
     def test_target_prop_learner_does_not_update_reverse_when_turned_off(self):
@@ -67,13 +67,13 @@ class TestTargetPropLearner(object):
         state = State()
         y = learner.forward_io(x, state)
         learner.reverse_update = False
-        before = params.get_model_params(learner.reverse_learner)
+        before = params.get_params(learner.reverse_learner)
         learner.reverse_update
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
         assert (
             before ==
-            params.get_model_params(learner.reverse_learner)
+            params.get_params(learner.reverse_learner)
         ).all()
     
     def test_target_prop_learner_does_not_update_forward_when_turned_off(self):
@@ -85,12 +85,12 @@ class TestTargetPropLearner(object):
         y = learner.forward_io(x, state)
         learner.forward_update = False
 
-        before = params.get_model_params(learner.forward_learner)
+        before = params.get_params(learner.forward_learner)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
         assert (
             before ==
-            params.get_model_params(learner.forward_learner)
+            params.get_params(learner.forward_learner)
         ).all()
     
     def test_target_prop_learner_returns_valid_x(self):
@@ -116,7 +116,7 @@ class TestTargetPropLearner(object):
         learner.lmode_(LMode.WithStep)
         learner2.lmode_(LMode.WithStep)
 
-        before = params.get_model_params(learner.forward_learner)
+        before = params.get_params(learner.forward_learner)
         x = torch.randn(4, 2)
         t = torch.randn(4, 4)
         y = learner(x)
@@ -126,7 +126,7 @@ class TestTargetPropLearner(object):
 
         assert (
             before !=
-            params.get_model_params(learner.forward_learner)
+            params.get_params(learner.forward_learner)
         ).any()
 
     def test_chained_target_prop_updates_reverse(self):
@@ -137,8 +137,8 @@ class TestTargetPropLearner(object):
         learner.lmode_(LMode.WithStep)
         learner2.lmode_(LMode.WithStep)
 
-        before = params.get_model_params(learner.reverse_learner)
-        before2 = params.get_model_params(learner2.reverse_learner)
+        before = params.get_params(learner.reverse_learner)
+        before2 = params.get_params(learner2.reverse_learner)
         x = torch.randn(4, 2)
         t = torch.randn(4, 4)
         y = learner(x)
@@ -148,11 +148,11 @@ class TestTargetPropLearner(object):
 
         assert (
             before !=
-            params.get_model_params(learner.reverse_learner)
+            params.get_params(learner.reverse_learner)
         ).any()
         assert (
             before2 !=
-            params.get_model_params(learner2.reverse_learner)
+            params.get_params(learner2.reverse_learner)
         ).any()
 
 

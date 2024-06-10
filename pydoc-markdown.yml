@@ -1,0 +1,9 @@
+loaders:
+  - type: python
+    search_path: ["."]
+processors:
+  - type: filter
+    expression: "zenkai"
+renderers:
+  - type: markdown
+    filename: "API_REFERENCE.md"

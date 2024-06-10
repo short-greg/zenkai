@@ -100,7 +100,9 @@ class IO(tuple):
 
         for x in self:
             if isinstance(x, torch.Tensor) and x.grad is not None:
-                x.grad.data.zero_()
+                with torch.no_grad():
+                    x.grad.zero_()
+                # x.grad.data.zero_()
 
     def grad(self) -> 'IO':
         """Calculate dx from an updated x's grad
@@ -243,7 +245,8 @@ class Idx(object):
         if self.idx is not None:
             destination[self.idx] = source
         else:
-            destination.data[:] = source
+            with torch.no_grad():
+                destination.copy_(source)
         return destination
 
     def sub(self, idx: "Idx") -> "Idx":

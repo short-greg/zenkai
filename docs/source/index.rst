@@ -4,11 +4,11 @@
    contain the root `toctree` directive.
 
 Zenkai - A framework to beyond backpropagation
-==================================
+==============================================
 Zenkai is a framework to help researchers to test techniques beyond simple backpropagation for deep learning machines and also define more flexible architectures and training mechanics.
 
 Get Developing With Zenkai
-===========
+==========================
 
 .. toctree::
    :hidden:
@@ -16,6 +16,7 @@ Get Developing With Zenkai
 
    intro/overview
    intro/getting_started
+   api
 ..    intro/examples
 ..    intro/troubleshooting
 ..    intro/feedback_and_support
@@ -27,6 +28,9 @@ Get Developing With Zenkai
 :doc:`intro/getting_started`
     Get started using Zenkai
 
+:doc:`api`
+    Get acquainted with the API
+
 .. :doc:`intro/examples`
 ..     Several examples of using Zenkai
 
@@ -37,45 +41,45 @@ Get Developing With Zenkai
 ..     Get in touch to find out more
 
 
-Modules
-===========
+.. Modules
+.. =======
 
-.. toctree::
-   :hidden:
-   :caption: Modules:
+.. .. toctree::
+..    :hidden:
+..    :caption: Modules:
 
-   modules/kaku
-   modules/tansaku
-   modules/ensemble
-   modules/targetprop
-   modules/feedback
-   modules/scikit
-   modules/utils
+..    modules/kaku
+..    modules/tansaku
+..    modules/ensemble
+..    modules/targetprop
+..    modules/feedback
+..    modules/scikit
+..    modules/utils
 
 
-:doc:`modules/kaku`
-    Develop a LearningMachine and implement all its components
+.. :doc:`modules/kaku`
+..     Develop a LearningMachine and implement all its components
 
-:doc:`modules/tansaku`
-    Implement classes for adding exploration in learning
+.. :doc:`modules/tansaku`
+..     Implement classes for adding exploration in learning
 
-:doc:`modules/ensemble`
-    Modules for implementing ensembles
+.. :doc:`modules/ensemble`
+..     Modules for implementing ensembles
 
-:doc:`modules/targetprop`
-    Modules for implementing target propagation
+.. :doc:`modules/targetprop`
+..     Modules for implementing target propagation
 
-:doc:`modules/feedback`
-    Modules for implementing feedback alignment
+.. :doc:`modules/feedback`
+..     Modules for implementing feedback alignment
 
-:doc:`modules/scikit`
-    Modules for adapting scikit learn classes.
+.. :doc:`modules/scikit`
+..     Modules for adapting scikit learn classes.
 
-:doc:`modules/utils`
-    Global utilities in Zenkai
+.. :doc:`modules/utils`
+..     Global utilities in Zenkai
 
 Other
-===========
+=====
 
 .. toctree::
    :hidden:

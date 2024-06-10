@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ..utils._params import get_model_params, update_model_params
+from ..utils._params import get_params, update_model_params
 
 
 def gaussian_sample(
@@ -343,7 +343,7 @@ class ModuleNoise(nn.Module):
             raise ValueError("Weight must be in range (0, 1)")
         self._module_clone = module_clone
         self._weight = weight
-        self._p = get_model_params(module_clone)
+        self._p = get_params(module_clone)
         self._direction_mean = torch.zeros_like(self._p)
         self._direction_var = torch.zeros_like(self._p)
         self._updated = False
@@ -356,7 +356,7 @@ class ModuleNoise(nn.Module):
             base_module: The module to update
         """
 
-        parameters = get_model_params(base_module)
+        parameters = get_params(base_module)
         dp = parameters - self._p
         self._direction_var = (
             1 - self._weight
@@ -392,7 +392,7 @@ class ModuleNoise(nn.Module):
             )
             * torch.sqrt(self._direction_var[None])
             + self._direction_mean[None]
-        ) + get_model_params(self._module_clone)[None]
+        ) + get_params(self._module_clone)[None]
         ys = []
         for x_i, p_i in zip(x, ps):
             update_model_params(self._module_clone, p_i)
