@@ -37,6 +37,7 @@ from ._lm2 import (
     SetYHook,
     LMode,
     set_lmode,
+    LearnerPostHook
 )
 from ._lm_assess import (
     LayerAssessor,
@@ -70,7 +71,7 @@ from ._grad import (
     GradLearner,
     GradStepX,
 )
-from ._iterable import IterStepTheta, IterHiddenStepTheta, IterStepX
+from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
 
 from ._assess import (
     Criterion, XCriterion, CompositeCriterion,

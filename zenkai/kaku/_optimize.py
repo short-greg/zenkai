@@ -20,7 +20,6 @@ from ._assess import Criterion
 from ._state import State
 
 
-
 class NullOptim(torch.optim.Optimizer):
     """'Optim' that does not update the parameters"""
 

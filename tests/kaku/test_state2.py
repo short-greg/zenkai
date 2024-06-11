@@ -1,7 +1,4 @@
 # 3rd party
-import pytest
-import torch
-import torch.optim
 from torch import nn
 
 # local
@@ -23,6 +20,7 @@ class Y(state2.IDable, nn.Linear):
 
 
 class TestIDable:
+
     def test_x_sets_id_to_object_id(self):
         x = X()
         assert x.id is not None
@@ -41,3 +39,33 @@ class TestIDable:
         state_dict = x.state_dict()
         x2.load_state_dict(state_dict)
         assert x2.id == x.id
+
+
+class TestState:
+
+    def test_sub_gets_a_sub(self):
+
+        state = state2.State(x=1)
+        assert state['x'] == 1
+
+    def test_get_attribute_retrieves_the_value(self):
+
+        state = state2.State(x=1)
+        assert state.x == 1
+
+    def test_get_sub_returns_a_state(self):
+
+        state = state2.State(x=1)
+        sub = state.sub('y')
+        assert isinstance(sub, state2.State)
+
+    def test_get_subs_returns_all_subs(self):
+
+        state = state2.State(x=1)
+        sub = state.sub('y')
+        sub2 = state.sub('z')
+        results = [
+            sub for _, sub in state.subs()
+        ]
+        assert sub in results
+        assert sub2 in results
