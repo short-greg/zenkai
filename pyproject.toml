@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "zenkai"
-version = "0.0.5"
+version = "0.0.6"
 description = "A framework for flexibly developing beyond bakcpropagation."
 homepage = "https://github.com/short-greg/zenkai"
 repository = "https://github.com/short-greg/zenkai"
@@ -26,11 +26,11 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
 numpy = ">=1"
-pandas = ">=1,<2"
+pandas = ">=1"
 scikit-learn = ">=1.0.0"
 # torch = {version = ">=2,<3"}
 tqdm = ">=4.0"
-scipy = ">=1.5,<2.0"
+scipy = ">=1.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6"
