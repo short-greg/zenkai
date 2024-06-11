@@ -315,7 +315,7 @@ class LinearRecNoise(LinearRec):
         return iou(self.sequential(y))
 
 
-class DiffTargetPropLearner(TPLayerLearner):
+class DiffTPLayerLearner(TPLayerLearner):
     """Add the difference between a y prediction and x prediction
     to get the target
     """
@@ -375,7 +375,7 @@ def create_grad_target_prop(
         )
 
     if diff:
-        return DiffTargetPropLearner(
+        return DiffTPLayerLearner(
             machine, reverse_learner, machine,
             reverse_learner, criterion=criterion 
         )

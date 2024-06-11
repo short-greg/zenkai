@@ -1,8 +1,12 @@
+# 1st party
 import typing
+
+# 3rd party
+import torch
+
+# local
 from ._aggregate import normalize, mean
 from ._reshape import unsqueeze_to
-
-import torch
 
 
 def es_dx(dw: torch.Tensor, assessment: torch.Tensor, assessment_ref: typing.Union[torch.Tensor, str] = 'mean', pop_dim: int=0) -> torch.Tensor:

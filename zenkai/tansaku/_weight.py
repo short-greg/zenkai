@@ -1,7 +1,11 @@
-import torch
-import torch.nn.functional
+# 1st party
 import math
 
+# 3rd party
+import torch
+import torch.nn.functional
+
+# local
 from ._reshape import unsqueeze_vector
 
 

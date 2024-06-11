@@ -1,9 +1,13 @@
+# 1st party
 from abc import ABC, abstractmethod
 import typing
-
 from typing import TypeVar, Generic
 import random
 import uuid
+
+
+T = TypeVar("T")
+K = TypeVar("K")
 
 
 def _undefined():
@@ -93,10 +97,6 @@ class Var(BuilderFunctor):
             typing.List[Var]: This variable wrapped in a list
         """
         return [self]
-
-
-T = TypeVar("T")
-K = TypeVar("K")
 
 
 class Factory(BuilderFunctor, Generic[T]):

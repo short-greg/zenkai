@@ -1,6 +1,7 @@
-import typing
+# 3rd party
 import torch
 
+# local
 from ._reshape import unsqueeze_to
 
 

@@ -1,6 +1,7 @@
-import torch
+# 1st party
 import typing
 
+# 3rd party
 import torch
 import torch.nn as nn
 

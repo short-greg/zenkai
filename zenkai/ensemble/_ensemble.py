@@ -7,7 +7,6 @@ import typing
 import torch.nn as nn
 import torch
 
-
 # local
 from zenkai.kaku._io2 import IO as IO
 from ..kaku._state import State
