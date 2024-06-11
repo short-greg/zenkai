@@ -1,6 +1,6 @@
 # flake8: noqa
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 from . import targetprob, tansaku, utils, ensemble, feedback, scikit
 from .kaku import *
