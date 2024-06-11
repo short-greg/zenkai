@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
-
+import pandas as pd
 ### These are the OLD functions
 
 
@@ -131,7 +131,6 @@ def get_model_grads(
     if flat_cat:
         return torch.concat([p.flatten() for p in grads])
     return grads
-
 
 
 def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
@@ -257,8 +256,6 @@ def get_params(model: nn.Module) -> torch.Tensor:
     except NotImplementedError:
         return None
 
-    
-import pandas as pd
 
 def to_df(name: str, obj: PObj) -> pd.DataFrame:
 
@@ -474,13 +471,3 @@ class undo_grad(object):
                 update_model_grads(
                     value, stored, False
                 )
-
-
-# def from_vec(vec: torch.Tensor, ref: PObj):
-
-# def get_pvec(obj: PObj) -> torch.Tensor:
-
-#     try:
-#         return parameters_to_vector(get_p(obj))
-#     except NotImplementedError:
-#         return None
