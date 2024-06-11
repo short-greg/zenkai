@@ -81,22 +81,6 @@ class ScikitMachine(LearningMachine):
 
         return self._module(x[0])
 
-    # def forward_nn(self, x: IO, release: bool = True) -> IO:
-    #     """
-
-    #     Args:
-    #         x (IO): input to the machine
-    #         release (bool, optional): Whether to release the output. Defaults to True.
-
-    #     Returns:
-    #         IO: output of the machine
-    #     """
-
-    #     x = x.f
-
-    #     y = IO(self._module(x))
-    #     return y.out(release=release)
-
     @property
     def fitted(self) -> bool:
         """

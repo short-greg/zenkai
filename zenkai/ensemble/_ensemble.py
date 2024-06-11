@@ -1,7 +1,7 @@
 # TODO: Add modules for ensemble
 # 1st party
 from abc import abstractmethod
-from typing import Any, Tuple
+import typing
 
 # 3rd party
 import torch.nn as nn
@@ -43,7 +43,7 @@ class EnsembleLearner(LearningMachine):
         """
         pass
 
-    def forward_nn(self, x: IO, state: State, **kwargs) -> Tuple | Any:
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         
         return self.reduce(self.vote(x, state), state) 
 

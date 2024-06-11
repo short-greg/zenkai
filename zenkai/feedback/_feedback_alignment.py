@@ -24,10 +24,6 @@ from ..kaku._grad import GradIdxLearner
 from ..kaku._lm2 import IO as IO, Idx as Idx, forward_dep
 from ..kaku._io2 import IO as IO, iou
 from ..kaku import Idx
-
-
-
-
 from ..kaku._state import State
 from ..kaku._lm2 import LearningMachine as LearningMachine
 

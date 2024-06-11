@@ -118,7 +118,7 @@ class TPLayerLearner(LearningMachine):
         x = self.rev_x(x, t)
         return self._reverse_learner.forward_io(x, state.sub('reverse'))
 
-    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Tuple | typing.Any:
+    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         
         y = self._forward_learner.forward_io(
             x, state.sub('forward'), False
