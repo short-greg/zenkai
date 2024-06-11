@@ -105,7 +105,7 @@ zenkai.build
 .. autosummary::
    :toctree: generated
 
-   zenkai.build.BuildFunctor
+   zenkai.build.BuilderFunctor
    zenkai.build.Var
    zenkai.build.Factory
    zenkai.build.BuilderArgs
@@ -140,16 +140,7 @@ zenkai.tansaku
    zenkai.tansaku.FuncObjective
    zenkai.tansaku.NNLinearObjective
    zenkai.tansaku.CriterionObjective
-   zenkai.tansaku.ParentSelector
-   zenkai.tansaku.CrossOver
-   zenkai.tansaku.full_crossover
-   zenkai.tansaku.smooth_crossover
-   zenkai.tansaku.hard_crossover
-   zenkai.tansaku.cross_pairs
-   zenkai.tansaku.es_dx
    zenkai.tansaku.PopModule
-   zenkai.tansaku.gaussian_sample
-   zenkai.tansaku.gaussian_noise
    zenkai.tansaku.binary_noise
    zenkai.tansaku.add_noise
    zenkai.tansaku.cat_noise
@@ -166,10 +157,8 @@ zenkai.tansaku
    zenkai.tansaku.AssessmentDist
    zenkai.tansaku.EqualsAssessmentDist
    zenkai.tansaku.FreezeDropout
-   zenkai.tansaku.binary_prob
    zenkai.tansaku.loop_select
    zenkai.tansaku.to_pvec
-   zenkai.tansaku.to_gradvec
    zenkai.tansaku.align_vec
    zenkai.tansaku.set_pvec
    zenkai.tansaku.acc_pvec
@@ -220,7 +209,17 @@ zenkai.tansaku
    zenkai.tansaku.rank_weight
    zenkai.tansaku.log_weight
    zenkai.tansaku.gauss_cdf_weight
-
+..   zenkai.tansaku.CrossOver
+   zenkai.tansaku.full_crossover
+   zenkai.tansaku.smooth_crossover
+   zenkai.tansaku.hard_crossover
+   zenkai.tansaku.gaussian_sample
+   zenkai.tansaku.gaussian_noise
+   zenkai.tansaku.es_dx
+   zenkai.tansaku.to_gradvec
+   zenkai.tansaku.cross_pairs
+   zenkai.tansaku.ParentSelector
+   zenkai.tansaku.binary_prob
 
 zenkai.ensemble
 --------------
@@ -229,7 +228,7 @@ zenkai.ensemble
    :toctree: generated
 
    zenkai.ensemble.weighted_votes
-   zenkai.ensemble.VoteAggregation
+   zenkai.ensemble.VoteAggregator
    zenkai.ensemble.MeanVoteAggregator
    zenkai.ensemble.BinaryVoteAggregator
    zenkai.ensemble.MulticlassVoteAggregator
@@ -244,12 +243,12 @@ zenkai.feedback
 .. autosummary::
    :toctree: generated
 
-   zenkai.ensemble.fa_target
-   zenkai.ensemble.FALearner
-   zenkai.ensemble.DFALearner
-   zenkai.ensemble.LinearFABuilder
-   zenkai.ensemble.LinearDFABuilder
-   zenkai.ensemble.OutT
+   zenkai.feedback.fa_target
+   zenkai.feedback.FALearner
+   zenkai.feedback.DFALearner
+   zenkai.feedback.LinearFABuilder
+   zenkai.feedback.LinearDFABuilder
+   zenkai.feedback.OutT
 
 zenkai.scikit
 -------------
@@ -262,40 +261,35 @@ zenkai.scikit
    zenkai.scikit.LinearBackup
    zenkai.scikit.MulticlassBackup
    zenkai.scikit.BinaryBackup
-   zenaki.scikit.EnsembleVoter
-   zenaki.scikit.EnsembleLearnerVoter
 
-zenkai.targetprop
------------------
+.. zenkai.targetprop
+.. -----------------
 
-.. autosummary::
-   :toctree: generated
+.. .. autosummary::
+..    :toctree: generated
 
-   zenkai.targetprop.LeastSquaresSolver
-   zenkai.targetprop.LeastSquaresStandardSolver
-   zenkai.targetprop.LeastSquaresRidgeSolver
-   zenkai.targetprop.LeastSquaresStepTheta
-   zenkai.targetprop.LeastSquaresStepX
-   zenkai.targetprop.LeastSquaresLearner
-   zenkai.targetprop.GradLeastSquaresLearner
-   zenkai.targetprop.Reversible
-   zenkai.targetprop.Null
-   zenkai.targetprop.TargetReverser
-   zenkai.targetprop.SequenceReversible
-   zenkai.targetprop.SigmoidInvertable
-   zenkai.targetprop.SoftMaxReversible
-   zenkai.targetprop.BatchNorm1DReversible
-   zenkai.targetprop.LeakyReLUInvertable
-   zenkai.targetprop.BoolToSigned
-   zenkai.targetprop.SignedToBool
-   zenkai.targetprop.ReversibleMachine
-   zenkai.targetprop.TPLayerLearner
-   zenkai.targetprop.TPForwardLearner
-   zenkai.targetprop.TPReverseLearner
-   zenkai.targetprop.Rec
-   zenkai.targetprop.LinearRec
-   zenkai.targetprop.DiffTPLayerLearner
-   zenkai.targetprop.create_grad_target_prop
-
-
-
+..    zenkai.targetprop.LeastSquaresStepTheta
+..    zenkai.targetprop.LeastSquaresStepX
+..    zenkai.targetprop.Reversible
+..    zenkai.targetprop.Null
+..    zenkai.targetprop.TargetReverser
+..    zenkai.targetprop.SequenceReversible
+..    zenkai.targetprop.SigmoidInvertable
+..    zenkai.targetprop.SoftMaxReversible
+..    zenkai.targetprop.ReversibleMachine
+..    zenkai.targetprop.TPLayerLearner
+..    zenkai.targetprop.TPForwardLearner
+..    zenkai.targetprop.TPReverseLearner
+..    zenkai.targetprop.Rec
+..    zenkai.targetprop.LinearRec
+..    zenkai.targetprop.create_grad_target_prop
+..    zenkai.targetprop.BatchNorm1DReversible
+..    zenkai.targetprop.BoolToSigned
+..    zenkai.targetprop.SignedToBool
+..    zenkai.targetprop.DiffTPLayerLearner
+..    zenkai.targetprop.GradLeastSquaresLearner
+..    zenkai.targetprop.LeakyReLUInvertable
+..    zenkai.targetprop.LeastSquaresLearner
+..    zenkai.targetprop.LeastSquaresSolver
+..    zenkai.targetprop.LeastSquaresStandardSolver
+..    zenkai.targetprop.LeastSquaresRidgeSolver
