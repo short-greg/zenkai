@@ -4,6 +4,7 @@ import torch.nn as nn
 
 
 from zenkai.kaku import _assess as _evaluation, NNLoss, IO, iou, Reduction
+from zenkai.kaku._assess import MulticlassLoss
 from zenkai.kaku import AssessmentLog
 
 
@@ -138,3 +139,24 @@ class TestAssessmentLog:
         log.update("x", "name", "validation", assessment)
         log.update("y", "name", "validation", assessment2)
         assert log.as_assessment_dict()["name_validation"] == assessment2
+
+
+class TestMulticlassLoss:
+
+    def test_forward_outputs_classification_rate(self):
+
+        y = torch.randint(0, 8, (8,)).float()
+        t = torch.randint(0, 8, (8,)).float()
+        criterion = MulticlassLoss()
+        loss = criterion(y, t)
+        assert (loss.item() == (y == t).float().mean().item())
+
+    def test_backward_returns_difference(self):
+
+        y = torch.randint(0, 8, (8,)).float()
+        y.requires_grad_()
+        t = torch.randint(0, 8, (8,)).float()
+        criterion = MulticlassLoss()
+        loss = criterion(y, t)
+        loss.backward()
+        assert (y.grad == (y - t)).all()

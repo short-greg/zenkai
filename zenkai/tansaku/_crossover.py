@@ -1,8 +1,10 @@
+# 1st party
 import typing
-
-import torch
 import random
 import math
+
+# 3rd party
+import torch
 import torch.nn as nn
 
 from ._selection import ToProb, Selection, select_from_prob

@@ -19,7 +19,7 @@ from ..utils._build import (
     Factory,
 )
 from ..utils import _params as param_utils
-from ..targetprob import Null
+from ..targetprop import Null
 from ..kaku._grad import GradIdxLearner
 from ..kaku._lm2 import IO as IO, Idx as Idx, forward_dep
 from ..kaku._io2 import IO as IO, iou

@@ -147,6 +147,12 @@ for x, t in dataloader:
 
 ```
 
+## Build documentation
+
+make clean
+sphinx-autogen source/api.rst
+make html
+
 
 ## Contributing
 

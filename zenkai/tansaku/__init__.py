@@ -1,5 +1,6 @@
 # flake8: noqa
 
+
 from ._noise import (
     gausian_noise,
     binary_noise,
@@ -14,8 +15,14 @@ from ._noise import (
     ExplorerNoiser,
     Exploration,
     EqualsAssessmentDist,
-    TInfo
+    TInfo,
+    gaussian_sample,
+    remove_noise,
+    RandExploration,
+    AssessmentDist,
+    FreezeDropout
 )
+
 from ._weight import (
     gauss_cdf_weight, log_weight, rank_weight,
     softmax_weight, normalize_weight
@@ -46,6 +53,18 @@ from ._aggregate import (
     quantile,
     normalize
 )
+from ._crossover import (
+    CrossOver, 
+    cross_pairs,
+    full_crossover,
+    hard_crossover,
+    smooth_crossover,
+    ParentSelector,
+
+)
+from ._evolutionary import (
+    es_dx
+)
 
 from ._params import (
     loop_select,
@@ -56,9 +75,9 @@ from ._params import (
     set_gradtvec,
     acc_gradtvec,
     set_pvec,
-    acc_pvec
+    acc_pvec,
+    to_gradvec,
 )
-
 from ._module import (
     PopModule
 )
@@ -86,16 +105,4 @@ from ._reshape import(
     shape_as,
     AdaptBatch,
     AdaptFeature
-)
-from ._noise import (
-    NoiseReplace,
-    ModuleNoise,
-    GaussianNoiser,
-    ExplorerNoiser,
-    Exploration,
-    EqualsAssessmentDist,
-    RandExploration,
-    remove_noise,
-    AssessmentDist,
-    FreezeDropout,
 )

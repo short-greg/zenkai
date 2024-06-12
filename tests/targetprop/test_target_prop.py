@@ -1,6 +1,6 @@
 # TODO: Add tests for TargetProp
 
-from zenkai import targetprob
+from zenkai import targetprop
 from zenkai.kaku import _grad
 import zenkai
 from zenkai import IO, State, iou, LMode
@@ -9,7 +9,7 @@ from torch import nn
 import torch
 
 
-class TargetPropExample1(targetprob.TPLayerLearner):
+class TargetPropExample1(targetprop.TPLayerLearner):
 
     def __init__(self, in_features: int, out_features: int):
 

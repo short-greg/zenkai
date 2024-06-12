@@ -150,7 +150,7 @@ class BatchNorm1DReversible(Reversible):
     """Invert the batch norm operation. Presently it doe not support the learnable parameters"""
 
     def __init__(self, n_features: int, momentum: float = 0.1):
-        """initializer
+        """
 
         Args:
             n_features (int): The number of features to normalize

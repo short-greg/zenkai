@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai.targetprob import _reversible_mods
+from zenkai.targetprop import _reversible_mods
 
 
 class TestNull:

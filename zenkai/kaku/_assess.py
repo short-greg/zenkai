@@ -499,3 +499,45 @@ def zip_assess(criterion: Criterion, x: IO, t: IO, reduction_override: str=None,
     if get_h:
         return result, results
     return result
+
+
+class MulticlassClassifyFunc(torch.autograd.Function):
+    """Function to check the output is equal to the target. As "gradients" it returns the difference between the two classes. Does not actually use the out gradient 
+    Note: Primarily made the Criterion below
+    """
+
+    @staticmethod
+    def forward(ctx: typing.Any, x: torch.Tensor, t: torch.Tensor) -> typing.Any:
+        """
+        Args:
+            x (torch.Tensor): The input
+            t (torch.Tensor): The target
+
+        Returns:
+            typing.Any: 
+        """
+        ctx.save_for_backward(x, t)
+        return (x == t).type_as(x)
+    
+    @staticmethod
+    def backward(ctx: typing.Any, grad: typing.Any) -> typing.Any:
+        x, t = ctx.saved_tensors
+        return x - t, t - x
+
+
+class MulticlassLoss(nn.Module):
+    """Multiclass Criterion to be used on categorical
+    outputs. Made to be used with machines that
+    require the output labels.
+
+    This makes it possible 
+    """
+    
+    def forward(
+        self, x: torch.Tensor, t: torch.Tensor
+    ) -> torch.Tensor:
+        
+        classification = MulticlassClassifyFunc.apply(
+            x, t
+        )
+        return classification.mean()

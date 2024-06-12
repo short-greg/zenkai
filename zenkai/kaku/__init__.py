@@ -11,7 +11,8 @@ from ._assess import (
     reduce_assessment,
     CompositeCriterion,
     CompositeXCriterion,
-    zip_assess
+    zip_assess,
+    MulticlassLoss
 )
 from ._io2 import (
     IO as IO, Idx as Idx, 

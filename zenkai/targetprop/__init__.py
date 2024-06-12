@@ -49,5 +49,5 @@ from ._reversible_mods import (
     BatchNorm1DReversible,
     LeakyReLUInvertable,
     BoolToSigned,
-    SignedToBool,
+    SignedToBool
 )

@@ -1,9 +1,9 @@
 import torch
 
 from zenkai import IO, Criterion, State, iou
-from zenkai.targetprob._reversible import ReversibleMachine
+from zenkai.targetprop._reversible import ReversibleMachine
 # from zenkai.kaku._backtarget import BackTarget
-from zenkai.targetprob import _reversible_mods
+from zenkai.targetprop import _reversible_mods
 
 
 class TestReversibleMachine:
