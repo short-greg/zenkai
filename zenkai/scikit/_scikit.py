@@ -199,24 +199,6 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
             x = self._preprocessor(x)
         return self._module(x)
 
-    # def forward(self, x: IO, release: bool = True) -> IO:
-    #     """
-
-    #     Args:
-    #         x (IO): input to the machine
-    #         release (bool, optional): Whether to release the output. Defaults to True.
-
-    #     Returns:
-    #         IO: output of the machine
-    #     """
-
-    #     x = x.f
-    #     if self._preprocessor is not None:
-    #         x = self._preprocessor(x)
-
-    #     y = IO(self._module(x))
-    #     return y.out(release=release)
-
     @property
     def fitted(self) -> bool:
         """

@@ -21,9 +21,9 @@ class SignSTE(torch.autograd.Function):
         """
         (x,) = ctx.saved_tensors
         grad_input = grad_output.clone()
-        # return grad_input.clamp(-1, 1)
-        grad_input[(x < -1) | (x > 1)] = 0
-        return grad_input
+        return grad_input.clamp(-1, 1)
+        # grad_input[(grad_input < -1) | (gra > 1)] = 0
+        # return grad_input
 
 
 class BinarySTE(torch.autograd.Function):

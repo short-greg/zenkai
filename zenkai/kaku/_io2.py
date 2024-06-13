@@ -6,6 +6,8 @@ from typing_extensions import Self
 
 
 class IO(tuple):
+    """A container for wrapping inputs and outputs to a learning machine. It provides extra functionality to the tuple class to interact with the tensors it wraps.
+    """
 
     def __getitem__(self, idx) -> typing.Union[typing.Any, 'IO']:
 
@@ -36,7 +38,8 @@ class IO(tuple):
         return IO(res)
     
     def detach_(self) -> Self:
-
+        """Detach all tensors in the IO in place
+        """
         for x in self:
             if isinstance(x, torch.Tensor):
                 x.detach_()
@@ -44,12 +47,23 @@ class IO(tuple):
         return self
 
     def detach(self) -> Self:
+        """Detach all tensors in the IO
+        """
 
         return IO(
             x.detach() if isinstance(x, torch.Tensor) else x for x in self
         )
 
     def freshen_(self, requires_grad: bool=True, retains_grad: bool=True) -> Self:
+        """Detach all tensors in the IO in place and then set to require the gradient
+
+        Args:
+            requires_grad (bool, optional): Whether to require the gradient. Defaults to True.
+            retains_grad (bool, optional): Whether to retain the gradient. Defaults to True.
+
+        Returns:
+            Self
+        """
         for x in self:
             if isinstance(x, torch.Tensor):
                 x.detach_()
@@ -97,6 +111,11 @@ class IO(tuple):
         )
     
     def zero_grad(self) -> Self:
+        """Zero the gradient of all tensors in the IO
+
+        Returns:
+            Self
+        """
 
         for x in self:
             if isinstance(x, torch.Tensor) and x.grad is not None:
@@ -132,6 +151,10 @@ class IO(tuple):
 
     @property
     def f(self) -> typing.Any:
+        """
+        Returns:
+            typing.Any: The first element of the IO
+        """
         return self[0] if len(self) > 0 else None
 
 
@@ -143,11 +166,11 @@ def iou(*x) -> IO:
 
 class Idx(object):
     """
-    An index for a tensor or IO
+    Wrap an index for an IO or a Tensor to make it easy index them.
     """
 
     def __init__(self, idx=None, dim: int = 0):
-        """initializer
+        """Create an index specifying the dimension to index on
 
         Set an index on the IO to
 

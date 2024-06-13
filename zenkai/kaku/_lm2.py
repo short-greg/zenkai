@@ -313,7 +313,8 @@ class StepTheta(ABC):
     """
 
     def __init__(self, *args, **kwargs):
-
+        """Create the StepTheta
+        """
         super().__init__(*args, **kwargs)
         self._step_hook_initialized = True
         self._step_hooks: typing.List[StepHook] = []
@@ -421,7 +422,7 @@ class FeatureIdxStepX(StepX):
         pass
 
 
-class F(Function):
+class LearningF(Function):
 
     @staticmethod
     def forward(ctx, self, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
@@ -478,11 +479,19 @@ class F(Function):
 
 
 class LearningMachine(StepTheta, StepX, nn.Module, ABC):
+    """A learning machine is a machine that updates its parameters based on an evaluation of its output.
+    """
 
     def __init__(
         self, lmode: LMode=LMode.Default, 
         use_assess: bool=True
     ):
+        """Create a learning machine
+
+        Args:
+            lmode (LMode, optional): The learning mode to set to. Defaults to LMode.Default.
+            use_assess (bool, optional): . Defaults to True.
+        """
 
         super().__init__()
         self._lmode = lmode
@@ -500,11 +509,28 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
 
     @property
     def lmode(self) -> LMode:
+        """
+        Returns:
+            LMode: The current learning mode of the machine
+        """
         return self._lmode
 
-    def lmode_(self, lmode: LMode) -> Self:
+    def lmode_(self, lmode: LMode, cascade: bool=False) -> Self:
+        """Alter the 'LearningMode' of the machine
 
-        self._lmode = lmode
+        Args:
+            lmode (LMode): The learning mode to set to
+            cascade (bool, optional): Whether to cascade. Defaults to False.
+
+        Returns:
+            Self
+        """
+        if cascade:
+            for module in self.modules:
+                if isinstance(module, LearningMachine):
+                    module.lmode_(lmode)
+        else:
+            self._lmode = lmode
         return self
 
     @abstractmethod
@@ -658,7 +684,7 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         
         # Have to flatten io to use with F
         x = [x_i.requires_grad_(True) if isinstance(x_i, torch.Tensor) else x_i for x_i in x]
-        y = F.apply(self, kwargs, *x)
+        y = LearningF.apply(self, kwargs, *x)
         return y
 
 

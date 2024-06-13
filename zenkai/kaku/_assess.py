@@ -250,14 +250,32 @@ class XCriterion(nn.Module):
 
 
 class CompositeXCriterion(XCriterion):
+    """Wrap multiple XCriterions or Criterions
+    """
 
     def __init__(self, criterions: typing.List[typing.Union[Criterion, XCriterion]]):
+        """Create the Composite criterion by passing multiple XCriterions
+
+        Args:
+            criterions (typing.List[typing.Union[Criterion, XCriterion]]): The XCriterions or Criterions to wrap
+        """
         super().__init__()
         self.criterions = criterions
 
     def forward(
         self, x: IO, y: IO, t: IO, reduction_override: str = None
     ) -> torch.Tensor:
+        """Evaluate x, y and t on all of the criterions wrapped.
+
+        Args:
+            x (IO): The input
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): The reduction override if needed. Defaults to None.
+
+        Returns:
+            torch.Tensor: The evaluation
+        """
         
         losses = []
         for criterion in self.criterions:
@@ -273,6 +291,8 @@ class CompositeXCriterion(XCriterion):
 
 
 class CompositeCriterion(Criterion):
+    """Wrap multiple Criterions
+    """
 
     def __init__(self, criterions: typing.List[Criterion]):
         """Create multiple criterions
@@ -347,7 +367,15 @@ class NNLoss(Criterion):
         self._loss_kwargs = loss_kwargs or {}
         self._weight = weight
 
-    def add_weight(self, evaluation: torch.Tensor):
+    def add_weight(self, evaluation: torch.Tensor) -> torch.Tensor:
+        """Add weight to the evaluation
+
+        Args:
+            evaluation (torch.Tensor): The evaluation to weight
+
+        Returns:
+            torch.Tensor: the weighted tensor
+        """
         return evaluation * self._weight if self._weight is not None else evaluation
 
     def forward(self, x: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
@@ -390,8 +418,7 @@ class NNLoss(Criterion):
 
 
 class AssessmentLog(object):
-    """Class to log assessments during training. Especially ones that may occur 
-    inside the network"""
+    """Class to log assessments during training. Especially ones that may occur inside the network"""
 
     def __init__(self):
         """Instantiate the assessments"""
@@ -441,6 +468,8 @@ class AssessmentLog(object):
 
     @property
     def dict(self) -> typing.Dict:
+        """Get a dictionary of the log
+        """
         return self._log
 
     def clear(self, id=None, sub_id=None):
@@ -458,7 +487,6 @@ class AssessmentLog(object):
 
     def as_assessment_dict(self) -> typing.Dict[str, torch.Tensor]:
         """
-
         Returns:
             typing.Dict[str, torch.Tensor]: The assessment log converted to a dictionary of assessments
         """

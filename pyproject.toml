@@ -19,7 +19,7 @@ packages = [
     {include="zenkai/feedback"},
     {include="zenkai/ensemble"},
     {include="zenkai/scikit"},
-    {include="zenkai/targetprob"}
+    {include="zenkai/targetprop"}
 ]
 
 
