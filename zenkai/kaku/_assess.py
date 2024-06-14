@@ -554,16 +554,23 @@ class MulticlassClassifyFunc(torch.autograd.Function):
 
 
 class MulticlassLoss(nn.Module):
-    """Multiclass Criterion to be used on categorical
-    outputs. Made to be used with machines that
-    require the output labels.
+    """Multiclass Criterion to be used on categorical outputs. Made to be used with machines that require the output labels.
 
-    This makes it possible 
+    This is kind of a hack to get the framework to work with learning machines that require the targets to be categorical
     """
     
     def forward(
         self, x: torch.Tensor, t: torch.Tensor
     ) -> torch.Tensor:
+        """
+
+        Args:
+            x (torch.Tensor): The input
+            t (torch.Tensor): The target
+
+        Returns:
+            torch.Tensor: The classification rate
+        """
         
         classification = MulticlassClassifyFunc.apply(
             x, t

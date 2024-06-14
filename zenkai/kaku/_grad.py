@@ -23,11 +23,20 @@ from ._assess import (
 
 
 class GradStepTheta(StepTheta):
+    """StepTheta that uses the gradient to update
+    """
 
     def __init__(
         self, module: nn.Module, learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
         
     ):
+        """Create a StepTheta that will update based on the gradient
+
+        Args:
+            module (nn.Module): The module whose parameters will be updated
+            learn_criterion (typing.Union[XCriterion, Criterion, LearningMachine], optional): The criterion to use when learning. Defaults to None.
+            optimf (OptimFactory, optional): The optimizer to use for updating module parameters. Defaults to None.
+        """
         super().__init__()
         self.module = module
         self.optim = optimf(
@@ -61,15 +70,30 @@ class GradStepTheta(StepTheta):
 
 
 class GradStepX(StepX):
+    """StepX that uses the gradient to update
+    """
 
     def __init__(
         self, x_lr: float=None
     ):
+        """Create a StepX that updates based on the gradient for x
+
+        Args:
+            x_lr (float, optional): Weight to multiple the gradient by when updating. Defaults to None.
+        """
         super().__init__()
         self.x_lr = x_lr
     
     def step_x(self, x: IO, t: IO) -> IO:
-        
+        """Step based on the accumulated gradients of x
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+
+        Returns:
+            IO: The updated x
+        """
         return x.grad_update(self.x_lr)
 
 
@@ -100,6 +124,16 @@ class GradLearner(LearningMachine):
         )
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """Assess the output of the learner
+
+        Args:
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): Whether to override the reduction. Defaults to None.
+
+        Returns:
+            torch.Tensor: the assessment
+        """
         return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
@@ -123,14 +157,40 @@ class GradLearner(LearningMachine):
         """
         self.learn_assess(x, state._y, t).backward()
 
-    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """Update x by accumulating the gradients
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: The updated x
+        """
         return x.acc_grad()
 
-    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+    def step(self, x: IO, t: IO, state: State):
+        """Steps and then zeros the gradients
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         self._optim.step_theta()
         self._optim.zero_theta()
 
-    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
+    def forward_nn(self, x: IO, state: State) -> torch.Tensor:
+        """Pass the first element of x through the module member variable
+
+        Args:
+            x (IO): The input to the module
+            state (State): The current state for learning
+
+        Returns:
+            torch.Tensor: The output of the module
+        """
 
         y = (
             self._module(x[0]) 
@@ -138,12 +198,15 @@ class GradLearner(LearningMachine):
         )
         return y
 
-    def unaccumulate(self, theta: bool=True):
-
+    def unaccumulate(self):
+        """Unaccumulate the gradients
+        """
         self._optim.zero_theta()
 
 
 class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
+    """GradLearner that will index the input based on the index passed in. This is useful if dealing with loops but you want to keep track of the accumulated gradients
+    """
 
     def __init__(
         self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
@@ -155,7 +218,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
             optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
             criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
-            back_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
+            learn_criterion (typing.Union[XCriterion, Criterion], optional): The criterion to use in backpropagation. Defaults to None.
         """
         super().__init__()
         self._module = module
@@ -165,11 +228,32 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._criterion = criterion or NNLoss('MSELoss')
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """Assess the output
+
+        Args:
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
         return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
     ) -> torch.Tensor:
+        """Assess using the learn criterion
+
+        Args:
+            x (IO): The input
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
 
         if isinstance(self._learn_criterion, XCriterion):
             return self._learn_criterion.assess(x, y, t, reduction_override)
@@ -193,6 +277,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.learn_assess(x_idx, state._y, t_idx).backward()
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
+        """"""
         x_prime = self._optim.step_x(x, state)
         self._optim.zero_x(x, state)
         return x_prime
