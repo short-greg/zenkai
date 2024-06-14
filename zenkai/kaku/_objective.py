@@ -24,17 +24,32 @@ class Objective(ABC):
 
 
 class Constraint(ABC):
+    """Constrains the value passed in
+    """
+
     @abstractmethod
     def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        """
+        Returns:
+            typing.Dict[str, torch.BoolTensor]: Whether the kwargs fail the constraint
+        """
         pass
 
     def __add__(self, other: "Constraint") -> "CompoundConstraint":
+        """Combine to constraints together
+
+        Args:
+            other (Constraint): The other constraint
+
+        Returns:
+            CompoundConstraint: Two constraints combined
+        """
 
         return CompoundConstraint([self, other])
 
 
 class CompoundConstraint(Constraint):
-    """Create a constraint"""
+    """A constraint comprised of multiple sub-constraints"""
 
     def __init__(self, constraints: typing.List[Constraint]) -> None:
         """Create a compound constraint

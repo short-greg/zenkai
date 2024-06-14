@@ -277,16 +277,44 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self.learn_assess(x_idx, state._y, t_idx).backward()
 
     def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None) -> IO:
-        """"""
+        """Update the x
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            batch_idx (Idx, optional): The index to the input/target. Defaults to None.
+
+        Returns:
+            IO: _description_
+        """
         x_prime = self._optim.step_x(x, state)
         self._optim.zero_x(x, state)
         return x_prime
 
     def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+        """Update the parameters of the machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            batch_idx (Idx, optional): _description_. Defaults to None.
+        """
         self._optim.step_theta()
         self._optim.zero_theta()
 
     def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
+        """_summary_
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+            batch_idx (Idx, optional): The index to the input. Defaults to None.
+
+        Returns:
+            torch.Tensor: The output
+        """
         x_idx = batch_idx(x) if batch_idx is not None else x
 
         y = (
@@ -296,6 +324,12 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         return y
 
     def unaccumulate(self, x: IO=None, theta: bool=True):
+        """Unaccumulate the gradients
+
+        Args:
+            x (IO, optional): Whether to unaccumulate for x. Defaults to None.
+            theta (bool, optional): Whether to unaccumulate for theta. Defaults to True.
+        """
         if x is not None:
             self._optim.zero_x(x)
         if theta:

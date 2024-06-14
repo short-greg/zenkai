@@ -17,6 +17,8 @@ from ._state import State
 
 
 class IdxLoop(object):
+    """Loops over the input and outputs the index
+    """
 
     def __init__(self, batch_size: int = None, shuffle: bool = True):
         """Loop over a connection by indexing
@@ -63,6 +65,8 @@ class IdxLoop(object):
 
 
 class IOLoop(object):
+    """Loops over multiple IOs using the index provided
+    """
 
     def __init__(self, batch_size: int = None, shuffle: bool = True):
         """Loop over a connection by indexing

@@ -112,16 +112,28 @@ class OptimFactory(object):
 
 
 class CompOptim(object):
+    """An optim used to optimize both the parameters 
+    and the inputs to a learning machine
+    """
 
     def __init__(
         self, theta_optim: OptimFactory=None,
         x_optim: typing.Union[float, OptimFactory]=1.0,
     ):
+        """Wraps an optimizer to be useed for both
+        theta and x
+
+        Args:
+            theta_optim (OptimFactory, optional): The parameter optimizer. Defaults to None.
+            x_optim (typing.Union[float, OptimFactory], optional): _description_. Defaults to 1.0.
+        """
         self.theta_optimf = theta_optim
         self.x_optimf = x_optim
         self.theta_optim = None
 
     def step_theta(self):
+        """Update the parameters for theta
+        """
         if self.theta_optim is not None:
             self.theta_optim.step()
 
@@ -145,7 +157,16 @@ class CompOptim(object):
         ):
             state.optim = self.x_optimf(x, **kwarg_overrides)
 
-    def step_x(self, x: IO, state: State):
+    def step_x(self, x: IO, state: State) -> IO:
+        """Update the value of x with the optimizer
+
+        Args:
+            x (IO): The current x
+            state (State): The learning state
+
+        Returns:
+            IO: The updated x
+        """
 
         if isinstance(self.x_optimf, OptimFactory):
             optim = state.optim
@@ -154,10 +175,18 @@ class CompOptim(object):
         return x.acc_grad(self.x_optimf)
 
     def zero_theta(self):
+        """Zero the gradients for theta
+        """
         if self.theta_optim is not None:
             self.theta_optim.zero_grad()
 
     def zero_x(self, x: IO, state: State):
+        """Zero the accumulated gradient for x
+
+        Args:
+            x (IO): The x to zero
+            state (State): The learning state
+        """
         if isinstance(self.x_optimf, OptimFactory):
             state.optim.zero_grad()
         else:
@@ -207,23 +236,39 @@ class ParamFilter(optim.Optimizer):
         self._is_first = True
 
     def step(self):
+        """Update the parameters
+        """
         self.active_optim.step()
 
     def zero_grad(self):
+        """Zero the gradients
+        """
         self.active_optim.zero_grad()
 
     @property
-    def state(self):
+    def state(self) -> typing.Dict:
+        """The state of the active optim
+
+        Returns:
+            the optimizer state
+        """
         return self.active_optim.state
 
-    def state_dict(self):
+    def state_dict(self) -> typing.Dict:
+        """
+        Returns:
+            typing.Dict: The state dictionary
+        """
         return {
             "active_params": self.active_params,
             "filter_params": self.filter_params,
         }
 
     def load_state_dict(self, state_dict):
-
+        """
+        Args:
+            state_dict: the state dictionary to load
+        """
         self.filter_params = state_dict["filter_params"]
         self.active_params = state_dict["active_params"]
         self.filter_optim = self.filter_optim_factory(self.filter_params)
@@ -231,9 +276,17 @@ class ParamFilter(optim.Optimizer):
 
     @property
     def param_groups(self):
+        """
+        Returns:
+            The param groups for the active optim
+        """
         return self.active_optim.param_groups
 
     def add_param_group(self, param_group: dict):
+        """
+        Args:
+            param_group (dict): The param group to add
+        """
         self.active_optim.add_param_group(param_group)
         self.filter_optim.add_param_group(param_group)
 

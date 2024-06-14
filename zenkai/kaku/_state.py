@@ -97,7 +97,15 @@ class State(dict):
         return value
     
     def get_or_set(self, key: str, value: Any) -> Any:
+        """Get the value if defined or set it
 
+        Args:
+            key (str): The key to set to
+            value (Any): The value to set
+
+        Returns:
+            Any: The value to set
+        """
         key = self.key(key)
         try: 
             return super().__getitem__(key)
@@ -106,12 +114,25 @@ class State(dict):
             return value
     
     def subs(self) -> typing.Iterator:
+        """Loop over all sub states
+
+        Yields:
+            Iterator[str, State]: Sub states
+        """
 
         for k, v in self._subs.items():
             yield k, v
     
     @classmethod
     def key(cls, key) -> typing.Any:
+        """Get the key for a value
+
+        Args:
+            key: The base key
+
+        Returns:
+            typing.Any: refined key
+        """
 
         if isinstance(key, IDable):
             return id(key)

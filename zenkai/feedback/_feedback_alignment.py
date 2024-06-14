@@ -5,6 +5,7 @@ from dataclasses import dataclass
 # 3rd party
 from torch._tensor import Tensor
 import torch.nn as nn
+import torch
 
 # local
 from ..kaku import (
@@ -77,7 +78,17 @@ class FALearner(GradIdxLearner):
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         
-    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> IO:
+    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
+        """Pass the input through the net
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+            batch_idx (Idx, optional): The index to use. Defaults to None.
+
+        Returns:
+            torch.Tensor: The 
+        """
 
         y = self.net(x.f)
         y = y.detach()
@@ -270,6 +281,9 @@ class LinearFABuilder(Builder[FALearner]):
 
 
 class LinearDFABuilder(Builder[DFALearner]):
+    """Builds a linear DFA
+    """
+    
     def __init__(
         self,
         in_features: int = UNDEFINED,
@@ -279,6 +293,16 @@ class LinearDFABuilder(Builder[DFALearner]):
         activation: nn.Module = UNDEFINED,
         criterion: Criterion = UNDEFINED,
     ):
+        """_summary_
+
+        Args:
+            in_features (int, optional): The in features to the DFA. Defaults to UNDEFINED.
+            out_features (int, optional): The out features to the DFA. Defaults to UNDEFINED.
+            t_features (int, optional): The number of features for the target layer. Defaults to UNDEFINED.
+            optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
+            activation (nn.Module, optional): The activation to use if any. Defaults to UNDEFINED.
+            criterion (Criterion, optional): The criterion to use if any. Defaults to UNDEFINED.
+        """
 
         super().__init__(
             DFALearner,

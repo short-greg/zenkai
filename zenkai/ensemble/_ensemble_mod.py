@@ -1,6 +1,6 @@
 # 1st party
 import typing
-from abc import abstractmethod, abstractproperty
+from abc import abstractmethod
 
 # 3rd party
 import torch.nn as nn
@@ -272,8 +272,11 @@ class EnsembleVoter(Voter):
 
 
 class StochasticVoter(Voter):
+    """Voter that chooses an output stochastically
+    """
+
     def __init__(self, stochastic_model: nn.Module, n_votes: int):
-        """initializer
+        """Create a voter for voting stochastically (such as dropout)
 
         Args:
             stochastic_model (nn.Module): The stochastic model to use for voting (such as dropout)
@@ -301,6 +304,11 @@ class StochasticVoter(Voter):
 
     @property
     def max_votes(self) -> int:
+        """The number of votes for the ensemble
+
+        Returns:
+            int: The max number of votes
+        """
         return self._n_votes
 
     @max_votes.setter
