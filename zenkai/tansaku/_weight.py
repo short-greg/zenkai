@@ -10,12 +10,20 @@ from ._reshape import unsqueeze_vector
 
 
 def normalize_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
+    """Normalize a weight vector
 
+    Args:
+        weight (torch.Tensor): The weight vector
+        pop_dim (int, optional): The population. Defaults to 0.
+
+    Returns:
+        torch.Tensor: The normalized weight
+    """
     return weight / weight.sum(dim=pop_dim, keepdim=True)
 
 
 def softmax_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
-    """
+    """Take the softmax of weights
 
     Args:
         weight (torch.Tensor): The weight

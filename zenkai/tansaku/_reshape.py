@@ -185,8 +185,16 @@ def deflatten_dim0(x: torch.Tensor, k: int) -> torch.Tensor:
     return x.view(k, -1, *x.shape[1:])
 
 
-def undo_cat1d(model: nn.Module, x: torch.Tensor) -> torch.Tensor:
+def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:
+    """Undo the concatenation
 
+    Args:
+        model (nn.Module): The model
+        x (torch.Tensor): The concatenated tensors
+
+    Returns:
+        torch.Tensor: The tensors 
+    """
     if isinstance(model, nn.Module):
         model = model.parameters()
 
@@ -203,7 +211,14 @@ def undo_cat1d(model: nn.Module, x: torch.Tensor) -> torch.Tensor:
 
 
 def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
+    """Concatenate tensors to a 1d tensor
 
+    Args:
+        tensors (typing.List[torch.Tensor]): The tensors to concatenate
+
+    Returns:
+        torch.Tensor: The concatenated tensors
+    """
     return torch.cat(
         [tensor.flatten(0) for tensor in tensors], dim=0
     )

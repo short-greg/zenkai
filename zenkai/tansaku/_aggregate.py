@@ -88,9 +88,20 @@ def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim:
     )
 
 
-def normalize(x: torch.Tensor, mean: torch.Tensor=None, std: torch.Tensor=None, dim: int=0) -> torch.Tensor:
+def normalize(x: torch.Tensor, mean: torch.Tensor=None, std: torch.Tensor=None, dim: int=0, eps: float=1e-6) -> torch.Tensor:
+    """normalize x based on the mean and standard deviation
+
+    Args:
+        x (torch.Tensor): The tensor to normalize
+        mean (torch.Tensor, optional): The mean to use, if not defined will use the mean of x. Defaults to None.
+        std (torch.Tensor, optional): The standard deviation, if not. Defaults to None.
+        dim (int, optional): The dimension to normalize on. Defaults to 0.
+
+    Returns:
+        torch.Tensor: The normalized tensor
+    """
 
     mean = x.mean(dim, keepdim=True) if mean is None else mean
     std = x.std(dim, keepdim=True) if std is None else std
 
-    return (x - mean) / std
+    return (x - mean) / (std + eps)

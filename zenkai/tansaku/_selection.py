@@ -256,6 +256,14 @@ class ProbSelector(Selector):
         self, k: int, to_prob: ToProb, pop_dim: int=0,
         replace: bool=False
     ):
+        """
+
+        Args:
+            k (int): The number to select
+            to_prob (ToProb): The probability calculator to use
+            pop_dim (int, optional): The population dimension. Defaults to 0.
+            replace (bool, optional): Whether to use replacement sampling. Defaults to False.
+        """
         super().__init__()
         self.k = k
         self._pop_dim = pop_dim
@@ -263,8 +271,15 @@ class ProbSelector(Selector):
         self.replace = replace
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
+        """
+        Args:
+            assessment (torch.Tensor): The assessment to use for selection
+            maximize (bool, optional): Whether to maximize. Defaults to False.
+
+        Returns:
+            Selection: The selection
+        """
         
-        # 
         probs = self.to_prob(
             assessment, 1, maximize
         )

@@ -12,6 +12,12 @@ from ._selection import ToProb, Selection, select_from_prob
 class ParentSelector(nn.Module):
 
     def __init__(self, n_pairs: int, to_prob: ToProb, pop_dim: int=0):
+        """
+        Args:
+            n_pairs (int): The number of pairs
+            to_prob (ToProb): The probability calculator
+            pop_dim (int, optional): The dimension population dimension. Defaults to 0.
+        """
 
         super().__init__()
         self._n_pairs = n_pairs
@@ -19,7 +25,15 @@ class ParentSelector(nn.Module):
         self._pop_dim = pop_dim
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> typing.Tuple[Selection, Selection]:
-        
+        """
+
+        Args:
+            assessment (torch.Tensor): The assessment to use for selection
+            maximize (bool, optional): Whether to maximize or not. Defaults to False.
+
+        Returns:
+            typing.Tuple[Selection, Selection]: The selected parents
+        """
         probs = self.to_prob.forward(
             assessment, 2, maximize
         )
@@ -39,7 +53,11 @@ class ParentSelector(nn.Module):
 class CrossOver(nn.Module):
 
     def __init__(self, f: typing.Callable=None, **kwargs):
+        """
 
+        Args:
+            f (typing.Callable, optional): . Defaults to None.
+        """
         super().__init__()
         self.f = f
         self.kwargs = kwargs
