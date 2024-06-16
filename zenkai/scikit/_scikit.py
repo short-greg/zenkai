@@ -92,8 +92,21 @@ class ScikitMachine(LearningMachine):
     @classmethod
     def regressor(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
-        backup=None, out_dtype=None, partial: bool=False):
+        backup=None, out_dtype=None, partial: bool=False) -> torch.Tensor:
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion for 
+            in_features (int): The number of in features
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
 
+        Returns:
+            ScikitMachine
+        """
         return ScikitMachine(
             ScikitWrapper.regressor(estimator, in_features, out_features, backup, out_dtype), 
             step_x, criterion, partial
@@ -103,6 +116,20 @@ class ScikitMachine(LearningMachine):
     def binary(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion for 
+            in_features (int): The number of in features
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
+
+        Returns:
+            ScikitMachine
+        """
 
         return ScikitMachine(
             ScikitWrapper.binary(estimator, in_features, out_features, backup, out_dtype), 
@@ -113,6 +140,21 @@ class ScikitMachine(LearningMachine):
     def multiclass(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, n_classes: int=None, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion for 
+            in_features (int): The number of in features
+            n_classes (int): the number of classes to output. Defaults to None
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
+
+        Returns:
+            ScikitMachine
+        """
 
         return ScikitMachine(
             ScikitWrapper.multiclass(estimator, in_features, n_classes, out_features, backup, out_dtype), 
@@ -131,10 +173,10 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         preprocessor: nn.Module = None,
         partial: bool = False,
     ):
-        """initializer
+        """Create a SckikitMachine
 
         Args:
-            module (ScikitEstimator): The
+            module (ScikitEstimator): The module
             step_x (FeatureIdxStepX): The function that does step_x
             loss (Loss): The loss function for the estimator
             preprocessor (nn.Module, optional): Module to preprocess the input sent to the estimator. Defaults to None.
@@ -147,6 +189,16 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._preprocessor = preprocessor
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """Assess the output
+
+        Args:
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): The reduction to override with. Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
         return self._criterion.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
@@ -212,6 +264,20 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
         in_features: int, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion to use for assessment 
+            in_features (int): The number of in features
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
+
+        Returns:
+            ScikitMultiMachine
+        """
 
         return ScikitMultiMachine(
             MultiOutputScikitWrapper.regressor(estimator, in_features, out_features, backup, out_dtype), 
@@ -223,6 +289,20 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
         in_features: int, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion to use for assessment 
+            in_features (int): The number of in features
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
+
+        Returns:
+            ScikitMultiMachine
+        """
 
         return ScikitMultiMachine(
             ScikitWrapper.binary(estimator, in_features, out_features, backup, out_dtype), 
@@ -234,6 +314,21 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, 
         in_features: int, n_classes: int=None, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
+        """
+        Args:
+            estimator (BaseEstimator): The estimator to use for the machine
+            step_x (StepX): The method for updating x
+            criterion (Criterion): The criterion to use for assessment 
+            in_features (int): The number of in features
+            n_classes (int): The number of classes to output. Defaults to None
+            out_features (int, optional): The number of out features. Defaults to None.
+            backup (_type_, optional): The backup model to use. Defaults to None.
+            out_dtype (_type_, optional): The dtype to use for the output. Defaults to None.
+            partial (bool, optional): Whether to do a partial fit. Defaults to False.
+
+        Returns:
+            ScikitMultiMachine
+        """
 
         return ScikitMultiMachine(
             ScikitWrapper.multiclass(estimator, in_features, n_classes, out_features, backup, out_dtype), 

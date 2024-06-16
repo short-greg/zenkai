@@ -14,6 +14,8 @@ from .. import utils
 
 
 class ScikitWrapper(nn.Module):
+    """Module taht wraps a scikit estimator
+    """
 
     def __init__(
         self,
@@ -42,26 +44,50 @@ class ScikitWrapper(nn.Module):
 
     @property
     def in_features(self) -> int:
+        """
+        Returns:
+            int: The number of input features to estimator
+        """
         return self._in_features
 
     @property
     def out_features(self) -> int:
+        """
+        Returns:
+            int: The number of output features to the estimator
+        """
         return self._out_features
 
-    def partial_fit(self, X: torch.Tensor, t: torch.Tensor, **kwargs):
+    def partial_fit(self, X: torch.Tensor, t: torch.Tensor, **kwargs): 
+        """
+        Args:
+            X (torch.Tensor): The input tensor
+            t (torch.Tensor): The target tensor
+        """
         self._estimator.fit(
             X.cpu().detach().numpy(), t.cpu().detach().numpy(), **kwargs
         )
         self._fitted = True
 
     def fit(self, X: torch.Tensor, t: torch.Tensor, **kwargs):
+        """
+        Args:
+            X (torch.Tensor): The input tensor
+            t (torch.Tensor): The targets
+        """
         self._estimator.fit(
             X.cpu().detach().numpy(), t.cpu().detach().numpy(), **kwargs
         )
         self._fitted = True
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
 
+        Args:
+            x (torch.Tensor): The input tensor
+        Returns:
+            torch.Tensor: The output tensor
+        """
         if not self._fitted:
             return self._backup(x)
         return torch.tensor(
@@ -79,6 +105,18 @@ class ScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ) -> "ScikitWrapper":
+        """Create a regressor
+
+        Args:
+            sklearn_estimator (BaseEstimator): The estimator to use
+            in_features (int, optional): The number of input features. Defaults to 1.
+            out_features (int, optional): The number of output features. Defaults to None.
+            backup (nn.Module, optional): The backup model to use. Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype of the output. Defaults to None.
+
+        Returns:
+            ScikitWrapper: 
+        """
 
         if backup is None:
             backup = LinearBackup(in_features, out_features)
@@ -95,6 +133,18 @@ class ScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ) -> "ScikitWrapper":
+        """_summary_
+
+        Args:
+            sklearn_estimator (BaseEstimator): The 
+            in_features (int, optional): _description_. Defaults to 1.
+            out_features (int, optional): _description_. Defaults to None.
+            backup (nn.Module, optional): _description_. Defaults to None.
+            out_dtype (torch.dtype, optional): _description_. Defaults to None.
+
+        Returns:
+            ScikitWrapper: _description_
+        """
         if backup is None:
             backup = BinaryBackup(in_features, out_features)
 
@@ -165,10 +215,18 @@ class MultiOutputScikitWrapper(nn.Module):
 
     @property
     def in_features(self) -> int:
+        """
+        Returns:
+            int: The number of in features
+        """
         return self._in_features
 
     @property
     def out_features(self) -> int:
+        """
+        Returns:
+            int: The number of out features
+        """
         return self._out_features
 
     def _prepare(
@@ -177,11 +235,11 @@ class MultiOutputScikitWrapper(nn.Module):
         """
 
         Args:
-            y (np.ndarray): _description_
-            limit (typing.List[int]): _description_
+            y (np.ndarray): The output
+            limit (typing.List[int]): 
 
         Returns:
-            typing.List[BaseEstimator]: _description_
+            typing.List[BaseEstimator]: The estimators to use
         """
         if limit is None:
             return y, None
@@ -200,6 +258,12 @@ class MultiOutputScikitWrapper(nn.Module):
     def _replace_estimators(
         self, cur_estimators: typing.List[BaseEstimator], limit: typing.List[int]
     ):
+        """Replace estimators with the originals
+
+        Args:
+            cur_estimators (typing.List[BaseEstimator]): The estimators to replace
+            limit (typing.List[int]): The indices for the estimators
+        """
 
         if limit is None or cur_estimators is None:
             return
@@ -211,6 +275,16 @@ class MultiOutputScikitWrapper(nn.Module):
     def partial_fit(
         self, X: torch.Tensor, y: torch.Tensor, limit: typing.List[int] = None, **kwargs
     ):
+        """Fit the estimator
+
+        Args:
+            X (torch.Tensor): The tensor to fit on
+            y (torch.Tensor): The output tensor
+            limit (typing.List[int], optional): . Defaults to None.
+
+        Raises:
+            RuntimeError: if the model has not been fit and the limit was used
+        """
         if limit is not None and not self.fitted:
             raise RuntimeError("Must fit model before setting a limit")
         X = utils.to_np(X)
@@ -254,7 +328,14 @@ class MultiOutputScikitWrapper(nn.Module):
         self._fitted = True
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Send the input through the estimator or estimators
 
+        Args:
+            x (torch.Tensor): The input
+
+        Returns:
+            torch.Tensor: The output
+        """
         if not self._fitted:
             return self._backup(x)
         return torch.tensor(
@@ -329,7 +410,11 @@ class MultiOutputScikitWrapper(nn.Module):
         return self._fitted
 
     def clone(self):
+        """Clone the ScikitWrapper
 
+        Returns:
+            ScikitWrapper: The cloned ScikitWrapper
+        """
         return ScikitWrapper(
             sklearn.base.clone(self._estimator), self.in_features, self.out_features, 
             self._backup, self._out_dtype
@@ -337,6 +422,8 @@ class MultiOutputScikitWrapper(nn.Module):
     
 
 class LinearBackup(nn.Module):
+    """Model to use before the estimator has been fit
+    """
     def __init__(self, in_features: int, out_features: int = None):
         """Backup module to use on first pass
 
@@ -351,7 +438,13 @@ class LinearBackup(nn.Module):
         self._in_features = in_features
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): The input
 
+        Returns:
+            torch.Tensor: The output of the linear model
+        """
         x = self._linear(x)
         if self._out_features is None:
             x = x.squeeze(1)
@@ -359,6 +452,8 @@ class LinearBackup(nn.Module):
 
 
 class MulticlassBackup(nn.Module):
+    """Backup for a multiclass model
+    """
     def __init__(self, in_features: int, n_classes: int, out_features: int = None):
         """Backup modlue for multple classes
 
@@ -375,7 +470,13 @@ class MulticlassBackup(nn.Module):
         self._n_classes = n_classes
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): The input
 
+        Returns:
+            torch.Tensor: The output
+        """
         x = self._linear(x)
         if self._out_features is not None:
             x = x.reshape(x.shape[0], self._out_features, self._n_classes)
@@ -384,6 +485,9 @@ class MulticlassBackup(nn.Module):
 
 
 class BinaryBackup(nn.Module):
+    """Backup model for a binary estimator
+    """
+
     def __init__(self, in_features: int, out_features: int = None):
         """Backup for a binary estimator
 
@@ -398,7 +502,13 @@ class BinaryBackup(nn.Module):
         self._in_features = in_features
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): The input
 
+        Returns:
+            torch.Tensor: The binary output
+        """
         x = self._linear(x)
         x = torch.sign(x)
         if self._out_features is None:
