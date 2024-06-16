@@ -255,7 +255,7 @@ class LinearFABuilder(Builder[FALearner]):
         activation: nn.Module = UNDEFINED,
         criterion: Criterion = UNDEFINED,
     ):
-
+        
         super().__init__(
             FALearner,
             ["in_features", "out_features", "optim_factory", "activation", "criterion"],

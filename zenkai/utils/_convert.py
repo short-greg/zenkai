@@ -21,7 +21,7 @@ def to_th(
     requires_grad: bool = False,
     retains_grad: bool = False,
 ) -> torch.Tensor:
-    """
+    """Convert from numpy to a torch tensor
 
     Args:
         x (np.ndarray): Array to convert
@@ -47,7 +47,7 @@ def to_th_as(
     requires_grad: bool = False,
     retains_grad: bool = False,
 ) -> torch.Tensor:
-    """
+    """Convert to a torch tensor using a tensor as a reference
 
     Args:
         x (np.ndarray): Array to convert
@@ -67,7 +67,17 @@ def to_th_as(
     return x
 
 
-def freshen(x: torch.Tensor, requires_grad: bool = True, inplace: bool = False):
+def freshen(x: torch.Tensor, requires_grad: bool = True, inplace: bool = False) -> torch.Tensor:
+    """Detach and require grad
+
+    Args:
+        x (torch.Tensor): The tensor to "freshen"
+        requires_grad (bool, optional): Whether the tensor requires a grad. Defaults to True.
+        inplace (bool, optional): Whether to do the operation in place. Defaults to False.
+
+    Returns:
+        torch.Tensor: The freshened tensor
+    """
     if not isinstance(x, torch.Tensor):
         return x
     if inplace:
@@ -148,6 +158,15 @@ def binary_encoding(
 
 
 def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.Module:
+    """Convenience function to create a torch module based on a string.
+    Will retrieve from "nn" if the type is a string
+
+    Args:
+        module (typing.Union[str, nn.Module]): The module or module name
+
+    Returns:
+        nn.Module: The resulting module
+    """
 
     if isinstance(module, nn.Module):
         if len(args) != 0:

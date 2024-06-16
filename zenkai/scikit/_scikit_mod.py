@@ -186,6 +186,8 @@ class ScikitWrapper(nn.Module):
 
 
 class MultiOutputScikitWrapper(nn.Module):
+    """ScikitWrapper that allows for wrapping a MultiOutputClassifier or Regressor
+    """
 
     def __init__(
         self,
@@ -353,6 +355,18 @@ class MultiOutputScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ) -> "MultiOutputScikitWrapper":
+        """Create MultiOutputScikitWrapper with regressor
+
+        Args:
+            sklearn_estimator (BaseEstimator): The estimator to use - Will be wrapped with a "MultiOutputregressor"
+            in_features (int, optional): Number of input features. Defaults to 1.
+            out_features (int, optional): Number of output features. Defaults to None.
+            backup (nn.Module, optional): The backup model to use. Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype of the output. Defaults to None.
+
+        Returns:
+            MultiOutputScikitWrapper
+        """
 
         if backup is None:
             backup = LinearBackup(in_features, out_features)
@@ -373,6 +387,18 @@ class MultiOutputScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ) -> "MultiOutputScikitWrapper":
+        """Create MultiOutputScikitWrapper with Binary classifier
+
+        Args:
+            sklearn_estimator (BaseEstimator): Estimator to use, will be wrapped in MultiOutputClassifier
+            in_features (int, optional): Number of input features. Defaults to 1.
+            out_features (int, optional): Number of output features. Defaults to None.
+            backup (nn.Module, optional): The backup model to use. Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype of the output. Defaults to None.
+
+        Returns:
+            MultiOutputScikitWrapper:
+        """
         if backup is None:
             backup = BinaryBackup(in_features, out_features)
 
@@ -394,7 +420,18 @@ class MultiOutputScikitWrapper(nn.Module):
         backup: nn.Module = None,
         out_dtype: torch.dtype = None,
     ) -> "MultiOutputScikitWrapper":
+        """Create MultiOutputScikitWrapper with Multiclass classifier
 
+        Args:
+            sklearn_estimator (BaseEstimator): Estimator to use, will be wrapped in MultiOutputClassifier
+            in_features (int, optional): Number of input features. Defaults to 1.
+            out_features (int, optional): Number of output features. Defaults to None.
+            backup (nn.Module, optional): The backup model to use. Defaults to None.
+            out_dtype (torch.dtype, optional): The dtype of the output. Defaults to None.
+
+        Returns:
+            MultiOutputScikitWrapper
+        """
         if backup is None:
             backup = MulticlassBackup(in_features, n_classes, out_features)
         return MultiOutputScikitWrapper(

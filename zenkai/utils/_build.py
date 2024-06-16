@@ -24,10 +24,16 @@ class BuilderFunctor(ABC):
 
     @abstractmethod
     def __call__(self, **kwargs):
+        """Execute the building process
+        """
         pass
 
     @abstractmethod
     def clone(self) -> "BuilderFunctor":
+        """
+        Returns:
+            BuilderFunctor: The cloned Builder Functor
+        """
         pass
 
     @abstractmethod
@@ -39,11 +45,11 @@ class Var(BuilderFunctor):
     """Defines a variable for including in your build process"""
 
     def __init__(self, name: str, default=UNDEFINED, dtype: typing.Type = None):
-        """
+        """Add a Variable that can be replaced
 
         Args:
-            name (str):
-            dtype (typing.Type, optional): . Defaults to None.
+            name (str): The name of the var
+            dtype (typing.Type, optional): The dtype of the var. Defaults to None.
         """
         self._name = name
         self._default = default
@@ -53,7 +59,11 @@ class Var(BuilderFunctor):
     def init(
         self, name: str, value=UNDEFINED, default=UNDEFINED, dtype: typing.Type = None
     ) -> typing.Union["Var", typing.Any]:
+        """Convenience function to create a Var a value if the value is undefined
 
+        Returns:
+            The value if it is defined or a Var
+        """
         if value != UNDEFINED:
             return value
 
@@ -76,7 +86,11 @@ class Var(BuilderFunctor):
         return self._dtype
 
     def __call__(self, **kwargs):
+        """Build the variable
 
+        Returns:
+            The built variable
+        """
         try:
             return kwargs[self._name]
         except KeyError:
@@ -153,7 +167,7 @@ class BuilderArgs(BuilderFunctor):
     """Defines the args for building"""
 
     def __init__(self, args=None, kwargs=None):
-        """Create a
+        """Create arguments for your ZBuilder
 
         Args:
             args (typing.List, optional): The args for the function. Defaults to None.
@@ -271,6 +285,7 @@ class Builder(BuilderFunctor, Generic[T]):
         super().__init__()
         self._factory = factory
         self._arg_names = arg_names
+        # TODO: Remove?
         # difference = set(kwargs.keys()).difference(arg_names)
         # if len(difference) != 0:
         #     raise ValueError(
@@ -329,17 +344,29 @@ class Builder(BuilderFunctor, Generic[T]):
         return builder
 
     def spawn(self, **kwargs) -> "Builder[T]":
+        """Spawn a builder with the updated kwargs
 
+        Returns:
+            Builder[T]: The spawned builder
+        """
         builder = self.clone()
         for k, v in kwargs.items():
             builder[k] = v
         return builder
 
     def vars(self) -> typing.List[Var]:
+        """
+        Returns:
+            typing.List[Var]: The list of Vars in the builder
+        """
         return self._builder_kwargs.vars()
 
     def __call__(self, **kwargs) -> T:
+        """Build the class 
 
+        Returns:
+            T: The built class
+        """
         args, kwargs = self._builder_kwargs(**kwargs)
         return self._factory(*args, **kwargs)
 
