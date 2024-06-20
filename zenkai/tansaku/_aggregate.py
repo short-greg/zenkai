@@ -11,7 +11,7 @@ def mean(
     dim: int=0, 
     keepdim: bool=True
 ) -> torch.Tensor:
-    """Calculate the mean of x
+    """Calculate the mean of a population
 
     Args:
         x (torch.Tensor): Tensor to calculate the mean on
@@ -32,7 +32,7 @@ def mean(
 
 
 def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
-    """Calculate the quantile of a tensor. 
+    """Calculate the quantile of a population
 
     Note: No interpolation done if using weights
 
@@ -67,7 +67,7 @@ def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int
 
 
 def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
-    """Calculate the median. 
+    """Calculate the median of a population
 
     Note: No interpolation done if using weights
 
@@ -94,7 +94,7 @@ def normalize(
     dim: int=0, 
     eps: float=1e-6
 ) -> torch.Tensor:
-    """Normalize x based on the mean and standard deviation
+    """Normalize the population based on the mean and standard deviation
 
     Args:
         x (torch.Tensor): The tensor to normalize mean (torch.Tensor, optional): The mean to use, if not defined will use the mean of x. Defaults to None.

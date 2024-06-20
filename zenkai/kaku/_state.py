@@ -62,36 +62,77 @@ class StateData:
 
 
 class State(dict):
+    """Suclasses dict to manage the learning state
+    """
 
     def __init__(self, *args, **kwargs):
+        """Specify the inputs to the state 
+        """
 
         object.__setattr__(self, '_subs', {})
         super().__init__(*args, **kwargs)
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        
+    def __setitem__(self, key: str, value: Any) -> Any:
+        """Set the value of the state
+
+        Args:
+            key (str): The key to set for
+            value (Any):  The value to set
+
+        Returns:
+            typing.Any: The value set
+        """
         key = self.key(key)
         super().__setitem__(key, value)
         return value
 
     def __getitem__(self, key: Any) -> Any:
+        """Get the value specified by key
 
+        Args:
+            key (Any): The key to retrieve for
+
+        Returns:
+            Any: The value for key
+        """
         key = self.key(key)
         return super().__getitem__(key)
         
     def __getattr__(self, key: str):
+        """Get the value specified by key
 
+        Args:
+            key (Any): The key to retrieve for
+
+        Returns:
+            Any: The value for key
+        """
         key = self.key(key)
         return super().__getitem__(key)
     
-    def sub(self, key: str):
+    def sub(self, key: str) -> 'State':
+        """Create a "substate" of the state
 
+        Args:
+            key (str): The key for the substate
+
+        Returns:
+            State: The sub state
+        """
         if key not in self._subs:
             self._subs[key] = State()
         return self._subs[key]
 
     def __setattr__(self, key: str, value: Any) -> Any:
-        
+        """Set the value of the state
+
+        Args:
+            key (str): The key to set for
+            value (Any):  The value to set
+
+        Returns:
+            typing.Any: The value set
+        """
         key = self.key(key)
         super().__setitem__(key, value)
         return value

@@ -125,8 +125,7 @@ def collapse_feature(x: torch.Tensor, reshape: bool=True) -> torch.Tensor:
 
 
 def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tensor:
-    """Separate the feature dimension for when
-    the population and feature dimensions have been collapsed
+    """Separate the feature dimension for when the population and feature dimensions have been collapsed
 
     Args:
         x (torch.Tensor): The tensor to expand
@@ -239,7 +238,11 @@ class AdaptBatch(nn.Module):
         self.module = module
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Adapt the module with  apopulation separating by the batch dimension
 
+        Returns:
+            torch.Tensor: The output of the module
+        """
         k = x[0].shape(1)
         
         x = tuple(collapse_batch(x_i) for x_i in x)
@@ -253,28 +256,31 @@ class AdaptBatch(nn.Module):
 
 
 class AdaptFeature(nn.Module):
-    """Use to adapt a population of samples for evaluating perturbations
-    of models. Useful for optimizing the parameters
+    """Use to adapt a population of samples for evaluating perturbations of models. 
     """
 
     def __init__(self, module: nn.Module):
-        """Adapt module
+        """Adapt module to work with a population of inputs
 
         Args:
-            module (nn.Module): 
+            module (nn.Module): The module to a adapt
         """
         super().__init__()
         self.module = module
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
+        """Adapt the module with  apopulation separating by feature
 
+        Returns:
+            torch.Tensor: The output of the module
+        """
         k = x[0].shape(1)
         
         x = tuple(collapse_feature(x_i) for x_i in x)
         x = self.module(*x)
-        if isinstance(x, typing.Tuple):
-            return tuple(
-                separate_feature(x_i, k) for x_i in x
-            )
+        if not isinstance(x, typing.Tuple):
+            return separate_feature(x, k)
+        return tuple(
+            separate_feature(x_i, k) for x_i in x
+        )
         
-        return separate_feature(x, k)

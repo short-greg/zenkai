@@ -52,12 +52,14 @@ class ParentSelector(nn.Module):
 
 
 class CrossOver(nn.Module):
+    """CrossOver chromosomes
+    """
 
     def __init__(self, f: typing.Callable=None, **kwargs):
-        """
+        """Create a CrossOver module with a specified function
 
         Args:
-            f (typing.Callable, optional): . Defaults to None.
+            f (typing.Callable, optional): The function to do crossover with. Defaults to None.
         """
         super().__init__()
         self.f = f

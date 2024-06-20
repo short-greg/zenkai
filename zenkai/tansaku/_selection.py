@@ -287,7 +287,7 @@ class ToProb(nn.Module, ABC):
     """
 
     def __init__(self, pop_dim: int= 0):
-        """
+        """Create a module to convert the assessment to a probability
 
         Args:
             dim (int, optional): The dimension to use for calculating probability. Defaults to -1.
@@ -311,6 +311,16 @@ class ToProb(nn.Module, ABC):
         pass
 
     def forward(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+        """Convert the assessment to a probability
+
+        Args:
+            assessment (torch.Tensor): The assessments
+            k (int): The number to select
+            maximize (bool, optional): Whether to maximize or not. Defaults to False.
+
+        Returns:
+            torch.Tensor: the probability
+        """
 
         prob = self.prepare_prob(
             assessment, maximize
@@ -327,16 +337,28 @@ class ToProb(nn.Module, ABC):
         return prob.repeat(repeat_shape)
     
     def __call__(self, assessment: torch.Tensor, k: int, maximize: bool=False) -> torch.Tensor:
+        """Convert the assessment to a probability
+
+        Args:
+            assessment (torch.Tensor): The assessment to use
+            k (int): The number to select
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            torch.Tensor: The probability tensor
+        """
         return super().__call__(assessment, k, maximize)
 
 
 class ProbSelector(Selector):
+    """Creates a Selection from the assessment uisng a probability
+    """
 
     def __init__(
         self, k: int, to_prob: ToProb, pop_dim: int=0,
         replace: bool=False
     ):
-        """
+        """Create a module to select from a probability tensor
 
         Args:
             k (int): The number to select
@@ -351,7 +373,8 @@ class ProbSelector(Selector):
         self.replace = replace
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
-        """
+        """Get the selection from an assesmsment
+
         Args:
             assessment (torch.Tensor): The assessment to use for selection
             maximize (bool, optional): Whether to maximize. Defaults to False.
@@ -378,6 +401,17 @@ class ToFitnessProb(ToProb):
     """
 
     def prepare_prob(self, assessment: torch.Tensor, maximize: bool = False) -> torch.Tensor:
+        """Convert the assessment to a probability based on fitness.
+        The output should have the population dimension
+        represent a probability that sums to 1
+
+        Args:
+            assessment (torch.Tensor): The assessment to get the probability for
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            torch.Tensor: The assessment converted to a probability with the population dimension summing to 1
+        """
         
         weight = W.normalize_weight(assessment, self.pop_dim)
         if maximize:
@@ -390,6 +424,17 @@ class ToRankProb(ToProb):
     """
 
     def prepare_prob(self, assessment: torch.Tensor, maximize: bool = False) -> torch.Tensor:
+        """Convert the assessment to a probability based on rank.
+        The output should have the population dimension
+        represent a probability that sums to 1
+
+        Args:
+            assessment (torch.Tensor): The assessment to get the probability for
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            torch.Tensor: The assessment converted to a probability with the population dimension summing to 1
+        """
         
         weight = W.rank_weight(assessment, self.pop_dim, maximize)
         return W.normalize_weight(

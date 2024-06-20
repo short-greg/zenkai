@@ -105,6 +105,8 @@ class GTE(ValueConstraint):
 
 
 class FuncObjective(Objective):
+    """An objective that uses a function to assess
+    """
 
     def __init__(
         self,
@@ -134,17 +136,50 @@ class FuncObjective(Objective):
         self._penalty = penalty if maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+        """Execute the objective with the specified reduction
 
+        Args:
+            reduction (str): The reduction to use for the objective
+
+        Returns:
+            torch.Tensor: The assessment
+        """
         value = self._f(**kwargs)
         constraint = self._constraint(**kwargs)
         value = impose(value, constraint, self._penalty)
-
         return Reduction[reduction].reduce(value)
 
+
+class CriterionObjective(Objective):
+    """Create an objective to optimize based on a criterion"""
+
+    def __init__(self, criterion: Criterion):
+        """Create a criterion objective with the specified criterion
+
+        Args:
+            criterion (Criterion): The criterion to use
+        """
+        super().__init__()
+        self.criterion = criterion
+
+    def __call__(self, reduction: str, **kwargs) -> torch.Tensor:
+        """Ex
+
+        Args:
+            reduction (str): _description_
+
+        Returns:
+            torch.Tensor: _description_
+        """
+        x = IO(kwargs['x'])
+        t = IO(kwargs['t'])
+        return self.criterion.assess(x, t, reduction)
 
 # TODO: Decide what to do with this
 
 class NNLinearObjective(Objective):
+    """Create a
+    """
 
     def __init__(
         self,
@@ -183,6 +218,14 @@ class NNLinearObjective(Objective):
         self._penalty = penalty if self._criterion.maximize else -penalty
 
     def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+        """Execute the objective with the specified reduction
+
+        Args:
+            reduction (str): The reduction to use for the objective
+
+        Returns:
+            torch.Tensor: The assessment
+        """
 
         with torch.no_grad():
             w = kwargs["w"]
@@ -204,18 +247,3 @@ class NNLinearObjective(Objective):
             if value.dim() == 3:
                 value = value.transpose(2, 1)
         return Reduction[reduction].reduce(value)
-
-
-class CriterionObjective(Objective):
-    """Create an objective to optimize based on a criterion"""
-
-    def __init__(self, criterion: Criterion):
-
-        super().__init__()
-        self.criterion = criterion
-
-    def __call__(self, reduction: str, **kwargs) -> torch.Tensor:
-
-        x = IO(kwargs['x'])
-        t = IO(kwargs['t'])
-        return self.criterion.assess(x, t, reduction)

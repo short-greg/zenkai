@@ -304,7 +304,8 @@ def set_gradtvec(obj: PObj, vec: torch.Tensor):
 
 
 def acc_gradtvec(obj: PObj, vec: torch.Tensor):
-    """
+    """Accumulate the grad for the parameter object given a target vector
+    
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The target vector to use 

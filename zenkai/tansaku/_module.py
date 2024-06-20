@@ -12,9 +12,12 @@ from ..utils import _params as base_params
 
 
 class PopModule(nn.Module, ABC):
+    """Parent class for a module that outputs a population
+    """
 
     def __init__(self, n_members: int=None):
-        """
+        """Create a population module with the specified number of members
+
         Args:
             n_members (int): The number of members in the population
         """
@@ -31,8 +34,7 @@ class PopModule(nn.Module, ABC):
 
     @abstractmethod
     def spawn(self, n_members: int) -> Self:
-        """Spawn a module with same parameters as this
-        and a different number of modules
+        """Spawn a module with same parameters as this and a different number of modules
 
         Args:
             n_members (int): The number of members for the module
@@ -43,7 +45,8 @@ class PopModule(nn.Module, ABC):
         pass
 
     def mean(self) -> Self:
-        """
+        """Spawn a module and set the values to the mean
+
         Returns:
             Self: The mean of the population
         """
@@ -52,13 +55,11 @@ class PopModule(nn.Module, ABC):
         
         module = self.spawn(None)
         vec = _params.to_pvec(self, self._n_members)
-        base_params.set_pvec(module, vec.mean(dim=0))
+        _params.set_pvec(module, vec.mean(dim=0))
         return module
 
     def to_pop(self) -> Self:
-        """
-        Raises:
-            RuntimeError: 
+        """Convert a module that is not a not a population
 
         Returns:
             Self: 
@@ -81,12 +82,10 @@ class PopModule(nn.Module, ABC):
         Returns:
             Self: A module created with the member
         """
-    
         if self._n_members is None:
             raise RuntimeError(
                 'Module has no members'
             )
-        
         module = self.spawn(None)
         vec = _params.to_pvec(self, self._n_members)
         base_params.set_pvec(module, vec[i])
@@ -94,4 +93,12 @@ class PopModule(nn.Module, ABC):
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Output the population
+
+        Args:
+            x (torch.Tensor): The input
+
+        Returns:
+            torch.Tensor: The population output
+        """
         pass 

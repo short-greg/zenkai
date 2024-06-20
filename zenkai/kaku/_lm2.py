@@ -236,6 +236,8 @@ class StepXHook(ABC):
 
 
 class StepHook(ABC):
+    """A hook that wraps the step method
+    """
 
     @abstractmethod
     def __call__(
@@ -243,8 +245,11 @@ class StepHook(ABC):
     ) -> typing.Tuple[IO, IO]:
         pass
 
+# TODO: Decide what to do with this
 
 class ForwardHook(ABC):
+    """A hook that wraps forward
+    """
     
     @abstractmethod
     def __call__(self, learner: "LearningMachine", x: IO, y, state: State) -> IO:

@@ -76,6 +76,8 @@ def binary_noise(x: torch.Tensor, flip_p: bool = 0.5, signed_neg: bool = True) -
 
 @dataclass
 class TInfo:
+    """Dataclass to store the information for a tensor
+    """
 
     shape: torch.Size
     dtype: torch.dtype
@@ -143,7 +145,6 @@ def add_pop_noise(pop: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, T
     Returns:
         torch.Tensor: The noise added to the Tensor
     """
-
     shape = list(pop.shape)
     base_shape = list(pop.shape)
     shape.insert(pop_dim + 1, k)
@@ -216,6 +217,15 @@ class GaussianNoiser(ExplorerNoiser):
     """Add Gaussian noise to the exploration"""
 
     def __init__(self, std: float = 1.0, mu: float = 0.0):
+        """Create a Gaussian Noiser that 
+
+        Args:
+            std (float, optional): The standard deviation to use for the noise. Defaults to 1.0.
+            mu (float, optional): The mean to use for the noise. Defaults to 0.0.
+
+        Raises:
+            ValueError: If std is less than 0
+        """
         super().__init__()
         if std < 0:
             raise ValueError(f"Standard deviation must be greater than 0 not {std}")
@@ -521,12 +531,19 @@ class FreezeDropout(nn.Module):
         self._cur = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Execute dropout on the input
 
+        Args:
+            x (torch.Tensor): The input to dropout
+
+        Returns:
+            torch.Tensor: The 
+        """
         if self.p == 0.0:
             return x
 
         if not self.training:
-            return x * (1 / 1 - self.p)
+            return x
 
         if self.freeze and self._cur is not None:
             f = self._cur
@@ -534,13 +551,13 @@ class FreezeDropout(nn.Module):
             f = (torch.rand_like(x) > self.p).type_as(x)
 
         self._cur = f
-        return f * x
+        return (f * x) * (1 / 1 - self.p)
 
 
 def binary_prob(
     x: torch.Tensor, loss: torch.Tensor, retrieve_counts: bool = False
 ) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
-    """
+    """Calculate binary probability based on a binary-valued vector input
 
     Args:
         x (torch.Tensor): The population input
