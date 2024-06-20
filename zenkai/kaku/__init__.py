@@ -35,7 +35,6 @@ from ._lm2 import (
     forward_dep,
     step_dep,
     ForwardHook,
-    SetYHook,
     LMode,
     set_lmode,
     LearnerPostHook

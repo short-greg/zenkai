@@ -5,6 +5,8 @@ import typing
 
 
 class BatchMemory(object):
+    """Use to store samples of inputs or weightsas the learning progresses
+    """
 
     def __init__(self, samples: typing.List[str], singular: typing.List[str]=None):
         """Create tensor based memory to 

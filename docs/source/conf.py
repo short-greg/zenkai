@@ -18,6 +18,8 @@ import sphinx_rtd_theme
 import sys
 import os
 
+
+
 # -- Project information -----------------------------------------------------
 
 project = "Zenkai"
@@ -27,7 +29,16 @@ author = "Greg Short"
 # The full version, including alpha/beta/rc tags
 release = "0.0.6"
 
-sys.path.insert(0, os.path.abspath('../'))
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+print("Resolved project root:", project_root)
+
+# sys.path.insert(0, project_root)
+
+sys.path.insert(0, project_root) # os.path.abspath('../'))
+
+import zenkai
 
 # -- General configuration ---------------------------------------------------
 

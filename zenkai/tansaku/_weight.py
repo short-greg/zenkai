@@ -22,7 +22,11 @@ def normalize_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
     return weight / weight.sum(dim=pop_dim, keepdim=True)
 
 
-def softmax_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
+def softmax_weight(
+    weight: torch.Tensor, 
+    pop_dim: int=0, 
+    maximize: bool=False
+) -> torch.Tensor:
     """Take the softmax of weights
 
     Args:
@@ -33,7 +37,6 @@ def softmax_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -
     Returns:
         torch.Tensor: Normalized weights
     """
-
     if maximize:
         return torch.softmax(
             weight, dim=pop_dim
@@ -43,8 +46,12 @@ def softmax_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -
     )
 
 
-def rank_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
-    """
+def rank_weight(
+    weight: torch.Tensor, 
+    pop_dim: int=0, maximize: bool=False
+) -> torch.Tensor:
+    """Calculate the weight by ranking the population members
+
     Args:
         weight (torch.Tensor): The original weight
         pop_dim (int, optional): The population dim. Defaults to 0.
@@ -69,7 +76,9 @@ def rank_weight(weight: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> t
     return ranks.gather(pop_dim, ind).float()
 
 
-def log_weight(norm_weight: torch.Tensor, maximize: bool=False, eps: float=1e-7) -> torch.Tensor:
+def log_weight(
+    norm_weight: torch.Tensor, maximize: bool=False, eps: float=1e-7
+) -> torch.Tensor:
     """Use the log scale to calculate weights
 
     Args:

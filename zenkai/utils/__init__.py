@@ -12,11 +12,6 @@ from ._convert import (
     checkattr,
 )
 from ._ste import (
-
-    binary_ste,
-    BinarySTE,
-    sign_ste,
-    SignSTE
+    binary_ste, BinarySTE,
+    SignSTE, sign_ste
 )
-# TODO: Remove
-# from ..kaku._wrappers import HookWrapper, GradHook, GaussianGradHook, Lambda

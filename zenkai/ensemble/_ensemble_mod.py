@@ -131,7 +131,7 @@ class MulticlassVoteAggregator(VoteAggregator):
         input_one_hot: bool = False,
         output_mean: bool = False,
     ):
-        """initializer
+        """Create a MulticlassVoteAggregator to choose betweeen votes for different classes
 
         Args:
             use_sign (bool, optional): Whether to use the sign on the output for binary results. Defaults to False.
@@ -171,6 +171,8 @@ class MulticlassVoteAggregator(VoteAggregator):
 
 
 class Voter(nn.Module):
+    """Use to choose which output from an ensemble to use.
+    """
 
     @property
     @abstractmethod
@@ -205,11 +207,11 @@ class EnsembleVoter(Voter):
         """Create a machine that runs an ensemble of sub machines
 
         Args:
-            spawner (typing.Callable[[], nn.Module]): _description_
-            n_keep (int): _description_
-            temporary (nn.Module, optional): _description_. Defaults to None.
-            spawner_args (typing.List, optional): _description_. Defaults to None.
-            spawner_kwargs (typing.Dict, optional): _description_. Defaults to None.
+            spawner (typing.Callable[[], nn.Module]): A factory to spawn the module to use
+            n_keep (int): The number of modules to keep in the ensemble
+            temporary (nn.Module, optional): The module to use initially. Defaults to None.
+            spawner_args (typing.List, optional): The args for the spawner. Defaults to None.
+            spawner_kwargs (typing.Dict, optional): The kwargs for the spawner. Defaults to None.
         """
         super().__init__()
 
@@ -226,7 +228,8 @@ class EnsembleVoter(Voter):
 
     @property
     def max_votes(self) -> int:
-        """
+        """The max number of votes for the ensemble
+
         Returns:
             int: The number of modules to make up the ensemble
         """
@@ -251,10 +254,20 @@ class EnsembleVoter(Voter):
 
     @property
     def n_votes(self) -> int:
+        """The number of votes currently for the 
+
+        Returns:
+            int: The number of votes
+        """
         return self._n_votes
 
     @property
     def cur(self) -> nn.Module:
+        """The current module
+
+        Returns:
+            nn.Module: The current module
+        """
         return self._estimators[-1]
 
     def adv(self):
@@ -265,10 +278,17 @@ class EnsembleVoter(Voter):
         self._estimators.append(spawned)
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
+        """Send the inputs through each of the ensembles
+
+        Returns:
+            torch.Tensor: The output of the ensemble
+        """
         if len(self._estimators) == 0:
             return [self._temporary(*x)]
 
-        return torch.stack([estimator(*x) for estimator in self._estimators])
+        return torch.stack(
+            [estimator(*x) for estimator in self._estimators]
+        )
 
 
 class StochasticVoter(Voter):
@@ -319,4 +339,9 @@ class StochasticVoter(Voter):
 
     @property
     def n_votes(self) -> int:
+        """The number of votes for the voter
+
+        Returns:
+            int: The number of votes for the voter
+        """
         return self._n_votes

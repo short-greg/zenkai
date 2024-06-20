@@ -206,7 +206,7 @@ def to_pvec(obj: PObj) -> torch.Tensor:
 
 
 def to_gradvec(obj: PObj) -> torch.Tensor:
-    """Convert the PObj
+    """Retrieve a vector of gradients from the grad object
 
     Args:
         obj (PObj): The object to convert
@@ -258,24 +258,22 @@ def set_pvec(obj: PObj, vec: torch.Tensor):
 
 
 def acc_pvec(obj: PObj, vec: torch.Tensor):
-    """Accumulate
+    """Accumulate the parameters
 
     Args:
-        obj (PObj): 
-        vec (torch.Tensor): 
+        obj (PObj): The parameter object to accumulate
+        vec (torch.Tensor): The vector to accumulate with
     """
-
-
     for p, cur_vec in align_vec(obj, vec):
         acc_params(p, cur_vec)
 
 
 def set_gradvec(obj: PObj, vec: torch.Tensor):
-    """
+    """Set the gradient for a parameter object based on a vector
 
     Args:
-        obj (PObj): 
-        vec (torch.Tensor): 
+        obj (PObj): The parameter object to set
+        vec (torch.Tensor): The vector to set the grad with
     """
     
     for p, cur_vec in align_vec(obj, vec):
@@ -381,18 +379,14 @@ def get_multp(objs: typing.Iterable[PObj]) -> typing.Tuple[torch.nn.parameter.Pa
 
 
 def loop_p(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
-    """
+    """Loop over the parameters for a parameter object
 
     Args:
         obj (PObj): The parameter object to loop over
 
-    Returns:
-        typing.Iterator[torch.nn.parameter.Parameter]: 
-
     Yields:
         Iterator[typing.Iterator[torch.nn.parameter.Parameter]]: The parameters
     """
-
     for p in get_p(obj):
         yield p
 
@@ -434,7 +428,8 @@ def apply_grad(
 def set_params(
     cur: torch.Tensor, new_: torch.Tensor
 ):
-    """
+    """Set the values of the parameters to a new value
+
     Args:
         cur (torch.Tensor): The current parameters to set
         new_ (torch.Tensor): The new parameters
@@ -444,21 +439,23 @@ def set_params(
 
 
 def acc_params(
-    cur: torch.Tensor, new_: torch.Tensor
+    cur: torch.Tensor, dp: torch.Tensor
 ):
     """Accumulate the parameters
+    
     Args:
         cur (torch.Tensor): The parameters to accumulate
-        new_ (torch.Tensor): The new parameters
+        dp (torch.Tensor): The change in the parameters
     """
     with torch.no_grad():
-        cur.copy_(cur + new_)
+        cur.copy_(cur + dp)
 
 
 def set_grad(
     cur: torch.Tensor, grad: torch.Tensor
 ):
-    """
+    """Set the gradient for the parameters
+
     Args:
         cur (torch.Tensor): The current parameters
         grad (torch.Tensor): The gradient 
@@ -474,7 +471,7 @@ def set_grad(
 def set_gradt(
     cur: torch.Tensor, t: torch.Tensor
 ):
-    """Set the grad using a target
+    """Set the grad based on a target
 
     Args:
         cur (torch.Tensor): The current tensor
@@ -505,7 +502,8 @@ def acc_grad(
 def acc_gradt(
     cur: torch.Tensor, t: torch.Tensor
 ):
-    """
+    """Accumualte the gradients based on a target
+
     Args:
         cur (torch.Tensor): The current tensor
         t (torch.Tensor): The target to use for accumulating the gradient
@@ -555,6 +553,8 @@ def reg_p(obj: PObj, f) -> torch.Tensor:
 
 
 class undo_grad(object):
+    """Context that allows the user to run an operation that updates the parameters and then sets them back for a subset of those parameters.
+    """
 
     def __init__(
         self, values: typing.Iterable[typing.Union[typing.Callable[[], typing.Iterator], nn.Module, torch.Tensor, nn.parameter.Parameter]]

@@ -151,6 +151,8 @@ class FALearner(GradIdxLearner):
 
 @dataclass
 class OutT:
+    """Use to store the value to set T to be
+    """
 
     t: IO = None
 
@@ -247,6 +249,7 @@ class DFALearner(GradIdxLearner):
 
 
 class LinearFABuilder(Builder[FALearner]):
+    """Learner for implementing feedback alignment."""
     def __init__(
         self,
         in_features: int = UNDEFINED,
@@ -255,6 +258,15 @@ class LinearFABuilder(Builder[FALearner]):
         activation: nn.Module = UNDEFINED,
         criterion: Criterion = UNDEFINED,
     ):
+        """Create a builder for LinearFABuilder
+
+        Args:
+            in_features (int, optional): The linear in features. Defaults to UNDEFINED.
+            out_features (int, optional): The number out features. Defaults to UNDEFINED.
+            optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
+            activation (nn.Module, optional): The activation for the feedback alignment. Defaults to UNDEFINED.
+            criterion (Criterion, optional): The criterion to use for optimizing. Defaults to UNDEFINED.
+        """
         
         super().__init__(
             FALearner,

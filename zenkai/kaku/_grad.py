@@ -30,7 +30,8 @@ class GradStepTheta(StepTheta):
         self, module: nn.Module, learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
         
     ):
-        """Create a StepTheta that will update based on the gradient
+        """
+        Create a StepTheta that will update based on the gradient
 
         Args:
             module (nn.Module): The module whose parameters will be updated
@@ -48,6 +49,14 @@ class GradStepTheta(StepTheta):
         self.learn_criterion = learn_criterion
 
     def accumulate(self, x: IO, t: IO, state: State, y: IO=None, **kwargs):
+        """Accumulate the gradients
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            y (IO, optional): The output. Defaults to None.
+        """
         
         if y is None:
             if isinstance(self.module, LearningMachine):
@@ -64,6 +73,13 @@ class GradStepTheta(StepTheta):
         assessment.backward()
 
     def step(self, x: IO, t: IO, state: State, **kwargs):
+        """Run the optimizer if defined 
+
+        Args:
+            x (IO): The output
+            t (IO): The target
+            state (State): The learning state
+        """
         if self.optim is not None:
             self.optim.step()
             self.optim.zero_grad()
@@ -98,6 +114,9 @@ class GradStepX(StepX):
 
 
 class GradLearner(LearningMachine):
+    """
+    A learner who updates the machine with gradients
+    """
 
     def __init__(
         self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
@@ -305,7 +324,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._optim.zero_theta()
 
     def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
-        """_summary_
+        """Execute the module wrapped by the learner
 
         Args:
             x (IO): The input

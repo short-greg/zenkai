@@ -7,6 +7,7 @@ import math
 import torch
 import torch.nn as nn
 
+# local
 from ._selection import ToProb, Selection, select_from_prob
 
 class ParentSelector(nn.Module):
@@ -105,7 +106,6 @@ def smooth_crossover(x1: torch.Tensor, x2: torch.Tensor, pref1: float=0.0, dim: 
     Returns:
         torch.Tensor: The children
     """
-    
     exp_weight = math.exp(pref1)
 
     if dim is None:

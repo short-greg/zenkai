@@ -32,13 +32,13 @@ def mean(
 
 
 def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
-    """Calculate the median. 
+    """Calculate the quantile of a tensor. 
 
     Note: No interpolation done if using weights
 
     Args:
         x (torch.Tensor): The x to get the median for
-        q (float): The quantil to retrieve for
+        q (float): The quantile to retrieve for
         norm_weight (torch.Tensor, optional): Weights to use if computing the weighted median. Defaults to None.
         dim (int, optional): Dim to calculate the median on. Defaults to 0.
         keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
@@ -88,12 +88,16 @@ def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim:
     )
 
 
-def normalize(x: torch.Tensor, mean: torch.Tensor=None, std: torch.Tensor=None, dim: int=0, eps: float=1e-6) -> torch.Tensor:
-    """normalize x based on the mean and standard deviation
+def normalize(
+    x: torch.Tensor, mean: torch.Tensor=None, 
+    std: torch.Tensor=None, 
+    dim: int=0, 
+    eps: float=1e-6
+) -> torch.Tensor:
+    """Normalize x based on the mean and standard deviation
 
     Args:
-        x (torch.Tensor): The tensor to normalize
-        mean (torch.Tensor, optional): The mean to use, if not defined will use the mean of x. Defaults to None.
+        x (torch.Tensor): The tensor to normalize mean (torch.Tensor, optional): The mean to use, if not defined will use the mean of x. Defaults to None.
         std (torch.Tensor, optional): The standard deviation, if not. Defaults to None.
         dim (int, optional): The dimension to normalize on. Defaults to 0.
 

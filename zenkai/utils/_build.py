@@ -42,7 +42,7 @@ class BuilderFunctor(ABC):
 
 
 class Var(BuilderFunctor):
-    """Defines a variable for including in your build process"""
+    """A variable is used to allow for the factory or builder parameters to be dynamic"""
 
     def __init__(self, name: str, default=UNDEFINED, dtype: typing.Type = None):
         """Add a Variable that can be replaced
@@ -114,10 +114,10 @@ class Var(BuilderFunctor):
 
 
 class Factory(BuilderFunctor, Generic[T]):
-    """Defines a factory"""
+    """A factory is used to construct a class with defined arguments """
 
     def __init__(self, factory, *args, **kwargs):
-        """Create a factory which you call
+        """Create a factory which is called to generate a class
 
         Args:
             factory: The factory
@@ -164,7 +164,7 @@ class Factory(BuilderFunctor, Generic[T]):
 
 
 class BuilderArgs(BuilderFunctor):
-    """Defines the args for building"""
+    """The arguments that are used for building"""
 
     def __init__(self, args=None, kwargs=None):
         """Create arguments for your ZBuilder
@@ -259,7 +259,7 @@ class BuilderArgs(BuilderFunctor):
 
 
 class Builder(BuilderFunctor, Generic[T]):
-    """Create a Builder class. A builder allows for the user to more easily 
+    """A builder allows for the user to more easily 
     edit the parameters than a factory"""
 
     class Updater(Generic[T, K]):
@@ -274,13 +274,11 @@ class Builder(BuilderFunctor, Generic[T]):
             return clone
 
     def __init__(self, factory: typing.Type[T], arg_names: typing.List[str], **kwargs):
-        """
-        Args:
-            learning_machine_cls (typing.Type[LearningMachine]): _description_
-            arg_names (typing.List[str]): _description_
+        """Create a builder class using a factory
 
-        Raises:
-            ValueError: _description_
+        Args:
+            factory (typing.Type[T]): The factory to build for
+            arg_names (typing.List[str]): The arguments for the factory
         """
         super().__init__()
         self._factory = factory

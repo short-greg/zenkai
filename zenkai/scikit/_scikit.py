@@ -31,7 +31,7 @@ class ScikitMachine(LearningMachine):
         criterion: Criterion,
         partial: bool = False,
     ):
-        """initializer
+        """Create a machine that wraps the scikit estimator specifying how to update x
 
         Args:
             module (ScikitEstimator): The
@@ -46,6 +46,16 @@ class ScikitMachine(LearningMachine):
         self._partial = partial
 
     def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+        """Assess the output
+
+        Args:
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): The reduction use if needed. Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
         return self._criterion.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, state: State, **kwargs):
@@ -78,7 +88,15 @@ class ScikitMachine(LearningMachine):
         return self._step_x.step_x(x, t, state, **kwargs)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        """Pass through the scikit estimator
 
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: The output
+        """
         return self._module(x[0])
 
     @property
@@ -93,7 +111,8 @@ class ScikitMachine(LearningMachine):
     def regressor(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False) -> torch.Tensor:
-        """
+        """Create a regressor
+
         Args:
             estimator (BaseEstimator): The estimator to use for the machine
             step_x (StepX): The method for updating x
@@ -116,7 +135,8 @@ class ScikitMachine(LearningMachine):
     def binary(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
-        """
+        """Create a binary estimator
+
         Args:
             estimator (BaseEstimator): The estimator to use for the machine
             step_x (StepX): The method for updating x
@@ -140,7 +160,7 @@ class ScikitMachine(LearningMachine):
     def multiclass(
         self, estimator: BaseEstimator, step_x: StepX, criterion: Criterion, in_features: int, n_classes: int=None, out_features: int=None, 
         backup=None, out_dtype=None, partial: bool=False):
-        """
+        """Create a multiclass machine
         Args:
             estimator (BaseEstimator): The estimator to use for the machine
             step_x (StepX): The method for updating x
@@ -233,7 +253,7 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         """Update the estimator
 
         Args:
-            x (IO): Input
+            x (IO): input
             t (IO): Traget
             feature_idx (Idx, optional): _description_. Defaults to None.
 
@@ -245,6 +265,15 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         return self._step_x.step_x(x, t, state, feature_idx)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        """Execute the preprocessor and the module
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: 
+        """
         
         x = x.f
         if self._preprocessor is not None:
@@ -342,7 +371,7 @@ class ScikitLimitGen(FeatureLimitGen):
     """
 
     def __init__(self, base_limiter: FeatureLimitGen):
-        """initializer
+        """Create a Limit
 
         Args:
             base_limiter (FeatureLimitGen): The base limiter to use
@@ -350,6 +379,11 @@ class ScikitLimitGen(FeatureLimitGen):
         self.base_limiter = base_limiter
 
     def sample_limit(self) -> torch.LongTensor:
+        """Generate a sample limit
+
+        Returns:
+            torch.LongTensor: The sampled limit
+        """
         return self.base_limiter()
 
     def __call__(self, fitted: bool = True) -> torch.LongTensor:
@@ -382,7 +416,8 @@ class SciClone(object):
         self.estimator = estimator
 
     def __call__(self) -> BaseEstimator:
-        """
+        """Clone the Estimator
+
         Returns:
             BaseEstimator: Cloned estimator
         """

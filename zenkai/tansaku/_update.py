@@ -136,7 +136,7 @@ def update_momentum(
 
 
 def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) -> torch.Tensor:
-    """
+    """Use to decay the previous value and update it with the current value
 
     Args:
         cur_val (torch.Tensor): The current value
@@ -146,7 +146,6 @@ def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) 
     Returns:
         torch.Tensor: _description_
     """
-
     if prev_val is None:
         return cur_val
     
@@ -154,6 +153,8 @@ def decay(cur_val: torch.Tensor, prev_val: torch.Tensor=None, decay: float=0.9) 
 
 
 class Updater(nn.Module):
+    """Use for updating a tensor (such as with a decay function)
+    """
 
     def __init__(self, update_f: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]=None, *args, **kwargs):
         """Module that handles updating a tensor with an update function
@@ -161,15 +162,21 @@ class Updater(nn.Module):
         Args:
             update_f (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], optional): The update function. If it is None, the default behavior will be to do nothing but the behavior can be overridden by sublcasses. Defaults to None.
         """
-
         super().__init__()
         self.update_f = update_f
         self.args = args
         self.kwargs = kwargs
         self.cur_val = None
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Update the tensor stored internally and return it
 
+        Args:
+            x (torch.Tensor): The tensor to update with
+
+        Returns:
+            torch.Tensor: The updated tensor
+        """
         if self.cur_val is None:
             self.cur_val = x
 
@@ -191,7 +198,6 @@ def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: The slope
     """
-
     evaluation = align(assessment, val)
     base_shape = val.shape
     val = val.view(
@@ -206,7 +212,8 @@ def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
 
 
 def calc_scale(cur_val: torch.Tensor, ref: torch.Tensor, scale: float=None) -> torch.Tensor:
-    """
+    """Calculate the amount to scale the input by
+
     Args:
         cur_val (torch.Tensor): The cur val
         ref (torch.Tensor): The reference to set it to
@@ -215,7 +222,6 @@ def calc_scale(cur_val: torch.Tensor, ref: torch.Tensor, scale: float=None) -> t
     Returns:
         torch.Tensor: The resulting scale to multiply by
     """
-
     rate = (ref.abs() / cur_val.abs()) 
     if scale is not None:
         rate = rate * scale

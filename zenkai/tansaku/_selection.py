@@ -11,7 +11,17 @@ from . import _reshape as tansaku_utils
 
 
 def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
-    
+    """Get the best assessment from the population
+
+    Args:
+        assessment (torch.Tensor): The assessment
+        maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+        dim (int, optional): The dimension to get the best on. Defaults to -1.
+        keepdim (int, optional): Whether to keep the dimension or not. Defaults to False.
+
+    Returns:
+        typing.Tuple[torch.Tensor, torch.LongTensor]: The best tensor
+    """
     if maximize:
         return assessment.max(dim=dim, keepdim=keepdim)
     return assessment.min(dim=dim, keepdim=keepdim)
@@ -36,7 +46,16 @@ def gather_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=-1) 
 
 
 def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Tensor:
+    """Assess a population of tensors
 
+    Args:
+        value (torch.Tensor): The value to assess
+        reduction (str): The reduction to apply
+        from_dim (int, optional): The dimension to do the assessment from. Defaults to 1.
+
+    Returns:
+        torch.Tensor: The assessment
+    """
     shape = value.shape
     result = Reduction[reduction].reduce(
         value.reshape(
@@ -47,9 +66,6 @@ def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Te
 
 
 def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=False, combine_pop_dim: bool=False, g: torch.Generator=None) -> torch.Tensor:
-    # Analyze the output of this better and
-    # add better documentation
-
     """ Select instances from the probability vector that was calculated using ToProb
 
     Args:
@@ -62,6 +78,9 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
     Returns:
         torch.LongTensor: The selection
     """
+
+    # Analyze the output of this better and
+    # add better documentation
     shape = prob.shape
 
     prob = prob.reshape(-1, shape[-1])
@@ -120,10 +139,26 @@ class Selection(nn.Module):
         return selected
     
     def forward(self, x: torch.Tensor, get_assessment: bool=False) -> torch.Tensor:
+        """Select tensors
+
+        Args:
+            x (torch.Tensor): The input
+            get_assessment (bool, optional): Whether to get the assessment or not. Defaults to False.
+
+        Returns:
+            torch.Tensor: The tensors selected
+        """
         return self.select(x, get_assessment)
 
     def multi(self, x: typing.Iterable[torch.Tensor]) -> typing.Tuple[torch.Tensor]:
+        """Select multiple tensors
 
+        Args:
+            x (typing.Iterable[torch.Tensor]): The inputs
+
+        Returns:
+            typing.Tuple[torch.Tensor]: The selected tensors
+        """
         return tuple(
             self.select(x_i) for x_i in x
         )
@@ -146,17 +181,35 @@ class Selection(nn.Module):
     
     @property
     def n(self) -> int:
+        """
+        Returns:
+            int: The number of samples
+        """
         return self._n
 
     @property
     def k(self) -> int:
+        """
+        Returns:
+            int: The number to select
+        """
         return self._k
 
 
 class Selector(nn.Module, ABC):
+    """Use to select the inputs based on the assessmnet
+    """
 
     @abstractmethod
     def forward(self, assessment: torch.Tensor) -> Selection:
+        """Select the tensor to use
+
+        Args:
+            assessment (torch.Tensor): Return the 
+
+        Returns:
+            Selection: The inputs
+        """
         pass
 
     def __call__(self, *args: typing.Any, **kwds: typing.Any) -> Selection:
@@ -164,17 +217,28 @@ class Selector(nn.Module, ABC):
 
 
 class BestSelector(Selector):
+    """Use to get the best member of a population
+    """
 
     def __init__(self, dim: int):
-        """
+        """Create a selector that will return the best member
+
         Args:
-            dim (int): 
+            dim (int): The dimension to select on
         """
         super().__init__()
         self.dim = dim
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
+        """Retrieve the best
 
+        Args:
+            assessment (torch.Tensor): The assessment
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            Selection: 
+        """
         values, indices = best(assessment, maximize, self.dim, True)
         
         return Selection(
@@ -184,15 +248,31 @@ class BestSelector(Selector):
 
 
 class TopKSelector(Selector):
+    """Get the K best members
+    """
 
     def __init__(self, k: int, dim: int):
+        """Create a selector to get the best members
+
+        Args:
+            k (int): The number to select
+            dim (int): The dimension to select on
+        """
         super().__init__()
 
         self.k = k
         self.dim = dim
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> Selection:
+        """Get the K best inputs
 
+        Args:
+            assessment (torch.Tensor): The assessment to select for
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+
+        Returns:
+            Selection: The selection based on the assessment
+        """
         values, indices = assessment.topk(
             self.k, self.dim, maximize, True
         )

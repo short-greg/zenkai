@@ -325,6 +325,13 @@ class StepTheta(ABC):
         self._accumulate_hooks: typing.List[StepHook] = []
 
     def accumulate(self, x: IO, t: IO, state: State, **kwargs):
+        """Accumulate updates for the network. In some cases you might not want to implement this.
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         pass
 
     @abstractmethod
@@ -392,6 +399,14 @@ class BatchIdxStepTheta(StepTheta):
 
     @abstractmethod
     def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
+        """Update the parameters of the learning machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            batch_idx (Idx, optional): The index to use in updating. Defaults to None.
+        """
         pass
 
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
@@ -403,6 +418,14 @@ class FeatureIdxStepTheta(StepTheta):
 
     @abstractmethod
     def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
+        """Update the parameters of the learning machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            feature_idx (Idx, optional): The index to use in updating. Defaults to None.
+        """
         pass
 
 
@@ -535,22 +558,65 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
 
     @abstractmethod
     def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+        """Method to assess the output of the machine
+
+        Args:
+            y (IO): The output
+            t (IO): The target
+            reduction_override (str, optional): The override on the reduction if needed. Defaults to None.
+
+        Returns:
+            torch.Tensor: the assessment
+        """
         pass
 
     def assess(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+        """Method to assess the input of the LearningMachine
 
+        Args:
+            x (IO): The input
+            t (IO): The target
+            reduction_override (str, optional): An override on the reduction. Defaults to None.
+
+        Returns:
+            torch.Tensor: The assessment
+        """
         y = self.forward_io(x, State(), reduction_override)
         return self.assess_y(y, t, reduction_override)
 
     @abstractmethod
     def step(self, x: IO, t: IO, state: State, **kwargs):
+        """Update the parameters of the learning machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         pass
 
     def accumulate(self, x: IO, t: IO, state: State, **kwargs):
+        """Accumulate updates for the network. In some cases you might not want to implement this.
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         pass
 
     @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+        """Update the value of x to get the target the target for the incoming machine
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: The updated input
+        """
         pass
 
     def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
@@ -632,9 +698,28 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
 
     @abstractmethod
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        """Method to define for sending the input through the LearningMachine
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: The output
+        """
         pass
 
     def forward_io(self, x: IO, state: State, detach: bool=True, **kwargs) -> IO:
+        """Convenience method to send an IO through the module
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+            detach (bool, optional): Whether to detach the output. Defaults to True.
+
+        Returns:
+            IO: The output
+        """
 
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
@@ -645,6 +730,16 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         return y
     
     def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
+        """Update the parameters of the learner. The effects will differ based on the learning mode
+
+        Args:
+            x (IO): The input
+            t (IO): The output
+            get_y (bool, optional): Whether to get y. Defaults to False.
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or the assessment and y
+        """
 
         if self.use_assess:
             y = self(*x, **kwargs)
@@ -666,6 +761,16 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         return assessment
 
     def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
+        """Test the learner
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            get_y (bool, optional): Whether to get the output. Defaults to False.
+
+        Returns:
+            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or both the assessment and y
+        """
 
         state = State()
         y = self.forward_io(x, state, **kwargs)
@@ -713,7 +818,7 @@ class InDepStepX(StepX):
     def step_x(
         self, x: IO, t: IO, incoming_x: IO = None, incoming_t: IO = None
     ) -> IO:
-        """
+        """Initialize a dependency on the incoming module
 
         Args:
             x (IO): The input
@@ -725,16 +830,3 @@ class InDepStepX(StepX):
             IO: The updated input
         """
         pass
-
-
-class SetYHook(ForwardHook):
-    """
-    """
-    def __init__(self, y: str='y') -> None:
-        super().__init__()
-        self.y_name = y
-
-    def __call__(self, learner: LearningMachine, x: IO, y: IO, state: State, **kwargs) -> IO:
-       
-       state._x = y
-       return y

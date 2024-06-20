@@ -172,7 +172,7 @@ class Idx(object):
     def __init__(self, idx=None, dim: int = 0):
         """Create an index specifying the dimension to index on
 
-        Set an index on the IO to
+        Set an index on the IO to retrieve part of the IO
 
         usage: Use when the connection should retrieve a subset of the values
         in the IO

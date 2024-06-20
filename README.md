@@ -149,6 +149,7 @@ for x, t in dataloader:
 
 ## Build documentation
 
+cd docs
 make clean
 sphinx-autogen source/api.rst
 make html
