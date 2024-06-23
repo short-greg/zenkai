@@ -386,7 +386,6 @@ class SciClone(object):
         Args:
             estimator (BaseEstimator): The estimator to clone
         """
-
         self.estimator = estimator
 
     def __call__(self) -> BaseEstimator:

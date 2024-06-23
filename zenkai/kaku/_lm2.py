@@ -511,24 +511,18 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
     """
 
     def __init__(
-        self, lmode: LMode=LMode.Default, 
-        use_assess: bool=True
+        self, lmode: LMode=LMode.Default
     ):
         """Create a learning machine
 
         Args:
             lmode (LMode, optional): The learning mode to set to. Defaults to LMode.Default.
-            use_assess (bool, optional): . Defaults to True.
         """
         super().__init__()
         self._lmode = lmode
-
-        self._test_posthooks = []
-        self._learn_posthooks = []
         self._y_hooks = []
         self._base_forward = self.forward_nn
         self.forward_nn = self._forward_hook_runner
-        self.use_assess = use_assess
 
     @property
     def lmode(self) -> LMode:
