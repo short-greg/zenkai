@@ -17,8 +17,6 @@ zenkai (kaku)
    zenkai.Reduction
    zenkai.Criterion
    zenkai.XCriterion
-   zenkai.CompositeXCriterion
-   zenkai.CompositeCriterion
    zenkai.NNLoss
    zenkai.AssessmentLog
    zenkai.zip_assess
@@ -209,7 +207,7 @@ zenkai.tansaku
    zenkai.tansaku.rank_weight
    zenkai.tansaku.log_weight
    zenkai.tansaku.gauss_cdf_weight
-..   zenkai.tansaku.CrossOver
+   zenkai.tansaku.CrossOver
    zenkai.tansaku.full_crossover
    zenkai.tansaku.smooth_crossover
    zenkai.tansaku.hard_crossover
@@ -222,7 +220,7 @@ zenkai.tansaku
    zenkai.tansaku.binary_prob
 
 zenkai.ensemble
---------------
+---------------
 
 .. autosummary::
    :toctree: generated
@@ -262,34 +260,34 @@ zenkai.scikit
    zenkai.scikit.MulticlassBackup
    zenkai.scikit.BinaryBackup
 
-.. zenkai.targetprop
-.. -----------------
+zenkai.targetprop
+-----------------
 
-.. .. autosummary::
-..    :toctree: generated
+.. autosummary::
+   :toctree: generated
 
-..    zenkai.targetprop.LeastSquaresStepTheta
-..    zenkai.targetprop.LeastSquaresStepX
-..    zenkai.targetprop.Reversible
-..    zenkai.targetprop.Null
-..    zenkai.targetprop.TargetReverser
-..    zenkai.targetprop.SequenceReversible
-..    zenkai.targetprop.SigmoidInvertable
-..    zenkai.targetprop.SoftMaxReversible
-..    zenkai.targetprop.ReversibleMachine
-..    zenkai.targetprop.TPLayerLearner
-..    zenkai.targetprop.TPForwardLearner
-..    zenkai.targetprop.TPReverseLearner
-..    zenkai.targetprop.Rec
-..    zenkai.targetprop.LinearRec
-..    zenkai.targetprop.create_grad_target_prop
-..    zenkai.targetprop.BatchNorm1DReversible
-..    zenkai.targetprop.BoolToSigned
-..    zenkai.targetprop.SignedToBool
-..    zenkai.targetprop.DiffTPLayerLearner
-..    zenkai.targetprop.GradLeastSquaresLearner
-..    zenkai.targetprop.LeakyReLUInvertable
-..    zenkai.targetprop.LeastSquaresLearner
-..    zenkai.targetprop.LeastSquaresSolver
-..    zenkai.targetprop.LeastSquaresStandardSolver
-..    zenkai.targetprop.LeastSquaresRidgeSolver
+   zenkai.targetprop.LeastSquaresStepTheta
+   zenkai.targetprop.LeastSquaresStepX
+   zenkai.targetprop.Reversible
+   zenkai.targetprop.Null
+   zenkai.targetprop.TargetReverser
+   zenkai.targetprop.SequenceReversible
+   zenkai.targetprop.SigmoidInvertable
+   zenkai.targetprop.SoftMaxReversible
+   zenkai.targetprop.ReversibleMachine
+   zenkai.targetprop.TPLayerLearner
+   zenkai.targetprop.TPForwardLearner
+   zenkai.targetprop.TPReverseLearner
+   zenkai.targetprop.Rec
+   zenkai.targetprop.LinearRec
+   zenkai.targetprop.create_grad_target_prop
+   zenkai.targetprop.BatchNorm1DReversible
+   zenkai.targetprop.BoolToSigned
+   zenkai.targetprop.SignedToBool
+   zenkai.targetprop.DiffTPLayerLearner
+   zenkai.targetprop.GradLeastSquaresLearner
+   zenkai.targetprop.LeakyReLUInvertable
+   zenkai.targetprop.LeastSquaresLearner
+   zenkai.targetprop.LeastSquaresSolver
+   zenkai.targetprop.LeastSquaresStandardSolver
+   zenkai.targetprop.LeastSquaresRidgeSolver

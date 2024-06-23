@@ -1,4 +1,4 @@
-zenkai.GradLearner
+﻿zenkai.GradLearner
 ==================
 
 .. currentmodule:: zenkai
@@ -18,8 +18,6 @@ zenkai.GradLearner
       ~GradLearner.accumulate_posthook
       ~GradLearner.add_module
       ~GradLearner.apply
-      ~GradLearner.assess
-      ~GradLearner.assess_y
       ~GradLearner.bfloat16
       ~GradLearner.buffers
       ~GradLearner.children
@@ -38,9 +36,7 @@ zenkai.GradLearner
       ~GradLearner.get_parameter
       ~GradLearner.get_submodule
       ~GradLearner.half
-      ~GradLearner.learn
       ~GradLearner.learn_assess
-      ~GradLearner.learner_hook
       ~GradLearner.lmode_
       ~GradLearner.load_state_dict
       ~GradLearner.modules
@@ -64,7 +60,6 @@ zenkai.GradLearner
       ~GradLearner.step_posthook
       ~GradLearner.step_x
       ~GradLearner.step_x_hook
-      ~GradLearner.test
       ~GradLearner.to
       ~GradLearner.to_empty
       ~GradLearner.train

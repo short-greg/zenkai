@@ -1,4 +1,4 @@
-zenkai.NullLearner
+﻿zenkai.NullLearner
 ==================
 
 .. currentmodule:: zenkai
@@ -18,8 +18,6 @@ zenkai.NullLearner
       ~NullLearner.accumulate_posthook
       ~NullLearner.add_module
       ~NullLearner.apply
-      ~NullLearner.assess
-      ~NullLearner.assess_y
       ~NullLearner.bfloat16
       ~NullLearner.buffers
       ~NullLearner.children
@@ -38,8 +36,6 @@ zenkai.NullLearner
       ~NullLearner.get_parameter
       ~NullLearner.get_submodule
       ~NullLearner.half
-      ~NullLearner.learn
-      ~NullLearner.learner_hook
       ~NullLearner.lmode_
       ~NullLearner.load_state_dict
       ~NullLearner.modules
@@ -63,7 +59,6 @@ zenkai.NullLearner
       ~NullLearner.step_posthook
       ~NullLearner.step_x
       ~NullLearner.step_x_hook
-      ~NullLearner.test
       ~NullLearner.to
       ~NullLearner.to_empty
       ~NullLearner.train

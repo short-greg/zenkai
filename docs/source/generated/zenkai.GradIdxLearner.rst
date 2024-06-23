@@ -1,4 +1,4 @@
-zenkai.GradIdxLearner
+﻿zenkai.GradIdxLearner
 =====================
 
 .. currentmodule:: zenkai
@@ -18,8 +18,6 @@ zenkai.GradIdxLearner
       ~GradIdxLearner.accumulate_posthook
       ~GradIdxLearner.add_module
       ~GradIdxLearner.apply
-      ~GradIdxLearner.assess
-      ~GradIdxLearner.assess_y
       ~GradIdxLearner.bfloat16
       ~GradIdxLearner.buffers
       ~GradIdxLearner.children
@@ -38,9 +36,7 @@ zenkai.GradIdxLearner
       ~GradIdxLearner.get_parameter
       ~GradIdxLearner.get_submodule
       ~GradIdxLearner.half
-      ~GradIdxLearner.learn
       ~GradIdxLearner.learn_assess
-      ~GradIdxLearner.learner_hook
       ~GradIdxLearner.lmode_
       ~GradIdxLearner.load_state_dict
       ~GradIdxLearner.modules
@@ -64,7 +60,6 @@ zenkai.GradIdxLearner
       ~GradIdxLearner.step_posthook
       ~GradIdxLearner.step_x
       ~GradIdxLearner.step_x_hook
-      ~GradIdxLearner.test
       ~GradIdxLearner.to
       ~GradIdxLearner.to_empty
       ~GradIdxLearner.train

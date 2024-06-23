@@ -1,4 +1,4 @@
-zenkai.LearningMachine
+﻿zenkai.LearningMachine
 ======================
 
 .. currentmodule:: zenkai
@@ -18,8 +18,6 @@ zenkai.LearningMachine
       ~LearningMachine.accumulate_posthook
       ~LearningMachine.add_module
       ~LearningMachine.apply
-      ~LearningMachine.assess
-      ~LearningMachine.assess_y
       ~LearningMachine.bfloat16
       ~LearningMachine.buffers
       ~LearningMachine.children
@@ -38,8 +36,6 @@ zenkai.LearningMachine
       ~LearningMachine.get_parameter
       ~LearningMachine.get_submodule
       ~LearningMachine.half
-      ~LearningMachine.learn
-      ~LearningMachine.learner_hook
       ~LearningMachine.lmode_
       ~LearningMachine.load_state_dict
       ~LearningMachine.modules
@@ -63,7 +59,6 @@ zenkai.LearningMachine
       ~LearningMachine.step_posthook
       ~LearningMachine.step_x
       ~LearningMachine.step_x_hook
-      ~LearningMachine.test
       ~LearningMachine.to
       ~LearningMachine.to_empty
       ~LearningMachine.train

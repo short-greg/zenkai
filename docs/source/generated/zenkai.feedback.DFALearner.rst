@@ -1,4 +1,4 @@
-zenkai.feedback.DFALearner
+﻿zenkai.feedback.DFALearner
 ==========================
 
 .. currentmodule:: zenkai.feedback
@@ -18,8 +18,6 @@ zenkai.feedback.DFALearner
       ~DFALearner.accumulate_posthook
       ~DFALearner.add_module
       ~DFALearner.apply
-      ~DFALearner.assess
-      ~DFALearner.assess_y
       ~DFALearner.bfloat16
       ~DFALearner.buffers
       ~DFALearner.children
@@ -38,9 +36,7 @@ zenkai.feedback.DFALearner
       ~DFALearner.get_parameter
       ~DFALearner.get_submodule
       ~DFALearner.half
-      ~DFALearner.learn
       ~DFALearner.learn_assess
-      ~DFALearner.learner_hook
       ~DFALearner.lmode_
       ~DFALearner.load_state_dict
       ~DFALearner.modules
@@ -64,7 +60,6 @@ zenkai.feedback.DFALearner
       ~DFALearner.step_posthook
       ~DFALearner.step_x
       ~DFALearner.step_x_hook
-      ~DFALearner.test
       ~DFALearner.to
       ~DFALearner.to_empty
       ~DFALearner.train

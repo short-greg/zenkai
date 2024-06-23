@@ -9,8 +9,6 @@ from ._assess import (
     XCriterion,
     AssessmentLog, 
     reduce_assessment,
-    CompositeCriterion,
-    CompositeXCriterion,
     zip_assess,
     MulticlassLoss
 )
@@ -74,8 +72,7 @@ from ._grad import (
 from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
 
 from ._assess import (
-    Criterion, XCriterion, CompositeCriterion,
-    CompositeXCriterion, zip_assess
+    Criterion, XCriterion, zip_assess
 )
 from ._limit import (
     FeatureLimitGen, RandomFeatureIdxGen

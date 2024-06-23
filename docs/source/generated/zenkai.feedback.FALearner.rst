@@ -1,4 +1,4 @@
-zenkai.feedback.FALearner
+﻿zenkai.feedback.FALearner
 =========================
 
 .. currentmodule:: zenkai.feedback
@@ -18,8 +18,6 @@ zenkai.feedback.FALearner
       ~FALearner.accumulate_posthook
       ~FALearner.add_module
       ~FALearner.apply
-      ~FALearner.assess
-      ~FALearner.assess_y
       ~FALearner.bfloat16
       ~FALearner.buffers
       ~FALearner.builder
@@ -39,9 +37,7 @@ zenkai.feedback.FALearner
       ~FALearner.get_parameter
       ~FALearner.get_submodule
       ~FALearner.half
-      ~FALearner.learn
       ~FALearner.learn_assess
-      ~FALearner.learner_hook
       ~FALearner.lmode_
       ~FALearner.load_state_dict
       ~FALearner.modules
@@ -65,7 +61,6 @@ zenkai.feedback.FALearner
       ~FALearner.step_posthook
       ~FALearner.step_x
       ~FALearner.step_x_hook
-      ~FALearner.test
       ~FALearner.to
       ~FALearner.to_empty
       ~FALearner.train
