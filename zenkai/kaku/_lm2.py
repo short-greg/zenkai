@@ -480,7 +480,7 @@ class LearningF(Function):
         
         self = ctx.self
         # calculate t
-        print(grad_outputs[0][0])
+        # print(grad_outputs[0][0])
         with torch.enable_grad():
             state = load_state(ctx)
             x: IO = state._x
