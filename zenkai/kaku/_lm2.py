@@ -398,7 +398,6 @@ class StepTheta(ABC):
         return self
 
 
-
 class BatchIdxStepTheta(StepTheta):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
@@ -481,13 +480,14 @@ class LearningF(Function):
         
         self = ctx.self
         # calculate t
+        print(grad_outputs[0][0])
         with torch.enable_grad():
             state = load_state(ctx)
             x: IO = state._x
             y = state._y
             kwargs = ctx._kwargs
 
-            t = y.t(grad_outputs).detach_()
+            t = y.t(grad_outputs).detach()
 
             if self.lmode == LMode.WithStep:
                 self.accumulate(x, t, state, **kwargs)
@@ -527,12 +527,9 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         self._test_posthooks = []
         self._learn_posthooks = []
         self._y_hooks = []
-        self._base_learn = self.learn
-        self._base_test = self.test
-        self.learn = self._learn_hook_runner
         self._base_forward = self.forward_nn
         self.forward_nn = self._forward_hook_runner
-        self.test = self._test_hook_runner
+        # self.test = self._test_hook_runner
         self.use_assess = use_assess
 
     @property
@@ -561,35 +558,34 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
             self._lmode = lmode
         return self
 
-    @abstractmethod
-    def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
-        """Method to assess the output of the machine
+    # @abstractmethod
+    # def assess_y(self, y: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+    #     """Method to assess the output of the machine
 
-        Args:
-            y (IO): The output
-            t (IO): The target
-            reduction_override (str, optional): The override on the reduction if needed. Defaults to None.
+    #     Args:
+    #         y (IO): The output
+    #         t (IO): The target
+    #         reduction_override (str, optional): The override on the reduction if needed. Defaults to None.
 
-        Returns:
-            torch.Tensor: the assessment
-        """
-        pass
+    #     Returns:
+    #         torch.Tensor: the assessment
+    #     """
+    #     pass
 
-    def assess(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
-        """Method to assess the input of the LearningMachine
+    # def assess(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+    #     """Method to assess the input of the LearningMachine
 
-        Args:
-            x (IO): The input
-            t (IO): The target
-            reduction_override (str, optional): An override on the reduction. Defaults to None.
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The target
+    #         reduction_override (str, optional): An override on the reduction. Defaults to None.
 
-        Returns:
-            torch.Tensor: The assessment
-        """
-        y = self.forward_io(x, State(), reduction_override)
-        return self.assess_y(y, t, reduction_override)
+    #     Returns:
+    #         torch.Tensor: The assessment
+    #     """
+    #     y = self.forward_io(x, State(), reduction_override)
+    #     return self.assess_y(y, t, reduction_override)
 
-    @abstractmethod
     def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the parameters of the learning machine
 
@@ -610,7 +606,6 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         """
         pass
 
-    @abstractmethod
     def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
         """Update the value of x to get the target the target for the incoming machine
 
@@ -622,7 +617,7 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         Returns:
             IO: The updated input
         """
-        pass
+        return x.clone()
 
     def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
         """Add hook to call after forward
@@ -633,41 +628,41 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         self._y_hooks.append(hook)
         return self
 
-    def learner_hook(
-        self, hook: LearnerPostHook, learn: bool = True, test: bool = True
-    ) -> "LearningMachine":
-        """Add hook to call after learn
+    # def learner_hook(
+    #     self, hook: LearnerPostHook, learn: bool = True, test: bool = True
+    # ) -> "LearningMachine":
+    #     """Add hook to call after learn
 
-        Args:
-            hook (StepXHook): The hook to add
-        """
-        if learn:
-            self._learn_posthooks.append(hook)
-        if test:
-            self._test_posthooks.append(hook)
-        return self
+    #     Args:
+    #         hook (StepXHook): The hook to add
+    #     """
+    #     if learn:
+    #         self._learn_posthooks.append(hook)
+    #     if test:
+    #         self._test_posthooks.append(hook)
+    #     return self
 
-    def _learn_hook_runner(
-        self,
-        x: IO,
-        t: IO,
-        get_y: bool=False
-    ):
-        """Call step wrapped with the hooks
+    # def _learn_hook_runner(
+    #     self,
+    #     x: IO,
+    #     t: IO,
+    #     get_y: bool=False
+    # ):
+    #     """Call step wrapped with the hooks
 
-        Args:
-            x (IO): the incoming IO
-            t (IO): The target IO
-        """
-        assessment, y = self._base_learn(
-            x, t, get_y=True
-        )
+    #     Args:
+    #         x (IO): the incoming IO
+    #         t (IO): The target IO
+    #     """
+    #     assessment, y = self._base_learn(
+    #         x, t, get_y=True
+    #     )
 
-        for posthook in self._learn_posthooks:
-            posthook(x, t, y, assessment)
-        if get_y:
-            return assessment, y
-        return assessment
+    #     for posthook in self._learn_posthooks:
+    #         posthook(x, t, y, assessment)
+    #     if get_y:
+    #         return assessment, y
+    #     return assessment
 
     def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
         """
@@ -680,26 +675,26 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
             y = hook(self, x, y, state)
         return y
 
-    def _test_hook_runner(
-        self,
-        x: IO,
-        t: IO,
-        get_y: bool=False
-    ):
-        """Call step wrapped with the hooks
+    # def _test_hook_runner(
+    #     self,
+    #     x: IO,
+    #     t: IO,
+    #     get_y: bool=False
+    # ):
+    #     """Call step wrapped with the hooks
 
-        Args:
-            x (IO): the incoming IO
-            t (IO): The target IO
-        """
-        assessment, y = self._base_test(x, t, get_y=True)
+    #     Args:
+    #         x (IO): the incoming IO
+    #         t (IO): The target IO
+    #     """
+    #     assessment, y = self._base_test(x, t, get_y=True)
 
-        for posthook in self._test_posthooks:
-            posthook(x, t, y, assessment)
+    #     for posthook in self._test_posthooks:
+    #         posthook(x, t, y, assessment)
 
-        if get_y:
-            return assessment, y
-        return assessment
+    #     if get_y:
+    #         return assessment, y
+    #     return assessment
 
     @abstractmethod
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
@@ -734,59 +729,59 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
             return y.detach()
         return y
     
-    def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
-        """Update the parameters of the learner. The effects will differ based on the learning mode
+    # def learn(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
+    #     """Update the parameters of the learner. The effects will differ based on the learning mode
 
-        Args:
-            x (IO): The input
-            t (IO): The output
-            get_y (bool, optional): Whether to get y. Defaults to False.
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The output
+    #         get_y (bool, optional): Whether to get y. Defaults to False.
 
-        Returns:
-            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or the assessment and y
-        """
+    #     Returns:
+    #         typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or the assessment and y
+    #     """
 
-        if self.use_assess:
-            y = self(*x, **kwargs)
-            if not isinstance(y, typing.Tuple):
-                y = (y,)
-            y = IO(y)
-            assessment = self.assess_y(y, t)
-            assessment.backward()
-        else:
-            state = State()
-            y = self.forward_io(x, state, **kwargs)
-            assessment = self.assess_y(y, t)
-            self.accumulate(x, t, state, **kwargs)
-            if self.lmode == LMode.WithStep or self.lmode == LMode.StepPriority:
-                self.step(x, t, state, **kwargs)
+    #     if self.use_assess:
+    #         y = self(*x, **kwargs)
+    #         if not isinstance(y, typing.Tuple):
+    #             y = (y,)
+    #         y = IO(y)
+    #         assessment = self.assess_y(y, t)
+    #         assessment.backward()
+    #     else:
+    #         state = State()
+    #         y = self.forward_io(x, state, **kwargs)
+    #         assessment = self.assess_y(y, t)
+    #         self.accumulate(x, t, state, **kwargs)
+    #         if self.lmode == LMode.WithStep or self.lmode == LMode.StepPriority:
+    #             self.step(x, t, state, **kwargs)
 
-        if get_y:
-            return assessment, y
-        return assessment
+    #     if get_y:
+    #         return assessment, y
+    #     return assessment
 
-    def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
-        """Test the learner
+    # def test(self, x: IO, t: IO, get_y: bool=False, **kwargs) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
+    #     """Test the learner
 
-        Args:
-            x (IO): The input
-            t (IO): The target
-            get_y (bool, optional): Whether to get the output. Defaults to False.
+    #     Args:
+    #         x (IO): The input
+    #         t (IO): The target
+    #         get_y (bool, optional): Whether to get the output. Defaults to False.
 
-        Returns:
-            typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or both the assessment and y
-        """
+    #     Returns:
+    #         typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]: The assessment or both the assessment and y
+    #     """
 
-        state = State()
-        y = self.forward_io(x, state, **kwargs)
+    #     state = State()
+    #     y = self.forward_io(x, state, **kwargs)
 
-        # if not isinstance(y, typing.Tuple):
-        #     y = (y,)
-        # y = IO(y)
-        assessment = self.assess_y(y, t)
-        if get_y:
-            return assessment, y
-        return assessment
+    #     # if not isinstance(y, typing.Tuple):
+    #     #     y = (y,)
+    #     # y = IO(y)
+    #     assessment = self.assess_y(y, t)
+    #     if get_y:
+    #         return assessment, y
+    #     return assessment
 
     def forward(
         self, *x, **kwargs

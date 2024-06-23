@@ -16,11 +16,11 @@ class BinaryClassifierLearner(Learner, Tester, Classifier):
   def classify(self, x):
       # classify
 
-  def learn(self, x, t):
-      # update parameters of network
+#   def learn(self, x, t):
+#       # update parameters of network
     
-  def test(self, x, t):
-      # evaluate the ntwork
+#   def test(self, x, t):
+#       # evaluate the ntwork
     
   def forward(self, x):
       # standard forward method

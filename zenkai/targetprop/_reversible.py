@@ -20,6 +20,7 @@ from ..kaku._lm2 import (
 
 )
 
+
 class ReversibleMachine(LearningMachine):
     """Machine that executes a reverse operation to update x"""
 
@@ -40,8 +41,8 @@ class ReversibleMachine(LearningMachine):
         self.reversible = reversible
         self.objective = objective
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        return self.objective.assess(y, t, reduction_override)
+    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    #     return self.objective.assess(y, t, reduction_override)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x

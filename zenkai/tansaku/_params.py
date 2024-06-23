@@ -82,6 +82,7 @@ def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torc
     for p in param_utils.get_p(obj):
 
         end = start + p[0].numel()
+        print(p.shape, vec.shape, start, end)
         # Assume that the first dimension is the
         # population dimension
         cur_vec = vec[:,start:end]
@@ -108,6 +109,7 @@ def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         obj (PObj): The parameter object
         vec (torch.Tensor): The gradient vec
     """
+
     for p, cur_vec in align_vec(obj, vec):
         param_utils.acc_pvec(p, cur_vec)
 

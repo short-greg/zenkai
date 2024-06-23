@@ -107,11 +107,11 @@ class MyMultilayerLearner(LearningMachine):
         self.add_step(StepXDep(self, 't1'))
         self.add_step_x(ForwardDep(self, 'y1'))
 
-    def assess_y(
-        self, y: IO, t: IO, reduction_override: str=None
-    ) -> zenkai.AssessmentDict:
-        # assess_y evaluates the output of the learning machine
-        return self.layer2.assess_y(y, t)
+    # def assess_y(
+    #     self, y: IO, t: IO, reduction_override: str=None
+    # ) -> zenkai.AssessmentDict:
+    #     # assess_y evaluates the output of the learning machine
+    #     return self.layer2.assess_y(y, t)
 
     def step(
         self, x: IO, t: IO, state: State, **kwargs

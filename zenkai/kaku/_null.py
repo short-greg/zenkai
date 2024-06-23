@@ -31,19 +31,19 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
         super().__init__()
         self.criterion = criterion or NNLoss("MSELoss")
 
-    def assess_y(self, y: IO, t: IO, state: State, reduction_override: str = None) -> torch.Tensor:
-        """Assess the output
+    # def assess_y(self, y: IO, t: IO, state: State, reduction_override: str = None) -> torch.Tensor:
+    #     """Assess the output
 
-        Args:
-            y (IO): The output
-            t (IO): The target
-            state (State): The learning state
-            reduction_override (str, optional): Defaults to None.
+    #     Args:
+    #         y (IO): The output
+    #         t (IO): The target
+    #         state (State): The learning state
+    #         reduction_override (str, optional): Defaults to None.
 
-        Returns:
-            torch.Tensor: _description_
-        """
-        return self.criterion.assess(y, t, reduction_override)
+    #     Returns:
+    #         torch.Tensor: _description_
+    #     """
+    #     return self.criterion.assess(y, t, reduction_override)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         """Does nothing as it is a "null learner"

@@ -12,14 +12,11 @@ class GradLM(_lm2.LearningMachine):
         )
         self.optim = torch.optim.Adam([self.w])
 
-    def assess_y(self, y: _lm2.IO, t: _lm2.IO, override: str = None) -> torch.Tensor:
-        return (y[0] - t[0]).pow(2).mean()
+    # def assess_y(self, y: _lm2.IO, t: _lm2.IO, override: str = None) -> torch.Tensor:
+    #     return (y[0] - t[0]).pow(2).mean()
 
     def accumulate(self, x: _lm2.IO, t: _lm2.IO, state: _lm2.State, **kwargs):
         
-        # x = torch.randn_like(x[0])
-        # t = torch.randn_like(t[0])
-        # x = x[0]
         t = t[0]
         (state._y[0] - t[0]).pow(2).sum().backward()
 
@@ -96,35 +93,35 @@ class TestLM:
         assert (mod.w.grad is not None)
         assert (mod2.w.grad is not None)
 
-    def test_learn_updates_the_weights(self):
+    # def test_learn_updates_the_weights(self):
 
-        x = torch.rand(4, 2)
-        mod = GradLM()
-        mod.lmode_(_lm2.LMode.WithStep)
-        before = mod.w.clone()
-        assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
-        assert (mod.w != before).any()
-        assert isinstance(assessment, torch.Tensor)
+    #     x = torch.rand(4, 2)
+    #     mod = GradLM()
+    #     mod.lmode_(_lm2.LMode.WithStep)
+    #     before = mod.w.clone()
+    #     assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+    #     assert (mod.w != before).any()
+    #     assert isinstance(assessment, torch.Tensor)
 
-    def test_learn_updates_the_weights_with_step_priority(self):
+    # def test_learn_updates_the_weights_with_step_priority(self):
 
-        x = torch.rand(4, 2)
-        mod = GradLM()
-        mod.lmode_(_lm2.LMode.StepPriority)
-        before = mod.w.clone()
-        assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
-        assert (mod.w != before).any()
-        assert isinstance(assessment, torch.Tensor)
+    #     x = torch.rand(4, 2)
+    #     mod = GradLM()
+    #     mod.lmode_(_lm2.LMode.StepPriority)
+    #     before = mod.w.clone()
+    #     assessment = mod.learn(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+    #     assert (mod.w != before).any()
+    #     assert isinstance(assessment, torch.Tensor)
 
-    def test_test_does_not_update_weights_and_gets_assessment(self):
+    # def test_test_does_not_update_weights_and_gets_assessment(self):
 
-        x = torch.rand(4, 2)
-        mod = GradLM()
-        mod.lmode_(_lm2.LMode.WithStep)
-        before = mod.w.clone()
-        assessment = mod.test(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
-        assert (mod.w == before).all()
-        assert isinstance(assessment, torch.Tensor)
+    #     x = torch.rand(4, 2)
+    #     mod = GradLM()
+    #     mod.lmode_(_lm2.LMode.WithStep)
+    #     before = mod.w.clone()
+    #     assessment = mod.test(_lm2.IO([x]), _lm2.IO([torch.rand(4, 4)]))
+    #     assert (mod.w == before).all()
+    #     assert isinstance(assessment, torch.Tensor)
 
     def test_step_updates_the_weights_after_acc(self):
 

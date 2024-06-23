@@ -263,8 +263,8 @@ class LeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        return self._loss.assess(y, t, reduction_override=reduction_override)
+    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    #     return self._loss.assess(y, t, reduction_override=reduction_override)
 
     def step(self, x: IO, t: IO, state: State):
         self._step_theta.step(x, t, state)
@@ -320,10 +320,10 @@ class GradLeastSquaresLearner(LearningMachine):
             self, learn_criterion=NNLoss('MSELoss'), optimf=optim_factory
         )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        assessment = self._loss.assess(
-            y, t, reduction_override=reduction_override)
-        return assessment
+    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    #     assessment = self._loss.assess(
+    #         y, t, reduction_override=reduction_override)
+    #     return assessment
 
     def accumulate(self, x: IO, t: IO, state: State):
         self._step_theta.accumulate(x, t, state.sub('least'), y=state._y)

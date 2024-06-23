@@ -49,8 +49,8 @@ class TPLayerLearner(LearningMachine):
         self.reverse_step_theta = True
         self.cat_x = cat_x
 
-    def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
-        return self._forward_learner.assess_y(x, t, reduction_override)
+    # def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
+    #     return self._forward_learner.assess_y(x, t, reduction_override)
 
     @property
     def forward_learner(self) -> LearningMachine:

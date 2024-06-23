@@ -37,14 +37,14 @@ class THGradLearnerT2(_grad.GradIdxLearner):
 
 class TestGradLearner1:
 
-    def test_assess_y_uses_correct_reduction(self):
+    # def test_assess_y_uses_correct_reduction(self):
 
-        learner = THGradLearnerT1(2, 3)
-        y = IO([torch.rand(2, 3)])
-        t = IO([torch.rand(2, 3)])
-        result = learner.assess_y(y, t, "sum")
-        target = nn.MSELoss(reduction="sum")(y.f, t.f)
-        assert result.item() == target.item()
+    #     learner = THGradLearnerT1(2, 3)
+    #     y = IO([torch.rand(2, 3)])
+    #     t = IO([torch.rand(2, 3)])
+    #     result = learner.assess_y(y, t, "sum")
+    #     target = nn.MSELoss(reduction="sum")(y.f, t.f)
+    #     assert result.item() == target.item()
 
     def test_forward_does_not_detach_y(self):
 
@@ -90,14 +90,14 @@ class TestGradLearner1:
 
 class TestTHGradLoopLearner:
 
-    def test_assess_y_uses_correct_reduction(self):
+    # def test_assess_y_uses_correct_reduction(self):
 
-        learner = THGradLearnerT2(2, 3)
-        y = iou(torch.rand(2, 3))
-        t = iou(torch.rand(2, 3))
-        result = learner.assess_y(y, t, "sum")
-        target = nn.MSELoss(reduction="sum")(y.f, t.f)
-        assert result.item() == target.item()
+    #     learner = THGradLearnerT2(2, 3)
+    #     y = iou(torch.rand(2, 3))
+    #     t = iou(torch.rand(2, 3))
+    #     result = learner.assess_y(y, t, "sum")
+    #     target = nn.MSELoss(reduction="sum")(y.f, t.f)
+    #     assert result.item() == target.item()
 
     def test_step_x_updates_x(self):
         torch.manual_seed(1)

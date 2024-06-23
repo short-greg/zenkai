@@ -55,7 +55,7 @@ class PopModule(nn.Module, ABC):
         
         module = self.spawn(None)
         vec = _params.to_pvec(self, self._n_members)
-        _params.set_pvec(module, vec.mean(dim=0))
+        base_params.set_pvec(module, vec.mean(dim=0))
         return module
 
     def to_pop(self) -> Self:

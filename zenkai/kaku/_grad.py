@@ -138,22 +138,22 @@ class GradLearner(LearningMachine):
         self._learn_criterion = learn_criterion or NNLoss(
             'MSELoss', 'sum', 0.5
         )
-        self._criterion = criterion or NNLoss(
-            'MSELoss'
-        )
+        # self._criterion = criterion or NNLoss(
+        #     'MSELoss'
+        # )
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        """Assess the output of the learner
+    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    #     """Assess the output of the learner
 
-        Args:
-            y (IO): The output
-            t (IO): The target
-            reduction_override (str, optional): Whether to override the reduction. Defaults to None.
+    #     Args:
+    #         y (IO): The output
+    #         t (IO): The target
+    #         reduction_override (str, optional): Whether to override the reduction. Defaults to None.
 
-        Returns:
-            torch.Tensor: the assessment
-        """
-        return self._criterion.assess(y, t, reduction_override)
+    #     Returns:
+    #         torch.Tensor: the assessment
+    #     """
+    #     return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
@@ -210,7 +210,6 @@ class GradLearner(LearningMachine):
         Returns:
             torch.Tensor: The output of the module
         """
-
         y = (
             self._module(x[0]) 
             if self._module is not None else x[0]
@@ -246,18 +245,18 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._learn_criterion = learn_criterion or NNLoss('MSELoss', 'sum', weight=0.5)
         self._criterion = criterion or NNLoss('MSELoss')
 
-    def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-        """Assess the output
+    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
+    #     """Assess the output
 
-        Args:
-            y (IO): The output
-            t (IO): The target
-            reduction_override (str, optional): Defaults to None.
+    #     Args:
+    #         y (IO): The output
+    #         t (IO): The target
+    #         reduction_override (str, optional): Defaults to None.
 
-        Returns:
-            torch.Tensor: The assessment
-        """
-        return self._criterion.assess(y, t, reduction_override)
+    #     Returns:
+    #         torch.Tensor: The assessment
+    #     """
+    #     return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
