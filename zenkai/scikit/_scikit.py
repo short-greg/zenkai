@@ -45,19 +45,6 @@ class ScikitMachine(LearningMachine):
         self._step_x = step_x
         self._partial = partial
 
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     """Assess the output
-
-    #     Args:
-    #         y (IO): The output
-    #         t (IO): The target
-    #         reduction_override (str, optional): The reduction use if needed. Defaults to None.
-
-    #     Returns:
-    #         torch.Tensor: The assessment
-    #     """
-    #     return self._criterion.assess(y, t, reduction_override)
-
     def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the estimator
 
@@ -207,19 +194,6 @@ class ScikitMultiMachine(LearningMachine, FeatureIdxStepX, FeatureIdxStepTheta):
         self._step_x = step_x
         self._partial = partial
         self._preprocessor = preprocessor
-
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     """Assess the output
-
-    #     Args:
-    #         y (IO): The output
-    #         t (IO): The target
-    #         reduction_override (str, optional): The reduction to override with. Defaults to None.
-
-    #     Returns:
-    #         torch.Tensor: The assessment
-    #     """
-    #     return self._criterion.assess(y, t, reduction_override)
 
     def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
         """Update the estimator

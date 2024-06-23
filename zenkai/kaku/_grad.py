@@ -66,8 +66,6 @@ class GradStepTheta(StepTheta):
         
         if isinstance(self.learn_criterion, XCriterion):
             assessment = self.learn_criterion.assess(x, y, t)
-        if isinstance(self.learn_criterion, LearningMachine):
-            assessment = self.learn_criterion.assess_y(y, t)
         else:
             assessment = self.learn_criterion.assess(y, t)
         assessment.backward()
@@ -138,22 +136,6 @@ class GradLearner(LearningMachine):
         self._learn_criterion = learn_criterion or NNLoss(
             'MSELoss', 'sum', 0.5
         )
-        # self._criterion = criterion or NNLoss(
-        #     'MSELoss'
-        # )
-
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     """Assess the output of the learner
-
-    #     Args:
-    #         y (IO): The output
-    #         t (IO): The target
-    #         reduction_override (str, optional): Whether to override the reduction. Defaults to None.
-
-    #     Returns:
-    #         torch.Tensor: the assessment
-    #     """
-    #     return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None
@@ -244,19 +226,6 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._optim.prep_theta(self._module)
         self._learn_criterion = learn_criterion or NNLoss('MSELoss', 'sum', weight=0.5)
         self._criterion = criterion or NNLoss('MSELoss')
-
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     """Assess the output
-
-    #     Args:
-    #         y (IO): The output
-    #         t (IO): The target
-    #         reduction_override (str, optional): Defaults to None.
-
-    #     Returns:
-    #         torch.Tensor: The assessment
-    #     """
-    #     return self._criterion.assess(y, t, reduction_override)
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None

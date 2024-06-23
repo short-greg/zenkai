@@ -93,6 +93,7 @@ class TestLM:
         assert (mod.w.grad is not None)
         assert (mod2.w.grad is not None)
 
+    # TODO: Update not to use this
     # def test_learn_updates_the_weights(self):
 
     #     x = torch.rand(4, 2)
