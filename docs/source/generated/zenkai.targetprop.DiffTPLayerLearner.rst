@@ -1,4 +1,4 @@
-﻿zenkai.targetprop.DiffTPLayerLearner
+zenkai.targetprop.DiffTPLayerLearner
 ====================================
 
 .. currentmodule:: zenkai.targetprop

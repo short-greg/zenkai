@@ -8,7 +8,7 @@ from ._assess import (
     Criterion,
     XCriterion,
     AssessmentLog, 
-    reduce_assessment,
+    reduce,
     zip_assess,
     MulticlassLoss
 )

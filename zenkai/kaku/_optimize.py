@@ -24,7 +24,7 @@ class NullOptim(torch.optim.Optimizer):
     """'Optim' that does not update the parameters"""
 
     def __init__(self, parameters):
-        """initializer
+        """Create a NullOptimizer to use if you do not need optimize
 
         Args:
             parameters: the parameters to not 'optimize'
@@ -32,15 +32,29 @@ class NullOptim(torch.optim.Optimizer):
         self.state = {}
 
     def step(self):
+        """Null optimizer so does nothing
+        """
         pass
 
     def state_dict(self) -> dict:
+        """Get the state dictionary - the optimizer is null so it is empty
+
+        Returns:
+            dict: An empty dictionary
+        """
         return {}
 
     def load_state_dict(self, state_dict: dict) -> None:
+        """Load the state dictionary from state_dict. Since it is null this does nothing
+
+        Args:
+            state_dict (dict): The state dictionary to load
+        """
         pass
 
     def zero_grad(self) -> None:
+        """
+        """
         pass
 
 
@@ -100,11 +114,10 @@ class OptimFactory(object):
         """Create a comp optimizer 
 
         Args:
-            params: _description_
-            x_lr (float, optional): _description_. Defaults to 1..
+            x_lr (float, optional): The learning rate for x. Defaults to 1..
 
         Returns:
-            CompOptim: _description_
+            CompOptim: An optim to wrap both updating x and theta
         """
         return CompOptim(
             self, x_lr
@@ -167,7 +180,6 @@ class CompOptim(object):
         Returns:
             IO: The updated x
         """
-
         if isinstance(self.x_optimf, OptimFactory):
             optim = state.optim
             optim.step()
@@ -298,10 +310,7 @@ class ParamFilter(optim.Optimizer):
         """
         with torch.no_grad():
             for p_i, mp_i in zip(p, self.filter_params):
-                # if isinstance(p_i, nn.parameter.Parameter):
                 p_i.copy_(mp_i)
-                # else:
-                #     p_i[:] = mp_i.data
 
     def step_filter(self):
         """Updates the parameters in the base state"""
@@ -311,10 +320,7 @@ class ParamFilter(optim.Optimizer):
 
             with torch.no_grad():
                 for p_i, mp_i in zip(self.active_params, self.filter_params):
-                    # if isinstance(p_i, nn.parameter.Parameter):
                     mp_i.copy_(p_i)
-                    # else:
-                    #     mp_i.data[:] = p_i
         else:
             for active, meta in zip(self.active_params, self.filter_params):
                 loss = (0.5 * (meta - active.detach()) ** 2).sum()
@@ -362,7 +368,7 @@ class _OptimF:
 
 
 class Fit(ABC):
-    """Create an optimizer"""
+    """An optimizer to be used for finding the optimal fit"""
 
     @abstractmethod
     def optim_iter(

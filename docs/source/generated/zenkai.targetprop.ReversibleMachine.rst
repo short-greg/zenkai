@@ -1,4 +1,4 @@
-﻿zenkai.targetprop.ReversibleMachine
+zenkai.targetprop.ReversibleMachine
 ===================================
 
 .. currentmodule:: zenkai.targetprop

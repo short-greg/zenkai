@@ -10,7 +10,10 @@ import torch.nn as nn
 # local
 from ._selection import ToProb, Selection, select_from_prob
 
+
 class ParentSelector(nn.Module):
+    """A Selector for choosing parents for the next generation
+    """
 
     def __init__(self, n_pairs: int, to_prob: ToProb, pop_dim: int=0):
         """
@@ -19,14 +22,13 @@ class ParentSelector(nn.Module):
             to_prob (ToProb): The probability calculator
             pop_dim (int, optional): The dimension population dimension. Defaults to 0.
         """
-
         super().__init__()
         self._n_pairs = n_pairs
         self.to_prob = to_prob
         self._pop_dim = pop_dim
 
     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> typing.Tuple[Selection, Selection]:
-        """
+        """Choose parents to select
 
         Args:
             assessment (torch.Tensor): The assessment to use for selection
@@ -127,8 +129,8 @@ def hard_crossover(x1: torch.Tensor, x2: torch.Tensor, x1_thresh: float=0.5, dim
     """Choose either x1 or x2
 
     Args:
-        x1 (torch.Tensor): _description_
-        x2 (torch.Tensor): _description_
+        x1 (torch.Tensor): The first parent
+        x2 (torch.Tensor): The second parent
         x1_thresh (float, optional): The preference for x1. The higher the threshold the more likely this parent is chosen. If it is 1.0, it is always chosen. If it is 0.0 it is never chosen. Defaults to 0.5.
         dim (int, optional): The dimension to crossover. If none, all elements will be crossed over. Defaults to None.
 
@@ -155,8 +157,8 @@ def cross_pairs(
     """Cross over multiple pairs
 
     Args:
-        x1 (typing.Iterable[torch.Tensor]): The set of tensors for parent 1
-        x2 (typing.Iterable[torch.Tensor]): The set of tensors for x2
+        x1 (torch.Tensor): The first parent
+        x2 (torch.Tensor): The second parent
         f (typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]): The crossover function
 
     Returns:

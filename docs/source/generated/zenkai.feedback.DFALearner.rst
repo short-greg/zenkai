@@ -1,4 +1,4 @@
-﻿zenkai.feedback.DFALearner
+zenkai.feedback.DFALearner
 ==========================
 
 .. currentmodule:: zenkai.feedback

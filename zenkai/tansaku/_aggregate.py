@@ -104,7 +104,6 @@ def normalize(
     Returns:
         torch.Tensor: The normalized tensor
     """
-
     mean = x.mean(dim, keepdim=True) if mean is None else mean
     std = x.std(dim, keepdim=True) if std is None else std
 

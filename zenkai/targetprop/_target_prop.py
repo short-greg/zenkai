@@ -1,18 +1,15 @@
 import typing
-from typing_extensions import Self
 
 # 3rd Party
 import torch
 import torch.nn as nn
-from dataclasses import dataclass
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 # Local
 from ..kaku import GradIdxLearner, CompOptim, GradLearner
 
 from ..kaku import (
-    Criterion,
-    NNLoss
+    Criterion
 )
 from ..kaku._state import State
 from ..kaku._io2 import (
@@ -21,55 +18,61 @@ from ..kaku._io2 import (
 from ..kaku._lm2 import (
     LearningMachine,
     StepTheta as StepTheta,
-    StepX as StepX,
-    LMode
+    StepX as StepX
 )
 
 
 class TPLayerLearner(LearningMachine):
-    """
+    """A target prop learner for one layer
     """
 
     def __init__(
         self, forward_learner: LearningMachine, reverse_learner: LearningMachine, cat_x: bool=True
     ) -> None:
-        """
-        Create a target prop learner for doing target propagation
+        """Create a target propagation learner
 
         Args:
-
+            forward_learner (LearningMachine): The forward learner
+            reverse_learner (LearningMachine): The reverse learner
+            cat_x (bool, optional): Whether to cat x. Defaults to True.
         """
         super().__init__()
         self.reverse_update = True
         self.forward_update = True
         self._forward_learner = forward_learner
         self._reverse_learner = reverse_learner
-            
         self.forward_step_theta = True
         self.reverse_step_theta = True
         self.cat_x = cat_x
 
-    # def assess_y(self, x: IO, t: IO, reduction_override: str=None) -> torch.Tensor:
-    #     return self._forward_learner.assess_y(x, t, reduction_override)
-
     @property
     def forward_learner(self) -> LearningMachine:
+        """The forward learner
+
+        Returns:
+            LearningMachine: The learner
+        """
         return self._forward_learner
     
     @property
     def reverse_learner(self) -> LearningMachine:
+        """The reverse learner
+
+        Returns:
+            LearningMachine: The learner
+        """
         return self._reverse_learner
 
-    def lmode_(self, lmode: LMode, cascade: bool=True) -> Self:
-
-        self._lmode = lmode
-        if cascade:
-            self._reverse_learner.lmode_(lmode)
-            self._forward_learner.lmode_(lmode)
-        return self
-
     def rev_x(self, x: IO, y: IO) -> IO:
+        """Reverse the output
 
+        Args:
+            x (IO): The input
+            y (IO): The output
+
+        Returns:
+            IO: The output
+        """
         if self.cat_x:
             return iou([x.f, y.f])
         return y
@@ -119,7 +122,15 @@ class TPLayerLearner(LearningMachine):
         return self._reverse_learner.forward_io(x, state.sub('reverse'))
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
-        
+        """
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: The output
+        """
         y = self._forward_learner.forward_io(
             x, state.sub('forward'), False
         )
@@ -129,17 +140,16 @@ class TPLayerLearner(LearningMachine):
 
 
 class TPForwardLearner(LearningMachine):
-    """
+    """A TargetProp learner for forward model
     """
 
     def __init__(
         self, reverse: 'Rec'
     ) -> None:
-        """
-        Create a target prop learner for doing target propagation
+        """Create a forward target prop learner
 
         Args:
-
+            reverse (Rec): The reverse model
         """
         super().__init__()
         self._reverse = reverse
@@ -162,17 +172,19 @@ class TPForwardLearner(LearningMachine):
 # In general a grad learner
 # difference is that i need to use both yf and t for
 # backpropagation... I'll update the accumulate function
+
 class TPReverseLearner(GradLearner):
-    """
+    """A TargetProp learner for reverse model
     """
     def __init__(
         self, reverse: 'Rec', weight_t: float=0.5, weight_yf: float=0.5
     ) -> None:
-        """
-        Create a target prop learner for doing target propagation
+        """_summary_
 
         Args:
-
+            reverse (Rec): The reverse model
+            weight_t (float, optional): The amount to weight the target. Defaults to 0.5.
+            weight_yf (float, optional): The amount to weight yf. Defaults to 0.5.
         """
         super().__init__()
         self._reverse = reverse
@@ -180,7 +192,14 @@ class TPReverseLearner(GradLearner):
         self._weight_yf = weight_yf
 
     def accumulate(self, x: IO, t: IO, state: State, yf: IO=None, **kwargs):
-        
+        """Accumulate the forward and reverse models
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+            yf (IO, optional): The output to use. Defaults to None.
+        """
         assessment = self.criterion.assess(state._y, t)
         if yf is not None:
             assessment = self._weight_t * assessment + self._weight_yf * self.criterion.assess(state._y, yf)
@@ -188,22 +207,55 @@ class TPReverseLearner(GradLearner):
 
     @abstractmethod
     def forward_nn(self, x: IO, state: State, yf: IO=None, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        """The output of the forward model
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+            yf (IO, optional): The output. Defaults to None.
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: The output
+        """
         pass
 
 
-class Rec(nn.Module):
+class Rec(nn.Module, ABC):
+    """The base model for reconstruction
+    """
 
+    @abstractmethod
     def update_forward(self, x: IO, y: IO, t: IO):
+        """Update the parameters of the model
+
+        Args:
+            x (IO): The input
+            y (IO): The output
+            t (IO): The target
+        """
         pass
 
+    @abstractmethod
     def forward(self, x: IO, y: IO) -> torch.Tensor:
+        """Reconstruct the input
+
+        Args:
+            x (IO): The input
+            y (IO): The output
+
+        Returns:
+            torch.Tensor: _description_
+        """
         pass
 
 
 class LinearRec(Rec):
+    """Do a linear reconstruction
+    """
 
     def __init__(self, in_features: int, h: typing.List[int], out_features: int, act: typing.Union[typing.Callable, str]=None, norm: typing.Union[typing.Callable[[int], nn.Module], str]=None):
-        """
+        """Create a linear reconstruction model
+
         Args:
             in_features (int): The in features
             h (typing.List[int]): The hidden features
@@ -243,11 +295,21 @@ class LinearRec(Rec):
         return self(x, y)
 
     def forward(self, x: IO, y: IO) -> torch.Tensor:
+        """Reconstruct the input
 
+        Args:
+            x (IO): The input to reconstruct
+            y (IO): The output
+
+        Returns:
+            torch.Tensor: The reconstructed x
+        """
         return self.sequential(y.f)
 
 
 class LinearRecNoise(LinearRec):
+    """Reconstruct x with noise
+    """
     
     def __init__(
         self, in_features: int, h: typing.List[int], 
@@ -255,7 +317,8 @@ class LinearRecNoise(LinearRec):
         act: typing.Union[typing.Callable, str]=None, 
         norm: typing.Union[typing.Callable[[int], nn.Module], str]=None, weight: float=0.9
     ):
-        """
+        """Create a reconstruction
+
         Args:
             in_features (int): The in features
             h (typing.List[int]): The hidden features
@@ -362,7 +425,7 @@ def create_grad_target_prop(
         noise_weight (float, optional): If none it will use the non-noisy version. Defaults to None.
 
     Returns:
-        TargetPropLearner: The 
+        TargetPropLearner: The learner
     """
     
     if noise_weight is not None:

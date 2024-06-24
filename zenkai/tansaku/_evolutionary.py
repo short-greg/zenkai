@@ -10,7 +10,8 @@ from ._reshape import unsqueeze_to
 
 
 def es_dx(dw: torch.Tensor, assessment: torch.Tensor, assessment_ref: typing.Union[torch.Tensor, str] = 'mean', pop_dim: int=0) -> torch.Tensor:
-    """
+    """Use to calculate the change due to evolution strategy
+
     Args:
         dw (torch.Tensor): The displacement used for w
         assessment (torch.Tensor): The assessment for the population

@@ -29,7 +29,8 @@ from ..kaku._grad import GradStepTheta
 
 
 class LeastSquaresSolver(ABC):
-    """ """
+    """Create a solver using 
+    """
 
     @abstractmethod
     def solve(self, a: torch.Tensor, b: torch.Tensor):
@@ -40,7 +41,7 @@ class LeastSquaresStandardSolver(LeastSquaresSolver):
     """Solve least squares"""
 
     def __init__(self, bias: bool = False):
-        """initializer
+        """Create a least squares solver
 
         Args:
             bias (bool, optional): Whether there is a bias. Defaults to False.
@@ -81,7 +82,7 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
     """Solve least squares using ridge regression"""
 
     def __init__(self, lam: float = 1e-1, bias: bool = False):
-        """initializer
+        """Create a solver that will use ridge regression
 
         Args:
             lam (float, optional): The penalty on the regression. Defaults to 1e-1.
@@ -128,7 +129,7 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
 
 
 class LeastSquaresStepTheta(StepTheta):
-    """ """
+    """A StepTheta that uses """
 
     def __init__(
         self,
@@ -136,7 +137,7 @@ class LeastSquaresStepTheta(StepTheta):
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
         optimize_dw: bool = False,
     ):
-        """initializer
+        """Create a StepTheta that uses 
 
         Args:
             linear (nn.Linear): The linear model to optmize theta for
@@ -190,7 +191,7 @@ class LeastSquaresStepX(StepX):
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
         optimize_dx: bool = False,
     ):
-        """initializer
+        """Create a StepX that uses least squares
 
         Args:
             linear (nn.Linear): The linear model to use
@@ -245,7 +246,7 @@ class LeastSquaresLearner(LearningMachine):
         lam_theta: float = 1e-3,
         lam_x: float = 1e-4,
     ):
-        """initializer
+        """Create a learner to use gradient for the parameter update and least squares for the input update
 
         Args:
             in_features (int): The number of features into the linear model
@@ -263,24 +264,42 @@ class LeastSquaresLearner(LearningMachine):
             self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
 
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     return self._loss.assess(y, t, reduction_override=reduction_override)
-
     def step(self, x: IO, t: IO, state: State):
+        """Update the parameters using least squares
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         self._step_theta.step(x, t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """Update the input using least squares
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: Updated X
+        """
         return self._step_x.step_x(x, t, state)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+        """Use a linear function on x
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            typing.Union[typing.Tuple, typing.Any]: The linear 
+        """
         return iou(
             self._linear(x.f)
         )
-        # return super().forward_nn(x, state, **kwargs)
-
-    # def forward(self, x: IO, release: bool = True) -> IO:
-    #     x.freshen(False)
-    #     return IO(self._linear(x.f), detach=release)
 
 
 class GradLeastSquaresLearner(LearningMachine):
@@ -297,7 +316,7 @@ class GradLeastSquaresLearner(LearningMachine):
         loss: Criterion = None,
         lam_x: float = 1e-4,
     ):
-        """
+        """Create a learner to use gradient for the parameter update and least squares for the input update
 
         Args:
             in_features (int): The number of features into the linear model
@@ -320,20 +339,47 @@ class GradLeastSquaresLearner(LearningMachine):
             self, learn_criterion=NNLoss('MSELoss'), optimf=optim_factory
         )
 
-    # def assess_y(self, y: IO, t: IO, reduction_override: str = None) -> torch.Tensor:
-    #     assessment = self._loss.assess(
-    #         y, t, reduction_override=reduction_override)
-    #     return assessment
-
     def accumulate(self, x: IO, t: IO, state: State):
+        """Use least squares to update the weights
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
         self._step_theta.accumulate(x, t, state.sub('least'), y=state._y)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
+        """Use least squares to update x
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+
+        Returns:
+            IO: The updated x
+        """
         return self._step_x.step_x(x, t, state.sub('grad'))
 
     def forward_nn(self, x: IO, state: State) -> IO:
+        """Use the linear layer to output
+
+        Args:
+            x (IO): The input
+            state (State): The learning state
+
+        Returns:
+            IO: The output
+        """
         return self._linear(x.f)
 
     def step(self, x: IO, t: typing.Union[IO, None], state: State):
+        """Update the accumulated parameters using least squares
 
-        return self._step_theta.step(x, t, state.sub('least'), y=state._y)
+        Args:
+            x (IO): The input
+            t (typing.Union[IO, None]): The target
+            state (State): The learning state
+        """
+        self._step_theta.step(x, t, state.sub('least'), y=state._y)

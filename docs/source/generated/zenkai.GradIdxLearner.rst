@@ -1,4 +1,4 @@
-﻿zenkai.GradIdxLearner
+zenkai.GradIdxLearner
 =====================
 
 .. currentmodule:: zenkai

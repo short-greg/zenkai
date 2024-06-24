@@ -1,4 +1,4 @@
-﻿zenkai.targetprop.LeastSquaresLearner
+zenkai.targetprop.LeastSquaresLearner
 =====================================
 
 .. currentmodule:: zenkai.targetprop

@@ -117,7 +117,7 @@ class GradLearner(LearningMachine):
     """
 
     def __init__(
-        self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
+        self, module: nn.Module=None, optimf: CompOptim=None, 
         learn_criterion: typing.Union[XCriterion, Criterion]=None
     ):
         """Create a learner that backpropagates using Torch's grad functionality
@@ -125,7 +125,6 @@ class GradLearner(LearningMachine):
         Args:
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
             optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
-            criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
             learn_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
         """
         super().__init__()
@@ -209,7 +208,7 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
     """
 
     def __init__(
-        self, module: nn.Module=None, optimf: CompOptim=None, criterion: Criterion=None,
+        self, module: nn.Module=None, optimf: CompOptim=None, 
         learn_criterion: typing.Union[XCriterion, Criterion]=None
     ):
         """Create a learner that backpropagates using Torch's grad functionality and can be used with indices
@@ -217,7 +216,6 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         Args:
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
             optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
-            criterion (Criterion, optional): The default criterion to use for assessment. Defaults to None.
             learn_criterion (typing.Union[XCriterion, Criterion], optional): The criterion to use in backpropagation. Defaults to None.
         """
         super().__init__()
@@ -225,7 +223,6 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         self._optim = optimf if optimf is not None else CompOptim()
         self._optim.prep_theta(self._module)
         self._learn_criterion = learn_criterion or NNLoss('MSELoss', 'sum', weight=0.5)
-        self._criterion = criterion or NNLoss('MSELoss')
 
     def learn_assess(
         self, x: IO, y: IO, t: IO, reduction_override: str=None

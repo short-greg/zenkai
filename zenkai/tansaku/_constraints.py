@@ -12,8 +12,8 @@ from ..kaku import Criterion, impose, Reduction, IO, Constraint, Objective
 class NullConstraint(Constraint):
     """Defines a constraint that does not constrain any value"""
 
-    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
-        """
+    def forward(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        """It is a null constraint so no constraint will be imposed
 
         Returns:
             typing.Dict[str, torch.BoolTensor]: No Constraints
@@ -53,8 +53,8 @@ class ValueConstraint(Constraint):
         """
         return self._constraints
 
-    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
-        """
+    def forward(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+        """Determine the result of the constraint
 
         Returns:
             typing.Dict[str, torch.BoolTensor]:
@@ -92,6 +92,11 @@ class GT(ValueConstraint):
     """Place a constraint that the tensor must be greater than to a value"""
 
     def __init__(self, reduce_dim: bool = None, **constraints) -> None:
+        """Create a constraint to restrict values greater than a value
+
+        Args:
+            reduce_dim (bool, optional): The dimension to reduce on. Defaults to None.
+        """
 
         super().__init__(lambda x, c: x <= c, reduce_dim, **constraints)
 
@@ -100,7 +105,11 @@ class GTE(ValueConstraint):
     """Place a constraint that the tensor must be greater than or equal to a value"""
 
     def __init__(self, reduce_dim: bool = None, **constraints) -> None:
+        """Create a constraint to restrict values greater than or equal to a value
 
+        Args:
+            reduce_dim (bool, optional): The dimension to reduce on. Defaults to None.
+        """
         super().__init__(lambda x, c: x < c, reduce_dim, **constraints)
 
 
@@ -119,12 +128,12 @@ class FuncObjective(Objective):
 
         Args:
             f (typing.Callable[[typing.Any], torch.Tensor]): The function to maximize or minimize
-            constraint (Constraint, optional): _description_. Defaults to None.
-            penalty (float, optional): _description_. Defaults to torch.inf.
-            maximize (bool, optional): _description_. Defaults to False.
+            constraint (Constraint, optional): The constraint. Defaults to None.
+            penalty (float, optional): The penalty to set. Must be greater than or equal to 0. Defaults to torch.inf.
+            maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
 
         Raises:
-            ValueError: _description_
+            ValueError: If the penalty is less than 0
         """
         if penalty < 0:
             raise ValueError(
@@ -135,7 +144,7 @@ class FuncObjective(Objective):
         self._maximize = maximize
         self._penalty = penalty if maximize else -penalty
 
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+    def forward(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
         """Execute the objective with the specified reduction
 
         Args:
@@ -162,14 +171,14 @@ class CriterionObjective(Objective):
         super().__init__()
         self.criterion = criterion
 
-    def __call__(self, reduction: str, **kwargs) -> torch.Tensor:
-        """Ex
+    def forward(self, reduction: str, **kwargs) -> torch.Tensor:
+        """Execute an objective that uses a criterion
 
         Args:
-            reduction (str): _description_
+            reduction (str): The reduction to use
 
         Returns:
-            torch.Tensor: _description_
+            torch.Tensor: The assessment
         """
         x = IO(kwargs['x'])
         t = IO(kwargs['t'])
@@ -178,7 +187,7 @@ class CriterionObjective(Objective):
 # TODO: Decide what to do with this
 
 class NNLinearObjective(Objective):
-    """Create a
+    """Create an objective that uses an linear model
     """
 
     def __init__(
@@ -217,7 +226,7 @@ class NNLinearObjective(Objective):
         self._constraint = constraint or NullConstraint()
         self._penalty = penalty if self._criterion.maximize else -penalty
 
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+    def forward(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
         """Execute the objective with the specified reduction
 
         Args:
@@ -226,7 +235,6 @@ class NNLinearObjective(Objective):
         Returns:
             torch.Tensor: The assessment
         """
-
         with torch.no_grad():
             w = kwargs["w"]
             b = kwargs.get("b", [None] * len(w))

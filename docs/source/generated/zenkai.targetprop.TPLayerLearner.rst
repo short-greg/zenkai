@@ -1,4 +1,4 @@
-﻿zenkai.targetprop.TPLayerLearner
+zenkai.targetprop.TPLayerLearner
 ================================
 
 .. currentmodule:: zenkai.targetprop

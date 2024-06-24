@@ -71,7 +71,7 @@ def update_feature(
 def update_mean(
     cur: torch.Tensor, mean: torch.Tensor=None, dim: int=-1, weight: float=0.9
 ) -> torch.Tensor:
-    """Update the mean
+    """Update the mean for a population
 
     Args:
         cur (torch.Tensor): The cur value
@@ -80,7 +80,7 @@ def update_mean(
         weight (float, optional): The weight on the mean. Defaults to 0.9.
 
     Returns:
-        torch.Tensor: 
+        torch.Tensor: The updated mean
     """
     cur_mean = cur.mean(dim=dim, keepdim=True)
     if mean is None:
@@ -94,17 +94,17 @@ def update_mean(
 def update_var(
     cur: torch.Tensor, mean: torch.Tensor, var: torch.Tensor=None, dim: int=-1, weight: float=0.9
 ) -> torch.Tensor:
-    """Update the mean
+    """Update the variance for a population
 
     Args:
         cur (torch.Tensor): The cur value to update
         mean (torch.Tensor): The Current mean
         var (torch.Tensor): The Current variance
-        dim (int, optional): . Defaults to -1.
-        weight (float, optional): . Defaults to 0.9.
+        dim (int, optional): The dimension to compute the variance on. Defaults to -1.
+        weight (float, optional): The weight on the new tensor. Defaults to 0.9.
 
     Returns:
-        torch.Tensor: 
+        torch.Tensor: The updated variance
     """
     cur_var = ((cur - mean) ** 2).mean(dim=dim, keepdim=True) 
     if var is None:
@@ -118,7 +118,7 @@ def update_var(
 def update_momentum(
     cur_val: torch.Tensor, prev_val: torch.Tensor, momentum: torch.Tensor=None, a: float=0.9
 ) -> torch.Tensor:
-    """Update the momentum
+    """Update the momentum for a population
 
     Args:
         cur_val (torch.Tensor): The cur value of the value to calc momentum for

@@ -1,4 +1,4 @@
-﻿zenkai.GradLearner
+zenkai.GradLearner
 ==================
 
 .. currentmodule:: zenkai

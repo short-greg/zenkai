@@ -283,4 +283,3 @@ class AdaptFeature(nn.Module):
         return tuple(
             separate_feature(x_i, k) for x_i in x
         )
-        

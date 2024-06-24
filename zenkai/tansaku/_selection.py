@@ -104,6 +104,8 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
 
 
 class Selection(nn.Module):
+    """A class that represents a selection from an assessment to be used with population optimizers.
+    """
 
     def __init__(self, assessment: torch.Tensor, index: torch.LongTensor, n: int, k: int, dim: int=0):
         """Module that represents a selection from an index
@@ -181,7 +183,7 @@ class Selection(nn.Module):
     
     @property
     def n(self) -> int:
-        """
+        """Get the number of pairs to select
         Returns:
             int: The number of samples
         """
@@ -189,7 +191,7 @@ class Selection(nn.Module):
 
     @property
     def k(self) -> int:
-        """
+        """Get the number of parents to select
         Returns:
             int: The number to select
         """
@@ -205,7 +207,7 @@ class Selector(nn.Module, ABC):
         """Select the tensor to use
 
         Args:
-            assessment (torch.Tensor): Return the 
+            assessment (torch.Tensor): The assessment to use for selection
 
         Returns:
             Selection: The inputs

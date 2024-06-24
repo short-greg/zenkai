@@ -243,6 +243,15 @@ class Exploration(nn.Module):
 
     @abstractmethod
     def forward(self, x: torch.Tensor, noisy: torch.Tensor) -> torch.Tensor:
+        """Update x with the value to explore
+
+        Args:
+            x (torch.Tensor): The value to explore
+            noisy (torch.Tensor): The noisy value
+
+        Returns:
+            torch.Tensor: The noisy value
+        """
         pass
 
 
@@ -338,7 +347,7 @@ class ModuleNoise(nn.Module):
     """Use to add noise to the model that is dependent on the direction that the model is moving in"""
 
     def __init__(self, module_clone: nn.Module, n_instances: int, weight: float = 0.1):
-        """initializer
+        """Create a module that adds noise to a cloned module
 
         Args:
             module_clone (nn.Module): Clone of the model to add noise to
@@ -440,7 +449,7 @@ class EqualsAssessmentDist(AssessmentDist):
     or get the mean. Use for binary or disrete sets"""
 
     def __init__(self, equals_value):
-        """initializer
+        """Create a distribution based on whether the assessment equals a value. Use primarily for categorical or binary-valued tensors
 
         Args:
             equals_value: The value to get the distribution for

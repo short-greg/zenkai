@@ -115,16 +115,14 @@ class Reduction(Enum):
             if loss.dim() == 1:
                 return loss
             return loss.reshape(loss.size(0), -1).sum(dim=1, keepdim=keepdim)
-        # if self == self.none:
-        #     return loss
+
         raise ValueError(f"{self.value} cannot be reduced.")
 
 
-def reduce_assessment(
+def reduce(
     assessment: torch.Tensor,
-    maximize: bool = False,
     reduction: str = "mean",
-    dim: int = -1,
+    dim: int = None,
 ) -> torch.Tensor:
     """Use to reduce a tensor given a specified reduction
 
@@ -407,7 +405,7 @@ class AssessmentLog(object):
         return self._log
 
     def clear(self, id=None, sub_id=None):
-        """
+        """Clear the assessment log
 
         Args:
             id (typing.Any, optional): The id of the object. Defaults to None.
@@ -420,11 +418,11 @@ class AssessmentLog(object):
         self._log[id][sub_id].clear()
 
     def as_assessment_dict(self) -> typing.Dict[str, torch.Tensor]:
-        """
+        """Convert the AssessmentLog to a dictionary
+
         Returns:
             typing.Dict[str, torch.Tensor]: The assessment log converted to a dictionary of assessments
         """
-
         result = {}
         for key, val in self._log.items():
 

@@ -1,4 +1,4 @@
-﻿zenkai.feedback.FALearner
+zenkai.feedback.FALearner
 =========================
 
 .. currentmodule:: zenkai.feedback

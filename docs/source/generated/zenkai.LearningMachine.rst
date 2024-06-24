@@ -1,4 +1,4 @@
-﻿zenkai.LearningMachine
+zenkai.LearningMachine
 ======================
 
 .. currentmodule:: zenkai

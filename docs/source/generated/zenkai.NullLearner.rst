@@ -1,4 +1,4 @@
-﻿zenkai.NullLearner
+zenkai.NullLearner
 ==================
 
 .. currentmodule:: zenkai

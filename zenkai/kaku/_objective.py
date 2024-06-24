@@ -4,9 +4,10 @@ from abc import abstractmethod, ABC
 
 # 3rd party
 import torch
+from torch import nn
 
 
-class Objective(ABC):
+class Objective(ABC, nn.Module):
     """Defines an objective function"""
 
     def __init__(self, maximize: bool = True) -> None:
@@ -19,16 +20,16 @@ class Objective(ABC):
         self.maximize = maximize
 
     @abstractmethod
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+    def forward(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
         pass
 
 
-class Constraint(ABC):
+class Constraint(ABC, nn.Module):
     """Constrains the value passed in
     """
 
     @abstractmethod
-    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+    def forward(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         """
         Returns:
             typing.Dict[str, torch.BoolTensor]: Whether the kwargs fail the constraint
@@ -73,7 +74,7 @@ class CompoundConstraint(Constraint):
         """
         return self._constraints
 
-    def __call__(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
+    def forward(self, **kwargs: torch.Tensor) -> typing.Dict[str, torch.BoolTensor]:
         """
         Returns:
             typing.Dict[str, torch.BoolTensor]: The result of the constraints for each value
