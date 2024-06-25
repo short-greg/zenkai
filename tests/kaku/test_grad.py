@@ -17,7 +17,7 @@ class THGradLearnerT1(_grad.GradIdxLearner):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             linear,
-            criterion=NNLoss(nn.MSELoss),
+            learn_criterion=NNLoss(nn.MSELoss),
             optimf=OptimFactory(torch.optim.Adam, lr=1e-2).comp(),
         )
 
@@ -27,7 +27,7 @@ class THGradLearnerT2(_grad.GradIdxLearner):
         linear = nn.Linear(in_features, out_features)
         super().__init__(
             linear,
-            criterion=NNLoss(nn.MSELoss),
+            learn_criterion=NNLoss(nn.MSELoss),
             optimf=CompOptim(
                 OptimFactory(torch.optim.Adam, lr=1e-2),
                 OptimFactory(torch.optim.Adam, lr=1e-2)
@@ -161,13 +161,13 @@ class TestCriterionGrad:
     def test_criterion_grad_step_produces_correct_shape(self):
 
         state = State()
-        learner = _grad.GradIdxLearner(criterion=NNLoss("CrossEntropyLoss"))
+        learner = _grad.GradIdxLearner(learn_criterion=NNLoss("CrossEntropyLoss"))
         learner.step(iou(torch.rand(3, 4)), iou(torch.randint(0, 4, (3,))), state)
         assert True
 
     def test_criterion_grad_step_x_produces_correct_shape(self):
 
-        learner = _grad.GradIdxLearner(criterion=NNLoss("CrossEntropyLoss"))
+        learner = _grad.GradIdxLearner(learn_criterion=NNLoss("CrossEntropyLoss"))
 
         state = State()
         x = iou(torch.rand(3, 4))

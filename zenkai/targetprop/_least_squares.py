@@ -29,11 +29,20 @@ from ..kaku._grad import GradStepTheta
 
 
 class LeastSquaresSolver(ABC):
-    """Create a solver using 
+    """ABC for solvers using least squares
     """
 
     @abstractmethod
-    def solve(self, a: torch.Tensor, b: torch.Tensor):
+    def solve(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        """Abstract method for the least squares solver
+
+        Args:
+            a (torch.Tensor): Input
+            b (torch.Tensor): Target
+
+        Returns:
+            torch.Tensor: the least squares solution
+        """
         pass
 
 
@@ -129,7 +138,7 @@ class LeastSquaresRidgeSolver(LeastSquaresSolver):
 
 
 class LeastSquaresStepTheta(StepTheta):
-    """A StepTheta that uses """
+    """A StepTheta that uses least squares """
 
     def __init__(
         self,

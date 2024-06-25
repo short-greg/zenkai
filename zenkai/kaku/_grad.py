@@ -238,10 +238,14 @@ class GradIdxLearner(LearningMachine, BatchIdxStepTheta, BatchIdxStepX):
         Returns:
             torch.Tensor: The assessment
         """
-
         if isinstance(self._learn_criterion, XCriterion):
-            return self._learn_criterion.assess(x, y, t, reduction_override)
-        return self._criterion.assess(y, t, reduction_override)
+            return self._learn_criterion.assess(
+                x, y, t, reduction_override
+            )
+        return self._learn_criterion.assess(
+            y, t, reduction_override
+        )
+        
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):

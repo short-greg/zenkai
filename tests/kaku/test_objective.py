@@ -8,7 +8,7 @@ from zenkai.kaku._objective import (
 
 
 class ObjectiveSample(Objective):
-    def __call__(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
+    def forward(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
         return Reduction[reduction].reduce(kwargs["x"])
 
 
@@ -17,7 +17,7 @@ class EqualityConstraint(Constraint):
         super().__init__()
         self.value = value
 
-    def __call__(self, **kwargs: torch.Tensor) -> torch.BoolTensor:
+    def forward(self, **kwargs: torch.Tensor) -> torch.BoolTensor:
 
         return {k: v == self.value for k, v in kwargs.items()}
 

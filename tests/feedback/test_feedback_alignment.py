@@ -18,7 +18,7 @@ class TestFALearner:
             nn.Linear(3, 4),
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
@@ -36,7 +36,7 @@ class TestFALearner:
             net,
             nn.Linear(3, 4),
             optim_factory=OptimFactory("SGD", lr=1e-2),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
             activation=nn.Sigmoid(),
         )
         state = State()
@@ -55,7 +55,7 @@ class TestFALearner:
             nn.Linear(3, 4),
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
@@ -75,7 +75,7 @@ class TestFALearner:
             nn.Linear(3, 4),
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
@@ -98,7 +98,7 @@ class TestDFALearner:
             3,
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
@@ -120,7 +120,7 @@ class TestDFALearner:
             3,
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
@@ -141,7 +141,7 @@ class TestDFALearner:
             3,
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
@@ -163,7 +163,7 @@ class TestDFALearner:
             3,
             optim_factory=OptimFactory("SGD", lr=1e-2),
             activation=nn.Sigmoid(),
-            criterion="MSELoss",
+            learn_criterion="MSELoss",
         )
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
