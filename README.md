@@ -49,12 +49,6 @@ class MyLearner(zenkai.LearningMachine):
         self._step_x = step_x
         self.loss = loss
 
-    def assess_y(
-        self, y: IO, t: IO, reduction_override: str=None
-    ) -> zenkai.AssessmentDict:
-        # assess_y evaluates the output of the learning machine
-        return self.loss.assess_dict(x, t, reduction_override)
-
     def step(
         self, x: IO, t: IO, state: State, **kwargs
     ):
@@ -78,12 +72,11 @@ class MyLearner(zenkai.LearningMachine):
 
 my_learner = MyLearner(...)
 
+zenkai.set_lmode(my_learner, zenkai.LMode.WithStep)
+
 for x, t in dataloader:
     # set the "learning mode" to perform a step
-    zenkai.set_lmode(my_learner, zenkai.LMode.WithStep)
-    assessment = my_learner.learn(x, t)
-    # outputs the logs stored by the learner
-    # print(state.logs)
+    loss(my_learner(x), t).backward()
 
 ```
 
@@ -107,12 +100,6 @@ class MyMultilayerLearner(LearningMachine):
         self.add_step(StepXDep(self, 't1'))
         self.add_step_x(ForwardDep(self, 'y1'))
 
-    # def assess_y(
-    #     self, y: IO, t: IO, reduction_override: str=None
-    # ) -> zenkai.AssessmentDict:
-    #     # assess_y evaluates the output of the learning machine
-    #     return self.layer2.assess_y(y, t)
-
     def step(
         self, x: IO, t: IO, state: State, **kwargs
     ):
@@ -132,7 +119,7 @@ class MyMultilayerLearner(LearningMachine):
         t1 = state._t1 = self.layer2.step_x(state._y1, t, state.sub('layer1'))
         return self.layer1.step_x(x, t1, state.sub('layer1'))
 
-    def forward(self, x: zenkai.IO, release: bool=True) -> zenkai.IO:
+    def forward_nn(self, x: zenkai.IO, state: State) -> zenkai.IO:
 
         # define the state to be for the self, input pair
         x = state._y1 = self.layer1(x, state.sub('layer1'))
@@ -140,10 +127,11 @@ class MyMultilayerLearner(LearningMachine):
         return x
 
 my_learner = MyLearner(...)
+zenkai.set_lmode(my_learner, zenkai.LMode.WithStep)
 
 for x, t in dataloader:
-    assessment = my_learner.learn(x, t)
-    # outputs the logs stored by the learner
+    assessment = loss(my_learner(x), t)
+    loss.backward()
 
 ```
 
