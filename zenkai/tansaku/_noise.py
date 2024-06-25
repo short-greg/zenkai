@@ -91,14 +91,15 @@ class TInfo:
         }
 
 
-def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
+def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0, expand: bool=True) -> torch.Tensor:
     """Add noise to a regular tensor
 
     Args:
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        pop_dim (int, optional): The population dim. Defaults to 1.
+        pop_dim (int, optional): The population dim. Defaults to 0.
+        expand (bool): Whether to expand the population dimension before executing the function
 
     Returns:
         torch.Tensor: The noise added to the Tensor
@@ -106,11 +107,15 @@ def add_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo],
     shape = list(x.shape)
     shape.insert(pop_dim, k)
     x = x.unsqueeze(pop_dim)
+    if expand:
+        expand_shape = [1] * len(shape)
+        expand_shape[pop_dim] = k
+        x = x.repeat(expand_shape)
 
     return f(x, TInfo(shape, x.dtype, x.device))
 
 
-def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0) -> torch.Tensor:
+def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo], torch.Tensor], pop_dim: int=0, expand: bool=True) -> torch.Tensor:
     """Add noise to a regular tensor and then concatenate
     the original tensor
 
@@ -118,7 +123,7 @@ def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo],
         x (torch.Tensor): The input to add noise to
         k (int): The size of the population
         f (typing.Callable[[torch.Tensor, torch.Size, torch.dtype, torch.device], torch.Tensor]): The noise function
-        pop_dim (int, optional): The population dim. Defaults to 1.
+        expand (bool): Whether to expand the population dimension before executing the function
 
     Returns:
         torch.Tensor: The noise added to the Tensor
@@ -127,7 +132,13 @@ def cat_noise(x: torch.Tensor, k: int, f: typing.Callable[[torch.Tensor, TInfo],
     shape.insert(pop_dim, k)
     x = x.unsqueeze(pop_dim)
 
-    out = f(x, TInfo(shape, x.dtype, x.device))
+    if expand:
+        expand_shape = [1] * len(shape)
+        expand_shape[pop_dim] = k
+        x_in = x.repeat(expand_shape)
+    else:
+        x_in = x
+    out = f(x_in, TInfo(shape, x.dtype, x.device))
     return torch.cat(
         [x, out], dim=pop_dim
     )

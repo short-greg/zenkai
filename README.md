@@ -142,7 +142,6 @@ make clean
 sphinx-autogen source/api.rst
 make html
 
-
 ## Contributing
 
 To contribute to the project

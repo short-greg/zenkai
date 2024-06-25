@@ -80,7 +80,7 @@ class TestCatNoise(object):
         torch.manual_seed(1)
 
         noisy = cat_noise(
-            x, 2, lambda x, info: x + torch.randn(info.shape, **info.attr)
+            x, 2, lambda x, info: x + base_noise
         )
         assert (noisy == torch.cat([x.unsqueeze(0), (base_noise + x)])).all()
 
