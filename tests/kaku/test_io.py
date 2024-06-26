@@ -87,7 +87,46 @@ class TestIO:
         )
         grad = io.grad()
         assert (grad[0] is data.grad)
-    
+
+    def test_acc_dx_accumultes(self):
+
+        data = torch.rand(2, 2)
+        dx = torch.rand(2, 2)
+        io = _io.IO(
+            [data]
+        )
+        io2 = io.acc_dx([dx], 0.5)
+        assert torch.isclose(io2.f, (io.f - 0.5 * dx)).all()
+
+    def test_acc_dx_does_not_accumulate_if_none(self):
+
+        data = torch.rand(2, 2)
+        dx = torch.rand(2, 2)
+        io = _io.IO(
+            [data]
+        )
+        io2 = io.acc_dx([None], 0.5)
+        assert torch.isclose(io2.f, io.f).all()
+
+    def test_acc_t_accumulates_t(self):
+
+        data = torch.rand(2, 2)
+        t = torch.rand(2, 2)
+        io = _io.IO(
+            [data]
+        )
+        io2 = io.acc_t([t], 0.5)
+        assert torch.isclose(io2.f, (0.5 * io.f + 0.5 * t)).all()
+
+    def test_acc_t_doesnt_change_if_not_specified(self):
+
+        data = torch.rand(2, 2)
+        io = _io.IO(
+            [data]
+        )
+        io2 = io.acc_t([None], 0.5)
+        assert torch.isclose(io2.f, io.f).all()
+
     def test_freshen_requires_grad(self):
 
         data = torch.rand(2, 2)
@@ -146,6 +185,7 @@ class TestIO:
 
         io.detach_()
         assert io[0].grad_fn is None
+
 
 
 class TestIdx:

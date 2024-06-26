@@ -110,6 +110,30 @@ class IO(tuple):
             for x in self
         )
     
+    def acc_dx(self, dx: typing.Union['IO', typing.Iterable], lr: float = 1.0) -> 'IO':
+        """Update the io based on a change in its values and a learning rate
+
+        Returns:
+            IO: The IO with the updated x
+        """
+        return IO(
+            x - lr * dx_i 
+            if isinstance(x, torch.Tensor) and dx_i is not None else x
+            for x, dx_i in zip(self, dx)
+        )
+
+    def acc_t(self, t: typing.Union['IO', typing.Iterable], lr: float = 1.0) -> 'IO':
+        """Update x based on a change in its values due to a target
+
+        Returns:
+            IO: The IO with the updated x
+        """
+        return IO(
+            ((1 - lr) * x) + (lr * t_i) 
+            if isinstance(x, torch.Tensor) and t_i is not None else x 
+            for x, t_i in zip(self, t)
+        )
+    
     def zero_grad(self) -> Self:
         """Zero the gradient of all tensors in the IO
 
