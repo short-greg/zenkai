@@ -266,3 +266,31 @@ class TestIdx:
         idx = _io.Idx()
         idx2 = idx.sub(_io.Idx(torch.tensor([2, 0])))
         assert (idx2.idx == torch.tensor([2, 0]).long()).all()
+
+
+class TestIOLoop:
+
+    def test_io_loop_loops_over_one_io(self):
+
+        x1 = _io.IO(
+            [torch.rand(4, 1), torch.rand(4, 2)]
+        )
+
+        for x1_i, in _io.io_loop(x1, batch_size=2):
+            assert x1_i[0].shape == torch.Size([2, 1])
+            assert x1_i[1].shape == torch.Size([2, 2])
+
+    def test_io_loop_loops_over_one_io(self):
+
+        x1 = _io.IO(
+            [torch.rand(4, 1), torch.rand(4, 2)]
+        )
+        x2 = _io.IO(
+            [torch.rand(4, 2), torch.rand(4, 1)]
+        )
+
+        for x1_i, x2_i in _io.io_loop([x1, x2], batch_size=2):
+            assert x1_i[0].shape == torch.Size([2, 1])
+            assert x1_i[1].shape == torch.Size([2, 2])
+            assert x2_i[0].shape == torch.Size([2, 2])
+            assert x2_i[1].shape == torch.Size([2, 1])

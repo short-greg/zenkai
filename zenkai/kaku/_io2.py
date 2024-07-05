@@ -367,7 +367,7 @@ def pipe(modules: typing.Iterable[nn.Module], x: torch.Tensor, freshen_h: bool=F
     return x, IO(hs) if get_h else x
 
 
-def io_loop(*x: IO, shuffle: bool=False, batch_size: int=1, drop_last: bool=False) -> typing.Iterator[typing.Tuple[torch.Tensor]]:
+def io_loop(xs: typing.Union[typing.Iterable[IO], IO], shuffle: bool=False, batch_size: int=1, drop_last: bool=False) -> typing.Iterator[typing.Tuple[torch.Tensor]]:
     """Use to loop over a set of ios assuming all elements
     are tensors
 
@@ -383,13 +383,15 @@ def io_loop(*x: IO, shuffle: bool=False, batch_size: int=1, drop_last: bool=Fals
     loc = []
     data = []
     cur = 0
-    for x_i in x:
-        loc.append((cur, len(x_i)))
+    if isinstance(xs, IO):
+        xs = [xs]
+    for x_i in xs:
+        loc.append((cur, cur + len(x_i)))
         data.extend(x_i)
         cur = len(x_i)
 
-    dataset = torch_data.DataSet(*data)
+    dataset = torch_data.TensorDataset(*data)
     for xs in torch_data.DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last
     ):
-        yield IO(xs[start, to_] for start, to_ in loc)
+        yield tuple(IO(xs[start: to_]) for start, to_ in loc)
