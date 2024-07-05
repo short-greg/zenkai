@@ -156,7 +156,7 @@ class IterStepX(StepX):
         self.batch_size = batch_size
 
     def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
-        """
+        """Update the x after looping
 
         Args:
             x (IO): The input value for the layer

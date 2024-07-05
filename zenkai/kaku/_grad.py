@@ -137,15 +137,25 @@ class GradLearner(LearningMachine):
         )
 
     def learn_assess(
-        self, x: IO, y: IO, t: IO, reduction_override: str=None
+        self, x: IO, y: IO, t: IO
     ) -> torch.Tensor:
+        """Use this to assess the input/output for the accumulate method
+
+        Args:
+            x (IO): the input
+            y (IO): the output
+            t (IO): the target
+
+        Returns:
+            torch.Tensor: The assessment
+        """
 
         if isinstance(self._learn_criterion, XCriterion):
             return self._learn_criterion.assess(
-                x, y, t, reduction_override
+                x, y, t
             )
         return self._learn_criterion.assess(
-            y, t, reduction_override)
+            y, t)
 
     @forward_dep('_y')
     def accumulate(self, x: IO, t: IO, state: State):

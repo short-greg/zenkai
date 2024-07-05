@@ -9,9 +9,9 @@ import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
 import pandas as pd
+
+
 ### These are the OLD functions
-
-
 def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
     """Set the gradients of a module to the values specified by theta_grad
 

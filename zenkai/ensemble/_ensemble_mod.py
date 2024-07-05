@@ -8,7 +8,7 @@ import torch.nn.functional
 from torch.nn.functional import one_hot
 
 # local
-from ..utils import binary_ste, sign_ste
+from ..utils import step_ste, sign_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
@@ -119,7 +119,7 @@ class BinaryVoteAggregator(VoteAggregator):
         if self._use_sign:
             return sign_ste(chosen)
 
-        return binary_ste(chosen)
+        return step_ste(chosen)
 
 
 class MulticlassVoteAggregator(VoteAggregator):

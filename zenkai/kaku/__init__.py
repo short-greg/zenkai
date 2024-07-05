@@ -13,8 +13,8 @@ from ._assess import (
     MulticlassLoss
 )
 from ._io2 import (
-    IO as IO, Idx as Idx, 
-    iou, pipe
+    IO, Idx, 
+    iou, pipe, io_loop
 )
 from ._lm2 import (
     # TODO: Separate out hooks

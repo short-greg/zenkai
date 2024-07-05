@@ -12,6 +12,6 @@ from ._convert import (
     checkattr,
 )
 from ._ste import (
-    binary_ste, BinarySTE,
+    step_ste, StepSTE,
     SignSTE, sign_ste
 )

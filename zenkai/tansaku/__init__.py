@@ -2,7 +2,7 @@
 
 
 from ._noise import (
-    gausian_noise,
+    gaussian_noise,
     binary_noise,
     add_pop_noise,
     cat_noise,

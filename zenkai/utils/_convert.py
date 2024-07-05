@@ -11,6 +11,15 @@ import torch.nn as nn
 
 
 def to_np(x: torch.Tensor) -> np.ndarray:
+    """convenience function to convert tensor to numpy
+    Handles converting to cpu and detaching 
+
+    Args:
+        x (torch.Tensor): The tensor
+
+    Returns:
+        np.ndarray: the numpy array
+    """
     return x.detach().cpu().numpy()
 
 

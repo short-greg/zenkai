@@ -42,7 +42,7 @@ def gaussian_sample(
     )
 
 
-def gausian_noise(x: torch.Tensor, std: float=1.0, mean: float=0.0) -> torch.Tensor:
+def gaussian_noise(x: torch.Tensor, std: float=1.0, mean: float=0.0) -> torch.Tensor:
     """Add Gaussian noise to the input
 
     Args:

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from ..utils import freshen
 from typing_extensions import Self
+from torch.utils import data as torch_data
 
 
 class IO(tuple):
@@ -364,3 +365,31 @@ def pipe(modules: typing.Iterable[nn.Module], x: torch.Tensor, freshen_h: bool=F
             x = freshen(x)
             
     return x, IO(hs) if get_h else x
+
+
+def io_loop(*x: IO, shuffle: bool=False, batch_size: int=1, drop_last: bool=False) -> typing.Iterator[typing.Tuple[torch.Tensor]]:
+    """Use to loop over a set of ios assuming all elements
+    are tensors
+
+    Args:
+        shuffle (bool, optional): whether to shuffle. Defaults to False.
+        batch_size (int, optional): _description_. Defaults to 1.
+        drop_last (bool, optional): Drop the last. Defaults to False.
+
+    Yields:
+        IO: Tne resulting tensors
+    """
+
+    loc = []
+    data = []
+    cur = 0
+    for x_i in x:
+        loc.append((cur, len(x_i)))
+        data.extend(x_i)
+        cur = len(x_i)
+
+    dataset = torch_data.DataSet(*data)
+    for xs in torch_data.DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last
+    ):
+        yield IO(xs[start, to_] for start, to_ in loc)
