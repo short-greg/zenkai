@@ -379,7 +379,6 @@ def io_loop(xs: typing.Union[typing.Iterable[IO], IO], shuffle: bool=False, batc
     Yields:
         IO: Tne resulting tensors
     """
-
     loc = []
     data = []
     cur = 0

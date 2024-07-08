@@ -79,7 +79,9 @@ from ._params import (
     to_gradvec,
 )
 from ._module import (
-    PopModule
+    PopModule,
+    AdaptBatch,
+    AdaptFeature
 )
 
 from ._update import (
@@ -103,6 +105,4 @@ from ._reshape import(
     flatten_dim0,
     deflatten_dim0,
     shape_as,
-    AdaptBatch,
-    AdaptFeature
 )

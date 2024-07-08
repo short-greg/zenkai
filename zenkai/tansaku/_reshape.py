@@ -74,7 +74,7 @@ def align(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
     return source
 
 
-def separate_batch(x: torch.Tensor, k: int, reshape: bool = True) -> torch.Tensor:
+def separate_batch(x: torch.Tensor, k: int, reshape: bool = True, pop_dim: int=0) -> torch.Tensor:
     """expand the batch and trial dimension in the tensor (separates the trial dimension from the sample dimension)
 
     Args:
@@ -117,8 +117,9 @@ def collapse_feature(x: torch.Tensor, reshape: bool=True) -> torch.Tensor:
         torch.Tensor: The expanded tensor
     """
     shape = list(x.shape)
-    shape[1] = shape[1] * shape[2]
-    shape.pop(2)
+    shape[2] = shape[0] * shape[2]
+    shape.pop(0)
+    x = x.transpose(1, 0)
     if reshape:
         return x.reshape(shape)
     return x.view(shape)
@@ -136,11 +137,13 @@ def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tenso
         torch.Tensor: The expanded tensor
     """
     shape = list(x.shape)
-    shape[1] = k
-    shape.insert(2, -1)
+    shape.insert(1, k)
+    shape[2] = -1
+    
     if reshape:
-        return x.reshape(shape)
-    return x.view(shape)
+        x = x.reshape(shape)
+    else: x = x.view(shape)
+    return x.transpose(1, 0)
 
 
 def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
@@ -221,65 +224,3 @@ def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
     return torch.cat(
         [tensor.flatten(0) for tensor in tensors], dim=0
     )
-
-
-class AdaptBatch(nn.Module):
-    """Use to adapt a population of samples for evaluating perturbations
-    of samples. Useful for optimizing "x"
-    """
-
-    def __init__(self, module: nn.Module):
-        """Instantiate the AdaptBatch model
-
-        Args:
-            module (nn.Module): 
-        """
-        super().__init__()
-        self.module = module
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Adapt the module with  apopulation separating by the batch dimension
-
-        Returns:
-            torch.Tensor: The output of the module
-        """
-        k = x[0].shape(1)
-        
-        x = tuple(collapse_batch(x_i) for x_i in x)
-        x = self.module(*x)
-        if isinstance(x, typing.Tuple):
-            return tuple(
-                separate_batch(x_i, k) for x_i in x
-            )
-        
-        return separate_batch(x, k)
-
-
-class AdaptFeature(nn.Module):
-    """Use to adapt a population of samples for evaluating perturbations of models. 
-    """
-
-    def __init__(self, module: nn.Module):
-        """Adapt module to work with a population of inputs
-
-        Args:
-            module (nn.Module): The module to a adapt
-        """
-        super().__init__()
-        self.module = module
-
-    def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        """Adapt the module with  apopulation separating by feature
-
-        Returns:
-            torch.Tensor: The output of the module
-        """
-        k = x[0].shape(1)
-        
-        x = tuple(collapse_feature(x_i) for x_i in x)
-        x = self.module(*x)
-        if not isinstance(x, typing.Tuple):
-            return separate_feature(x, k)
-        return tuple(
-            separate_feature(x_i, k) for x_i in x
-        )
