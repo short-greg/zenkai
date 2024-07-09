@@ -88,6 +88,8 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
     # remerge the dimension selected on with
     # the items selected is the final dimension
 
+    # TODO: does not work if assessment is 1d
+    
     # permute so they are next to one another
     selection = selection.reshape(list(shape[:-1]) + [k])
     permutation = list(range(selection.dim() - 1))
@@ -114,6 +116,8 @@ class Selection(nn.Module):
             assessment (torch.Tensor): The assessment to select by
             index (torch.LongTensor): The index to select by
             dim (int, optional): The dimension to select on. Defaults to 0 (population dimension).
+            n: int Number of rows to select
+            k: int Number to select per pair
         """
         super().__init__()
         self.assessment = assessment
@@ -391,10 +395,13 @@ class ProbSelector(Selector):
         indices = select_from_prob(
             probs, self.k, self._pop_dim, self.replace
         )[:,0]
-        print(assessment.shape, indices.shape)
         value = assessment.gather(self._pop_dim, indices)
+        if value.dim() == 2:
+            value = value[:,0]
+            indices = indices[:,0]
+
         return Selection(
-            value[:,0], indices[:,0], assessment.size(self._pop_dim), self.k, self._pop_dim
+            value, indices, assessment.size(self._pop_dim), self.k, self._pop_dim
         )
 
 

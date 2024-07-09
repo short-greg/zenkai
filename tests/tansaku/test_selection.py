@@ -354,3 +354,19 @@ class TestProbSelector:
         assert (
             result.shape == torch.Size([3, 4, 2])
         )
+
+    def test_prob_selector_outputs_correct_shape_with_maximize_and_1d_assessment(self):
+
+        assessment = torch.rand(3)
+        to_prob = _selection.ToRankProb()
+        selector = _selection.ProbSelector(
+            3, to_prob, 0
+        )
+        selection = selector(assessment, True)
+        print(selection.index)
+        result = selection(torch.rand(3, 4, 2))
+
+        assert (
+            result.shape == torch.Size([3, 4, 2])
+        )
+

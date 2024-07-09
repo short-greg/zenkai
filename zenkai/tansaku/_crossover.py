@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 # local
-from ._selection import ToProb, Selection, select_from_prob
+from ._selection import ToProb, Selection, select_from_prob, align
 
 
 class ParentSelector(nn.Module):
@@ -16,7 +16,7 @@ class ParentSelector(nn.Module):
     """
 
     def __init__(self, n_pairs: int, to_prob: ToProb, pop_dim: int=0):
-        """
+        """Create a selector to choose parents for a genetic algorithm
         Args:
             n_pairs (int): The number of pairs
             to_prob (ToProb): The probability calculator
@@ -43,12 +43,23 @@ class ParentSelector(nn.Module):
         selection = select_from_prob(
             probs, self._n_pairs, self._pop_dim
         )
-        value = assessment.gather(self._pop_dim, selection)
+        if assessment.dim() == 1:
+            selection = selection.permute(1, 0)
+            selection = selection.flatten()
+            value = assessment[selection]
+            value = value.reshape(2, -1)
+            selection = selection.reshape(2, -1)
+        else:
+            print(selection.shape, assessment.shape)
+            assessment = align(assessment, selection)
+            value = assessment.gather(
+                self._pop_dim, selection
+            )
         selection1 = Selection(
-            value[0], selection[0], self._pop_dim
+            value[0], selection[0], self._n_pairs, 2
         )
         selection2 = Selection(
-            value[1], selection[1], self._pop_dim
+            value[1], selection[1], self._n_pairs, 2
         )
         return selection1, selection2
 
