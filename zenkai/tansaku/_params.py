@@ -48,7 +48,7 @@ def to_pvec(obj: PObj, n: int) -> torch.Tensor:
     """
     return torch.cat(
         [pi_i.reshape(n, -1) for pi_i in param_utils.get_p(obj)], 
-        dim=0
+        dim=1
     )
 
 
@@ -64,7 +64,7 @@ def to_gradvec(obj: PObj, n: int) -> torch.Tensor:
     """
     return torch.cat(
         [pi_i.grad.reshape(n, -1) for pi_i in param_utils.get_p(obj)], 
-        dim=0
+        dim=1
     )
 
 
