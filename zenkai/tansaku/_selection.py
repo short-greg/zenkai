@@ -78,13 +78,13 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
     Returns:
         torch.LongTensor: The selection
     """
-
     # Analyze the output of this better and
     # add better documentation
     shape = prob.shape
 
     prob = prob.reshape(-1, shape[-1])
     selection = torch.multinomial(prob, k, replace, generator=g)
+
     # remerge the dimension selected on with
     # the items selected is the final dimension
 

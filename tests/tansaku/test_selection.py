@@ -303,6 +303,18 @@ class TestToRankProb:
             prob.shape == torch.Size([2, 4, 3])
         )
 
+    def test_to_rank_prob_converts_to_prob_with_one_assessment(self):
+
+        assessment = torch.rand(
+            3
+        )
+        to_prob = _selection.ToRankProb()
+        prob = to_prob(assessment, 2)
+
+        assert (
+            prob.shape == torch.Size([2, 3])
+        )
+
     def test_to_rank_prob_converts_to_prob_with_correct_size(self):
 
         assessment = torch.rand(

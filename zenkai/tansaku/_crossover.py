@@ -38,10 +38,10 @@ class ParentSelector(nn.Module):
             typing.Tuple[Selection, Selection]: The selected parents
         """
         probs = self.to_prob.forward(
-            assessment, 2, maximize
+            assessment, self._n_pairs, maximize
         )
         selection = select_from_prob(
-            probs, self._n_pairs, self._pop_dim
+            probs, 2, self._pop_dim
         )
         if assessment.dim() == 1:
             selection = selection.permute(1, 0)
@@ -50,11 +50,11 @@ class ParentSelector(nn.Module):
             value = value.reshape(2, -1)
             selection = selection.reshape(2, -1)
         else:
-            print(selection.shape, assessment.shape)
             assessment = align(assessment, selection)
             value = assessment.gather(
                 self._pop_dim, selection
             )
+        
         selection1 = Selection(
             value[0], selection[0], self._n_pairs, 2
         )

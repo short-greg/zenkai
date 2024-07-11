@@ -31,7 +31,11 @@ def mean(
     return (x * norm_weight).sum(dim=dim, keepdim=keepdim)
 
 
-def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
+def quantile(
+    x: torch.Tensor, q: float, 
+    norm_weight: torch.Tensor=None, 
+    dim: int=0, keepdim: bool=True
+) -> torch.Tensor:
     """Calculate the quantile of a population
 
     Note: No interpolation done if using weights
@@ -39,7 +43,7 @@ def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int
     Args:
         x (torch.Tensor): The x to get the median for
         q (float): The quantile to retrieve for
-        norm_weight (torch.Tensor, optional): Weights to use if computing the weighted median. Defaults to None.
+        norm_weight (torch.Tensor, optional): Weights to use if computing the weighted quantile. Defaults to None.
         dim (int, optional): Dim to calculate the median on. Defaults to 0.
         keepdim (bool, optional): Whether to keep the dimension. Defaults to True.
 
@@ -48,8 +52,9 @@ def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int
     """
 
     if norm_weight is None:
-        return x.quantile(q, dim=dim, keepdim=keepdim)
+        return x.quantile(q, dim=dim, keepdim=keepdim, interpolation='nearest')
     
+    # TODO: Currently not working so fix
     sorted_values, sorted_idx = x.sort(dim=dim)
     sorted_weight = norm_weight.gather(dim, sorted_idx)
 
@@ -57,8 +62,13 @@ def quantile(x: torch.Tensor, q: float, norm_weight: torch.Tensor=None, dim: int
 
     # When using max with torch, the first value that
     # maximizes it will be returned
-    _, median_idx = (sorted_weight >= q).float().max(dim=dim, keepdim=True)
-    result, result_idx = sorted_values.gather(dim, median_idx), sorted_idx.gather(dim, median_idx)
+    print(sorted_weight)
+    _, median_idx = (
+        sorted_weight >= q
+    ).float().max(dim=dim, keepdim=True)
+    result, result_idx = sorted_values.gather(
+        dim, median_idx
+    ), sorted_idx.gather(dim, median_idx)
 
     if keepdim is False:
         return result.squeeze(dim), result_idx.squeeze(dim)
