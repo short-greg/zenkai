@@ -2,10 +2,6 @@ import torch
 import torch.nn as nn
 from zenkai.tansaku import _params as p_utils
 
-# from zenkai.tansaku._params import set_p, acc_g
-# from zenkai.tansaku import BestSelector, pop_assess, add_pop_noise
-# from zenkai.utils import get_model_params, get_model_grads
-
 
 class PopLinear(nn.Module):
 
@@ -88,6 +84,20 @@ class TestPVec(object):
             linear, pvec
         )
         assert ((linear.w * 2) == linear.w.grad).all()
+
+    def test_acc_gradtvec_produces_two_times_vals_as_weights(self):
+        linear = PopLinear(4, 2, 2)
+        
+        pvec = p_utils.to_pvec(
+            linear, 4
+        )
+        p_utils.acc_gradtvec(
+            linear, pvec
+        )
+        p_utils.acc_gradtvec(
+            linear, pvec
+        )
+        assert (torch.zeros_like(linear.w) == linear.w.grad).all()
 
     def test_set_grad_produces_same_val_as_original(self):
 

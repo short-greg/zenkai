@@ -3,6 +3,75 @@ from zenkai.tansaku import _reshape
 import pytest
 
 
+class TestSeparate:
+
+    def test_separate_feature_with_reshape(self):
+
+        x = torch.randn(4, 2)
+        x2 = _reshape.separate_feature(
+            x, 2, True
+        )
+        assert x2.shape == torch.Size([2,4, 1])
+
+    def test_separate_feature_with_view(self):
+
+        x = torch.randn(4, 2)
+        x2 = _reshape.separate_feature(
+            x, 2, False
+        )
+        assert x2.shape == torch.Size([2,4, 1])
+
+    def test_separate_batch_with_reshape(self):
+
+        x = torch.randn(4, 2)
+        x2 = _reshape.separate_batch(
+            x, 2, True
+        )
+        assert x2.shape == torch.Size([2,2, 2])
+
+    def test_separate_batch_with_view(self):
+
+        x = torch.randn(4, 2)
+        x2 = _reshape.separate_batch(
+            x, 2, False
+        )
+        assert x2.shape == torch.Size([2,2, 2])
+
+class TestCollapse:
+
+    def test_collapse_feature_with_reshape(self):
+
+        x = torch.randn(2, 4, 1)
+        x2 = _reshape.collapse_feature(
+            x, True
+        )
+        assert x2.shape == torch.Size([4, 2])
+
+    def test_collapse_feature_with_view(self):
+
+        x = torch.randn(2, 4, 1)
+        x2 = _reshape.collapse_feature(
+            x, False
+        )
+        assert x2.shape == torch.Size([4, 2])
+
+    def test_collapse_batch_with_reshape(self):
+
+        x = torch.randn(2, 2, 2)
+        x2 = _reshape.collapse_batch(
+            x, True
+        )
+        assert x2.shape == torch.Size([4, 2])
+
+    def test_collapse_batch_with_view(self):
+
+        x = torch.randn(2, 2, 2)
+        x2 = _reshape.collapse_batch(
+            x, False
+        )
+        assert x2.shape == torch.Size([4, 2])
+
+
 class TestExpandDim0:
     def test_expand_dim0_returns_correct_size_without_reshape(self):
 

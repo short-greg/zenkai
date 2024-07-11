@@ -20,7 +20,7 @@ from zenkai.tansaku._noise import (
     cat_noise,
     cat_pop_noise
 )
-
+from zenkai.tansaku import _noise as tansaku_noise
 
 def g(seed: int):
     g = torch.Generator()
@@ -51,6 +51,60 @@ def x_trial_collapsed():
 def noise():
     return torch.rand(N_SAMPLES, 2, generator=g(3))
 
+
+class TestGaussianSample(object):
+
+    def test_gaussian_sample(self):
+
+        mean = torch.randn(4)
+        std = torch.rand(4)
+        samples = tansaku_noise.gaussian_sample(
+            mean, std, 5
+        )
+        assert samples.shape == torch.Size([5, *mean.shape])
+
+    def test_gaussian_sample_with_no_k(self):
+
+        mean = torch.randn(4)
+        std = torch.rand(4)
+        samples = tansaku_noise.gaussian_noise(
+            mean, std
+        )
+        assert samples.shape == mean.shape
+
+
+class TestNoise(object):
+
+    def test_gaussian_noise(self):
+
+        x = torch.randn(4)
+        mean = torch.randn(4)
+        std = torch.rand(4)
+        samples = tansaku_noise.gaussian_noise(
+            x, mean, std
+        )
+        assert samples.shape == mean.shape
+
+    def test_binary_noise(self):
+
+        x = torch.rand(4).round()
+        p = torch.randn(4)
+        samples = tansaku_noise.binary_noise(
+            x, p, False
+        )
+        assert samples.shape == x.shape
+        assert ((samples >= 0.0) | (samples <= 1.0)).all()
+
+    def test_binary_noise_with_signed(self):
+
+        x = torch.randn(4).sign()
+        p = torch.randn(4)
+        samples = tansaku_noise.binary_noise(
+            x, p, True
+        )
+
+        assert samples.shape == x.shape
+        assert ((samples >= -1.0) | (samples <= 1.0)).all()
 
 
 class TestAddNoise(object):

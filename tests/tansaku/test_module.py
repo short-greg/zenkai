@@ -47,18 +47,3 @@ class TestPopModule:
         linear2 = linear.spawn(3)
         x = torch.randn(1, 5, 4)
         assert (linear2(x).shape[0] == 3)
-
-    # def test_mean_outputs_batch_size_of_5(self):
-
-    #     linear = PopLinear(3)
-    #     linear2 = linear.mean()
-    #     x = torch.randn(5, 4)
-    #     assert (linear2(x).shape[0] == 5)
-
-    # def test_member_outputs_batch_size_of_5(self):
-
-    #     linear = PopLinear(3)
-    #     linear2 = linear.member(2)
-    #     x = torch.randn(5, 4)
-    #     assert (linear2(x).shape[0] == 5)
-    
