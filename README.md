@@ -142,6 +142,10 @@ make clean
 sphinx-autogen source/api.rst
 make html
 
+## Tutorials
+
+Tutorials are being made available at https://github.com/short-greg/zenkai_tutorials .
+
 ## Contributing
 
 To contribute to the project
