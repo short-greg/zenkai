@@ -84,6 +84,10 @@ from ._module import (
     AdaptFeature
 )
 
+from ._optim import (
+    PopOptimBase
+)
+
 from ._update import (
     Updater, update_feature, update_mean,
     update_momentum, update_var, rand_update, decay,

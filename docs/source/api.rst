@@ -139,6 +139,7 @@ zenkai.tansaku
    zenkai.tansaku.NNLinearObjective
    zenkai.tansaku.CriterionObjective
    zenkai.tansaku.PopModule
+   zenkai.tansaku.PopOptimBase
    zenkai.tansaku.binary_noise
    zenkai.tansaku.add_noise
    zenkai.tansaku.cat_noise
