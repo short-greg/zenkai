@@ -30,7 +30,7 @@ Why Zenkai?
 Architecture
 ------------
 
-**Zenkai** employs a modular, mostly object-oriented architecture. The core modules (kaku) define the framework for creating a learning machine, while Tansaku can be used to implement metaheuristics, Tako can be used to get finer-grained control over the internals of a network, and Sensei can be used to define the training scripts.
+**Zenkai** employs a modular, mostly object-oriented architecture in its core. The core modules (kaku) define the framework for creating a learning machine, Tansaku can be used to implement metaheuristics. Other subpackages like Feedback, Ensemble, Scikit, and TargetProp are designed to make building different types of learning machines.
 
 
 Getting Started
