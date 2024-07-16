@@ -145,7 +145,7 @@ class AdaptFeature(PopModule):
     """Use to adapt a population of samples for evaluating perturbations of models. 
     """
 
-    def __init__(self, module: nn.Module, n_members: int=None):
+    def __init__(self, module: nn.Module, n_members: int=None, feature_dim: int=1):
         """Adapt module to work with a population of inputs
 
         Args:
@@ -153,6 +153,7 @@ class AdaptFeature(PopModule):
         """
         super().__init__(n_members)
         self.module = module
+        self.feature_dim = feature_dim
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
         """Adapt the module with  apopulation separating by feature
@@ -162,11 +163,10 @@ class AdaptFeature(PopModule):
         """
         k = x[0].size(0)
         
-        x = tuple(collapse_feature(x_i) for x_i in x)
+        x = tuple(collapse_feature(x_i, self.feature_dim) for x_i in x)
         x = self.module(*x)
-        if not isinstance(x, typing.Tuple):
-            return separate_feature(x, k)
-        return tuple(
-            separate_feature(x_i, k) for x_i in x
-        )
-
+        if isinstance(x, typing.Tuple):
+            return tuple(
+                separate_feature(x_i, k, self.feature_dim) for x_i in x
+            )    
+        return separate_feature(x, k, self.feature_dim)

@@ -9,15 +9,23 @@ class TestSeparate:
 
         x = torch.randn(4, 2)
         x2 = _reshape.separate_feature(
-            x, 2, True
+            x, 2, reshape=True
         )
         assert x2.shape == torch.Size([2,4, 1])
+
+    def test_separate_feature_with_feature_dim3(self):
+
+        x = torch.randn(4, 2, 4)
+        x2 = _reshape.separate_feature(
+            x, 2, 3, reshape=True
+        )
+        assert x2.shape == torch.Size([2,2, 4, 2])
 
     def test_separate_feature_with_view(self):
 
         x = torch.randn(4, 2)
         x2 = _reshape.separate_feature(
-            x, 2, False
+            x, 2, reshape=False
         )
         assert x2.shape == torch.Size([2,4, 1])
 
@@ -25,15 +33,16 @@ class TestSeparate:
 
         x = torch.randn(4, 2)
         x2 = _reshape.separate_batch(
-            x, 2, True
+            x, 2, reshape=True
         )
         assert x2.shape == torch.Size([2,2, 2])
+
 
     def test_separate_batch_with_view(self):
 
         x = torch.randn(4, 2)
         x2 = _reshape.separate_batch(
-            x, 2, False
+            x, 2, reshape=False
         )
         assert x2.shape == torch.Size([2,2, 2])
 
@@ -43,7 +52,7 @@ class TestCollapse:
 
         x = torch.randn(2, 4, 1)
         x2 = _reshape.collapse_feature(
-            x, True
+            x, reshape=True
         )
         assert x2.shape == torch.Size([4, 2])
 
@@ -51,15 +60,23 @@ class TestCollapse:
 
         x = torch.randn(2, 4, 1)
         x2 = _reshape.collapse_feature(
-            x, False
+            x, reshape=False
         )
         assert x2.shape == torch.Size([4, 2])
+
+    def test_collapse_feature_with_feature_dim3(self):
+
+        x = torch.randn(2, 4, 1, 3)
+        x2 = _reshape.collapse_feature(
+            x, 3, reshape=True
+        )
+        assert x2.shape == torch.Size([4, 1, 6])
 
     def test_collapse_batch_with_reshape(self):
 
         x = torch.randn(2, 2, 2)
         x2 = _reshape.collapse_batch(
-            x, True
+            x, reshape=True
         )
         assert x2.shape == torch.Size([4, 2])
 
@@ -67,7 +84,7 @@ class TestCollapse:
 
         x = torch.randn(2, 2, 2)
         x2 = _reshape.collapse_batch(
-            x, False
+            x, reshape=False
         )
         assert x2.shape == torch.Size([4, 2])
 

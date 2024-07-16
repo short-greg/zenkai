@@ -106,7 +106,7 @@ def collapse_batch(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
     return x.view(-1, *x.shape[2:])
 
 
-def collapse_feature(x: torch.Tensor, reshape: bool=True) -> torch.Tensor:
+def collapse_feature(x: torch.Tensor, feature_dim: int=2, reshape: bool=True) -> torch.Tensor:
     """Collapse the feature dimension and population dimensions into one dimension
 
     Args:
@@ -117,15 +117,15 @@ def collapse_feature(x: torch.Tensor, reshape: bool=True) -> torch.Tensor:
         torch.Tensor: The expanded tensor
     """
     shape = list(x.shape)
-    shape[2] = shape[0] * shape[2]
+    shape[feature_dim] = shape[0] * shape[feature_dim]
     shape.pop(0)
-    x = x.transpose(1, 0)
+    x = x.transpose(feature_dim - 1, 0)
     if reshape:
         return x.reshape(shape)
     return x.view(shape)
 
 
-def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tensor:
+def separate_feature(x: torch.Tensor, k: int, feature_dim: int=2, reshape: bool=True) -> torch.Tensor:
     """Separate the feature dimension for when the population and feature dimensions have been collapsed
 
     Args:
@@ -138,13 +138,53 @@ def separate_feature(x: torch.Tensor, k: int, reshape: bool=True) -> torch.Tenso
     """
     shape = list(x.shape)
     shape.insert(1, k)
-    shape[2] = -1
+    shape[feature_dim] = -1
     
     if reshape:
         x = x.reshape(shape)
     else: x = x.view(shape)
-    return x.transpose(1, 0)
+    return x.transpose(feature_dim - 1, 0)
 
+
+def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:
+    """Undo the concatenation
+
+    Args:
+        model (nn.Module): The model
+        x (torch.Tensor): The concatenated tensors
+
+    Returns:
+        torch.Tensor: The tensors 
+    """
+    if isinstance(model, nn.Module):
+        model = model.parameters()
+
+    tensors = []
+    start = 0
+    for p in model:
+        end = start + p.numel()
+        tensors.append(
+            x[start: end].reshape(p.shape)
+        )
+        start = end
+
+    return tensors
+
+
+def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
+    """Concatenate tensors to a 1d tensor
+
+    Args:
+        tensors (typing.List[torch.Tensor]): The tensors to concatenate
+
+    Returns:
+        torch.Tensor: The concatenated tensors
+    """
+    return torch.cat(
+        [tensor.flatten(0) for tensor in tensors], dim=0
+    )
+
+# TODO: Depracate the following
 
 def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
     """Expand an input to repeat k times
@@ -186,41 +226,3 @@ def deflatten_dim0(x: torch.Tensor, k: int) -> torch.Tensor:
 
     return x.view(k, -1, *x.shape[1:])
 
-
-def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:
-    """Undo the concatenation
-
-    Args:
-        model (nn.Module): The model
-        x (torch.Tensor): The concatenated tensors
-
-    Returns:
-        torch.Tensor: The tensors 
-    """
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-
-    tensors = []
-    start = 0
-    for p in model:
-        end = start + p.numel()
-        tensors.append(
-            x[start: end].reshape(p.shape)
-        )
-        start = end
-
-    return tensors
-
-
-def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
-    """Concatenate tensors to a 1d tensor
-
-    Args:
-        tensors (typing.List[torch.Tensor]): The tensors to concatenate
-
-    Returns:
-        torch.Tensor: The concatenated tensors
-    """
-    return torch.cat(
-        [tensor.flatten(0) for tensor in tensors], dim=0
-    )
