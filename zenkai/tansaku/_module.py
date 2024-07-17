@@ -1,7 +1,7 @@
 # 1st party
 from abc import abstractmethod, ABC
-from typing_extensions import Self
 import typing
+from dataclasses import dataclass
 
 # 3rd party
 import torch
@@ -11,12 +11,112 @@ import torch.nn as nn
 from . import _params
 from ..utils import _params as base_params
 from ._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
+from ..utils import _params as param_utils
+
+
+
+@dataclass
+class PopParams:
+
+    p: typing.Union[nn.parameter.Parameter, torch.Tensor]
+    n_members: int
+    dim: int=0
+    mixed: bool=False
+
+    def pop_view(self):
+        if self.mixed:
+            return separate_feature(
+                self.p, self.n_members, self.dim, False
+            )
+        elif self.dim != 0:
+    
+            permutation = list(range(self.p.dim()))
+            permutation = [
+                permutation[self.dim], 
+                *permutation[:self.dim],
+                *permutation[self.dim + 1:]
+            ]
+            return self.p.permute(permutation)
+        return self.p
+
+    def numel(self) -> int:
+        return self.p.numel()
+
+    def reshape_vec(self, vec: torch.Tensor):
+
+        target_shape = list(self.p.shape)
+
+        if self.mixed:
+            target_shape.insert(0, self.n_members)
+            target_shape[self.dim + 1] = -1
+            vec = vec.reshape(target_shape)
+            vec = vec.transpose(self.dim, 0)
+        elif self.dim != 0:
+            target_shape[0], target_shape[self.dim] = target_shape[self.dim], target_shape[0]
+
+            vec = vec.reshape(target_shape)
+            permutation = list(range(self.p.dim()))
+            permutation = [ 
+                *permutation[:self.dim],
+                0,
+                *permutation[self.dim:]
+            ]
+            vec = vec.transpose(self.dim, 0)
+        return vec.reshape_as(self.p)
+    
+    def set_params(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.set_params(
+                self.p, vec.detach()
+            )
+
+    def acc_params(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.acc_params(
+                self.p, vec.detach()
+            )
+
+    def acc_grad(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.acc_grad(
+                self.p, vec.detach()
+            )
+
+    def acc_gradt(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.acc_gradt(
+                self.p, vec.detach()
+            )
+    def set_grad(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.set_grad(
+                self.p, vec.detach()
+            )
+    
+    def set_gradt(self, vec: torch.Tensor):
+
+        with torch.no_grad():
+            vec = self.reshape_vec(vec)
+            param_utils.set_gradt(
+                self.p, vec.detach()
+            )
 
 
 class PopModule(nn.Module, ABC):
     """Parent class for a module that outputs a population
     """
-    def __init__(self, n_members: int=None):
+    def __init__(
+        self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
         """Create a population module with the specified number of members
 
         Args:
@@ -24,6 +124,9 @@ class PopModule(nn.Module, ABC):
         """
         super().__init__()
         self._n_members = n_members
+        self._out_dim = out_dim
+        self._p_dim = p_dim
+        self._mixed = mixed
 
     @property
     def n_members(self) -> int:
@@ -34,7 +137,10 @@ class PopModule(nn.Module, ABC):
         return self._n_members
 
     @abstractmethod
-    def forward(self, x: torch.Tensor, ind: int=None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, 
+        ind: int=None
+    ) -> torch.Tensor:
         """Output the population
 
         Args:
@@ -46,81 +152,37 @@ class PopModule(nn.Module, ABC):
         """
         pass 
 
-    # def mean(self) -> Self:
-    #     """Spawn a module and set the values to the mean
+    def pop_parameters(self, recurse: bool=True, pop_params: bool=True) -> typing.Iterator[typing.Union[PopParams, nn.parameter.Parameter]]:
 
-    #     Returns:
-    #         Self: The mean of the population
-    #     """
-    #     if self._n_members is None:
-    #         return self
-        
-    #     module = self.spawn(None)
-    #     vec = _params.to_pvec(self, self._n_members)
-    #     base_params.set_pvec(module, vec.mean(dim=0))
-    #     return module
-
-    # @abstractmethod
-    # def spawn(self, n_members: int) -> Self:
-    #     """Spawn a module with same parameters as this and a different number of modules
-
-    #     Args:
-    #         n_members (int): The number of members for the module
-
-    #     Returns:
-    #         Self: The spawned pop module
-    #     """
-    #     pass
+        for p in self.parameters(recurse):
+            if not pop_params:
+                yield separate_feature(
+                    p, self._n_members, self._p_dim, False
+                )
+            else:
+                yield PopParams(
+                    p, self._n_members, self._p_dim, self._mixed
+                )
 
 
-    # def to_pop(self) -> Self:
-    #     """Convert a module that is not a not a population
-
-    #     Returns:
-    #         Self: 
-    #     """
-    #     if self._n_members is not None:
-    #         raise RuntimeError(
-    #             'Module already is a population module')
-        
-    #     return self.spawn(1)
-
-    # def member(self, i: int) -> Self:
-    #     """Retrieve a member with the same params
-
-    #     Args:
-    #         i (int): The member to retrieve
-
-    #     Raises:
-    #         RuntimeError: If the module does not have members
-
-    #     Returns:
-    #         Self: A module created with the member
-    #     """
-    #     if self._n_members is None:
-    #         raise RuntimeError(
-    #             'Module has no members'
-    #         )
-    #     module = self.spawn(None)
-    #     vec = _params.to_pvec(self, self._n_members)
-    #     base_params.set_pvec(module, vec[i])
-    #     return module
-
+def chained(*mods: nn.Module) -> nn.ModuleList:
+    return nn.ModuleList(mods)
 
 
 # TODO: add tests
-class AdaptBatch(PopModule):
+class AdaptBatch(nn.Module):
     """Use to adapt a population of samples for evaluating perturbations
     of samples. Useful for optimizing "x"
+
     """
 
-    def __init__(self, module: nn.Module, n_members: int=None):
+    def __init__(self, module: nn.Module):
         """Instantiate the AdaptBatch model
 
         Args:
             module (nn.Module): 
         """
-        super().__init__(n_members)
+        super().__init__()
         self.module = module
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -151,7 +213,7 @@ class AdaptFeature(PopModule):
         Args:
             module (nn.Module): The module to a adapt
         """
-        super().__init__(n_members)
+        super().__init__(n_members, feature_dim, True)
         self.module = module
         self.feature_dim = feature_dim
 
@@ -165,8 +227,9 @@ class AdaptFeature(PopModule):
         
         x = tuple(collapse_feature(x_i, self.feature_dim) for x_i in x)
         x = self.module(*x)
+
         if isinstance(x, typing.Tuple):
             return tuple(
                 separate_feature(x_i, k, self.feature_dim) for x_i in x
-            )    
+            )
         return separate_feature(x, k, self.feature_dim)

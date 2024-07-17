@@ -19,7 +19,7 @@ class TestSeparate:
         x2 = _reshape.separate_feature(
             x, 2, 3, reshape=True
         )
-        assert x2.shape == torch.Size([2,2, 4, 2])
+        assert x2.shape == torch.Size([2,4, 2, 2])
 
     def test_separate_feature_with_view(self):
 
@@ -36,7 +36,6 @@ class TestSeparate:
             x, 2, reshape=True
         )
         assert x2.shape == torch.Size([2,2, 2])
-
 
     def test_separate_batch_with_view(self):
 

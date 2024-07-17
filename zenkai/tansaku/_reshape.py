@@ -116,10 +116,17 @@ def collapse_feature(x: torch.Tensor, feature_dim: int=2, reshape: bool=True) ->
     Returns:
         torch.Tensor: The expanded tensor
     """
+    permutation = list(range(x.dim()))
+    permutation = [
+        *permutation[1:feature_dim],
+        0, *permutation[feature_dim:]
+    ]
+
     shape = list(x.shape)
     shape[feature_dim] = shape[0] * shape[feature_dim]
     shape.pop(0)
-    x = x.transpose(feature_dim - 1, 0)
+
+    x = x.permute(permutation)
     if reshape:
         return x.reshape(shape)
     return x.view(shape)
@@ -143,7 +150,14 @@ def separate_feature(x: torch.Tensor, k: int, feature_dim: int=2, reshape: bool=
     if reshape:
         x = x.reshape(shape)
     else: x = x.view(shape)
-    return x.transpose(feature_dim - 1, 0)
+    permutation = list(range(x.dim()))
+    permutation = [
+        permutation[feature_dim - 1], 
+        *permutation[:feature_dim - 1],
+        *permutation[feature_dim:]
+    ]
+    print(permutation)
+    return x.permute(permutation)
 
 
 def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:

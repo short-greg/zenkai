@@ -3,11 +3,11 @@ import torch.nn as nn
 from zenkai.tansaku import _params as p_utils
 
 
-class PopLinear(nn.Module):
+class PopLinear(p_utils.PopModule):
 
     def __init__(self, pop_size: int, in_features: int, out_features: int):
 
-        super().__init__()
+        super().__init__(pop_size)
         self.w = nn.parameter.Parameter(
             torch.randn(pop_size, in_features, out_features) * 0.1
         )
@@ -32,14 +32,15 @@ class TestPVec(object):
         linear = PopLinear(4, 2, 2)
         linear2 = PopLinear(4, 2, 2)
         
+        print(linear.w[0], linear2.w[0])
         pvec = p_utils.to_pvec(
             linear, 4
         )
         p_utils.set_pvec(
             linear2, pvec
         )
-        
-        assert (linear.w == linear2.w).all()
+        print(linear.w[0], linear2.w[0])
+        assert torch.isclose(linear.w, linear2.w).all()
 
     def test_acc_pvec_is_two_times_original(self):
 
