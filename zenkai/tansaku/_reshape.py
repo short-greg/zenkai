@@ -239,4 +239,3 @@ def deflatten_dim0(x: torch.Tensor, k: int) -> torch.Tensor:
         raise ValueError("Input dimension == 0")
 
     return x.view(k, -1, *x.shape[1:])
-

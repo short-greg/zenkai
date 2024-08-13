@@ -117,10 +117,13 @@ class PopModule(nn.Module, ABC):
     """
     def __init__(
         self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
-        """Create a population module with the specified number of members
+        """_summary_
 
         Args:
-            n_members (int): The number of members in the population
+            n_members (int): The population size
+            out_dim (int, optional): The dimension for the population for the output. Defaults to 0.
+            p_dim (int, optional): The dimension for the pouplation for the parameters. Defaults to 0.
+            mixed (bool, optional): Whether the population dim is mixed with another dimension. Defaults to False.
         """
         super().__init__()
         self._n_members = n_members
@@ -233,3 +236,25 @@ class AdaptFeature(PopModule):
                 separate_feature(x_i, k, self.feature_dim) for x_i in x
             )
         return separate_feature(x, k, self.feature_dim)
+
+
+class NoAdapt(PopModule):
+    """Use for modules that already have a population component
+    """
+
+    def __init__(self, module: nn.Module, n_members: int=None, dim: int=0):
+        """Adapt module to work with a population of inputs
+
+        Args:
+            module (nn.Module): The module to a adapt
+        """
+        super().__init__(n_members, out_dim=dim, p_dim=dim, mixed=False)
+        self.module = module
+
+    def forward(self, *x: torch.Tensor) -> torch.Tensor:
+        """Adapt the module with  apopulation separating by feature
+
+        Returns:
+            torch.Tensor: The output of the module
+        """
+        return self.module(*x)

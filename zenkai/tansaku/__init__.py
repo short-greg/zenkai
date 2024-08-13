@@ -77,11 +77,13 @@ from ._params import (
     set_pvec,
     acc_pvec,
     to_gradvec,
+    pop_parameters
 )
 from ._module import (
     PopModule,
     AdaptBatch,
-    AdaptFeature
+    AdaptFeature,
+    PopParams,
 )
 
 from ._optim import (

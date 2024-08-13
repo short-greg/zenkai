@@ -97,6 +97,7 @@ def pop_parameters(m: PopModule, visited: typing.Optional [typing.Set]=None) -> 
 
     visited = visited if visited is not None else set()
 
+    print('Visiting ', m)
     if m in visited:
         return
 
@@ -134,7 +135,6 @@ def align_vec(obj: PopM, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[PopP
     Yields:
         Iterator[typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]]: Each parameter and aligned vector
     """
-
     start = 0
     for p in pop_parameters(obj): # param_utils.get_p(obj):
 
@@ -152,7 +152,7 @@ def set_pvec(obj: PopM, vec: torch.Tensor) -> torch.Tensor:
 
     Args:
         obj (PObj): The parameter object
-        vec (torch.Tensor): The gradient vec
+        vec (torch.Tensor): The parameter vec
     """
     for p, cur_vec in align_vec(obj, vec):
         p.set_params(cur_vec)
