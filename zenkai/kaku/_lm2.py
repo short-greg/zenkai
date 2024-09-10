@@ -101,7 +101,7 @@ class LMode(Enum):
     OnlyStepX = 'step_x'
     StepPriority = 'step_priority'
     WithStep = 'with_step'
-    Default = 'default'
+    Standard = 'standard'
 
 
 @dataclass
@@ -493,7 +493,7 @@ class LearningF(Function):
                 self.accumulate(x, t, state, **kwargs)
                 x_prime = self.step_x(x, t, state, **kwargs)
                 self.step(x, t, state, **kwargs)
-            elif self.lmode == LMode.Default:
+            elif self.lmode == LMode.Standard:
                 self.accumulate(x, t, state, **kwargs)
                 x_prime = self.step_x(x, t, state, **kwargs)
             elif self.lmode == LMode.StepPriority:
@@ -511,12 +511,12 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
     """
 
     def __init__(
-        self, lmode: LMode=LMode.Default
+        self, lmode: LMode=LMode.Standard
     ):
         """Create a learning machine
 
         Args:
-            lmode (LMode, optional): The learning mode to set to. Defaults to LMode.Default.
+            lmode (LMode, optional): The learning mode to set to. Defaults to LMode.Standard.
         """
         super().__init__()
         self._lmode = lmode
