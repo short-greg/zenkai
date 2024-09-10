@@ -50,7 +50,7 @@ from ._null import (
 )
 from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
-    OptimFactory, optimf, Fit #, CompOptim
+    OptimFactory, optimf, Fit 
 )
 from ._state import IDable, State
 from ._objective import (
