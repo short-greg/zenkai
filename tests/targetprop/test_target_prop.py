@@ -7,21 +7,31 @@ from zenkai import IO, State, iou, LMode
 from zenkai.utils import _params as params
 from torch import nn
 import torch
+from itertools import chain
 
 
 class TargetPropExample1(targetprop.TPLayerLearner):
 
     def __init__(self, in_features: int, out_features: int):
 
-        forward = _grad.GradIdxLearner(
-            nn.Linear(in_features, out_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.NNLoss('MSELoss')
+        forward = _grad.GradLearner(
+            nn.Linear(in_features, out_features), zenkai.NNLoss('MSELoss')
         )
-        reverse  = _grad.GradIdxLearner(
-            nn.Linear(out_features, in_features), zenkai.OptimFactory('SGD', lr=1e-3).comp(), zenkai.NNLoss('MSELoss')
+        reverse  = _grad.GradLearner(
+            nn.Linear(out_features, in_features), zenkai.NNLoss('MSELoss')
         )
         super().__init__(
             forward, reverse, cat_x=False
         )
+        self._optim = torch.optim.Adam(
+            chain(forward.parameters(), reverse.parameters()), lr=1e-3
+        )
+    
+    def step(self, x: IO, t: IO, state: State):
+        
+        self._optim.step()
+        self._optim.zero_grad()
+
         
 
 class TestTargetPropLearner(object):

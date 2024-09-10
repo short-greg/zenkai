@@ -14,7 +14,6 @@ zenkai.OptimFactory
    .. autosummary::
    
       ~OptimFactory.__init__
-      ~OptimFactory.comp
    
    
 

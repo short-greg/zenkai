@@ -21,7 +21,7 @@ from ..utils._build import (
 )
 from ..utils import _params as param_utils
 from ..targetprop import Null
-from ..kaku._grad import GradIdxLearner
+from ..kaku._grad import GradLearner
 from ..kaku._lm2 import IO as IO, Idx as Idx, forward_dep
 from ..kaku._io2 import IO as IO, iou
 from ..kaku import Idx
@@ -44,15 +44,15 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
     return iou(y.f, y_prime.f, detach=detach)
 
 
-class FALearner(GradIdxLearner):
+class FALearner(GradLearner):
     """Learner for implementing feedback alignment"""
 
     def __init__(
         self,
         net: nn.Module,
         netB: nn.Module,
-        optim_factory: OptimFactory,
         activation: nn.Module = None,
+        optim_factory: OptimFactory = None,
         learn_criterion: typing.Union[Criterion, str] = "MSELoss",
     ) -> None:
         """Wraps a module to create an FALearner.
@@ -70,15 +70,15 @@ class FALearner(GradIdxLearner):
 
         super().__init__(
             module=net,
-            optimf=optim_factory.comp(),
             learn_criterion=learn_criterion
         )
         self.net = net
         self.netB = netB
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
+        self._optim = optim_factory(self.net.parameters())
         
-    def forward_nn(self, x: IO, state: State, batch_idx: Idx=None) -> torch.Tensor:
+    def forward_nn(self, x: IO, state: State) -> torch.Tensor:
         """Pass the input through the net
 
         Args:
@@ -98,7 +98,7 @@ class FALearner(GradIdxLearner):
         return self.activation(y)
 
     @forward_dep('_y')
-    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
+    def accumulate(self, x: IO, t: IO, state: State):
         """Accumulate the gradients
 
         Args:
@@ -108,7 +108,6 @@ class FALearner(GradIdxLearner):
         Returns:
             IO: the updated target
         """
-        self._optim.prep_x(x, state)
         y = state._y
         y2 = self.netB(x.f)
         
@@ -120,8 +119,9 @@ class FALearner(GradIdxLearner):
         )
     
     @forward_dep('_y')
-    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None):
-        super().step(x, t, state, batch_idx)
+    def step(self, x: IO, t: IO, state: State):
+        self._optim.step()
+        self._optim.zero_grad()
         self.netB.zero_grad()
 
     @classmethod
@@ -157,7 +157,7 @@ class OutT:
     t: IO = None
 
 
-class DFALearner(GradIdxLearner):
+class DFALearner(GradLearner):
     """Learner for implementing feedback alignment."""
 
     def __init__(
@@ -189,7 +189,6 @@ class DFALearner(GradIdxLearner):
         
         super().__init__(
             module=net,
-            optimf=optim_factory.comp(),
             learn_criterion=learn_criterion
         )
         self.net = net
@@ -197,8 +196,9 @@ class DFALearner(GradIdxLearner):
         self.activation = activation or Null()
         self.flatten = nn.Flatten()
         self.B = nn.Linear(out_features, t_features, bias=False)
+        self._optim = optim_factory(self.net.parameters())
 
-    def forward_nn(self, x: IO, state: State,  out_t: OutT=None, batch_idx: Idx = None) -> Tensor:
+    def forward_nn(self, x: IO, state: State,  out_t: OutT=None) -> Tensor:
 
         y = self.net(x.f)
         y = y.detach()
@@ -208,7 +208,7 @@ class DFALearner(GradIdxLearner):
         return self.activation(y)
 
     @forward_dep('_y')
-    def accumulate(self, x: IO, t: IO, state: State, out_t: OutT=None, batch_idx: Idx = None):
+    def accumulate(self, x: IO, t: IO, state: State, out_t: OutT=None):
         """Update the net parameters
 
         Args:
@@ -223,7 +223,6 @@ class DFALearner(GradIdxLearner):
             # TODO: Add warning
             return
 
-        self._optim.prep_x(x, state)
         y2 = self.netB(x.f)
 
         y_det = state._y_det
@@ -236,15 +235,15 @@ class DFALearner(GradIdxLearner):
         assert x.f.grad is not None
     
     @forward_dep('_y')
-    def step(self, x: IO, t: IO, state: State, out_t: OutT=None, batch_idx: Idx = None):
-        
-        super().step(x, t, batch_idx, state)
+    def step(self, x: IO, t: IO, state: State, out_t: OutT=None):
+        self._optim.step()
+        self._optim.zero_grad()
         self.netB.zero_grad()
 
-    def step_x(self, x: IO, t: IO, state: State, out_t: OutT, batch_idx: Idx = None) -> IO:
+    def step_x(self, x: IO, t: IO, state: State, out_t: OutT) -> IO:
         
         return super().step_x(
-            x, out_t.t, state, batch_idx
+            x, out_t.t, state
         )
 
 

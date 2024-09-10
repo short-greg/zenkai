@@ -110,99 +110,99 @@ class OptimFactory(object):
         kwargs = {**self._kwargs, **kwarg_overrides}
         return self._optim(params, *self._args, **kwargs)
     
-    def comp(self, x_lr: float=1.) -> 'CompOptim':
-        """Create a comp optimizer 
+    # def comp(self, x_lr: float=1.) -> 'CompOptim':
+    #     """Create a comp optimizer 
 
-        Args:
-            x_lr (float, optional): The learning rate for x. Defaults to 1..
+    #     Args:
+    #         x_lr (float, optional): The learning rate for x. Defaults to 1..
 
-        Returns:
-            CompOptim: An optim to wrap both updating x and theta
-        """
-        return CompOptim(
-            self, x_lr
-        )
+    #     Returns:
+    #         CompOptim: An optim to wrap both updating x and theta
+    #     """
+    #     return CompOptim(
+    #         self, x_lr
+    #     )
 
 
-class CompOptim(object):
-    """An optim used to optimize both the parameters 
-    and the inputs to a learning machine
-    """
+# class CompOptim(object):
+#     """An optim used to optimize both the parameters 
+#     and the inputs to a learning machine
+#     """
 
-    def __init__(
-        self, theta_optim: OptimFactory=None,
-        x_optim: typing.Union[float, OptimFactory]=1.0,
-    ):
-        """Wraps an optimizer to be useed for both
-        theta and x
+#     def __init__(
+#         self, theta_optim: OptimFactory=None,
+#         x_optim: typing.Union[float, OptimFactory]=1.0,
+#     ):
+#         """Wraps an optimizer to be useed for both
+#         theta and x
 
-        Args:
-            theta_optim (OptimFactory, optional): The parameter optimizer. Defaults to None.
-            x_optim (typing.Union[float, OptimFactory], optional): _description_. Defaults to 1.0.
-        """
-        self.theta_optimf = theta_optim
-        self.x_optimf = x_optim
-        self.theta_optim = None
+#         Args:
+#             theta_optim (OptimFactory, optional): The parameter optimizer. Defaults to None.
+#             x_optim (typing.Union[float, OptimFactory], optional): _description_. Defaults to 1.0.
+#         """
+#         self.theta_optimf = theta_optim
+#         self.x_optimf = x_optim
+#         self.theta_optim = None
 
-    def step_theta(self):
-        """Update the parameters for theta
-        """
-        if self.theta_optim is not None:
-            self.theta_optim.step()
+#     def step_theta(self):
+#         """Update the parameters for theta
+#         """
+#         if self.theta_optim is not None:
+#             self.theta_optim.step()
 
-    def prep_theta(self, model: typing.Union[nn.Module, typing.List[nn.Module]], **kwarg_overrides):
+#     def prep_theta(self, model: typing.Union[nn.Module, typing.List[nn.Module]], **kwarg_overrides):
 
-        if self.theta_optimf is None or model is None:
-            self.theta_optim = None
-            return
+#         if self.theta_optimf is None or model is None:
+#             self.theta_optim = None
+#             return
 
-        if isinstance(model, typing.List):
-            p = chain(*[model_i.parameters() for model_i in model])
-        else:
-            p = model.parameters()
-        self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
+#         if isinstance(model, typing.List):
+#             p = chain(*[model_i.parameters() for model_i in model])
+#         else:
+#             p = model.parameters()
+#         self.theta_optim = self.theta_optimf(p, **kwarg_overrides)
 
-    def prep_x(self, x: IO, state: State, clear: bool=False, **kwarg_overrides):
+#     def prep_x(self, x: IO, state: State, clear: bool=False, **kwarg_overrides):
 
-        if (
-            (clear or state.get('optim') is None) and
-            isinstance(self.x_optimf, OptimFactory)
-        ):
-            state.optim = self.x_optimf(x, **kwarg_overrides)
+#         if (
+#             (clear or state.get('optim') is None) and
+#             isinstance(self.x_optimf, OptimFactory)
+#         ):
+#             state.optim = self.x_optimf(x, **kwarg_overrides)
 
-    def step_x(self, x: IO, state: State) -> IO:
-        """Update the value of x with the optimizer
+#     def step_x(self, x: IO, state: State) -> IO:
+#         """Update the value of x with the optimizer
 
-        Args:
-            x (IO): The current x
-            state (State): The learning state
+#         Args:
+#             x (IO): The current x
+#             state (State): The learning state
 
-        Returns:
-            IO: The updated x
-        """
-        if isinstance(self.x_optimf, OptimFactory):
-            optim = state.optim
-            optim.step()
-            return x
-        return x.acc_grad(self.x_optimf)
+#         Returns:
+#             IO: The updated x
+#         """
+#         if isinstance(self.x_optimf, OptimFactory):
+#             optim = state.optim
+#             optim.step()
+#             return x
+#         return x.acc_grad(self.x_optimf)
 
-    def zero_theta(self):
-        """Zero the gradients for theta
-        """
-        if self.theta_optim is not None:
-            self.theta_optim.zero_grad()
+#     def zero_theta(self):
+#         """Zero the gradients for theta
+#         """
+#         if self.theta_optim is not None:
+#             self.theta_optim.zero_grad()
 
-    def zero_x(self, x: IO, state: State):
-        """Zero the accumulated gradient for x
+#     def zero_x(self, x: IO, state: State):
+#         """Zero the accumulated gradient for x
 
-        Args:
-            x (IO): The x to zero
-            state (State): The learning state
-        """
-        if isinstance(self.x_optimf, OptimFactory):
-            state.optim.zero_grad()
-        else:
-            x.zero_grad()
+#         Args:
+#             x (IO): The x to zero
+#             state (State): The learning state
+#         """
+#         if isinstance(self.x_optimf, OptimFactory):
+#             state.optim.zero_grad()
+#         else:
+#             x.zero_grad()
 
 
 class ParamFilter(optim.Optimizer):

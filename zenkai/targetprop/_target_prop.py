@@ -6,7 +6,7 @@ import torch.nn as nn
 from abc import abstractmethod, ABC
 
 # Local
-from ..kaku import GradIdxLearner, CompOptim, GradLearner
+from ..kaku import GradLearner
 
 from ..kaku import (
     Criterion
@@ -21,6 +21,10 @@ from ..kaku._lm2 import (
     StepX as StepX
 )
 
+# Create the "Grad learner"
+# In general a grad learner
+# difference is that i need to use both yf and t for
+# backpropagation... I'll update the accumulate function
 
 class TPLayerLearner(LearningMachine):
     """A target prop learner for one layer
@@ -167,11 +171,6 @@ class TPForwardLearner(LearningMachine):
         y = state._rev_y = self._reverse(state._y, x)
         return y
 
-
-# Create the "Grad learner"
-# In general a grad learner
-# difference is that i need to use both yf and t for
-# backpropagation... I'll update the accumulate function
 
 class TPReverseLearner(GradLearner):
     """A TargetProp learner for reverse model
@@ -407,7 +406,7 @@ def create_grad_target_prop(
     machine: LearningMachine, in_features_rev: int, out_features_rev: int, h_rev: typing.List[int], 
     act: typing.Union[str, typing.Callable[[], nn.Module]], 
     norm: typing.Union[str, typing.Callable[[int], nn.Module]],
-    criterion: Criterion, optim: CompOptim=None,
+    criterion: Criterion, 
     diff: bool=False, noise_weight: float=None
 ) -> TPLayerLearner:
     """Creates a target prop learner with a linear model for reversing
@@ -420,7 +419,6 @@ def create_grad_target_prop(
         act (typing.Union[str, typing.Callable[[], nn.Module]]): 
         norm (typing.Union[str, typing.Callable[[int], nn.Module]]): The activation for the reverse model
         criterion (Criterion): 
-        optim (CompOptim, optional): . Defaults to None.
         diff (bool, optional): Whether to use DiffTargetProp. Defaults to False.
         noise_weight (float, optional): If none it will use the non-noisy version. Defaults to None.
 
@@ -429,12 +427,12 @@ def create_grad_target_prop(
     """
     
     if noise_weight is not None:
-        reverse_learner = GradIdxLearner(
-            LinearRecNoise(out_features_rev, in_features_rev, h_rev, act, norm), optim, criterion
+        reverse_learner = GradLearner(
+            LinearRecNoise(out_features_rev, in_features_rev, h_rev, act, norm), criterion
         )
     else:
-        reverse_learner = GradIdxLearner(
-            LinearRec(out_features_rev, in_features_rev, h_rev, act, norm), optim, criterion
+        reverse_learner = GradLearner(
+            LinearRec(out_features_rev, in_features_rev, h_rev, act, norm), criterion
         )
 
     if diff:

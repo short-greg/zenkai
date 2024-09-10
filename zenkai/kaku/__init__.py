@@ -50,7 +50,7 @@ from ._null import (
 )
 from ._optimize import (
     OPTIM_MAP, ParamFilter, NullOptim, 
-    OptimFactory, optimf, Fit, CompOptim
+    OptimFactory, optimf, Fit #, CompOptim
 )
 from ._state import IDable, State
 from ._objective import (
@@ -64,7 +64,7 @@ from ._null import (
     NullLearner, NullStepTheta, NullStepX
 )
 from ._grad import (
-    GradIdxLearner,
+    # GradIdxLearner,
     GradStepTheta,
     GradLearner,
     GradStepX,

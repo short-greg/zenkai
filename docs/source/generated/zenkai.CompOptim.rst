@@ -14,7 +14,6 @@ zenkai.CompOptim
    .. autosummary::
    
       ~CompOptim.__init__
-      ~CompOptim.prep_theta
       ~CompOptim.prep_x
       ~CompOptim.step_theta
       ~CompOptim.step_x
