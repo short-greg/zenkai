@@ -95,8 +95,18 @@ class IO(tuple):
         return IO(
             x_i if isinstance(x_i, torch.Tensor) else None for x_i in self
         )
+    
+    def _acc_grad(self, x: typing.Any, lr: typing.Optional[float] = 1.0) -> typing.Any:
 
-    def acc_grad(self, lr: float = 1.0) -> 'IO':
+        if not isinstance(x, torch.Tensor):
+            return x
+        if x.grad is None:
+            return x
+        if lr is None:
+            return x - x.grad
+        return x - lr * x.grad
+
+    def acc_grad(self, lr: typing.Optional[float] = 1.0) -> 'IO':
         """Calculate dx from an updated x's grad
 
         Use in step_x if different x's are tested in dx
@@ -105,21 +115,27 @@ class IO(tuple):
             IO: The IO with the updated x
         """
         return IO(
-            x - lr * x.grad 
-            if isinstance(x, torch.Tensor) and x.grad is not None 
-            else x 
+            self._acc_grad(x, lr) 
             for x in self
         )
-    
-    def acc_dx(self, dx: typing.Union['IO', typing.Iterable], lr: float = 1.0) -> 'IO':
+
+    def _acc_dx(self, x: typing.Any, dx: typing.Any, lr: typing.Optional[float] = 1.0) -> typing.Any:
+
+        if not isinstance(x, torch.Tensor) or dx is None:
+            return x
+        
+        if lr is None:
+            return x - dx
+        return x - lr * dx
+
+    def acc_dx(self, dx: typing.Union['IO', typing.Iterable], lr: typing.Optional[float] = 1.0) -> 'IO':
         """Update the io based on a change in its values and a learning rate
 
         Returns:
             IO: The IO with the updated x
         """
         return IO(
-            x - lr * dx_i 
-            if isinstance(x, torch.Tensor) and dx_i is not None else x
+            self._acc_dx(x, dx_i, lr)
             for x, dx_i in zip(self, dx)
         )
 
