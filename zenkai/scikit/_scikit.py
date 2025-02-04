@@ -2,23 +2,16 @@
 import typing
 
 # 3rd party
-from sklearn.base import BaseEstimator
-import torch
-from torch import nn
 
 # local
 from ..kaku._lm2 import (
     IO as IO,
-    FeatureIdxStepTheta,
-    FeatureIdxStepX,
     StepX as StepX,
     Idx as Idx,
     LearningMachine as LearningMachine
 )
 from ..kaku._state import State
-from ..kaku import Criterion
-from ._scikit_mod import ScikitModule, MultiOutputScikitWrapper
-from ..kaku import FeatureLimitGen
+from ._scikit_mod import ScikitModule
 
 
 class ScikitMachine(LearningMachine):
