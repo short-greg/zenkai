@@ -15,3 +15,6 @@ from ._ste import (
     step_ste, StepSTE,
     SignSTE, sign_ste
 )
+from ._modules import (
+    Sign, Argmax
+)

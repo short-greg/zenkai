@@ -86,6 +86,12 @@ class IO(tuple):
             for i, val in enumerate(self)
         )
     
+    def on(self, module: nn.Module) -> 'IO':
+
+        return IO([module(
+            *[x for x in self]
+        )])
+    
     def tensor_only(self) -> 'IO':
         """Converts any non-tensor values to None
 

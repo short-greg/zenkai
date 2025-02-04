@@ -29,9 +29,9 @@ class TestNullLearner:
         learner = NullLearner()
 
         state = State()
-        learner.forward_io(x, state)
+        y = learner.forward_io(x, state)
         learner.accumulate(x, t, state)
-        x_prime = learner.step_x(x, t, state)
+        x_prime = learner.step_x(x, y, t, state)
         assert (x_prime.f == x.f).all()
 
     def test_forward_outputs_x(self):

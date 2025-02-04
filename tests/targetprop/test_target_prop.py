@@ -45,8 +45,8 @@ class TestTargetPropLearner(object):
         y = learner.forward_io(x, state)
 
         before = params.get_params(learner.forward_learner)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.accumulate(x, y, t, state)
+        learner.step(x, y, t, state)
         assert (
             before !=
             params.get_params(learner._forward_learner)
@@ -62,8 +62,8 @@ class TestTargetPropLearner(object):
         y = learner.forward_io(x, state)
 
         before = params.get_params(learner.reverse_learner)
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.accumulate(x, y, t, state)
+        learner.step(x, y, t, state)
         assert (
             before !=
             params.get_params(learner.reverse_learner)
@@ -79,8 +79,8 @@ class TestTargetPropLearner(object):
         learner.reverse_update = False
         before = params.get_params(learner.reverse_learner)
         learner.reverse_update
-        learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.accumulate(x, y, t, state)
+        learner.step(x, y, t, state)
         assert (
             before ==
             params.get_params(learner.reverse_learner)
@@ -113,7 +113,7 @@ class TestTargetPropLearner(object):
 
         learner.forward_update = False
         learner.accumulate(x, t, state)
-        x_prime = learner.step_x(x, t, state)
+        x_prime = learner.step_x(x, y, t, state)
         assert (
             x.f != x_prime.f
         ).any()

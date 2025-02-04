@@ -99,7 +99,7 @@ class GradStepX(StepX):
         super().__init__()
         self.x_lr = x_lr
     
-    def step_x(self, x: IO, t: IO) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO) -> IO:
         """Step based on the accumulated gradients of x
 
         Args:

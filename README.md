@@ -4,7 +4,7 @@ Zenkai is a framework built on PyTorch for deep learning researchers
 - to explore a wider variety of machine architectures
 - to explore learning algorithms that do not rely on gradient descent
 
-It is fundamentally based on the concepts of target propagation. In target propagation, a targets are propagated to each layer of the network by using an inversion or approximating an inversion operation. Thus, each layer has its own target. While Zenkai allows for more than just using target propagation, it is based on the concept of each layer having its own target.
+It is fundamentally based on the concepts of target propagation. In target propagation, targets are propagated to each layer of the network by using an inversion or approximating an inversion operation. Thus, each layer has its own target. While Zenkai allows for more than just using target propagation, it is based on the concept of each layer having its own target.
 
 ## Installation
 
@@ -56,7 +56,7 @@ class MyLearner(zenkai.LearningMachine):
         # x (IO): The input to update with
         # t (IO): the target to update
         # outputs for a connection of two machines
-        return self._step_theta(x, t)
+        return self._step_theta(x, state._y, t, state)
 
     def step_x(
         self, x: IO, t: IO, state: State, **kwargs
@@ -64,7 +64,7 @@ class MyLearner(zenkai.LearningMachine):
         # use to update the target for the machine
         # step_x is analogous to updateGradInputs in Torch except
         # it calculates "new targets" for the incoming layer
-        return self._step_x(x, t)
+        return self._step_x(x, state._y, t, state)
 
     def forward_nn(self, x: zenkai.IO, state: State) -> zenkai.IO:
         return self.module(x.f)

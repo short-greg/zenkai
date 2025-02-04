@@ -230,7 +230,7 @@ class StepXHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, step_x: "StepX", x: IO, x_prime: IO, t: IO, state: State
+        self, step_x: "StepX", x: IO, y: IO, x_prime: IO, t: IO, state: State
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -241,7 +241,7 @@ class StepHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, step: "StepTheta", x: IO, t: IO, state: State
+        self, step: "StepTheta", x: IO, y: IO, t: IO, state: State
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -261,7 +261,7 @@ class LearnerPostHook(ABC):
 
     @abstractmethod
     def __call__(
-        self, x: IO, t: IO, y: IO, assessment: torch.Tensor
+        self, x: IO, y: IO, t: IO, assessment: torch.Tensor
     ) -> typing.Tuple[IO, IO]:
         pass
 
@@ -272,43 +272,43 @@ class StepX(ABC):
     machine definition
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._step_x_hook_initialized = True
-        self._step_x_posthooks = []
-        self._base_step_x = self.step_x
-        self.step_x = self._step_x_hook_runner
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self._step_x_hook_initialized = True
+    #     self._step_x_posthooks = []
+    #     self._base_step_x = self.step_x
+    #     self.step_x = self._step_x_hook_runner
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
         pass
 
-    def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
-        """Call step x wrapped with the hooks
+    # def _step_x_hook_runner(self, x: IO, y: IO, t: IO, state: State,  *args, **kwargs) -> IO:
+    #     """Call step x wrapped with the hooks
 
-        Args:
-            x (IO): The incoming IO
-            t (IO): The target
-        Returns:
-            IO: the updated x
-        """
-        x_prime = self._base_step_x(x, t, state, *args, **kwargs)
+    #     Args:
+    #         x (IO): The incoming IO
+    #         t (IO): The target
+    #     Returns:
+    #         IO: the updated x
+    #     """
+    #     x_prime = self._base_step_x(x, t, state, *args, **kwargs)
 
-        for posthook in self._step_x_posthooks:
-            x_prime, t = posthook(self, x, x_prime, t, state)
+    #     for posthook in self._step_x_posthooks:
+    #         x_prime, t = posthook(self, x, x_prime, t, state)
 
-        return x_prime
+    #     return x_prime
 
-    def step_x_hook(self, hook: StepXHook) -> "StepX":
-        """Add hook to call after StepX
+    # def step_x_hook(self, hook: StepXHook) -> "StepX":
+    #     """Add hook to call after StepX
 
-        Args:
-            hook (StepXHook): The hook to add
-        """
-        if not hasattr(self, "_step_x_hook_initialized"):
-            self.__init__()
-        self._step_x_posthooks.append(hook)
-        return self
+    #     Args:
+    #         hook (StepXHook): The hook to add
+    #     """
+    #     if not hasattr(self, "_step_x_hook_initialized"):
+    #         self.__init__()
+    #     self._step_x_posthooks.append(hook)
+    #     return self
 
 
 class StepTheta(ABC):
@@ -317,19 +317,19 @@ class StepTheta(ABC):
     machine definition
     """
 
-    def __init__(self, *args, **kwargs):
-        """Create the StepTheta
-        """
-        super().__init__(*args, **kwargs)
-        self._step_hook_initialized = True
-        self._step_hooks: typing.List[StepHook] = []
-        self._base_step = self.step
-        self._base_accumulate = self.accumulate
-        self.step = self._step_hook_runner
-        self.accumulate = self._accumulate_hook_runner
-        self._accumulate_hooks: typing.List[StepHook] = []
+    # def __init__(self, *args, **kwargs):
+    #     """Create the StepTheta
+    #     """
+    #     super().__init__(*args, **kwargs)
+    #     self._step_hook_initialized = True
+    #     self._step_hooks: typing.List[StepHook] = []
+    #     self._base_step = self.step
+    #     self._base_accumulate = self.accumulate
+    #     self.step = self._step_hook_runner
+    #     self.accumulate = self._accumulate_hook_runner
+    #     self._accumulate_hooks: typing.List[StepHook] = []
 
-    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
+    def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Accumulate updates for the network. In some cases you might not want to implement this.
 
         Args:
@@ -340,7 +340,7 @@ class StepTheta(ABC):
         pass
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Update the parameters of the network
 
         Args:
@@ -349,60 +349,60 @@ class StepTheta(ABC):
         """
         pass
 
-    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
-        """Call step wrapped with the hooks
+    # def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    #     """Call step wrapped with the hooks
 
-        Args:
-            x (IO): the incoming IO
-            t (IO): The target IO
-        """
-        self._base_accumulate(x, t, state, *args, **kwargs)
+    #     Args:
+    #         x (IO): the incoming IO
+    #         t (IO): The target IO
+    #     """
+    #     self._base_accumulate(x, t, state, *args, **kwargs)
 
-        for posthook in self._accumulate_hooks:
-            posthook(self, x, t, state)
+    #     for posthook in self._accumulate_hooks:
+    #         posthook(self, x, t, state)
 
-    def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
-        """Add hook to call after StepTheta
+    # def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
+    #     """Add hook to call after StepTheta
 
-        Args:
-            hook (StepHook): The hook to add
-        """
-        if not hasattr(self, "_step_hook_initialized"):
-            self.__init__()
-        self._accumulate_hooks.append(hook)
-        return self
+    #     Args:
+    #         hook (StepHook): The hook to add
+    #     """
+    #     if not hasattr(self, "_step_hook_initialized"):
+    #         self.__init__()
+    #     self._accumulate_hooks.append(hook)
+    #     return self
 
-    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
-        """Call step wrapped with the hooks
+    # def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    #     """Call step wrapped with the hooks
 
-        Args:
-            x (IO): the incoming IO
-            t (IO): The target IO
-        """
+    #     Args:
+    #         x (IO): the incoming IO
+    #         t (IO): The target IO
+    #     """
 
-        result = self._base_step(x, t, state, *args, **kwargs)
+    #     result = self._base_step(x, t, state, *args, **kwargs)
 
-        for posthook in self._step_hooks:
-            x, t = posthook(self, x, t, state)
-        return result
+    #     for posthook in self._step_hooks:
+    #         x, t = posthook(self, x, t, state)
+    #     return result
 
-    def step_posthook(self, hook: StepHook) -> "StepTheta":
-        """Add hook to call after StepTheta
+    # def step_posthook(self, hook: StepHook) -> "StepTheta":
+    #     """Add hook to call after StepTheta
 
-        Args:
-            hook (StepHook): The hook to add
-        """
-        if not hasattr(self, "_step_hook_initialized"):
-            self.__init__()
-        self._step_hooks.append(hook)
-        return self
+    #     Args:
+    #         hook (StepHook): The hook to add
+    #     """
+    #     if not hasattr(self, "_step_hook_initialized"):
+    #         self.__init__()
+    #     self._step_hooks.append(hook)
+    #     return self
 
 
 class BatchIdxStepTheta(StepTheta):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
         """Update the parameters of the learning machine
 
         Args:
@@ -413,7 +413,7 @@ class BatchIdxStepTheta(StepTheta):
         """
         pass
 
-    def accumulate(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
+    def accumulate(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
         pass
 
 
@@ -421,7 +421,7 @@ class FeatureIdxStepTheta(StepTheta):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
         """Update the parameters of the learning machine
 
         Args:
@@ -437,7 +437,7 @@ class BatchIdxStepX(StepX):
     """Mixin for when only to update based on a limited set of indexes in the minibatch"""
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs) -> IO:
         pass
 
 
@@ -445,7 +445,7 @@ class FeatureIdxStepX(StepX):
     """Mixin for when only to train on a limited set of neurons"""
 
     @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs) -> IO:
         pass
 
 
@@ -506,7 +506,7 @@ class LearningF(Function):
             return None, None, *x.dx(x_prime).tensor_only()
 
 
-class LearningMachine(StepTheta, StepX, nn.Module, ABC):
+class LearningMachine(nn.Module, ABC):
     """A learning machine is a machine that updates its parameters based on an evaluation of its output.
     """
 
@@ -521,6 +521,20 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         super().__init__()
         self._lmode = lmode
         self._y_hooks = []
+
+        self._step_hook_initialized = True
+        self._step_hooks: typing.List[StepHook] = []
+        self._base_step = self.step
+        self._base_accumulate = self.accumulate
+        self.step = self._step_hook_runner
+        self.accumulate = self._accumulate_hook_runner
+        self._accumulate_hooks: typing.List[StepHook] = []
+
+        self._step_x_hook_initialized = True
+        self._step_x_posthooks = []
+        self._base_step_x = self.step_x
+        self.step_x = self._step_x_hook_runner
+
         self._base_forward = self.forward_nn
         self.forward_nn = self._forward_hook_runner
 
@@ -627,7 +641,6 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         Returns:
             IO: The output
         """
-
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
         y = state._y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
@@ -645,13 +658,87 @@ class LearningMachine(StepTheta, StepX, nn.Module, ABC):
         y = LearningF.apply(self, kwargs, *x)
         return y
 
+    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+        """
+        self._base_accumulate(x, t, state, *args, **kwargs)
+
+        for posthook in self._accumulate_hooks:
+            posthook(self, x, state._y, t, state)
+
+    def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
+        """Add hook to call after StepTheta
+
+        Args:
+            hook (StepHook): The hook to add
+        """
+        if not hasattr(self, "_step_hook_initialized"):
+            self.__init__()
+        self._accumulate_hooks.append(hook)
+        return self
+
+    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+        """Call step wrapped with the hooks
+
+        Args:
+            x (IO): the incoming IO
+            t (IO): The target IO
+        """
+        result = self._base_step(x, state._y, t, state, *args, **kwargs)
+
+        for posthook in self._step_hooks:
+            x, t = posthook(self, x, t, state)
+        return result
+
+    def step_posthook(self, hook: StepHook) -> "StepTheta":
+        """Add hook to call after StepTheta
+
+        Args:
+            hook (StepHook): The hook to add
+        """
+        if not hasattr(self, "_step_hook_initialized"):
+            self.__init__()
+        self._step_hooks.append(hook)
+        return self
+
+    def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
+        """Call step x wrapped with the hooks
+
+        Args:
+            x (IO): The incoming IO
+            t (IO): The target
+        Returns:
+            IO: the updated x
+        """
+        x_prime = self._base_step_x(x, t, state, *args, **kwargs)
+
+        for posthook in self._step_x_posthooks:
+            x_prime, t = posthook(self, x, state._y, x_prime, t, state)
+
+        return x_prime
+
+    def step_x_hook(self, hook: StepXHook) -> "StepX":
+        """Add hook to call after StepX
+
+        Args:
+            hook (StepXHook): The hook to add
+        """
+        if not hasattr(self, "_step_x_hook_initialized"):
+            self.__init__()
+        self._step_x_posthooks.append(hook)
+        return self
+
 
 class OutDepStepTheta(StepTheta):
     """StepTheta that optionally depends on the outgoing module if outgoing_t is specified"""
 
     @abstractmethod
     def step(
-        self, x: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
+        self, x: IO, y: IO, t: IO, outgoing_t: IO = None, outgoing_x: IO = None
     ):
         """Step that depends on the outgoing machine
 
@@ -669,7 +756,7 @@ class InDepStepX(StepX):
 
     @abstractmethod
     def step_x(
-        self, x: IO, t: IO, incoming_x: IO = None, incoming_t: IO = None
+        self, x: IO, y: IO, t: IO, incoming_x: IO = None, incoming_t: IO = None
     ) -> IO:
         """Initialize a dependency on the incoming module
 

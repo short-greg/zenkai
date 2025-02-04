@@ -113,10 +113,10 @@ class TestIterStepX:
         iter_step = IterStepX(learner2, 2, 128)
         state = State()
         y1 = learner1.forward_io(x, state.sub('1'))
-        learner2.forward_io(y1, state.sub('2'))
-        learner2.step(y1, t, state.sub('2'))
+        y2 = learner2.forward_io(y1, state.sub('2'))
+        learner2.step(y1, y2, t, state.sub('2'))
         before = torch.clone(y1.f)
-        x = iter_step.step_x(y1, t, state.sub('1'))
+        x = iter_step.step_x(y1, y2, t, state.sub('1'))
 
         assert (before != x.f).any()
 

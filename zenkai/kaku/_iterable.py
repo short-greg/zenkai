@@ -112,7 +112,7 @@ class IterStepTheta(StepTheta):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """
 
         Args:
@@ -155,7 +155,7 @@ class IterStepX(StepX):
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
         """Update the x after looping
 
         Args:

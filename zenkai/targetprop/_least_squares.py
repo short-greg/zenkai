@@ -187,7 +187,7 @@ class LeastSquaresStepTheta(StepTheta):
             if bias is not None:
                 self.linear.bias.copy_(bias)
 
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, y: IO, t: IO, state: State):
         self._optimize(x.f, t.f)
 
 
@@ -227,7 +227,7 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
         """Update x
 
         Args:
@@ -281,7 +281,7 @@ class LeastSquaresLearner(LearningMachine):
             t (IO): The target
             state (State): The learning state
         """
-        self._step_theta.step(x, t, state)
+        self._step_theta.step(x, state.get('_y'), t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update the input using least squares
@@ -294,7 +294,7 @@ class LeastSquaresLearner(LearningMachine):
         Returns:
             IO: Updated X
         """
-        return self._step_x.step_x(x, t, state)
+        return self._step_x.step_x(x, state.get('_y'), t, state)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         """Use a linear function on x
@@ -369,7 +369,7 @@ class GradLeastSquaresLearner(LearningMachine):
         Returns:
             IO: The updated x
         """
-        return self._step_x.step_x(x, t, state.sub('grad'))
+        return self._step_x.step_x(x, state.get('_y'), t, state.sub('grad'))
 
     def forward_nn(self, x: IO, state: State) -> IO:
         """Use the linear layer to output
@@ -391,4 +391,4 @@ class GradLeastSquaresLearner(LearningMachine):
             t (typing.Union[IO, None]): The target
             state (State): The learning state
         """
-        self._step_theta.step(x, t, state.sub('least'), y=state._y)
+        self._step_theta.step(x, state.get('_y'), t, state.sub('least'), y=state._y)

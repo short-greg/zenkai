@@ -48,7 +48,7 @@ class TestLeastSquaresStepTheta:
         solver = _least_squares.LeastSquaresStandardSolver(True)
         step_theta = _least_squares.LeastSquaresStepTheta(linear, solver, True)
         before = torch.clone(step_theta.linear.weight)
-        step_theta.step(x, t, state)
+        step_theta.step(x, y, t, state)
         assert (before != step_theta.linear.weight).any()
 
     def test_step_x_with_optimize_x(self, linear, conn1):
@@ -57,7 +57,7 @@ class TestLeastSquaresStepTheta:
         step_theta = _least_squares.LeastSquaresStepTheta(linear, solver, False)
         state = State()
         before = torch.clone(step_theta.linear.weight)
-        step_theta.step(x, t, state)
+        step_theta.step(x, y, t, state)
         assert (before != step_theta.linear.weight).any()
 
     def test_step_x_with_no_bias(self, linear_wo_bias, conn1):
@@ -66,7 +66,7 @@ class TestLeastSquaresStepTheta:
         solver = _least_squares.LeastSquaresStandardSolver(False)
         step_theta = _least_squares.LeastSquaresStepTheta(linear_wo_bias, solver, False)
         before = torch.clone(step_theta.linear.weight)
-        step_theta.step(x, t, state)
+        step_theta.step(x, y, t, state)
         assert (before != step_theta.linear.weight).any()
 
 
@@ -77,7 +77,7 @@ class TestLeastSquaresStepX:
         solver = _least_squares.LeastSquaresStandardSolver(False)
         step_x = _least_squares.LeastSquaresStepX(linear2, solver, True)
         before = torch.clone(x.f)
-        x = step_x.step_x(x, t, state)
+        x = step_x.step_x(x, y, t, state)
         assert (before != x.f).any()
 
     def test_step_x_with_optimize_x(self, linear2, conn2):
@@ -86,7 +86,7 @@ class TestLeastSquaresStepX:
         solver = _least_squares.LeastSquaresStandardSolver(False)
         step_x = _least_squares.LeastSquaresStepX(linear2, solver, False)
         before = torch.clone(x.f)
-        x = step_x.step_x(x, t, state)
+        x = step_x.step_x(x, y, t, state)
         assert (before != x.f).any()
 
     def test_step_x_with_optimize_x_wo_bias(self, linear2_wo_bias, conn2):
@@ -95,7 +95,7 @@ class TestLeastSquaresStepX:
         solver = _least_squares.LeastSquaresStandardSolver(False)
         step_x = _least_squares.LeastSquaresStepX(linear2_wo_bias, solver, False)
         before = torch.clone(x.f)
-        x = step_x.step_x(x, t, state)
+        x = step_x.step_x(x, y, t, state)
         assert (before != x.f).any()
 
 
@@ -108,12 +108,12 @@ class TestLeastSquaresGrad:
         state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
-        learner.step(x, t, state)
+        learner.step(x, y, t, state)
         assert (before != get_params(learner)).any()
 
     def test_step_x(self, linear2, conn2):
         x, t, y = conn2
         state = State()
         learner = _least_squares.GradLeastSquaresLearner(3, 2, False, True)
-        x_prime = learner.step_x(x, t, state)
+        x_prime = learner.step_x(x, y, t, state)
         assert (x.f != x_prime.f).any()
