@@ -16,5 +16,5 @@ from ._ste import (
     SignSTE, sign_ste
 )
 from ._modules import (
-    Sign, Argmax
+    Sign, Argmax, ExpandDim
 )

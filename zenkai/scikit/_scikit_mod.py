@@ -61,29 +61,11 @@ class ScikitModule(nn.Module, ABC):
     A base class for wrapping Scikit-learn modules to be used within PyTorch.
     This class serves as an interface for integrating Scikit-learn estimators with PyTorch's nn.Module. 
     It provides properties and methods to check the capabilities of the estimator and to fit and transform data.
-    Attributes:
-        _estimator: The Scikit-learn estimator to be wrapped.
-        _in_features (int): The number of input features.
-        _out_features (int): The number of output features.
-        _is_partial (bool): Indicates if the estimator supports partial fitting.
-        _has_predict (bool): Indicates if the estimator has a predict method.
-        _has_transform (bool): Indicates if the estimator has a transform method.
-    Properties:
-        in_features (int): The number of input features.
-        out_features (int): The number of output features.
-        is_partial (bool): Whether the estimator supports partial fitting.
-        has_predict (bool): Whether the estimator has a predict method.
-        has_transform (bool): Whether the estimator has a transform method.
-        fitted (bool): Whether the estimator has been fitted.
-    Methods:
-        build_surrogate() -> nn.Module: Abstract method to build a surrogate PyTorch module.
-        multi(in_features: int, out_features: int): Abstract class method to handle multiple inputs and outputs.
-        fit(x: torch.Tensor, t: torch.Tensor): Abstract method to fit the estimator with input data x and target data t.
     """
 
     def __init__(
         self, estimator, 
-        estimator_in: int, estimator_out: typing.Optional[int]=None, reshape_none: bool=False
+        estimator_in: int, estimator_out: typing.Optional[int]=None
     ):
         """
         Initialize the model wrapper.
@@ -102,7 +84,6 @@ class ScikitModule(nn.Module, ABC):
         self._estimator = estimator
         self._estimator_in = estimator_in
         self._estimator_out = estimator_out
-        self._reshape_none = reshape_none
         self._is_partial = hasattr(estimator, 'partial_fit')
         self._has_predict = hasattr(estimator, 'predict')
         self._has_transform = hasattr(estimator, 'transform')
@@ -115,6 +96,14 @@ class ScikitModule(nn.Module, ABC):
     def out_features(self) -> int:
         if self._estimator_out is None and self._reshape_none:
             return 1
+        return self._estimator_out
+    
+    @property
+    def estimator_in(self) -> int:
+        return self._estimator_in
+    
+    @property
+    def estimator_out(self) -> int:
         return self._estimator_out
 
     @abstractmethod
@@ -190,6 +179,10 @@ class ScikitModule(nn.Module, ABC):
 
 
 class ScikitBinary(ScikitModule):
+    """
+    ScikitBinary is a wrapper class for binary Scikit-learn estimators, providing integration with PyTorch tensors.
+    This class allows fitting and predicting using Scikit-learn estimators while handling data in the form of PyTorch tensors. It also provides methods for creating multi-output classifiers and building surrogate neural network modules.
+    """
 
     def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
         """
@@ -202,7 +195,8 @@ class ScikitBinary(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         t = utils.freshen(t, False, False).numpy()
-
+        if self._estimator_out is None:
+            t = t.squeeze(-1)
         if self.is_partial:
             self._estimator.partial_fit(x, t, **kwargs)
         else:
@@ -218,7 +212,10 @@ class ScikitBinary(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         y = self._estimator.predict(x)
-        return torch.from_numpy(y)
+        y = torch.from_numpy(y)
+        if self._estimator_out is None:
+            return y.unsqueeze(-1)
+        return y
     
     @classmethod
     def multi(self, estimator, in_features: int, out_features: int):
@@ -250,6 +247,21 @@ class ScikitBinary(ScikitModule):
 
 
 class ScikitMulticlass(ScikitModule):
+    """
+    This module provides a wrapper class for Scikit-learn multiclass estimators, enabling their integration with PyTorch.
+    """
+
+    def __init__(self, estimator, estimator_in, n_classes: int, estimator_out = None):
+        """
+        Initializes the Scikit model wrapper for multiclass estimators.
+        Parameters:
+            estimator: The base estimator to be wrapped.
+            estimator_in: The input estimator.
+            n_classes (int): The number of classes for the multiclass classification.
+            estimator_out: The output estimator, if any. Default is None.
+        """
+        super().__init__(estimator, estimator_in, estimator_out)
+        self._n_classes = n_classes
 
     def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
         """
@@ -262,6 +274,9 @@ class ScikitMulticlass(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         t = utils.freshen(t, False, False).numpy()
+
+        if self._estimator_out is None:
+            t = t.squeeze(-1)
 
         if self._partial_fit:
             self._estimator.partial_fit(x, t, **kwargs)
@@ -278,11 +293,15 @@ class ScikitMulticlass(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         y = self._estimator.predict(x)
-        return torch.from_numpy(y)
-    
+        y = torch.from_numpy(y)
+
+        if self._estimator_out is None:
+            y = y.unsqueeze(-1)
+        return y
+
     @classmethod
     def multi(
-        cls, estimator, in_features: int, out_features: int
+        cls, estimator, in_features: int, out_features: int, n_classes: int
     ):
         """
         Create a multi-output classifier using the given estimator.
@@ -296,7 +315,7 @@ class ScikitMulticlass(ScikitModule):
         return ScikitMulticlass(
             MultiOutputClassifier(
                 estimator
-            ), in_features, out_features)
+            ), in_features, n_classes, out_features)
 
     def build_surrogate(self):
         """
@@ -305,9 +324,9 @@ class ScikitMulticlass(ScikitModule):
             nn.Module: A sequential neural network module consisting of a linear layer 
             followed by a custom sign activation function.
         """
-        # This is not done
         return nn.Sequential(
-            nn.Linear(self.in_features, self.n_classes),
+            nn.Linear(self.in_features, self.out_features * self.n_classes),
+            utils.ExpandDim(1, self.out_features, self.n_classes),
             utils.Argmax()
         )
 
@@ -325,6 +344,8 @@ class ScikitRegressor(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         t = utils.freshen(t, False, False).numpy()
+        if self._estimator_out is None:
+            t = t.squeeze(-1)
 
         if self.is_partial:
             self._estimator.partial_fit(x, t, **kwargs)
@@ -341,7 +362,10 @@ class ScikitRegressor(ScikitModule):
         """
         x = utils.freshen(x, False, False).numpy()
         y = self._estimator.predict(x)
-        return torch.from_numpy(y)
+        y = torch.from_numpy(y)
+        if self._estimator_out is None:
+            y = y.unsqueeze(-1)
+        return y
     
     @classmethod
     def multi(
@@ -369,5 +393,5 @@ class ScikitRegressor(ScikitModule):
             followed by a custom sign activation function.
         """
         return nn.Sequential(
-            nn.Linear(self._estimator_in, self._estimator_out)
+            nn.Linear(self.in_features, self.out_features)
         )
