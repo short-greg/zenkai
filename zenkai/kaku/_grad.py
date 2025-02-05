@@ -14,7 +14,7 @@ from ._lm2 import (
     LearningMachine as LearningMachine
 )
 from ._state import State
-from ._optimize import (
+from ..optim._optimize import (
     # CompOptim, 
     OptimFactory
 )

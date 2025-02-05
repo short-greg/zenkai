@@ -1,5 +1,5 @@
 import torch
-from zenkai.tansaku import _reshape
+from zenkai.utils import _reshape
 import pytest
 
 
@@ -88,30 +88,30 @@ class TestCollapse:
         assert x2.shape == torch.Size([4, 2])
 
 
-class TestExpandDim0:
-    def test_expand_dim0_returns_correct_size_without_reshape(self):
+# class TestExpandDim0:
+#     def test_expand_dim0_returns_correct_size_without_reshape(self):
 
-        x = torch.randn(2, 4)
-        x = _reshape.expand_dim0(x, 3)
-        assert x.shape[0] == 3
+#         x = torch.randn(2, 4)
+#         x = _reshape.expand_dim0(x, 3)
+#         assert x.shape[0] == 3
 
-    def test_expand_dim0_returns_correct_values_without_reshape(self):
+#     def test_expand_dim0_returns_correct_values_without_reshape(self):
 
-        x = torch.randn(2, 4)
-        y = _reshape.expand_dim0(x, 3)
-        assert (x[None] == y).all()
+#         x = torch.randn(2, 4)
+#         y = _reshape.expand_dim0(x, 3)
+#         assert (x[None] == y).all()
 
-    def test_expand_dim0_returns_correct_size_with_reshape(self):
+#     def test_expand_dim0_returns_correct_size_with_reshape(self):
 
-        x = torch.randn(2, 4)
-        x = _reshape.expand_dim0(x, 3, reshape=True)
-        assert x.shape[0] == 6
+#         x = torch.randn(2, 4)
+#         x = _reshape.expand_dim0(x, 3, reshape=True)
+#         assert x.shape[0] == 6
 
-    def test_expand_dim0_raises_error_with_incorrect_k(self):
+#     def test_expand_dim0_raises_error_with_incorrect_k(self):
 
-        x = torch.randn(2, 4)
-        with pytest.raises(ValueError):
-            _reshape.expand_dim0(x, -1, reshape=True)
+#         x = torch.randn(2, 4)
+#         with pytest.raises(ValueError):
+#             _reshape.expand_dim0(x, -1, reshape=True)
 
 
 
@@ -156,24 +156,24 @@ class TestExpandK:
 
 
 
-class TestFlattenDim0:
-    def test_flatten_dim0_combines_first_two_dimensions(self):
+# class TestFlattenDim0:
+#     def test_flatten_dim0_combines_first_two_dimensions(self):
 
-        x = torch.randn(2, 4, 2)
-        x = _reshape.flatten_dim0(x)
-        assert x.shape[0] == 8
+#         x = torch.randn(2, 4, 2)
+#         x = _reshape.flatten_dim0(x)
+#         assert x.shape[0] == 8
 
-    def test_flatten_dim0_leaves_tensor_same_if_one_dimensional(self):
+#     def test_flatten_dim0_leaves_tensor_same_if_one_dimensional(self):
 
-        x = torch.randn(2)
-        x = _reshape.flatten_dim0(x)
-        assert x.shape[0] == 2
+#         x = torch.randn(2)
+#         x = _reshape.flatten_dim0(x)
+#         assert x.shape[0] == 2
 
 
-class TestDeflattenDim0:
-    def test_deflatten_dim0_undoes_the_flattening(self):
+# class TestDeflattenDim0:
+#     def test_deflatten_dim0_undoes_the_flattening(self):
 
-        x = torch.randn(8, 2)
-        x = _reshape.deflatten_dim0(x, 2)
-        assert x.shape[0] == 2
-        assert x.shape[1] == 4
+#         x = torch.randn(8, 2)
+#         x = _reshape.deflatten_dim0(x, 2)
+#         assert x.shape[0] == 2
+#         assert x.shape[1] == 4

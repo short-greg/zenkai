@@ -6,18 +6,12 @@ Factories for creating optimizers
 import typing
 from typing import Any
 from abc import abstractmethod, ABC
-from itertools import chain
 
 # 3rd Party
 import torch
 import torch.nn as nn
 import torch.nn.functional
 import torch.optim as optim
-
-# local
-from ._lm2 import IO as IO
-from ._assess import Criterion
-from ._state import State
 
 
 class NullOptim(torch.optim.Optimizer):
@@ -277,15 +271,8 @@ class Fit(ABC):
     """An optimizer to be used for finding the optimal fit"""
 
     @abstractmethod
-    def optim_iter(
-        self, objective: Criterion, **kwargs
-    ) -> typing.Iterator[torch.Tensor]:
-        raise NotImplementedError
-
-    def optim(self, objective: Criterion, **kwargs) -> torch.Tensor:
-        for assessment in self.optim_iter(objective, **kwargs):
-            pass
-        return assessment
+    def optim(self, objective, **kwargs)-> typing.Iterator[torch.Tensor]:
+        pass
 
 
 # Convenience object for creating optim factories

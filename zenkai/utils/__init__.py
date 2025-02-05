@@ -18,3 +18,22 @@ from ._ste import (
 from ._modules import (
     Sign, Argmax, ExpandDim
 )
+
+# Move to "shape" ... also move utils.shape there
+#
+# TODO: Reconsider these
+from ._reshape import(
+    unsqueeze_to,
+    align,
+    unsqueeze_vector,
+    collapse_batch,
+    separate_batch,
+    collapse_feature,
+    separate_feature,
+    undo_cat1d,
+    cat1d,
+    # expand_dim0,
+    # flatten_dim0,
+    # deflatten_dim0,
+    shape_as,
+)

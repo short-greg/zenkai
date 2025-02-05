@@ -48,18 +48,8 @@ from ._null import (
     NullStepTheta, 
     NullStepX
 )
-from ._optimize import (
-    OPTIM_MAP, ParamFilter, NullOptim, 
-    OptimFactory, optimf, Fit 
-)
 from ._state import IDable, State
-from ._objective import (
-    Objective,
-    Constraint,
-    CompoundConstraint,
-    impose,
-    # TODO: keep only the core modules (i.e. the base classes)
-)
+
 from ._null import (
     NullLearner, NullStepTheta, NullStepX
 )

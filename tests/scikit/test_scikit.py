@@ -5,7 +5,7 @@ from zenkai.kaku._io2 import iou, IO as IO
 from zenkai.kaku._lm2 import StepX as StepX
 from zenkai.kaku import State
 from zenkai.scikit._scikit import ScikitMachine
-from zenkai.scikit._scikit_mod import ScikitRegressor, 
+from zenkai.scikit._scikit_mod import ScikitRegressor
 
 from sklearn import linear_model
 

@@ -9,12 +9,8 @@ import torch.nn as nn
 # from zenkai import Assessment
 from zenkai.tansaku._noise import (
     GaussianNoiser,
-    NoiseReplace,
-    RandExploration,
     EqualsAssessmentDist,
-    ModuleNoise,
     FreezeDropout,
-    Explorer,
     add_noise,
     add_pop_noise,
     cat_noise,
@@ -179,27 +175,6 @@ class TestCatPopNoise(object):
         assert torch.isclose(noisy, t, atol=1e-4).all()
 
 
-class TestNoiseReplace:
-
-    def test_explore_returns_correct_grad(self, x: torch.Tensor, noise):
-        x.requires_grad_(True)
-        y = NoiseReplace.apply(x, noise)
-        grad_output = torch.ones(x.size())
-        y.backward(grad_output)
-        target = (noise + grad_output) - x
-        assert (x.grad == target).all()
-
-    def test_noise_replace_sets_grad_to_none_for_noise(
-        self, x: torch.Tensor, noise: torch.Tensor
-    ):
-        x.requires_grad_(True)
-        noise.requires_grad_(True)
-        y = NoiseReplace.apply(x, noise)
-        grad_output = torch.ones(x.size())
-        y.backward(grad_output)
-        assert noise.grad is None
-
-
 class TestGaussianNoiser:
     def test_explore_gaussian_returns_correct_size(self, x: torch.Tensor):
         explorer = GaussianNoiser()
@@ -209,24 +184,6 @@ class TestGaussianNoiser:
     def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
         with pytest.raises(ValueError):
             GaussianNoiser(-1)
-
-
-class TestRandSelector:
-    def test_rand_selector_returns_correct_size(
-        self, x: torch.Tensor, noise: torch.Tensor
-    ):
-        selector = RandExploration(0.1)
-        selected = selector(x, noise)
-        assert selected.size() == x.size()
-
-    def test_select_noise_prob_is_correct(self):
-        selector = RandExploration(0.1)
-        assert selector.select_noise_prob == 0.1
-
-    def test_raises_error_if_sizes_are_incompatible(self, x: torch.Tensor):
-        selector = RandExploration(0.1)
-        with pytest.raises(RuntimeError):
-            selector(x, torch.rand(2, 8))
 
 
 class TestFreezeDropout:
@@ -268,26 +225,6 @@ class TestFreezeDropout:
         y2 = dropout(x)
         assert (y != y2).any()
 
-
-class TestExplorer:
-    def test_forward_outputs_noisy_version(self, x, noise):
-
-        torch.manual_seed(1)
-        noiser = GaussianNoiser(0.025)
-        explorer = Explorer(noiser, exploration=RandExploration(0.1))
-        assert explorer(x).shape == x.shape
-        assert (explorer(x) != x).any()
-
-    def test_backward_repalces_with_nose(self):
-
-        x = torch.rand(2, 4)
-        torch.manual_seed(1)
-        x.requires_grad_(True)
-        x.retain_grad()
-        noiser = GaussianNoiser(0.025)
-        explorer = Explorer(noiser, exploration=RandExploration(0.1))
-        explorer(x).mean().backward()
-        assert x.grad is not None
 
 
 class TestEqualAssessmentDist:
@@ -347,25 +284,6 @@ class TestEqualAssessmentDist:
         assessment = torch.rand(4, 4)
         x2 = equals_assessment.mean(assessment, x)
         assert x2.shape == x.shape[1:]
-
-
-class TestModuleNoise:
-    def test_module_noise_outputs_correct_size(self):
-
-        linear = nn.Linear(4, 2)
-        noiser = ModuleNoise(linear, 8, 0.1)
-        y = noiser(torch.randn(24, 4))
-        assert y.shape == torch.Size([24, 2])
-
-    def test_module_noise_outputs_correct_size_after_update(self):
-
-        linear = nn.Linear(4, 2)
-        linear2 = nn.Linear(4, 2)
-        noiser = ModuleNoise(linear, 8, 0.1)
-        y = noiser(torch.randn(24, 4))
-        noiser.update(linear2)
-        y2 = noiser(torch.randn(24, 4))
-        assert y.shape == y2.shape
 
 
 class TestGaussianNoiser:

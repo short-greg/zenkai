@@ -4,10 +4,10 @@ import typing
 import torch
 import torch.nn as nn
 
-from ._reshape import align
+from ..utils._reshape import align
 from ..kaku import Reduction
 from . import _weight as W
-from . import _reshape as tansaku_utils
+from ..utils import _reshape as tansaku_utils
 
 
 def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
@@ -27,7 +27,9 @@ def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: i
     return assessment.min(dim=dim, keepdim=keepdim)
 
 
-def gather_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=-1) -> torch.Tensor:
+def gather_selection(
+    x: torch.Tensor, selection: torch.LongTensor, dim: int=-1
+) -> torch.Tensor:
     """Gather the selection on a dimension for the selection
 
     Args:

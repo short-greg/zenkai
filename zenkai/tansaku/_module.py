@@ -10,20 +10,62 @@ import torch.nn as nn
 # local
 from . import _params
 from ..utils import _params as base_params
-from ._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
+from ..utils._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
 from ..utils import _params as param_utils
 
 
 
 @dataclass
 class PopParams:
+    """
+    A class to store and manipulate parameters for a population.
+    Attributes:
+    -----------
+    p : typing.Union[nn.parameter.Parameter, torch.Tensor]
+        The parameter or tensor to be manipulated.
+    n_members : int
+        The number of members in the population.
+    dim : int, optional
+        The dimension along which to operate (default is 0).
+    mixed : bool, optional
+        A flag indicating if the population is mixed (default is False).
+    Methods:
+    --------
+    pop_view():
+        Returns a view of the parameter tensor based on the population settings.
+    numel() -> int:
+        Returns the number of elements in the parameter tensor.
+    reshape_vec(vec: torch.Tensor) -> torch.Tensor:
+        Reshapes a given tensor to match the shape of the parameter tensor.
+    set_params(vec: torch.Tensor):
+        Sets the parameters using a given tensor.
+    acc_params(vec: torch.Tensor):
+        Accumulates the parameters using a given tensor.
+    acc_grad(vec: torch.Tensor):
+        Accumulates the gradients using a given tensor.
+    acc_gradt(vec: torch.Tensor):
+        Accumulates the gradients (transposed) using a given tensor.
+    set_grad(vec: torch.Tensor):
+        Sets the gradients using a given tensor.
+    set_gradt(vec: torch.Tensor):
+        Sets the gradients (transposed) using a given tensor.
+    """
 
     p: typing.Union[nn.parameter.Parameter, torch.Tensor]
     n_members: int
     dim: int=0
     mixed: bool=False
 
-    def pop_view(self):
+    def pop_view(self) -> torch.Tensor:
+        """
+        Generate a view of the tensor population based on the specified dimensions and mixed flag.
+        If the `mixed` attribute is True, it separates the features of the population tensor.
+        If the `dim` attribute is not zero, it permutes the dimensions of the population tensor
+        to bring the specified dimension to the front.
+        Returns:
+            Tensor: A view of the population tensor with the specified transformations applied.
+        """
+
         if self.mixed:
             return separate_feature(
                 self.p, self.n_members, self.dim, False
@@ -40,6 +82,11 @@ class PopParams:
         return self.p
 
     def numel(self) -> int:
+        """
+        Returns the number of elements for the parameter.
+        Returns:
+            int: The number of elements.
+        """
         return self.p.numel()
 
     def reshape_vec(self, vec: torch.Tensor):
@@ -95,6 +142,7 @@ class PopParams:
             param_utils.acc_gradt(
                 self.p, vec.detach()
             )
+    
     def set_grad(self, vec: torch.Tensor):
 
         with torch.no_grad():
@@ -169,6 +217,7 @@ class PopModule(nn.Module, ABC):
 
 
 def chained(*mods: nn.Module) -> nn.ModuleList:
+
     return nn.ModuleList(mods)
 
 

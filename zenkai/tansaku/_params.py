@@ -14,6 +14,7 @@ from ._module import PopModule, PopParams
 
 PopM = typing.Union[typing.List[nn.Module], nn.Module]
 
+# TODO: Loop
 
 def loop_select(
     obj: PObj, selection: Selection

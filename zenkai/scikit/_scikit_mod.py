@@ -361,7 +361,6 @@ class ScikitRegressor(ScikitModule):
         print(t.shape, x.shape)
         if self._estimator_out is None:
             t = t.squeeze(-1)
-
         if self.is_partial:
             self._estimator.partial_fit(x, t, **kwargs)
         else:

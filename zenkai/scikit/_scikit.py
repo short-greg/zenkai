@@ -20,7 +20,7 @@ class ScikitMachine(LearningMachine):
     def __init__(
         self,
         module: ScikitModule,
-        step_x: StepX
+        step_x: typing.Optional[StepX]=None
     ):
         """Create a machine that wraps the scikit estimator specifying how to update x
 

@@ -653,6 +653,7 @@ class LearningMachine(nn.Module, ABC):
         self, *x, **kwargs
     ) -> IO:
         
+        
         # Have to flatten io to use with F
         x = [x_i.requires_grad_(True) if isinstance(x_i, torch.Tensor) else x_i for x_i in x]
         y = LearningF.apply(self, kwargs, *x)

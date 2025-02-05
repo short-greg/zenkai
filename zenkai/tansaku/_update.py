@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 # local
-from ._reshape import align
+from ..utils._reshape import align
 
 
 def rand_update(

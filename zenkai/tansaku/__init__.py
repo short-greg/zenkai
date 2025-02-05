@@ -1,6 +1,5 @@
 # flake8: noqa
 
-
 from ._noise import (
     gaussian_noise,
     binary_noise,
@@ -8,17 +7,9 @@ from ._noise import (
     cat_noise,
     cat_pop_noise,
     add_noise,
-    NoiseReplace,
-    ModuleNoise,
-    GaussianNoiser,
-    Explorer,
-    ExplorerNoiser,
-    Exploration,
     EqualsAssessmentDist,
     TInfo,
     gaussian_sample,
-    remove_noise,
-    RandExploration,
     AssessmentDist,
     FreezeDropout
 )
@@ -36,23 +27,12 @@ from ._selection import (
     ProbSelector
 )
 
-from ._constraints import (
-    FuncObjective,
-    CriterionObjective,
-    ValueConstraint,
-    LTE,
-    LT,
-    GT,
-    GTE,
-    NNLinearObjective,
-    NullConstraint,
+from ._update import (
+    Updater, update_feature, update_mean,
+    update_momentum, update_var, rand_update, decay,
+    calc_scale, calc_slope, mix_cur
 )
-from ._aggregate import (
-    mean,
-    median,
-    quantile,
-    normalize
-)
+
 from ._crossover import (
     CrossOver, 
     cross_pairs,
@@ -66,6 +46,21 @@ from ._evolutionary import (
     es_dx
 )
 
+from ._module import (
+    PopModule,
+    AdaptBatch,
+    AdaptFeature,
+    PopParams,
+)
+
+from ._aggregate import (
+    mean,
+    median,
+    quantile,
+    normalize
+)
+
+# move to params
 from ._params import (
     loop_select,
     to_pvec,
@@ -78,37 +73,4 @@ from ._params import (
     acc_pvec,
     to_gradvec,
     pop_parameters
-)
-from ._module import (
-    PopModule,
-    AdaptBatch,
-    AdaptFeature,
-    PopParams,
-)
-
-from ._optim import (
-    PopOptimBase
-)
-
-from ._update import (
-    Updater, update_feature, update_mean,
-    update_momentum, update_var, rand_update, decay,
-    calc_scale, calc_slope, mix_cur
-)
-
-# TODO: Reconsider these
-from ._reshape import(
-    unsqueeze_to,
-    align,
-    unsqueeze_vector,
-    collapse_batch,
-    separate_batch,
-    collapse_feature,
-    separate_feature,
-    undo_cat1d,
-    cat1d,
-    expand_dim0,
-    flatten_dim0,
-    deflatten_dim0,
-    shape_as,
 )

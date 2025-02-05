@@ -4,7 +4,7 @@ from torch import nn
 from torch import optim
 
 # Local
-from zenkai.kaku._optimize import ParamFilter, OptimFactory, NullOptim, optimf
+from zenkai.optim._optimize import ParamFilter, OptimFactory, NullOptim, optimf
 from zenkai.utils._params import get_params
 
 

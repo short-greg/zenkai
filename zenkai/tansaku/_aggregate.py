@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ._reshape import unsqueeze_to
+from ..utils._reshape import unsqueeze_to
 
 
 def mean(

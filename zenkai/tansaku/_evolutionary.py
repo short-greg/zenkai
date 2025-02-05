@@ -6,7 +6,7 @@ import torch
 
 # local
 from ._aggregate import normalize, mean
-from ._reshape import unsqueeze_to
+from ..utils._reshape import unsqueeze_to
 
 
 def es_dx(dw: torch.Tensor, assessment: torch.Tensor, assessment_ref: typing.Union[torch.Tensor, str] = 'mean', pop_dim: int=0) -> torch.Tensor:

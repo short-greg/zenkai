@@ -198,44 +198,61 @@ def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
         [tensor.flatten(0) for tensor in tensors], dim=0
     )
 
+
+def separate_dim(x: torch.Tensor, n: int, dim: int):
+
+    shape = list(x.shape)
+    shape[dim] = -1
+    shape.insert(dim, n)
+    return x.reshape(x)
+
+
+def combine_dims(x: torch.Tensor, from_dim: int):
+
+    shape = list(x.shape)
+    shape[from_dim] = shape[from_dim] * shape[from_dim + 1]
+    shape.pop(from_dim + 1)
+    return x.view(shape)
+
+
 # TODO: Depracate the following
 
-def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
-    """Expand an input to repeat k times
+# def expand_dim0(x: torch.Tensor, k: int, reshape: bool = False) -> torch.Tensor:
+#     """Expand an input to repeat k times
 
-    Args:
-        x (torch.Tensor): input tensor
-        k (int): Number of times to repeat. Must be greater than 0
-        reshape (bool, optional): Whether to reshape the output so the first 
-            and second dimensions are combined. Defaults to False.
+#     Args:
+#         x (torch.Tensor): input tensor
+#         k (int): Number of times to repeat. Must be greater than 0
+#         reshape (bool, optional): Whether to reshape the output so the first 
+#             and second dimensions are combined. Defaults to False.
 
-    Raises:
-        ValueError: If k is less than or equal to 0
+#     Raises:
+#         ValueError: If k is less than or equal to 0
 
-    Returns:
-        torch.Tensor: the expanded tensor
-    """
-    if k <= 0:
-        raise ValueError(f"Argument k must be greater than 0 not {k}")
+#     Returns:
+#         torch.Tensor: the expanded tensor
+#     """
+#     if k <= 0:
+#         raise ValueError(f"Argument k must be greater than 0 not {k}")
 
-    y = x[None]
+#     y = x[None]
 
-    y = y.repeat(k, *([1] * len(y.shape[1:])))  # .transpose(0, 1)
-    if reshape:
-        return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
-    return y
-
-
-def flatten_dim0(x: torch.Tensor):
-    """Flatten the population and batch dimensions of a population"""
-    if x.dim() < 2:
-        return x
-    return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
+#     y = y.repeat(k, *([1] * len(y.shape[1:])))  # .transpose(0, 1)
+#     if reshape:
+#         return y.view(y.shape[0] * y.shape[1], *y.shape[2:])
+#     return y
 
 
-def deflatten_dim0(x: torch.Tensor, k: int) -> torch.Tensor:
-    """Deflatten the population and batch dimensions of a population"""
-    if x.dim() == 0:
-        raise ValueError("Input dimension == 0")
+# def flatten_dim0(x: torch.Tensor):
+#     """Flatten the population and batch dimensions of a population"""
+#     if x.dim() < 2:
+#         return x
+#     return x.view(x.shape[0] * x.shape[1], *x.shape[2:])
 
-    return x.view(k, -1, *x.shape[1:])
+
+# def deflatten_dim0(x: torch.Tensor, k: int) -> torch.Tensor:
+#     """Deflatten the population and batch dimensions of a population"""
+#     if x.dim() == 0:
+#         raise ValueError("Input dimension == 0")
+
+#     return x.view(k, -1, *x.shape[1:])
