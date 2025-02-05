@@ -81,12 +81,14 @@ class ScikitModule(nn.Module, ABC):
             _has_predict (bool): Indicates if the estimator has a predict method.
             _has_transform (bool): Indicates if the estimator has a transform method.
         """
+        super().__init__()
         self._estimator = estimator
         self._estimator_in = estimator_in
         self._estimator_out = estimator_out
         self._is_partial = hasattr(estimator, 'partial_fit')
         self._has_predict = hasattr(estimator, 'predict')
         self._has_transform = hasattr(estimator, 'transform')
+        self._surrogate = self.build_surrogate()
 
     @property
     def in_features(self) -> int:
@@ -94,7 +96,7 @@ class ScikitModule(nn.Module, ABC):
 
     @property
     def out_features(self) -> int:
-        if self._estimator_out is None and self._reshape_none:
+        if self._estimator_out is None:
             return 1
         return self._estimator_out
     
@@ -210,8 +212,10 @@ class ScikitBinary(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = utils.freshen(x, False, False).numpy()
-        y = self._estimator.predict(x)
+        x = utils.freshen(x, False, False)
+        if not self.fitted:
+            return self._surrogate(x)
+        y = self._estimator.predict(x.numpy())
         y = torch.from_numpy(y)
         if self._estimator_out is None:
             return y.unsqueeze(-1)
@@ -240,6 +244,7 @@ class ScikitBinary(ScikitModule):
             nn.Module: A sequential neural network module consisting of a linear layer 
             followed by a custom sign activation function.
         """
+
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features),
             utils.Sign()
@@ -251,7 +256,10 @@ class ScikitMulticlass(ScikitModule):
     This module provides a wrapper class for Scikit-learn multiclass estimators, enabling their integration with PyTorch.
     """
 
-    def __init__(self, estimator, estimator_in, n_classes: int, estimator_out = None):
+    def __init__(
+        self, estimator, estimator_in, n_classes: int, 
+        estimator_out = None
+    ):
         """
         Initializes the Scikit model wrapper for multiclass estimators.
         Parameters:
@@ -260,9 +268,9 @@ class ScikitMulticlass(ScikitModule):
             n_classes (int): The number of classes for the multiclass classification.
             estimator_out: The output estimator, if any. Default is None.
         """
-        super().__init__(estimator, estimator_in, estimator_out)
         self._n_classes = n_classes
-
+        super().__init__(estimator, estimator_in, estimator_out)
+        
     def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
         """
         Fit the model to the given data.
@@ -278,7 +286,7 @@ class ScikitMulticlass(ScikitModule):
         if self._estimator_out is None:
             t = t.squeeze(-1)
 
-        if self._partial_fit:
+        if self.is_partial:
             self._estimator.partial_fit(x, t, **kwargs)
         else:
             self._estimator.fit(x, t, **kwargs)
@@ -291,13 +299,19 @@ class ScikitMulticlass(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = utils.freshen(x, False, False).numpy()
-        y = self._estimator.predict(x)
-        y = torch.from_numpy(y)
+        x = utils.freshen(x, False, False)
+        if not self.fitted:
+            return self._surrogate(x)
+        y = self._estimator.predict(x.numpy())
+        y = torch.from_numpy(y).type(torch.long)
 
         if self._estimator_out is None:
             y = y.unsqueeze(-1)
         return y
+    
+    @property
+    def n_classes(self) -> int:
+        return self._n_classes
 
     @classmethod
     def multi(
@@ -351,6 +365,7 @@ class ScikitRegressor(ScikitModule):
             self._estimator.partial_fit(x, t, **kwargs)
         else:
             self._estimator.fit(x, t, **kwargs)
+        self._surrogate = self.build_surrogate()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -360,9 +375,11 @@ class ScikitRegressor(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = utils.freshen(x, False, False).numpy()
-        y = self._estimator.predict(x)
-        y = torch.from_numpy(y)
+        x = utils.freshen(x, False, False)
+        if not self.fitted:
+            return self._surrogate(x)
+        y = self._estimator.predict(x.numpy())
+        y = torch.from_numpy(y).type_as(x)
         if self._estimator_out is None:
             y = y.unsqueeze(-1)
         return y
