@@ -688,10 +688,10 @@ class LearningMachine(nn.Module, ABC):
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        result = self._base_step(x, state._y, t, state, *args, **kwargs)
+        result = self._base_step(x, t, state, *args, **kwargs)
 
         for posthook in self._step_hooks:
-            x, t = posthook(self, x, t, state)
+            x, t = posthook(self, x, state._y, t, state)
         return result
 
     def step_posthook(self, hook: StepHook) -> "StepTheta":
