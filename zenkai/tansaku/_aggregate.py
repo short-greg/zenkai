@@ -5,7 +5,7 @@ import torch
 from ..utils._reshape import unsqueeze_to
 
 
-def mean(
+def pop_mean(
     x: torch.Tensor, 
     norm_weight: torch.Tensor=None, 
     dim: int=0, 
@@ -31,7 +31,7 @@ def mean(
     return (x * norm_weight).sum(dim=dim, keepdim=keepdim)
 
 
-def quantile(
+def pop_quantile(
     x: torch.Tensor, q: float, 
     norm_weight: torch.Tensor=None, 
     dim: int=0, keepdim: bool=True
@@ -76,7 +76,7 @@ def quantile(
     return result, result_idx
 
 
-def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
+def pop_median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim: bool=True) -> torch.Tensor:
     """Calculate the median of a population
 
     Note: No interpolation done if using weights
@@ -93,12 +93,12 @@ def median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keepdim:
     if norm_weight is None:
         return x.median(dim=dim, keepdim=keepdim)
     
-    return quantile(
+    return pop_quantile(
         x, 0.5, norm_weight, dim, keepdim
     )
 
 
-def normalize(
+def pop_normalize(
     x: torch.Tensor, mean: torch.Tensor=None, 
     std: torch.Tensor=None, 
     dim: int=0, 

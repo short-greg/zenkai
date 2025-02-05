@@ -10,133 +10,7 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from itertools import chain
 import pandas as pd
 
-
-### These are the OLD functions
-def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
-    """Set the gradients of a module to the values specified by theta_grad
-
-    Args:
-        model (nn.Module): The module to update gradients for or a callable that returns parameters
-        theta_grad (torch.Tensor): The gradient values to update with
-    """
-    model = get_p(model)
-    for p, grad in zip(model, theta_grad):
-        if grad is not None:
-            grad = grad.detach()
-
-        if p.grad is not None:
-            with torch.no_grad():
-                p.grad.copy_(grad)
-        else:
-            p.grad = grad
-
-
-def update_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True):
-    """Update the gradients of a module
-
-    Args:
-        model (nn.Module): The module to update gradients for
-        theta_grad (torch.Tensor): The gradient values to update with
-        to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
-    """
-    # start = 0
-
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-    elif isinstance(model, torch.Tensor):
-        model = [model]
-
-    with torch.no_grad():
-
-        for p, grad in zip(model, theta_grad):
-            
-            if grad is None and not to_add:
-                p.grad = None
-            
-            if p.grad is None:
-                if grad is not None:
-                    p.grad = grad.clone()
-            else:
-                if grad is not None and to_add:
-                    p.grad.add_(grad)
-                elif grad is not None:
-                    p.grad.copy_(grad)
-
-
-def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], t: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True, lr: float=1.0):
-    """Update the gradients of a module
-
-    Args:
-        model (nn.Module): The module to update gradients for
-        theta_grad (torch.Tensor): The gradient values to update with
-        to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
-    """
-    # start = 0
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-    elif isinstance(model, torch.Tensor):
-        model = [model]
-
-    for p, t_i in zip(model, t):
-        
-        grad = ((p - t_i) * lr).detach()
-        if grad is None and not to_add:
-            p.grad = None
-        
-        if p.grad is None:
-            if grad is not None:
-                p.grad = grad.clone()
-        else:
-            if grad is not None and to_add:
-                with torch.no_grad():
-                    p.grad.add_(grad)
-            elif grad is not None:
-                with torch.no_grad():
-                    p.grad.copy_(grad)
-
-
-MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
-
-
-def get_model_grads(
-    model: MODEL_P, clone: bool=True, flat_cat: bool=False
-) -> typing.Union[typing.List[torch.Tensor], torch.Tensor, None]:
-    """Get all of the gradients in a module
-
-    Args:
-        model (nn.Module): the module to get grads for
-        clone: Whether to clone the gradient
-        flat_cat: Whether to flatten and concatenate the output
-
-    Returns:
-        torch.Tensor or None: the grads flattened. Returns None if any of the grads have not been set
-    """
-
-    grads = []
-    if isinstance(model, nn.Module):
-        model = model.parameters()
-    elif isinstance(model, torch.Tensor):
-        model = [model]
-
-    for p in model:
-        if p.grad is not None and clone:
-            with torch.no_grad():
-                grad = p.grad.clone()
-        else:
-            grad = p.grad
-        grads.append(grad)
-    if len(grads) == 0:
-        return None
-    
-    if flat_cat:
-        return torch.concat([p.flatten() for p in grads])
-    return grads
-
-
-def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
-
-    return chain(model.parameters() for model in models)
-
+# TODO: Remove the old functions
 
 ### These are the NEW functions
 
@@ -379,7 +253,7 @@ def get_multp(objs: typing.Iterable[PObj]) -> typing.Tuple[torch.nn.parameter.Pa
     )
 
 
-def loop_p(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
+def loop_p(obj: PObj, f: typing.Optional[typing.Callable[[torch.Tensor], torch.Tensor]]=None) -> typing.Iterator[torch.nn.parameter.Parameter]:
     """Loop over the parameters for a parameter object
 
     Args:
@@ -389,7 +263,10 @@ def loop_p(obj: PObj) -> typing.Iterator[torch.nn.parameter.Parameter]:
         Iterator[typing.Iterator[torch.nn.parameter.Parameter]]: The parameters
     """
     for p in get_p(obj):
-        yield p
+        if f is None:
+            yield p
+        else:
+            yield f(p)
 
 
 def apply_p(
@@ -405,6 +282,21 @@ def apply_p(
         for p in get_p(obj):
             
             p.copy_(f(p))
+
+
+def transfer_p(
+    obj: PObj, obj2: PObj, f: typing.Callable[[torch.Tensor, torch.Tensor], typing.NoReturn]
+):
+    """Apply a function to the parameters
+
+    Args:
+        obj1 (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
+        obj2 (typing.Iterator[torch.nn.parameter.Parameter]): Parameters to apply a function to
+        f : The function to apply
+    """
+    with torch.no_grad():
+        for p1, p2 in zip(get_p(obj), get_p(obj2)):
+            f(p1, p2)
 
 
 def apply_grad(
@@ -550,7 +442,7 @@ def reg_p(obj: PObj, f) -> torch.Tensor:
             regularization = cur
         else:
             regularization = regularization + cur
-    return p
+    return regularization
 
 
 class undo_grad(object):
@@ -578,8 +470,9 @@ class undo_grad(object):
                     value.grad.clone() if value.grad is not None else None
                 )
             else:
-                self._stored.append(
-                    get_model_grads(value)
+                self._stored.extend(
+                    list(loop_p(value, ))
+                    # get_model_grads(value)
                 )
         
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -599,6 +492,136 @@ class undo_grad(object):
                 else:
                     value.grad = stored
             else:
-                update_model_grads(
-                    value, stored, False
+                transfer_p(
+                    stored, value, lambda p1, p2: set_grad(
+                        p1, p2
+                    )
                 )
+
+
+### These are the OLD functions
+
+# def set_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]]):
+#     """Set the gradients of a module to the values specified by theta_grad
+
+#     Args:
+#         model (nn.Module): The module to update gradients for or a callable that returns parameters
+#         theta_grad (torch.Tensor): The gradient values to update with
+#     """
+#     model = get_p(model)
+#     for p, grad in zip(model, theta_grad):
+#         if grad is not None:
+#             grad = grad.detach()
+
+#         if p.grad is not None:
+#             with torch.no_grad():
+#                 p.grad.copy_(grad)
+#         else:
+#             p.grad = grad
+
+
+# def update_model_grads(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], theta_grad: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True):
+#     """Update the gradients of a module
+
+#     Args:
+#         model (nn.Module): The module to update gradients for
+#         theta_grad (torch.Tensor): The gradient values to update with
+#         to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
+#     """
+#     # start = 0
+
+#     if isinstance(model, nn.Module):
+#         model = model.parameters()
+#     elif isinstance(model, torch.Tensor):
+#         model = [model]
+
+#     with torch.no_grad():
+
+#         for p, grad in zip(model, theta_grad):
+            
+#             if grad is None and not to_add:
+#                 p.grad = None
+            
+#             if p.grad is None:
+#                 if grad is not None:
+#                     p.grad = grad.clone()
+#             else:
+#                 if grad is not None and to_add:
+#                     p.grad.add_(grad)
+#                 elif grad is not None:
+#                     p.grad.copy_(grad)
+
+
+# def update_model_grads_with_t(model: typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor], t: typing.List[typing.Union[torch.Tensor, None]], to_add: bool = True, lr: float=1.0):
+#     """Update the gradients of a module
+
+#     Args:
+#         model (nn.Module): The module to update gradients for
+#         theta_grad (torch.Tensor): The gradient values to update with
+#         to_add (bool): Whether to add the new gradients to the current ones or to replace the gradients
+#     """
+#     # start = 0
+#     if isinstance(model, nn.Module):
+#         model = model.parameters()
+#     elif isinstance(model, torch.Tensor):
+#         model = [model]
+
+#     for p, t_i in zip(model, t):
+        
+#         grad = ((p - t_i) * lr).detach()
+#         if grad is None and not to_add:
+#             p.grad = None
+        
+#         if p.grad is None:
+#             if grad is not None:
+#                 p.grad = grad.clone()
+#         else:
+#             if grad is not None and to_add:
+#                 with torch.no_grad():
+#                     p.grad.add_(grad)
+#             elif grad is not None:
+#                 with torch.no_grad():
+#                     p.grad.copy_(grad)
+
+
+MODEL_P = typing.Union[nn.Module, typing.Iterator[torch.nn.parameter.Parameter], torch.Tensor]
+
+
+# def get_model_grads(
+#     model: MODEL_P, clone: bool=True, flat_cat: bool=False
+# ) -> typing.Union[typing.List[torch.Tensor], torch.Tensor, None]:
+#     """Get all of the gradients in a module
+
+#     Args:
+#         model (nn.Module): the module to get grads for
+#         clone: Whether to clone the gradient
+#         flat_cat: Whether to flatten and concatenate the output
+
+#     Returns:
+#         torch.Tensor or None: the grads flattened. Returns None if any of the grads have not been set
+#     """
+
+#     grads = []
+#     if isinstance(model, nn.Module):
+#         model = model.parameters()
+#     elif isinstance(model, torch.Tensor):
+#         model = [model]
+
+#     for p in model:
+#         if p.grad is not None and clone:
+#             with torch.no_grad():
+#                 grad = p.grad.clone()
+#         else:
+#             grad = p.grad
+#         grads.append(grad)
+#     if len(grads) == 0:
+#         return None
+    
+#     if flat_cat:
+#         return torch.concat([p.flatten() for p in grads])
+#     return grads
+
+
+# def model_params(models: typing.Iterable[nn.Module]) -> typing.Iterator:
+
+#     return chain(model.parameters() for model in models)

@@ -42,7 +42,7 @@ def loop_select(
         yield selected, assessment_i
 
 
-def to_pvec(obj: PopM, n: int) -> torch.Tensor:
+def to_pop_pvec(obj: PopM, n: int) -> torch.Tensor:
     """Convert the population parameters to a single tensor
 
     # Note: Assumes the population dimension is 0
@@ -62,7 +62,7 @@ def to_pvec(obj: PopM, n: int) -> torch.Tensor:
     )
 
 
-def to_gradvec(obj: PObj, n: int) -> torch.Tensor:
+def to_pop_gradvec(obj: PObj, n: int) -> torch.Tensor:
     """Convert the population parameters to a single tensor
 
     Args:
@@ -126,7 +126,7 @@ def ind_parameters(m: PopModule, visited: typing.Optional [typing.Set]=None) -> 
                     yield p
 
 
-def align_vec(obj: PopM, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[PopParams, torch.Tensor]]:
+def align_pop_vec(obj: PopM, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[PopParams, torch.Tensor]]:
     """Align the population vector with the object passed in
 
     Args:
@@ -148,19 +148,19 @@ def align_vec(obj: PopM, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[PopP
         yield p, cur_vec
 
 
-def set_pvec(obj: PopM, vec: torch.Tensor) -> torch.Tensor:
+def set_pop_pvec(obj: PopM, vec: torch.Tensor) -> torch.Tensor:
     """Set the parameters of a PObj
 
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The parameter vec
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.set_params(cur_vec)
         # param_utils.set_pvec(p, cur_vec)
 
 
-def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def acc_pop_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Accumulate the parameters of a PObj
 
     Args:
@@ -168,55 +168,55 @@ def acc_pvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
         vec (torch.Tensor): The gradient vec
     """
 
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.acc_params(cur_vec)
         # param_utils.acc_pvec(p, cur_vec)
 
 
-def set_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def set_pop_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Set the gradient of a PObj
 
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The gradient vec
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.set_grad(cur_vec)
         # param_utils.set_grad(p, cur_vec)
 
 
-def acc_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def acc_pop_gradvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Accumulate the gradient of a PObj
 
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The gradient vec
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.acc_grad(cur_vec)
         # p.acc_grad(cur_vec)
         # param_utils.acc_grad(p, cur_vec)
 
 
-def set_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def set_pop_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Set the gradient of a PObj based on a target vector
 
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The target vec
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.set_gradt(cur_vec)
         # param_utils.set_gradt(p, cur_vec)
 
 
-def acc_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
+def acc_pop_gradtvec(obj: PObj, vec: torch.Tensor) -> torch.Tensor:
     """Acc the gradient of a PObj based on a target vector
 
     Args:
         obj (PObj): The parameter object
         vec (torch.Tensor): The target vec
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pop_vec(obj, vec):
         p.acc_gradt(cur_vec)
         # param_utils.acc_gradt(p, cur_vec)

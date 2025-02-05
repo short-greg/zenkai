@@ -24,6 +24,6 @@ from ._constraints import (
     NullConstraint,
 )
 
-from ..optim._optim import (
+from ._optim import (
     PopOptimBase
 )

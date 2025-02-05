@@ -13,12 +13,12 @@ from ..kaku import (
     Criterion,
     NNLoss,
 )
-from ..utils._build import (
-    Builder,
-    UNDEFINED,
-    Var,
-    Factory,
-)
+# from ..utils._build import (
+#     Builder,
+#     UNDEFINED,
+#     Var,
+#     Factory,
+# )
 from ..utils import _params as param_utils
 from ..targetprop import Null
 from ..kaku._grad import GradLearner
@@ -114,9 +114,13 @@ class FALearner(GradLearner):
         self._learn_criterion.assess(y, t).backward()
         y_det = state._y_det
         y2.backward(y_det.grad)
-        param_utils.set_model_grads(
-            self.net, param_utils.get_model_grads(self.netB)
+        param_utils.transfer_p(
+            self.net, self.netB,
+            lambda p1, p2: param_utils.set_grad(p1, p2)
         )
+        # param_utils.set_model_grads(
+        #     self.net, param_utils.get_model_grads(self.netB)
+        # )
     
     @forward_dep('_y')
     def step(self, x: IO, t: IO, state: State):
@@ -124,30 +128,30 @@ class FALearner(GradLearner):
         self._optim.zero_grad()
         self.netB.zero_grad()
 
-    @classmethod
-    def builder(
-        cls,
-        net=UNDEFINED,
-        netB=UNDEFINED,
-        optim_factory=UNDEFINED,
-        activation="ReLU",
-        learn_criterion="MSELoss",
-    ) -> Builder["FALearner"]:
+    # @classmethod
+    # def builder(
+    #     cls,
+    #     net=UNDEFINED,
+    #     netB=UNDEFINED,
+    #     optim_factory=UNDEFINED,
+    #     activation="ReLU",
+    #     learn_criterion="MSELoss",
+    # ) -> Builder["FALearner"]:
 
-        """ """
-        kwargs = Builder.kwargs(
-            net=net,
-            netB=netB,
-            activation=activation,
-            learn_criterion=learn_criterion,
-            optim_factory=optim_factory,
-        )
+    #     """ """
+    #     kwargs = Builder.kwargs(
+    #         net=net,
+    #         netB=netB,
+    #         activation=activation,
+    #         learn_criterion=learn_criterion,
+    #         optim_factory=optim_factory,
+    #     )
 
-        return Builder[FALearner](
-            FALearner,
-            ["net", "netB", "optim_factory", "activation", "learn_criterion"],
-            **kwargs
-        )
+    #     return Builder[FALearner](
+    #         FALearner,
+    #         ["net", "netB", "optim_factory", "activation", "learn_criterion"],
+    #         **kwargs
+    #     )
 
 @dataclass
 class OutT:
@@ -231,7 +235,11 @@ class DFALearner(GradLearner):
         self._learn_criterion(iou(y), out_t.t).backward()
         y2.backward(y_det.grad)
 
-        param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))
+        # param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))
+        param_utils.transfer_p(
+            self.net, self.netB,
+            lambda p1, p2: param_utils.set_grad(p1, p2)
+        )
         assert x.f.grad is not None
     
     @forward_dep('_y')
@@ -247,100 +255,100 @@ class DFALearner(GradLearner):
         )
 
 
-class LinearFABuilder(Builder[FALearner]):
-    """Learner for implementing feedback alignment."""
-    def __init__(
-        self,
-        in_features: int = UNDEFINED,
-        out_features: int = UNDEFINED,
-        optim_factory: OptimFactory = UNDEFINED,
-        activation: nn.Module = UNDEFINED,
-        learn_criterion: Criterion = UNDEFINED,
-    ):
-        """Create a builder for LinearFABuilder
+# class LinearFABuilder(Builder[FALearner]):
+#     """Learner for implementing feedback alignment."""
+#     def __init__(
+#         self,
+#         in_features: int = UNDEFINED,
+#         out_features: int = UNDEFINED,
+#         optim_factory: OptimFactory = UNDEFINED,
+#         activation: nn.Module = UNDEFINED,
+#         learn_criterion: Criterion = UNDEFINED,
+#     ):
+#         """Create a builder for LinearFABuilder
 
-        Args:
-            in_features (int, optional): The linear in features. Defaults to UNDEFINED.
-            out_features (int, optional): The number out features. Defaults to UNDEFINED.
-            optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
-            activation (nn.Module, optional): The activation for the feedback alignment. Defaults to UNDEFINED.
-            learn_criterion (Criterion, optional): The learn_criterion to use for optimizing. Defaults to UNDEFINED.
-        """
+#         Args:
+#             in_features (int, optional): The linear in features. Defaults to UNDEFINED.
+#             out_features (int, optional): The number out features. Defaults to UNDEFINED.
+#             optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
+#             activation (nn.Module, optional): The activation for the feedback alignment. Defaults to UNDEFINED.
+#             learn_criterion (Criterion, optional): The learn_criterion to use for optimizing. Defaults to UNDEFINED.
+#         """
         
-        super().__init__(
-            FALearner,
-            ["in_features", "out_features", "optim_factory", "activation", "learn_criterion"],
-            net=Factory(
-                nn.Linear,
-                Var.init("in_features", in_features),
-                Var.init("out_features", out_features),
-            ),
-            netB=Factory(
-                nn.Linear,
-                Var("in_features", in_features),
-                Var("out_features", out_features),
-            ),
-            optim_factory=Var.init("optim_factory", optim_factory),
-            activation=Factory(Var.init("activation", activation)),
-            learn_criterion=Var.init("learn_criterion", learn_criterion),
-        )
-        self.in_features = self.Updater(self, "in_features")
-        self.out_features = self.Updater(self, "out_features")
-        self.optim_factory = self.Updater(self, "optim_factory")
-        self.learn_criterion = self.Updater(self, "learn_criterion")
-        self.activation = self.Updater(self, "activation")
+#         super().__init__(
+#             FALearner,
+#             ["in_features", "out_features", "optim_factory", "activation", "learn_criterion"],
+#             net=Factory(
+#                 nn.Linear,
+#                 Var.init("in_features", in_features),
+#                 Var.init("out_features", out_features),
+#             ),
+#             netB=Factory(
+#                 nn.Linear,
+#                 Var("in_features", in_features),
+#                 Var("out_features", out_features),
+#             ),
+#             optim_factory=Var.init("optim_factory", optim_factory),
+#             activation=Factory(Var.init("activation", activation)),
+#             learn_criterion=Var.init("learn_criterion", learn_criterion),
+#         )
+#         self.in_features = self.Updater(self, "in_features")
+#         self.out_features = self.Updater(self, "out_features")
+#         self.optim_factory = self.Updater(self, "optim_factory")
+#         self.learn_criterion = self.Updater(self, "learn_criterion")
+#         self.activation = self.Updater(self, "activation")
 
 
-class LinearDFABuilder(Builder[DFALearner]):
-    """Builds a linear DFA
-    """
+# class LinearDFABuilder(Builder[DFALearner]):
+#     """Builds a linear DFA
+#     """
     
-    def __init__(
-        self,
-        in_features: int = UNDEFINED,
-        out_features: int = UNDEFINED,
-        t_features: int = UNDEFINED,
-        optim_factory: OptimFactory = UNDEFINED,
-        activation: nn.Module = UNDEFINED,
-        learn_criterion: Criterion = UNDEFINED,
-    ):
-        """Create to build a LinearDFA
+#     def __init__(
+#         self,
+#         in_features: int = UNDEFINED,
+#         out_features: int = UNDEFINED,
+#         t_features: int = UNDEFINED,
+#         optim_factory: OptimFactory = UNDEFINED,
+#         activation: nn.Module = UNDEFINED,
+#         learn_criterion: Criterion = UNDEFINED,
+#     ):
+#         """Create to build a LinearDFA
 
-        Args:
-            in_features (int, optional): The in features to the DFA. Defaults to UNDEFINED.
-            out_features (int, optional): The out features to the DFA. Defaults to UNDEFINED.
-            t_features (int, optional): The number of features for the target layer. Defaults to UNDEFINED.
-            optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
-            activation (nn.Module, optional): The activation to use if any. Defaults to UNDEFINED.
-            learn_criterion (Criterion, optional): The criterion to use if any. Defaults to UNDEFINED.
-        """
+#         Args:
+#             in_features (int, optional): The in features to the DFA. Defaults to UNDEFINED.
+#             out_features (int, optional): The out features to the DFA. Defaults to UNDEFINED.
+#             t_features (int, optional): The number of features for the target layer. Defaults to UNDEFINED.
+#             optim_factory (OptimFactory, optional): The optimizer to use. Defaults to UNDEFINED.
+#             activation (nn.Module, optional): The activation to use if any. Defaults to UNDEFINED.
+#             learn_criterion (Criterion, optional): The criterion to use if any. Defaults to UNDEFINED.
+#         """
 
-        super().__init__(
-            DFALearner,
-            ["in_features", "out_features", "optim_factory", "activation", "learn_criterion"],
-            net=Factory(
-                nn.Linear,
-                Var.init("in_features", in_features),
-                Var.init("out_features", out_features),
-            ),
-            netB=Factory(
-                nn.Linear,
-                Var.init("in_features"),
-                Var.init("out_features", out_features),
-            ),
-            out_features=Var('out_features'),
-            optim_factory=Var.init("optim_factory", optim_factory),
-            activation=Factory(Var.init("activation", activation)),
-            t_features=Var.init("t_features", t_features),
-            learn_criterion=Var.init("learn_criterion", learn_criterion),
-        )
-        self.in_features = self.Updater[LinearDFABuilder, int](self, "in_features")
-        self.out_features = self.Updater[LinearDFABuilder, int](self, "out_features")
-        self.t_features = self.Updater[LinearDFABuilder, int](self, "t_features")
-        self.optim_factory = self.Updater[LinearDFABuilder, OptimFactory](
-            self, "optim_factory"
-        )
-        self.learn_criterion = self.Updater[LinearDFABuilder, Criterion](self, "learn_criterion")
-        self.activation = self.Updater[LinearDFABuilder, typing.Type[nn.Module]](
-            self, "activation"
-        )
+#         super().__init__(
+#             DFALearner,
+#             ["in_features", "out_features", "optim_factory", "activation", "learn_criterion"],
+#             net=Factory(
+#                 nn.Linear,
+#                 Var.init("in_features", in_features),
+#                 Var.init("out_features", out_features),
+#             ),
+#             netB=Factory(
+#                 nn.Linear,
+#                 Var.init("in_features"),
+#                 Var.init("out_features", out_features),
+#             ),
+#             out_features=Var('out_features'),
+#             optim_factory=Var.init("optim_factory", optim_factory),
+#             activation=Factory(Var.init("activation", activation)),
+#             t_features=Var.init("t_features", t_features),
+#             learn_criterion=Var.init("learn_criterion", learn_criterion),
+#         )
+#         self.in_features = self.Updater[LinearDFABuilder, int](self, "in_features")
+#         self.out_features = self.Updater[LinearDFABuilder, int](self, "out_features")
+#         self.t_features = self.Updater[LinearDFABuilder, int](self, "t_features")
+#         self.optim_factory = self.Updater[LinearDFABuilder, OptimFactory](
+#             self, "optim_factory"
+#         )
+#         self.learn_criterion = self.Updater[LinearDFABuilder, Criterion](self, "learn_criterion")
+#         self.activation = self.Updater[LinearDFABuilder, typing.Type[nn.Module]](
+#             self, "activation"
+#         )

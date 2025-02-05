@@ -5,7 +5,7 @@ import typing
 import torch
 
 # local
-from ._aggregate import normalize, mean
+from ._aggregate import pop_normalize, pop_mean
 from ..utils._reshape import unsqueeze_to
 
 
@@ -22,8 +22,8 @@ def es_dx(dw: torch.Tensor, assessment: torch.Tensor, assessment_ref: typing.Uni
         torch.Tensor: The estimation of dx using evolution strategies
     """
 
-    assessment = normalize(
+    assessment = pop_normalize(
         assessment, assessment_ref if assessment_ref != 'mean' else None, dim=pop_dim
     )
     assessment = unsqueeze_to(assessment, dw)
-    return mean(dw * assessment, keepdim=False)
+    return pop_mean(dw * assessment, keepdim=False)

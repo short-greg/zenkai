@@ -22,7 +22,7 @@ class TestPVec(object):
     def test_to_pvec_gets_correct_number(self):
 
         linear = PopLinear(4, 2, 2)
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
         assert pvec.shape == torch.Size([4, 4])
@@ -33,10 +33,10 @@ class TestPVec(object):
         linear2 = PopLinear(4, 2, 2)
         
         print(linear.w[0], linear2.w[0])
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.set_pvec(
+        p_utils.set_pop_pvec(
             linear2, pvec
         )
         print(linear.w[0], linear2.w[0])
@@ -46,13 +46,13 @@ class TestPVec(object):
 
         linear = PopLinear(4, 2, 2)
         linear2 = PopLinear(4, 2, 2)
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.set_pvec(
+        p_utils.set_pop_pvec(
             linear2, pvec
         )
-        p_utils.acc_pvec(
+        p_utils.acc_pop_pvec(
             linear2, pvec
         )
         assert ((linear.w * 2) == linear2.w).all()
@@ -61,10 +61,10 @@ class TestPVec(object):
 
         linear = PopLinear(4, 2, 2)
         
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.acc_gradvec(
+        p_utils.acc_pop_gradvec(
             linear, pvec
         )
         
@@ -74,14 +74,14 @@ class TestPVec(object):
 
         linear = PopLinear(4, 2, 2)
         
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.acc_gradvec(
+        p_utils.acc_pop_gradvec(
             linear, pvec
         )
         
-        p_utils.acc_gradvec(
+        p_utils.acc_pop_gradvec(
             linear, pvec
         )
         assert ((linear.w * 2) == linear.w.grad).all()
@@ -89,13 +89,13 @@ class TestPVec(object):
     def test_acc_gradtvec_produces_two_times_vals_as_weights(self):
         linear = PopLinear(4, 2, 2)
         
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.acc_gradtvec(
+        p_utils.acc_pop_gradtvec(
             linear, pvec
         )
-        p_utils.acc_gradtvec(
+        p_utils.acc_pop_gradtvec(
             linear, pvec
         )
         assert (torch.zeros_like(linear.w) == linear.w.grad).all()
@@ -104,14 +104,14 @@ class TestPVec(object):
 
         linear = PopLinear(4, 2, 2)
         
-        pvec = p_utils.to_pvec(
+        pvec = p_utils.to_pop_pvec(
             linear, 4
         )
-        p_utils.acc_gradvec(
+        p_utils.acc_pop_gradvec(
             linear, pvec
         )
         
-        p_utils.set_gradvec(
+        p_utils.set_pop_gradvec(
             linear, pvec
         )
         assert ((linear.w) == linear.w.grad).all()

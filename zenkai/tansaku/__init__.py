@@ -54,23 +54,23 @@ from ._module import (
 )
 
 from ._aggregate import (
-    mean,
-    median,
-    quantile,
-    normalize
+    pop_mean,
+    pop_median,
+    pop_quantile,
+    pop_normalize
 )
 
 # move to params
 from ._params import (
     loop_select,
-    to_pvec,
-    align_vec,
-    set_gradvec,
-    acc_gradvec,
-    set_gradtvec,
-    acc_gradtvec,
-    set_pvec,
-    acc_pvec,
-    to_gradvec,
+    to_pop_pvec,
+    align_pop_vec,
+    set_pop_gradvec,
+    acc_pop_gradvec,
+    set_pop_gradtvec,
+    acc_pop_gradtvec,
+    set_pop_pvec,
+    acc_pop_pvec,
+    to_pop_gradvec,
     pop_parameters
 )

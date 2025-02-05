@@ -13,7 +13,7 @@ class TestMean:
         w = torch.tensor(
             [[0.5, 0.25], [0.5, 0.75]]
         )
-        result = A.mean(
+        result = A.pop_mean(
             x, w, dim=0
         )
         assert (
@@ -25,7 +25,7 @@ class TestMean:
         x = torch.tensor(
             [[1., 2.], [0., 0.5]]
         )
-        result = A.mean(
+        result = A.pop_mean(
             x, dim=0
         )
         assert (
@@ -40,7 +40,7 @@ class TestMedian:
         x = torch.tensor(
             [[1., 3.], [0., 0.5], [3., 2.]]
         )
-        result = A.median(
+        result = A.pop_median(
             x, dim=0
         )[0]
         assert (
@@ -55,7 +55,7 @@ class TestMedian:
         w = torch.tensor(
             [[0.1, 0.75], [0.1, 0.2], [0.8, 0.05]]
         )
-        result = A.median(
+        result = A.pop_median(
             x, w, dim=0
         )[0]
         print(result)
@@ -69,7 +69,7 @@ class TestNormalize(object):
     def test_normalize_normalizes_with_the_standard_deviation(self):
 
         x = torch.rand(10)
-        result = A.normalize(x, dim=0)
+        result = A.pop_normalize(x, dim=0)
         t = (
             x - x.mean(keepdim=True, dim=0)
         ) / (x.std(keepdim=True, dim=0) + 1e-6)
@@ -82,7 +82,7 @@ class TestNormalize(object):
 
         x = torch.rand(10)
         std = torch.rand(10)
-        result = A.normalize(x, std=std, dim=0)
+        result = A.pop_normalize(x, std=std, dim=0)
         t = (
             x - x.mean(keepdim=True, dim=0)
         ) / (std + 1e-6)
@@ -99,7 +99,7 @@ class TestQuantile:
         x = torch.tensor(
             [[1., 3.], [0., 0.5], [3., 2.]]
         )
-        result = A.quantile(
+        result = A.pop_quantile(
             x, dim=0, q=0.5
         )[0]
         assert (
@@ -111,7 +111,7 @@ class TestQuantile:
         x = torch.tensor(
             [[1., 3.], [0., 0.5], [3., 2.]]
         )
-        result = A.quantile(
+        result = A.pop_quantile(
             x, dim=0, q=0.1
         )[0]
 
@@ -128,7 +128,7 @@ class TestQuantile:
         w = torch.tensor(
             [[0.1, 0.1], [0.1, 0.1], [0.1, 0.1]]
         )
-        result = A.quantile(
+        result = A.pop_quantile(
             x, dim=0, q=0.1, norm_weight=w
         )[0]
         # 
