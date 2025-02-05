@@ -7,25 +7,19 @@ from enum import Enum
 import torch
 import torch.nn as nn
 
-
 # local
 from ._io2 import IO as IO, iou
-# from ._state import Meta
-# from ._machine import LearningMachine, StepXHook, StepHook
-
 
 class Reduction(Enum):
     """
     Enum to reduce the output of an objective function.
 
     """
-
     mean = "mean"
     sum = "sum"
     none = "none"
     batchmean = "batchmean"
     # calculate the mean of each sample
-    #
     samplemeans = "samplemeans"
     samplesums = "samplesums"
     # NA = "NA"
