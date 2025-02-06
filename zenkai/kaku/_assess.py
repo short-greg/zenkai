@@ -10,6 +10,7 @@ import torch.nn as nn
 # local
 from ._io2 import IO as IO, iou
 
+
 class Reduction(Enum):
     """
     Enum to reduce the output of an objective function.
@@ -430,7 +431,9 @@ class AssessmentLog(object):
         return result
 
 
-def zip_assess(criterion: Criterion, x: IO, t: IO, reduction_override: str=None, get_h: bool=False) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, typing.List[torch.Tensor]]]:
+def zip_assess(
+    criterion: Criterion, x: IO, t: IO, reduction_override: str=None, get_h: bool=False
+) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, typing.List[torch.Tensor]]]:
     """Loop over x and t and zip their assessments
 
     Args:

@@ -7,7 +7,7 @@ class TestBest:
     def test_best_returns_best_if_to_maximize(object):
 
         x = torch.rand(2, 3).cumsum(dim=1)
-        best = _selection.best(
+        best = _selection.select_best(
             x, True
         )
         assert (x[:,2] == best[0]).all()
@@ -15,7 +15,7 @@ class TestBest:
     def test_best_returns_best_if_to_miminize(object):
 
         x = torch.rand(2, 3).cumsum(dim=1)
-        best = _selection.best(
+        best = _selection.select_best(
             x, False
         )
         assert (x[:,0] == best[0]).all()
@@ -23,7 +23,7 @@ class TestBest:
     def test_best_returns_best_if_dim_0(object):
 
         x = torch.rand(2, 3).cumsum(dim=0)
-        best = _selection.best(
+        best = _selection.select_best(
             x, False, 0
         )
         assert (x[0] == best[0]).all()
@@ -35,7 +35,7 @@ class TestGatherSelection:
 
         x = torch.rand(2, 3, 2).cumsum(dim=1)
         assessment = torch.rand(2, 3)
-        best = _selection.best(
+        best = _selection.select_best(
             assessment, keepdim=True
         )[1]
         x_selected = _selection.gather_selection(

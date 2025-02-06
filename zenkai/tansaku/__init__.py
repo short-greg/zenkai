@@ -19,7 +19,7 @@ from ._weight import (
     softmax_weight, normalize_weight
 )
 from ._selection import (
-    best, gather_selection,
+    select_best, gather_selection,
     pop_assess, select_from_prob,
     Selection, Selector,
     BestSelector, TopKSelector,

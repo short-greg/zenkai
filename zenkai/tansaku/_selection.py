@@ -10,7 +10,7 @@ from . import _weight as W
 from ..utils import _reshape as tansaku_utils
 
 
-def best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+def select_best(assessment: torch.Tensor, maximize: bool=False, dim: int=-1, keepdim: int=False) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
     """Get the best assessment from the population
 
     Args:
@@ -247,7 +247,7 @@ class BestSelector(Selector):
         Returns:
             Selection: 
         """
-        values, indices = best(assessment, maximize, self.dim, True)
+        values, indices = select_best(assessment, maximize, self.dim, True)
         
         return Selection(
             values, indices, assessment.size(self.dim), 1,
@@ -446,7 +446,6 @@ class ToRankProb(ToProb):
         Returns:
             torch.Tensor: The assessment converted to a probability with the population dimension summing to 1
         """
-        
         weight = W.rank_weight(assessment, self.pop_dim, maximize)
         return W.normalize_weight(
             weight, self.pop_dim
