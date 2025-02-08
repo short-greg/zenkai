@@ -8,11 +8,10 @@ import torch
 import torch.nn as nn
 
 # local
-from . import _params
+# from . import _params
 from ..utils import _params as base_params
 from ..utils._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
 from ..utils import _params as param_utils
-
 
 
 @dataclass

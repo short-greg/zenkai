@@ -3,7 +3,7 @@
 # 3rd party
 import torch
 from torch import nn
-from zenkai import OptimFactory, NNLoss
+from zenkai import NNLoss
 
 # local
 from zenkai.kaku._lm2 import IO as IO, iou, Idx as Idx

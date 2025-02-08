@@ -95,10 +95,10 @@ class TestIterStepX:
         iter_step = IterStepX(learner2, 1, 128)
         state = State()
         y1 = learner1.forward_io(x, state)
-        learner2.forward_io(y1, state)
+        y2 = learner2.forward_io(y1, state)
         learner2.step(y1, t, state)
         before = torch.clone(y1.f)
-        x = iter_step.step_x(y1, t, state)
+        x = iter_step.step_x(y1, y2, t, state)
 
         assert (before != x.f).any()
 
@@ -114,7 +114,7 @@ class TestIterStepX:
         state = State()
         y1 = learner1.forward_io(x, state.sub('1'))
         y2 = learner2.forward_io(y1, state.sub('2'))
-        learner2.step(y1, y2, t, state.sub('2'))
+        learner2.step(y1, t, state.sub('2'))
         before = torch.clone(y1.f)
         x = iter_step.step_x(y1, y2, t, state.sub('1'))
 
@@ -132,7 +132,7 @@ class TestIterStepHidden:
         state = State()
         iter_step = IterStepTheta(learner1, 1, 128)
         before = utils.get_params(learner1)
-        learner1.forward_io(x, state.sub('1'))
-        iter_step.step(x, t, state.sub('1'))
+        y = learner1.forward_io(x, state.sub('1'))
+        iter_step.step(x, y, t, state.sub('1'))
         after = utils.get_params(learner1)
         assert (before != after).any()

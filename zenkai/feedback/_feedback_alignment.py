@@ -9,23 +9,14 @@ import torch
 
 # local
 from ..kaku import (
-    OptimFactory,
     Criterion,
     NNLoss,
 )
-# from ..utils._build import (
-#     Builder,
-#     UNDEFINED,
-#     Var,
-#     Factory,
-# )
+from ..optim import OptimFactory
 from ..utils import _params as param_utils
 from ..targetprop import Null
 from ..kaku._grad import GradLearner
-from ..kaku._lm2 import IO as IO, Idx as Idx, forward_dep
-from ..kaku._io2 import IO as IO, iou
-from ..kaku import Idx
-from ..kaku._state import State
+from ..kaku import GradLearner, IO, iou, Idx, forward_dep, State
 from ..kaku._lm2 import LearningMachine as LearningMachine
 
 
@@ -97,8 +88,7 @@ class FALearner(GradLearner):
         y.retain_grad()
         return self.activation(y)
 
-    @forward_dep('_y')
-    def accumulate(self, x: IO, t: IO, state: State):
+    def accumulate(self, x: IO, y: IO, t: IO, state: State):
         """Accumulate the gradients
 
         Args:
@@ -122,8 +112,7 @@ class FALearner(GradLearner):
         #     self.net, param_utils.get_model_grads(self.netB)
         # )
     
-    @forward_dep('_y')
-    def step(self, x: IO, t: IO, state: State):
+    def step(self, x: IO, y: IO, t: IO, state: State):
         self._optim.step()
         self._optim.zero_grad()
         self.netB.zero_grad()

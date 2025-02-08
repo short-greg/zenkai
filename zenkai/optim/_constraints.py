@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import Criterion, impose, Reduction, IO, Constraint, Objective
+from ..kaku import Criterion, Reduction, IO
+from ._objective import impose, Constraint, Objective
 
 
 class NullConstraint(Constraint):

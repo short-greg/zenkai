@@ -5,6 +5,6 @@ __version__ = "0.0.9"
 from . import tansaku, utils, ensemble, feedback, scikit, targetprop
 from .kaku import *
 from .utils import (
-    _params as params, _build as build, 
+    _params as params,
     _memory as memory
 )

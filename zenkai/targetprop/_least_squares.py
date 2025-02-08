@@ -12,8 +12,9 @@ import scipy.linalg
 from ..kaku import (
     Criterion,
     NNLoss,
-    OptimFactory
+    
 )
+from ..optim import OptimFactory
 from ..kaku._state import State
 from ..kaku._io2 import (
     IO as IO, iou

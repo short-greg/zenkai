@@ -6,15 +6,7 @@ import torch.nn as nn
 from abc import abstractmethod, ABC
 
 # Local
-from ..kaku import GradLearner
-
-from ..kaku import (
-    Criterion
-)
-from ..kaku._state import State
-from ..kaku._io2 import (
-    IO as IO, iou
-)
+from ..kaku import GradLearner, Criterion, State, IO, iou
 from ..kaku._lm2 import (
     LearningMachine,
     StepTheta as StepTheta,

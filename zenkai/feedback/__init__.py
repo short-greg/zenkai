@@ -1,1 +1,1 @@
-from ._feedback_alignment import fa_target, FALearner, DFALearner, LinearDFABuilder, LinearFABuilder, OutT
+from ._feedback_alignment import fa_target, FALearner, DFALearner, OutT

@@ -349,6 +349,45 @@ class StepTheta(ABC):
         """
         pass
 
+
+class StepTheta(ABC):
+    """Base class for updating the parameters
+    Use to decouple the optimization of the parameters from the core
+    machine definition
+    """
+
+    # def __init__(self, *args, **kwargs):
+    #     """Create the StepTheta
+    #     """
+    #     super().__init__(*args, **kwargs)
+    #     self._step_hook_initialized = True
+    #     self._step_hooks: typing.List[StepHook] = []
+    #     self._base_step = self.step
+    #     self._base_accumulate = self.accumulate
+    #     self.step = self._step_hook_runner
+    #     self.accumulate = self._accumulate_hook_runner
+    #     self._accumulate_hooks: typing.List[StepHook] = []
+
+    def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
+        """Accumulate updates for the network. In some cases you might not want to implement this.
+
+        Args:
+            x (IO): The input
+            t (IO): The target
+            state (State): The learning state
+        """
+        pass
+
+    @abstractmethod
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
+        """Update the parameters of the network
+
+        Args:
+            x (IO): The input
+            t (IO): The output
+        """
+        pass
+
     # def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
     #     """Call step wrapped with the hooks
 
@@ -564,27 +603,29 @@ class LearningMachine(nn.Module, ABC):
             self._lmode = lmode
         return self
 
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Update the parameters of the learning machine
 
         Args:
             x (IO): The input
+            y (IO): The output
             t (IO): The target
             state (State): The learning state
         """
         pass
 
-    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
+    def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Accumulate updates for the network. In some cases you might not want to implement this.
 
         Args:
             x (IO): The input
+            y (IO): The output
             t (IO): The target
             state (State): The learning state
         """
         pass
 
-    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
         """Update the value of x to get the target the target for the incoming machine
 
         Args:
@@ -643,7 +684,7 @@ class LearningMachine(nn.Module, ABC):
         """
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
-        y = state._y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
+        y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
 
         if detach:
             return y.detach()
@@ -655,21 +696,27 @@ class LearningMachine(nn.Module, ABC):
         
         
         # Have to flatten io to use with F
-        x = [x_i.requires_grad_(True) if isinstance(x_i, torch.Tensor) else x_i for x_i in x]
+        x = [
+            x_i.requires_grad_(True) 
+            if isinstance(x_i, torch.Tensor) 
+            else x_i for x_i in x
+        ]
         y = LearningF.apply(self, kwargs, *x)
         return y
 
-    def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def _accumulate_hook_runner(
+        self, x: IO, y: IO, t: IO, state: State, *args, **kwargs
+    ):
         """Call step wrapped with the hooks
 
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        self._base_accumulate(x, t, state, *args, **kwargs)
+        self._base_accumulate(x, y, t, state, *args, **kwargs)
 
         for posthook in self._accumulate_hooks:
-            posthook(self, x, state._y, t, state)
+            posthook(self, x, y, t, state)
 
     def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
@@ -682,17 +729,17 @@ class LearningMachine(nn.Module, ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
+    def _step_hook_runner(self, x: IO, y: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        result = self._base_step(x, t, state, *args, **kwargs)
+        result = self._base_step(x, y, t, state, *args, **kwargs)
 
         for posthook in self._step_hooks:
-            x, t = posthook(self, x, state._y, t, state)
+            x, t = posthook(self, x, y, t, state)
         return result
 
     def step_posthook(self, hook: StepHook) -> "StepTheta":
@@ -706,7 +753,7 @@ class LearningMachine(nn.Module, ABC):
         self._step_hooks.append(hook)
         return self
 
-    def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
+    def _step_x_hook_runner(self, x: IO, y: IO, t: IO, state: State,  *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
         Args:
@@ -715,7 +762,9 @@ class LearningMachine(nn.Module, ABC):
         Returns:
             IO: the updated x
         """
-        x_prime = self._base_step_x(x, t, state, *args, **kwargs)
+        x_prime = self._base_step_x(
+            x, t, state, *args, **kwargs
+        )
 
         for posthook in self._step_x_posthooks:
             x_prime, t = posthook(self, x, state._y, x_prime, t, state)
