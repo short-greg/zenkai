@@ -99,10 +99,14 @@ class TPLayerLearner(LearningMachine):
             t (IO): The target
         """
         if self.forward_update:
-            self._forward_learner.step(x, t, state.sub('forward'))
+            self._forward_learner.step(
+                x, t, state.sub('forward')
+            )
         if self.reverse_update:
             x_rev = self.rev_x(x, state._y)
-            self._reverse_learner.step(x_rev, x, state.sub('reverse'))
+            self._reverse_learner.step(
+                x_rev, x, state.sub('reverse')
+            )
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """The default behavior of Target Propagation is to simply call the reverse function with x and t

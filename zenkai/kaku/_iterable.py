@@ -42,7 +42,9 @@ class IdxLoop(object):
         batch_size = self.batch_size if self.batch_size is not None else len(io[0])
 
         # TODO: Change so 0 is not indexed
-        indices = torch_data.TensorDataset(torch.arange(0, len(io.f)).long())
+        indices = torch_data.TensorDataset(
+            torch.arange(0, len(io.f)).long()
+        )
         return torch_data.DataLoader(indices, batch_size, self.shuffle)
 
     def loop(self, io: IO) -> typing.Iterator[Idx]:
@@ -263,10 +265,10 @@ class IterHiddenStepTheta(OutDepStepTheta):
                 
                 for _ in range(self.x_iterations):
                     for idx in x_loop.loop(x):
+                        # outgoing_y = self.outgoing.forward_io(
+                        #     outgoing_x, x_state
+                        # )
                         if isinstance(self.outgoing, BatchIdxStepX):
-                            self.outgoing.forward_io(
-                                outgoing_x, x_state
-                            )
                             x_idx = self.outgoing.step_x(
                                 outgoing_x, outgoing_t, 
                                 x_state,
@@ -296,13 +298,17 @@ class IterHiddenStepTheta(OutDepStepTheta):
 
                 for i, idx in enumerate(theta_loop.loop(x)):
                     
-                    if isinstance(self.update, BatchIdxStepTheta):
+                    if isinstance(
+                        self.update, BatchIdxStepTheta
+                    ):
     
                         self.update.forward_io(
                             x, theta_state
                         )
                         self.update.accumulate(x, t, theta_state, batch_idx=idx)
-                        self.update.step(x, t, theta_state, batch_idx=idx)
+                        self.update.step(
+                            x, t, theta_state, batch_idx=idx
+                        )
                     else:
 
                         x_i = idx(x)
@@ -310,11 +316,12 @@ class IterHiddenStepTheta(OutDepStepTheta):
                         self.update.forward_io(
                             x_i, theta_state
                         )
-                        print(theta_state)
                         self.update.accumulate(
                             x_i, t_i, theta_state
                         )
-                        self.update.step(x_i, t_i, theta_state)
+                        self.update.step(
+                            x_i, t_i, theta_state
+                        )
 
             if self.tie_in_t and i < (self.n_epochs - 1):
                 outgoing_x = self.update.forward_io(x, theta_state)

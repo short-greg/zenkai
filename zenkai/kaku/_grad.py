@@ -8,7 +8,6 @@ import torch
 # Local
 from ._assess import Criterion
 from ._lm2 import (
-    BatchIdxStepTheta, BatchIdxStepX,
     Idx as Idx, IO as IO, iou,
     StepTheta as StepTheta, StepX as StepX, forward_dep,
     LearningMachine as LearningMachine
@@ -28,8 +27,9 @@ class GradStepTheta(StepTheta):
     """
 
     def __init__(
-        self, module: nn.Module, learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, optimf: OptimFactory=None,
-        
+        self, module: nn.Module, 
+        learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, 
+        optimf: OptimFactory=None  
     ):
         """
         Create a StepTheta that will update based on the gradient
@@ -49,16 +49,15 @@ class GradStepTheta(StepTheta):
             learn_criterion = NNLoss('MSELoss', learn_criterion)
         self.learn_criterion = learn_criterion
 
-    def accumulate(self, x: IO, t: IO, state: State, y: IO=None, **kwargs):
+    def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Accumulate the gradients
 
         Args:
             x (IO): The input
+            y (IO, optional): The output. Must not be detached
             t (IO): The target
             state (State): The learning state
-            y (IO, optional): The output. Defaults to None.
         """
-        
         if y is None:
             if isinstance(self.module, LearningMachine):
                 y = self.module(x.spawn(), release=False)
@@ -71,7 +70,7 @@ class GradStepTheta(StepTheta):
             assessment = self.learn_criterion.assess(y, t)
         assessment.backward()
 
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Run the optimizer if defined 
 
         Args:
@@ -198,11 +197,29 @@ class GradLearner(LearningMachine):
         Returns:
             torch.Tensor: The output of the module
         """
-        y = (
+        y = state._y = (
             self._module(x[0]) 
             if self._module is not None else x[0]
         )
         return y
+
+    # def forward_io(self, x: IO, state: State, detach: bool=True, **kwargs) -> IO:
+    #     """Convenience method to send an IO through the module
+
+    #     Args:
+    #         x (IO): The input
+    #         state (State): The learning state
+    #         detach (bool, optional): Whether to detach the output. Defaults to True.
+
+    #     Returns:
+    #         IO: The output
+    #     """
+    #     y = super().forward_io(x, state, False, **kwargs)
+    #     state._y = y
+
+    #     if detach:
+    #         return y.detach()
+    #     return y
 
     def unaccumulate(self):
         """Unaccumulate the gradients

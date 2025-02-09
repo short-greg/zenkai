@@ -108,12 +108,12 @@ class TestLeastSquaresGrad:
         state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
-        learner.step(x, y, t, state)
+        learner.step(x, t, state)
         assert (before != get_params(learner)).any()
 
     def test_step_x(self, linear2, conn2):
         x, t, y = conn2
         state = State()
         learner = _least_squares.GradLeastSquaresLearner(3, 2, False, True)
-        x_prime = learner.step_x(x, y, t, state)
+        x_prime = learner.step_x(x, t, state)
         assert (x.f != x_prime.f).any()

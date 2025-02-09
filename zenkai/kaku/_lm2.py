@@ -603,7 +603,7 @@ class LearningMachine(nn.Module, ABC):
             self._lmode = lmode
         return self
 
-    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, t: IO, state: State, **kwargs):
         """Update the parameters of the learning machine
 
         Args:
@@ -614,7 +614,7 @@ class LearningMachine(nn.Module, ABC):
         """
         pass
 
-    def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
+    def accumulate(self, x: IO, t: IO, state: State, **kwargs):
         """Accumulate updates for the network. In some cases you might not want to implement this.
 
         Args:
@@ -625,7 +625,10 @@ class LearningMachine(nn.Module, ABC):
         """
         pass
 
-    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(
+        self, x: IO, t: IO, 
+        state: State, **kwargs
+    ) -> IO:
         """Update the value of x to get the target the target for the incoming machine
 
         Args:
@@ -647,7 +650,10 @@ class LearningMachine(nn.Module, ABC):
         self._y_hooks.append(hook)
         return self
 
-    def _forward_hook_runner(self, x: IO, state: State, *args, **kwargs):
+    def _forward_hook_runner(
+        self, x: IO, state: State, 
+        *args, **kwargs
+    ):
         """
         Args:
             x (IO): The input to the module
@@ -659,7 +665,9 @@ class LearningMachine(nn.Module, ABC):
         return y
 
     @abstractmethod
-    def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
+    def forward_nn(
+        self, x: IO, state: State, **kwargs
+    ) -> typing.Union[typing.Tuple, typing.Any]:
         """Method to define for sending the input through the LearningMachine
 
         Args:
@@ -671,7 +679,9 @@ class LearningMachine(nn.Module, ABC):
         """
         pass
 
-    def forward_io(self, x: IO, state: State, detach: bool=True, **kwargs) -> IO:
+    def forward_io(
+        self, x: IO, state: State, detach: bool=True, **kwargs
+    ) -> IO:
         """Convenience method to send an IO through the module
 
         Args:
@@ -684,7 +694,7 @@ class LearningMachine(nn.Module, ABC):
         """
         x.freshen_()
         y = self.forward_nn(x, state, **kwargs)
-        y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
+        y = state._y = IO(y) if isinstance(y, typing.Tuple) else iou(y)
 
         if detach:
             return y.detach()
@@ -693,8 +703,6 @@ class LearningMachine(nn.Module, ABC):
     def forward(
         self, *x, **kwargs
     ) -> IO:
-        
-        
         # Have to flatten io to use with F
         x = [
             x_i.requires_grad_(True) 
@@ -705,7 +713,7 @@ class LearningMachine(nn.Module, ABC):
         return y
 
     def _accumulate_hook_runner(
-        self, x: IO, y: IO, t: IO, state: State, *args, **kwargs
+        self, x: IO, t: IO, state: State, *args, **kwargs
     ):
         """Call step wrapped with the hooks
 
@@ -713,10 +721,10 @@ class LearningMachine(nn.Module, ABC):
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        self._base_accumulate(x, y, t, state, *args, **kwargs)
+        self._base_accumulate(x, t, state, *args, **kwargs)
 
         for posthook in self._accumulate_hooks:
-            posthook(self, x, y, t, state)
+            posthook(self, x, state._y, t, state)
 
     def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
         """Add hook to call after StepTheta
@@ -729,17 +737,17 @@ class LearningMachine(nn.Module, ABC):
         self._accumulate_hooks.append(hook)
         return self
 
-    def _step_hook_runner(self, x: IO, y: IO, t: IO, state: State, *args, **kwargs):
+    def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
         """Call step wrapped with the hooks
 
         Args:
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        result = self._base_step(x, y, t, state, *args, **kwargs)
+        result = self._base_step(x, t, state, *args, **kwargs)
 
         for posthook in self._step_hooks:
-            x, t = posthook(self, x, y, t, state)
+            x, t = posthook(self, x, state._y, t, state)
         return result
 
     def step_posthook(self, hook: StepHook) -> "StepTheta":
@@ -753,7 +761,7 @@ class LearningMachine(nn.Module, ABC):
         self._step_hooks.append(hook)
         return self
 
-    def _step_x_hook_runner(self, x: IO, y: IO, t: IO, state: State,  *args, **kwargs) -> IO:
+    def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
         """Call step x wrapped with the hooks
 
         Args:

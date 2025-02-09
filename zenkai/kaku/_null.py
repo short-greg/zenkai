@@ -13,18 +13,18 @@ from ._state import State
 class NullStepTheta(StepTheta):
     """Step that does not update theta"""
 
-    def step(self, x: IO, t: IO, state: State, **kwargs):
+    def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         pass
 
 
 class NullStepX(StepX):
     """Step that does not update theta"""
 
-    def step_x(self, x: IO, t: IO, state: State, **kwargs):
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         return x
 
 
-class NullLearner(NullStepX, NullStepTheta, LearningMachine):
+class NullLearner(LearningMachine):
     """'LearningMachine' that does nothing"""
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
@@ -38,3 +38,9 @@ class NullLearner(NullStepX, NullStepTheta, LearningMachine):
             typing.Union[typing.Tuple, typing.Any]: The input
         """
         return x.f
+
+    def step(self, x: IO, t: IO, state: State, **kwargs):
+        pass
+
+    def step_x(self, x: IO, t: IO, state: State, **kwargs):
+        return x

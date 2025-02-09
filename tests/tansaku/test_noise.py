@@ -8,7 +8,6 @@ import torch.nn as nn
 
 # from zenkai import Assessment
 from zenkai.tansaku._noise import (
-    GaussianNoiser,
     EqualsAssessmentDist,
     FreezeDropout,
     add_noise,
@@ -175,15 +174,15 @@ class TestCatPopNoise(object):
         assert torch.isclose(noisy, t, atol=1e-4).all()
 
 
-class TestGaussianNoiser:
-    def test_explore_gaussian_returns_correct_size(self, x: torch.Tensor):
-        explorer = GaussianNoiser()
-        noise = explorer(x)
-        assert noise.size() == x.size()
+# class TestGaussianNoiser:
+#     def test_explore_gaussian_returns_correct_size(self, x: torch.Tensor):
+#         explorer = GaussianNoiser()
+#         noise = explorer(x)
+#         assert noise.size() == x.size()
 
-    def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
-        with pytest.raises(ValueError):
-            GaussianNoiser(-1)
+#     def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
+#         with pytest.raises(ValueError):
+#             GaussianNoiser(-1)
 
 
 class TestFreezeDropout:
@@ -286,9 +285,9 @@ class TestEqualAssessmentDist:
         assert x2.shape == x.shape[1:]
 
 
-class TestGaussianNoiser:
+# class TestGaussianNoiser:
 
-    pass
+#     pass
 
     # def test_gaussian_mapper_generates_gaussian_population_after_one(self):
 

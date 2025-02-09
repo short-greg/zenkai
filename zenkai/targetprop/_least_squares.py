@@ -357,7 +357,7 @@ class GradLeastSquaresLearner(LearningMachine):
             t (IO): The target
             state (State): The learning state
         """
-        self._step_theta.accumulate(x, t, state.sub('least'), y=state._y)
+        self._step_theta.accumulate(x, state._y, t, state.sub('least'))
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Use least squares to update x
@@ -392,4 +392,6 @@ class GradLeastSquaresLearner(LearningMachine):
             t (typing.Union[IO, None]): The target
             state (State): The learning state
         """
-        self._step_theta.step(x, state.get('_y'), t, state.sub('least'), y=state._y)
+        self._step_theta.step(
+            x, state.get('_y'), t, state.sub('least')
+        )
