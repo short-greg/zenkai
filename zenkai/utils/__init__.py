@@ -11,9 +11,7 @@ from ._convert import (
     module_factory,
     checkattr,
 )
-from ._modules import (
-    Sign, Argmax, ExpandDim
-)
+
 
 # Move to "shape" ... also move utils.shape there
 #
@@ -36,3 +34,4 @@ from ._reshape import(
 from ._ste import (
     StepSTE, SignSTE, sign_ste, step_ste
 )
+

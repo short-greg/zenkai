@@ -6,7 +6,7 @@ import torch.nn as nn
 # local
 from zenkai.kaku._io2 import IO as IO, iou
 from zenkai.kaku import State
-from zenkai.targetprop import _least_squares
+from zenkai.bio import _least_squares
 from zenkai.utils._params import get_params
 
 

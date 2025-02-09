@@ -1,9 +1,9 @@
 import torch
 
-from zenkai import IO, Criterion, State, iou
-from zenkai.targetprop._reversible import ReversibleMachine
+from zenkai import Criterion, State, iou
+from zenkai.bio._reversible import ReversibleMachine
 # from zenkai.kaku._backtarget import BackTarget
-from zenkai.targetprop import _reversible_mods
+from zenkai.nnz import _reversible_mods
 
 
 class TestReversibleMachine:
@@ -20,7 +20,10 @@ class TestReversibleMachine:
 
     def test_step_x_results_in_valid_values(self):
 
-        machine = ReversibleMachine(_reversible_mods.SignedToBool(), Criterion("MSELoss"))
+        machine = ReversibleMachine(
+            _reversible_mods.SignedToBool(), 
+            Criterion("MSELoss")
+        )
         state = State()
         x = iou(torch.randn(4, 3).sign())
         t = iou((x.f + 1) / 2)

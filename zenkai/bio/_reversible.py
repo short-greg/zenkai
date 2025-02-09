@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ._reversible_mods import Reversible, SequenceReversible
+from ..nnz._reversible_mods import Reversible, SequenceReversible
 from ..kaku import (
     Criterion
 )
@@ -14,7 +14,6 @@ from ..kaku._lm2 import (
     LearningMachine as LearningMachine,
     StepTheta as StepTheta,
     StepX as StepX,
-
 )
 
 

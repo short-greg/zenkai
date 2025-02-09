@@ -53,6 +53,7 @@ from sklearn.exceptions import NotFittedError
 
 
 # local
+from .. import nnz
 from .. import utils
 
 
@@ -247,7 +248,7 @@ class ScikitBinary(ScikitModule):
 
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features),
-            utils.Sign()
+            nnz.Sign()
         )
 
 
@@ -340,8 +341,8 @@ class ScikitMulticlass(ScikitModule):
         """
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features * self.n_classes),
-            utils.ExpandDim(1, self.out_features, self.n_classes),
-            utils.Argmax()
+            nnz.ExpandDim(1, self.out_features, self.n_classes),
+            nnz.Argmax()
         )
 
 

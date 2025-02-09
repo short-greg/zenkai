@@ -5,7 +5,7 @@ from zenkai.optim import OptimFactory
 from zenkai.kaku._io2 import IO as IO, iou
 from zenkai.kaku._state import State
 from zenkai.utils._params import get_params
-from zenkai.feedback import _feedback_alignment
+from zenkai.bio import _feedback_alignment
 
 
 class TestFALearner:

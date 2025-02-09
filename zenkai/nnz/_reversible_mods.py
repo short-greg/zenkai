@@ -96,23 +96,6 @@ class Null(Reversible):
         return y
 
 
-class TargetReverser(ABC):
-    """Reverse the target"""
-
-    @abstractmethod
-    def reverse(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """Reverse the target
-
-        Args:
-            x (torch.Tensor): The input
-            t (torch.Tensor): The target
-
-        Returns:
-            torch.Tensor: The input
-        """
-        pass
-
-
 class SequenceReversible(Reversible):
     """Reverse a sequence"""
 

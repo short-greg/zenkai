@@ -203,24 +203,6 @@ class GradLearner(LearningMachine):
         )
         return y
 
-    # def forward_io(self, x: IO, state: State, detach: bool=True, **kwargs) -> IO:
-    #     """Convenience method to send an IO through the module
-
-    #     Args:
-    #         x (IO): The input
-    #         state (State): The learning state
-    #         detach (bool, optional): Whether to detach the output. Defaults to True.
-
-    #     Returns:
-    #         IO: The output
-    #     """
-    #     y = super().forward_io(x, state, False, **kwargs)
-    #     state._y = y
-
-    #     if detach:
-    #         return y.detach()
-    #     return y
-
     def unaccumulate(self):
         """Unaccumulate the gradients
         """

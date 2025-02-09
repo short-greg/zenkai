@@ -100,5 +100,3 @@ class TestBatchMemory(object):
 
         assert memory.n_samples == 3
         assert memory.n_batches == 1
-
-
