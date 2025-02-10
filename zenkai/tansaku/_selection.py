@@ -47,7 +47,10 @@ def gather_selection(
     return torch.gather(x, dim, selection)
 
 
-def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Tensor:
+def pop_assess(
+    value: torch.Tensor, reduction: str, from_dim: int=1,
+    keepdim: bool=False
+) -> torch.Tensor:
     """Assess a population of tensors
 
     Args:
@@ -58,22 +61,67 @@ def pop_assess(value: torch.Tensor, reduction: str, from_dim: int=1) -> torch.Te
     Returns:
         torch.Tensor: The assessment
     """
-    shape = value.shape
+    shape = list(value.shape)
+    
     result = Reduction[reduction].reduce(
         value.reshape(
             *shape[:from_dim], -1
         ), dim=from_dim, keepdim=False
     )
+    if keepdim:
+        view = shape[:from_dim] + [1] * (len(shape) - from_dim)
+        return result.view(view)
     return result
 
 
-def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=False, combine_pop_dim: bool=False, g: torch.Generator=None) -> torch.Tensor:
+def retrieve_selection(x: torch.Tensor, selection: torch.LongTensor, dim: int=0) -> torch.Tensor:
+    """Use to select a tensor
+
+    Args:
+        x (torch.Tensor): _description_
+        selection (torch.LongTensor): _description_
+        dim (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        torch.Tensor: _description_
+    """
+    selection = align(selection, x)
+    selected = x.gather(dim, selection)
+    return selected
+
+
+def gather_indices(
+    indices: torch.LongTensor, 
+    assessment: torch.Tensor, 
+    pop_dim: int
+) -> typing.Tuple[torch.LongTensor, torch.Tensor]:
+    """
+    Gathers the indices used in selection for crossover or other population-based selection.
+    Args:
+        indices (torch.LongTensor): A tensor containing the indices to be gathered.
+        assessment (torch.Tensor): A tensor containing the assessment values.
+        pop_dim (int): The dimension along which to gather the indices.
+    Returns:
+        torch.Tuple[torch.LongTensor, torch.Tensor]: A tuple containing the gathered indices and the assessment tensor.
+    """
+    indices = indices[:,0]
+    value = assessment.gather(pop_dim, indices)
+    if value.dim() == 2:
+        value = value[:,0]
+        indices = indices[:,0]
+    return indices, assessment
+
+
+def select_from_prob(
+    prob: torch.Tensor, n: int, selection_dim: int=0, replace: bool=False, 
+    combine_pop_dim: bool=False, g: torch.Generator=None
+) -> torch.Tensor:
     """ Select instances from the probability vector that was calculated using ToProb
 
     Args:
         prob (torch.Tensor): The probability to from
-        k (int, optional): The number to select. Defaults to 2.
-        dim (int, optional): The dimension the probability is on. Defaults to -1.
+        n (int, optional): The number to select. Defaults to 2.
+        selection_dim (int, optional): The dimension to move the selection to. Defaults to 0.
         replace (bool, optional): . Defaults to False.
         g (torch.Generator, optional): . Defaults to None.
 
@@ -85,26 +133,224 @@ def select_from_prob(prob: torch.Tensor, k: int, pop_dim: int=0, replace: bool=F
     shape = prob.shape
 
     prob = prob.reshape(-1, shape[-1])
-    selection = torch.multinomial(prob, k, replace, generator=g)
+    selection = torch.multinomial(
+        prob, n, replace, generator=g
+    )
 
     # remerge the dimension selected on with
     # the items selected is the final dimension
 
     # TODO: does not work if assessment is 1d
-    
     # permute so they are next to one another
-    selection = selection.reshape(list(shape[:-1]) + [k])
+    selection = selection.reshape(list(shape[:-1]) + [n])
     permutation = list(range(selection.dim() - 1))
-    permutation.insert(pop_dim, selection.dim() - 1)
+    permutation.insert(selection_dim, selection.dim() - 1)
+    print(permutation)
     selection = selection.permute(permutation)
 
+    # TODO: Remove
     if combine_pop_dim:
         select_shape = list(selection.shape)
-        select_shape.pop(pop_dim)
-        select_shape[pop_dim] = -1
+        select_shape.pop(selection_dim)
+        select_shape[selection_dim] = -1
         selection = selection.reshape(select_shape)
 
     return selection
+
+
+def select_from_prob2(
+    prob: torch.Tensor, k: typing.Optional[int], n: int, prob_dim: int, replace: bool=False, g: torch.Generator=None
+) -> torch.Tensor:
+    """ Select instances from the probability vector that was calculated using ToProb
+
+    Args:
+        prob (torch.Tensor): The probability to from
+        k (int, optional): The population size to select
+        n (int, optional): The number to select from each dimension (e.g. the number of parents). Defaults to 2.
+        selection_dim (int, optional): The dimension to move the selection to. Defaults to 0.
+        replace (bool, optional): . Defaults to False.
+        g (torch.Generator, optional): . Defaults to None.
+
+    Returns:
+        torch.LongTensor: The selection
+    """
+    # Analyze the output of this better and
+    # add better documentation
+
+    #### move the prob dim to the last 
+    k_act = 1 if k is None else k
+
+    prob_size = prob.size(prob_dim)
+    prob = prob.unsqueeze(0)
+    resize_to = [1] * len(prob.shape)
+    resize_to[0] = k_act
+    
+    # move the prob dimension to the last dimension
+    prob = prob.repeat(resize_to)
+
+    # What if it is only 1d?
+    permutation = list(range(prob.dim()))
+    permutation[-1], permutation[prob_dim + 1] = (
+        permutation[prob_dim + 1], permutation[-1]
+    )
+    prob = prob.permute(permutation)
+
+    before_shape = list(prob.shape)
+    prob = prob.reshape(-1, prob_size)
+    selection = torch.multinomial(
+        prob, n, replace, generator=g
+    )
+
+    # now reshape back
+    before_shape[-1] = n
+    selection = selection.reshape(
+        before_shape
+    )
+    # now permute back
+    selection = selection.permute(
+        permutation
+    )
+    if k is None:
+        selection = selection.squeeze(0)
+
+    return selection
+
+
+def select(x: torch.Tensor, selection: torch.LongTensor, dim: int=0, k: typing.Optional[int]=None):
+    """
+    Select values from a tensor `x` along a specified dimension `dim` using indices provided in `selection`.
+    Args:
+        x (torch.Tensor): The input tensor from which values are to be selected.
+        selection (torch.LongTensor): A tensor containing the indices of the values to be selected from `x`.
+        dim (int, optional): The dimension along which to select values. Default is 0.
+        k (int, optional): If specified, the selection will be repeated `k` times along a new dimension. Default is None.
+    Returns:
+        torch.Tensor: A tensor containing the selected values from `x` along the specified dimension.
+    """
+    
+    if k is not None:
+        rz = [k] + ([1] * x.dim())
+        x = x.unsqueeze(0).repeat(rz)
+        dim = dim + 1
+    
+    selection = align(selection, x)
+    return torch.gather(
+        x, dim, selection
+    )
+
+
+def shuffle_selection(
+    selection: torch.LongTensor, pop_dim: int,
+    g: torch.Generator=None
+) -> torch.LongTensor:
+    """Shuffle the indices that have been sleected
+
+    Args:
+        selection (torch.LongTensor): _description_
+        pop_dim (int): _description_
+        g (torch.Generator, optional): _description_. Defaults to None.
+
+    Returns:
+        torch.LongTensor: _description_
+    """
+    permutation = torch.randperm(
+        selection.size(pop_dim), generator=g
+    )
+    resize = []
+    for i in range(selection.dim()):
+        if i == pop_dim:
+            resize.append(1)
+        else:
+            resize.append(selection.shape[i])
+            permutation = permutation.unsqueeze(i)
+
+    print(resize, permutation.shape)
+    return permutation.repeat(*resize)
+
+
+def fitness_prob(x: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
+    """
+
+    Args:
+        x (torch.Tensor): _description_
+        pop_dim (int, optional): _description_. Defaults to 0.
+        maximize (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        torch.Tensor: _description_
+    """
+    weight = W.normalize_weight(x, pop_dim)
+    if maximize:
+        return weight
+    return 1 - weight
+
+
+def softmax_prob(x: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
+    """_summary_
+
+    Args:
+        x (torch.Tensor): 
+        pop_dim (int, optional): . Defaults to 0.
+        maximize (bool, optional): . Defaults to False.
+
+    Returns:
+        torch.Tensor: _description_
+    """
+    if not maximize: 
+        x = -x
+    return torch.softmax(x, pop_dim)
+
+
+# def select_from_topk(
+#     x: torch.Tensor, k: int, pop_dim: int=0, 
+#     maximize: bool=False
+# ) -> torch.LongTensor:
+    
+#     indices = x.topk(
+#         k, pop_dim, maximize, True
+#     )
+#     return indices
+
+def rank_prob(x: torch.Tensor, pop_dim: int=0, maximize: bool=False) -> torch.Tensor:
+    """
+
+    Args:
+        x (torch.Tensor): 
+        pop_dim (int, optional): . Defaults to 0.
+        maximize (bool, optional): . Defaults to False.
+
+    Returns:
+        torch.Tensor: 
+    """
+    weight = W.rank_weight(
+        x, pop_dim, maximize
+    )
+    weight = W.normalize_weight(
+        weight, pop_dim
+    )
+    return weight
+
+
+def to_select_prob(prob: torch.Tensor, k: int, pop_dim: int):
+    """
+    Converts a base probability tensor into a form that can be used by Torch's multinomial for selection.
+    Args:
+        prob (torch.Tensor): The input probability tensor.
+        k (int): The number of selections to be made.
+        pop_dim (int): The dimension along which the population is defined.
+    Returns:
+        torch.Tensor: The modified probability tensor, repeated along the specified dimension.
+    """
+    permutation = list(range(prob.dim()))
+    prob_sz = permutation.pop(pop_dim)
+    permutation.append(prob_sz)
+
+    prob = prob.permute(permutation)
+    prob = prob.unsqueeze(pop_dim)
+
+    repeat_shape = [1] * len(prob.shape)
+    repeat_shape[pop_dim] = k
+    return prob.repeat(repeat_shape)
 
 
 class Selection(nn.Module):
@@ -290,6 +536,7 @@ class TopKSelector(Selector):
         )
 
 
+
 class ToProb(nn.Module, ABC):
     """Convert the assessment to a probability vector for use in selection
     """
@@ -450,3 +697,19 @@ class ToRankProb(ToProb):
         return W.normalize_weight(
             weight, self.pop_dim
         )
+
+
+# TODO: Figure out how to do this
+# def select_from_assessment(
+#     assessment: torch.Tensor, 
+#     selection: int, k: int, pop_dim: int=0
+# ) -> torch.Tensor:
+#     value = assessment.gather(pop_dim, selection)
+#     if value.dim() == 2:
+#         value = value[:,0]
+#         indices = indices[:,0]
+
+#     return Selection(
+#         value, indices, assessment.size(pop_dim), k, pop_dim
+#     )
+

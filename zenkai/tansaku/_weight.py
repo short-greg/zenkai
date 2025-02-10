@@ -68,8 +68,7 @@ def rank_weight(
     ranks = torch.arange(
         1, weight.shape[pop_dim] + 1, 1, device=weight.device
     )
-    ranks = unsqueeze_vector(ranks, weight)
-
+    ranks = unsqueeze_vector(ranks, weight, pop_dim)
     shape = list(weight.shape)
     shape[pop_dim] = 1
     ranks = ranks.repeat(shape)
