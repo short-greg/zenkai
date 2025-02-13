@@ -354,6 +354,25 @@ class TestToSelectProb:
         assert selected.shape == torch.Size([2, 4, 2])
 
 
+    # TODO: Figure out how to handle this
+
+    def test_select_selects_elemenents_from_select_from_prob2_with_Nok(self):
+        x = torch.randn(
+            4, 2, 4
+        )
+        k = 1
+        prob = torch.softmax(torch.randn(2, 4), dim=0)
+        print(prob.shape)
+        selection = _selection.select_from_prob2(
+            prob, k, 2, 1, True
+        )
+        print(selection.shape)
+        selected = _selection.select(
+            x, selection, 1, k
+        )
+        assert selected.shape == torch.Size([2, 4, 2])
+
+
 
 class TestBestSelector:
 

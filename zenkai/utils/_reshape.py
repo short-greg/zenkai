@@ -67,6 +67,7 @@ def align(source: torch.Tensor, align_to: torch.Tensor) -> torch.Tensor:
         torch.Tensor: the aligned tensor
     """
     shape = [1] * source.dim()
+
     for i in range(source.dim(), align_to.dim()):
         source = source.unsqueeze(i)
         shape.append(align_to.shape[i])

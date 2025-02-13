@@ -234,6 +234,7 @@ def select(x: torch.Tensor, selection: torch.LongTensor, dim: int=0, k: typing.O
         dim = dim + 1
     
     selection = align(selection, x)
+    print(x.shape, selection.shape)
     return torch.gather(
         x, dim, selection
     )
