@@ -8,60 +8,65 @@ import torch
 import torch.nn as nn
 
 # local
-from ._selection import ToProb, Selection, select_from_prob, align
+from ._selection import (
+    select_from_prob2 as select_from_prob, 
+    align,
+    split_selected
+)
 
 
-class ParentSelector(nn.Module):
-    """A Selector for choosing parents for the next generation
-    """
+# class ParentSelector(nn.Module):
+#     """A Selector for choosing parents for the next generation
+#     """
 
-    def __init__(self, n_pairs: int, to_prob: ToProb, pop_dim: int=0):
-        """Create a selector to choose parents for a genetic algorithm
-        Args:
-            n_pairs (int): The number of pairs
-            to_prob (ToProb): The probability calculator
-            pop_dim (int, optional): The dimension population dimension. Defaults to 0.
-        """
-        super().__init__()
-        self._n_pairs = n_pairs
-        self.to_prob = to_prob
-        self._pop_dim = pop_dim
+#     def __init__(self, n_pairs: int, to_prob: ToProb, pop_dim: int=0):
+#         """Create a selector to choose parents for a genetic algorithm
+#         Args:
+#             n_pairs (int): The number of pairs
+#             to_prob (ToProb): The probability calculator
+#             pop_dim (int, optional): The dimension population dimension. Defaults to 0.
+#         """
+#         super().__init__()
+#         self._n_pairs = n_pairs
+#         self.to_prob = to_prob
+#         self._pop_dim = pop_dim
 
-    def forward(self, assessment: torch.Tensor, maximize: bool=False) -> typing.Tuple[Selection, Selection]:
-        """Choose parents to select
+#     def forward(self, assessment: torch.Tensor, maximize: bool=False) -> typing.Tuple[Selection, Selection]:
+#         """Choose parents to select
 
-        Args:
-            assessment (torch.Tensor): The assessment to use for selection
-            maximize (bool, optional): Whether to maximize or not. Defaults to False.
+#         Args:
+#             assessment (torch.Tensor): The assessment to use for selection
+#             maximize (bool, optional): Whether to maximize or not. Defaults to False.
 
-        Returns:
-            typing.Tuple[Selection, Selection]: The selected parents
-        """
-        probs = self.to_prob.forward(
-            assessment, self._n_pairs, maximize
-        )
-        selection = select_from_prob(
-            probs, 2, self._pop_dim
-        )
-        if assessment.dim() == 1:
-            selection = selection.permute(1, 0)
-            selection = selection.flatten()
-            value = assessment[selection]
-            value = value.reshape(2, -1)
-            selection = selection.reshape(2, -1)
-        else:
-            assessment = align(assessment, selection)
-            value = assessment.gather(
-                self._pop_dim, selection
-            )
+#         Returns:
+#             typing.Tuple[Selection, Selection]: The selected parents
+#         """
         
-        selection1 = Selection(
-            value[0], selection[0], self._n_pairs, 2
-        )
-        selection2 = Selection(
-            value[1], selection[1], self._n_pairs, 2
-        )
-        return selection1, selection2
+#         probs = self.to_prob.forward(
+#             assessment, self._n_pairs, maximize
+#         )
+#         selection = select_from_prob(
+#             probs, 2, self._pop_dim
+#         )
+#         if assessment.dim() == 1:
+#             selection = selection.permute(1, 0)
+#             selection = selection.flatten()
+#             value = assessment[selection]
+#             value = value.reshape(2, -1)
+#             selection = selection.reshape(2, -1)
+#         else:
+#             assessment = align(assessment, selection)
+#             value = assessment.gather(
+#                 self._pop_dim, selection
+#             )
+        
+#         selection1 = Selection(
+#             value[0], selection[0], self._n_pairs, 2
+#         )
+#         selection2 = Selection(
+#             value[1], selection[1], self._n_pairs, 2
+#         )
+#         return selection1, selection2
 
 
 class CrossOver(nn.Module):

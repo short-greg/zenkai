@@ -8,7 +8,7 @@ import torch.nn as nn
 # local
 from ..utils import _params as param_utils
 from ..utils._params import PObj
-from ._selection import Selection
+from ._selection import select
 from ._module import PopModule, PopParams
 
 
@@ -17,7 +17,7 @@ PopM = typing.Union[typing.List[nn.Module], nn.Module]
 # TODO: Loop
 
 def loop_select(
-    obj: PObj, selection: Selection
+    obj: PObj, selection: torch.LongTensor, dim: int=0
 ) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
     """Loop over a parameter object and call a function
 
@@ -31,15 +31,15 @@ def loop_select(
     """
     for p in param_utils.get_p(obj):
 
-        selected, assessment_i = selection(
-            p, get_assessment=True
+        selected = select(
+            p, selection, dim
         )
         # assessment_i = tansaku_utils.unsqueeze_to(
         #     selection.assessment, selected
         # )
         # if f is not None:
         #     res = f(selected, assessment_i, selection.n, selection.k)
-        yield selected, assessment_i
+        yield selected
 
 
 def to_pop_pvec(obj: PopM, n: int) -> torch.Tensor:

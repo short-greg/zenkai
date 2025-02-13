@@ -1,35 +1,35 @@
 from zenkai import tansaku
 import torch
 
-class TestParentSelector:
+# class TestParentSelector:
 
-    def test_parent_selector_with_1d_assessment(self):
-        selector = tansaku.ParentSelector(
-            2, tansaku.ToRankProb()
-        )
-        assessment = torch.rand(4)
-        selection1, selection2 = selector(
-            assessment
-        )
-        x = torch.rand(4, 3, 2)
-        p1 = selection1(x)
-        p2 = selection2(x)
-        assert p1.shape == torch.Size([2, 3, 2])
-        assert p2.shape == torch.Size([2, 3, 2])
+#     def test_parent_selector_with_1d_assessment(self):
+#         selector = tansaku.ParentSelector(
+#             2, tansaku.ToRankProb()
+#         )
+#         assessment = torch.rand(4)
+#         selection1, selection2 = selector(
+#             assessment
+#         )
+#         x = torch.rand(4, 3, 2)
+#         p1 = selection1(x)
+#         p2 = selection2(x)
+#         assert p1.shape == torch.Size([2, 3, 2])
+#         assert p2.shape == torch.Size([2, 3, 2])
 
-    def test_parent_selector_with_2d_assessment(self):
-        selector = tansaku.ParentSelector(
-            2, tansaku.ToRankProb()
-        )
-        assessment = torch.rand(4, 3)
-        selection1, selection2 = selector(
-            assessment
-        )
-        x = torch.rand(4, 3, 2)
-        p1 = selection1(x)
-        p2 = selection2(x)
-        assert p1.shape == torch.Size([2, 3, 2])
-        assert p2.shape == torch.Size([2, 3, 2])
+#     def test_parent_selector_with_2d_assessment(self):
+#         selector = tansaku.ParentSelector(
+#             2, tansaku.ToRankProb()
+#         )
+#         assessment = torch.rand(4, 3)
+#         selection1, selection2 = selector(
+#             assessment
+#         )
+#         x = torch.rand(4, 3, 2)
+#         p1 = selection1(x)
+#         p2 = selection2(x)
+#         assert p1.shape == torch.Size([2, 3, 2])
+#         assert p2.shape == torch.Size([2, 3, 2])
 
 
 class TestCrossOver:

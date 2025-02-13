@@ -20,11 +20,14 @@ from ._weight import (
 )
 from ._selection import (
     select_best, gather_selection,
-    pop_assess, select_from_prob,
-    Selection, Selector,
-    BestSelector, TopKSelector,
-    ToFitnessProb, ToProb, ToRankProb, 
-    ProbSelector
+    pop_assess, 
+    retrieve_selection, gather_indices,
+    select_from_prob2, select,
+    shuffle_selection,
+    fitness_prob,
+    softmax_prob,
+    rank_prob,
+    to_select_prob
 )
 
 from ._update import (
@@ -38,9 +41,7 @@ from ._crossover import (
     cross_pairs,
     full_crossover,
     hard_crossover,
-    smooth_crossover,
-    ParentSelector,
-
+    smooth_crossover
 )
 from ._evolutionary import (
     es_dx
