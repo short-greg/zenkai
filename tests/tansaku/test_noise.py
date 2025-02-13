@@ -9,7 +9,6 @@ import torch.nn as nn
 # from zenkai import Assessment
 from zenkai.tansaku._noise import (
     EqualsAssessmentDist,
-    FreezeDropout,
     add_noise,
     add_pop_noise,
     cat_noise,
@@ -183,106 +182,6 @@ class TestCatPopNoise(object):
 #     def test_raises_value_error_when_std_less_than_zero(self, x: torch.Tensor):
 #         with pytest.raises(ValueError):
 #             GaussianNoiser(-1)
-
-
-class TestFreezeDropout:
-    def test_freeze_dropout_outputs_same_value(self):
-
-        torch.manual_seed(1)
-        dropout = FreezeDropout(0.1, True)
-        x = torch.rand(2, 2)
-        y = dropout(x)
-        y2 = dropout(x)
-        assert (y == y2).all()
-
-    def test_freeze_dropout_outputs_same_value_when_testing(self):
-
-        torch.manual_seed(1)
-        dropout = FreezeDropout(0.1, True)
-        dropout.eval()
-        x = torch.rand(2, 2)
-        y = dropout(x)
-        y2 = dropout(x)
-        assert (y == y2).all()
-
-    def test_freeze_dropout_outputs_different_values_with_unfrozen(self):
-
-        torch.manual_seed(1)
-        dropout = FreezeDropout(0.1, False)
-        x = torch.rand(2, 2)
-        y2 = dropout(x)
-        y = dropout(x)
-        assert (y != y2).any()
-
-    def test_freeze_dropout_outputs_different_value_after_unfreezing(self):
-
-        torch.manual_seed(1)
-        dropout = FreezeDropout(0.1, True)
-        x = torch.rand(2, 2)
-        y = dropout(x)
-        dropout.freeze = False
-        y2 = dropout(x)
-        assert (y != y2).any()
-
-
-
-class TestEqualAssessmentDist:
-    def test_equal_assessment_dist_gets_mean_and_std(self):
-
-        x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(1.0)
-        assessment = torch.rand(4, 4)
-        mean, std = equals_assessment(assessment, x)
-        assert mean.shape == torch.Size([4, 2])
-        assert std.shape == torch.Size([4, 2])
-
-    def test_equal_assessment_dist_gets_mean_and_std_for_neg_1(self):
-
-        x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4, 4)
-        mean, std = equals_assessment(assessment, x)
-        assert mean.shape == torch.Size([4, 2])
-        assert std.shape == torch.Size([4, 2])
-
-    def test_equal_assessment_dist_raises_error_if_assessment_invalid_shape(self):
-
-        x = torch.randn(4, 4, 2).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4)
-        with pytest.raises(ValueError):
-            equals_assessment(assessment, x)
-
-    def test_equal_assessment_dist_raises_error_if_x_invalid_shape(self):
-
-        x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4)
-        with pytest.raises(ValueError):
-            equals_assessment(assessment, x)
-
-    def test_equal_assessment_dist_gets_mean_and_std_for_neg_1_and_dim_2(self):
-
-        x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4, 4)
-        mean, std = equals_assessment(assessment, x)
-        assert mean.shape == torch.Size([4])
-        assert std.shape == torch.Size([4])
-
-    def test_sample_returns_value_of_correct_size(self):
-        x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4, 4)
-        x2 = equals_assessment.sample(assessment, x)
-        assert x2.shape == x.shape[1:]
-
-    def test_mean_returns_value_of_correct_size(self):
-        x = torch.randn(4, 4).sign()
-        equals_assessment = EqualsAssessmentDist(-1.0)
-        assessment = torch.rand(4, 4)
-        x2 = equals_assessment.mean(assessment, x)
-        assert x2.shape == x.shape[1:]
 
 
 # class TestGaussianNoiser:

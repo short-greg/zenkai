@@ -7,11 +7,8 @@ from ._noise import (
     cat_noise,
     cat_pop_noise,
     add_noise,
-    EqualsAssessmentDist,
     TInfo,
-    gaussian_sample,
-    AssessmentDist,
-    FreezeDropout
+    gaussian_sample
 )
 
 from ._weight import (
