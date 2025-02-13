@@ -116,30 +116,6 @@ class FALearner(GradLearner):
         self._optim.zero_grad()
         self.netB.zero_grad()
 
-    # @classmethod
-    # def builder(
-    #     cls,
-    #     net=UNDEFINED,
-    #     netB=UNDEFINED,
-    #     optim_factory=UNDEFINED,
-    #     activation="ReLU",
-    #     learn_criterion="MSELoss",
-    # ) -> Builder["FALearner"]:
-
-    #     """ """
-    #     kwargs = Builder.kwargs(
-    #         net=net,
-    #         netB=netB,
-    #         activation=activation,
-    #         learn_criterion=learn_criterion,
-    #         optim_factory=optim_factory,
-    #     )
-
-    #     return Builder[FALearner](
-    #         FALearner,
-    #         ["net", "netB", "optim_factory", "activation", "learn_criterion"],
-    #         **kwargs
-    #     )
 
 @dataclass
 class OutT:
