@@ -31,7 +31,3 @@ from ._reshape import(
     # deflatten_dim0,
     shape_as,
 )
-from ._ste import (
-    StepSTE, SignSTE, sign_ste, step_ste
-)
-

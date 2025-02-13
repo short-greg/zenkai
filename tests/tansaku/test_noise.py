@@ -8,7 +8,6 @@ import torch.nn as nn
 
 # from zenkai import Assessment
 from zenkai.tansaku._noise import (
-    EqualsAssessmentDist,
     add_noise,
     add_pop_noise,
     cat_noise,

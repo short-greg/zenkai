@@ -1,5 +1,5 @@
 from ._modules import (
-    Sign, Argmax, ExpandDim
+    Sign, Argmax, ExpandDim, FreezeDropout
 )
 from ._reversible_mods import (
     Reversible,
@@ -11,4 +11,7 @@ from ._reversible_mods import (
     LeakyReLUInvertable,
     BoolToSigned,
     SignedToBool
+)
+from ._ste import (
+    StepSTE, SignSTE, sign_ste, step_ste
 )
