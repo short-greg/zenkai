@@ -3,11 +3,6 @@
 from ._noise import (
     gaussian_noise,
     binary_noise,
-    # add_pop_noise,
-    # cat_noise,
-    # cat_pop_noise,
-    # add_noise,
-    # TInfo,
     gaussian_sample
 )
 
