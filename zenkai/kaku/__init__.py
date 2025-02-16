@@ -54,7 +54,6 @@ from ._null import (
     NullLearner, NullStepTheta, NullStepX
 )
 from ._grad import (
-    # GradIdxLearner,
     GradStepTheta,
     GradLearner,
     GradStepX,

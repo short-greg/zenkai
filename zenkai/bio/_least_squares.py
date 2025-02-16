@@ -228,7 +228,10 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
+    def step_x(
+        self, x: IO, y: IO, t: IO, 
+        state: State, **kwargs
+    ) -> IO:
         """Update x
 
         Args:

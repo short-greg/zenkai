@@ -186,7 +186,9 @@ def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:
     return tensors
 
 
-def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
+def cat1d(
+    tensors: typing.List[torch.Tensor]
+) -> torch.Tensor:
     """Concatenate tensors to a 1d tensor
 
     Args:
@@ -200,7 +202,9 @@ def cat1d(tensors: typing.List[torch.Tensor]) -> torch.Tensor:
     )
 
 
-def separate_dim(x: torch.Tensor, n: int, dim: int):
+def separate_dim(
+    x: torch.Tensor, n: int, dim: int
+) -> torch.Tensor:
 
     shape = list(x.shape)
     shape[dim] = -1

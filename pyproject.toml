@@ -16,10 +16,9 @@ packages = [
     {include="zenkai"},
     {include="zenkai/tansaku"},
     {include="zenkai/utils"},
-    {include="zenkai/feedback"},
     {include="zenkai/ensemble"},
     {include="zenkai/scikit"},
-    {include="zenkai/targetprop"}
+    {include="zenkai/bio"}
 ]
 
 

@@ -26,6 +26,8 @@ from ._reshape import(
     separate_feature,
     undo_cat1d,
     cat1d,
+    combine_dims,
+    separate_dim,
     # expand_dim0,
     # flatten_dim0,
     # deflatten_dim0,
