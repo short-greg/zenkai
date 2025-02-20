@@ -6,10 +6,10 @@ import torch
 import torch.nn as nn
 
 # local
-from ..utils import _params as param_utils
-from ..utils._params import PObj
-from ._selection import select
-from ._module import PopModule, PopParams
+from . import _params as param_utils
+from ._params import PObj
+from ..tansaku._selection import select
+from ..tansaku._module import PopModule, PopParams
 
 
 PopM = typing.Union[typing.List[nn.Module], nn.Module]

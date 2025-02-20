@@ -1,42 +1,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai.nnz import _reversible_mods
-
-
-class TestNull:
-    
-    def test_null_forward(self):
-
-        null = _reversible_mods.Null()
-        x = torch.randn(2, 2)
-        y = null(x)
-        assert x is y
-
-    def test_null_forward_with_multi(self):
-
-        null = _reversible_mods.Null(True)
-        x = torch.randn(2, 2)
-        x1 = torch.randn(2, 2)
-        y, y1 = null(x, x1)
-        assert x is y
-        assert x1 is y1
-
-    def test_null_reverse(self):
-
-        null = _reversible_mods.Null()
-        x = torch.randn(2, 2)
-        y = null.reverse(x)
-        assert x is y
-
-    def test_null_reverse_with_multi(self):
-
-        null = _reversible_mods.Null(True)
-        x = torch.randn(2, 2)
-        x1 = torch.randn(2, 2)
-        y, y1 = null.reverse(x, x1)
-        assert x is y
-        assert x1 is y1
+from zenkai.rev import _reversible_mods
 
 
 class TestSoftmaxReversible:

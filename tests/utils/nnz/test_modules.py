@@ -1,5 +1,5 @@
 import torch
-from zenkai.nnz import FreezeDropout
+from zenkai.utils.nnz import FreezeDropout, Null
 
 
 class TestFreezeDropout:
@@ -40,3 +40,38 @@ class TestFreezeDropout:
         dropout.freeze = False
         y2 = dropout(x)
         assert (y != y2).any()
+
+
+class TestNull:
+    
+    def test_null_forward(self):
+
+        null = Null()
+        x = torch.randn(2, 2)
+        y = null(x)
+        assert x is y
+
+    def test_null_forward_with_multi(self):
+
+        null = Null()
+        x = torch.randn(2, 2)
+        x1 = torch.randn(2, 2)
+        y, y1 = null(x, x1)
+        assert x is y
+        assert x1 is y1
+
+    def test_null_reverse(self):
+
+        null = Null()
+        x = torch.randn(2, 2)
+        y = null.reverse(x)
+        assert x is y
+
+    def test_null_reverse_with_multi(self):
+
+        null = Null()
+        x = torch.randn(2, 2)
+        x1 = torch.randn(2, 2)
+        y, y1 = null.reverse(x, x1)
+        assert x is y
+        assert x1 is y1

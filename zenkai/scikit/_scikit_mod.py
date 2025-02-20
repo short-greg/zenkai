@@ -40,7 +40,6 @@ import typing
 from abc import abstractmethod
 
 # 3rd party
-from sklearn.base import BaseEstimator
 import sklearn
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 import numpy as np
@@ -53,7 +52,7 @@ from sklearn.exceptions import NotFittedError
 
 
 # local
-from .. import nnz
+from ..utils import nnz
 from .. import utils
 
 

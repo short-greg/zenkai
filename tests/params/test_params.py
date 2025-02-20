@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai.utils import _params as p_utils
+from zenkai.params import _params as p_utils
 
 
 class TestSetModelParameters:

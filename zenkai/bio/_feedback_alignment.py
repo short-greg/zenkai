@@ -13,8 +13,8 @@ from ..kaku import (
     NNLoss,
 )
 from ..optim import OptimFactory
-from ..utils import _params as param_utils
-from ..nnz import Null
+from ..params import _params as param_utils
+from ..utils.nnz import Null
 from ..kaku._grad import GradLearner
 from ..kaku import GradLearner, IO, iou, Idx, forward_dep, State
 from ..kaku._lm2 import LearningMachine as LearningMachine

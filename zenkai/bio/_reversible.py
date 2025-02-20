@@ -2,7 +2,7 @@
 import typing
 
 # local
-from ..nnz._reversible_mods import Reversible, SequenceReversible
+from ..rev._reversible_mods import Reversible, SequenceReversible
 from ..kaku import (
     Criterion
 )

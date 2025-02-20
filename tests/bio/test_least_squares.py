@@ -7,7 +7,7 @@ import torch.nn as nn
 from zenkai.kaku._io2 import IO as IO, iou
 from zenkai.kaku import State
 from zenkai.bio import _least_squares
-from zenkai.utils._params import get_params
+from zenkai.params._params import get_params
 
 
 @pytest.fixture

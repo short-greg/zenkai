@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from zenkai.tansaku import _params as p_utils
+from zenkai.params import _pop_params as p_utils
 
 
 class PopLinear(p_utils.PopModule):

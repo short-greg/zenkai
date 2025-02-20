@@ -1,3 +1,4 @@
+import typing
 import torch.nn as nn
 import torch
 
@@ -169,3 +170,29 @@ class FreezeDropout(nn.Module):
 
         self._cur = f
         return (f * x) * (1 / 1 - self.p)
+
+
+class Null(nn.Module):
+    """
+    Module that does not act on the inputs
+    """
+
+    def forward(self, *x: torch.Tensor) -> typing.Tuple[torch.Tensor]:
+        """Send multiple single value forward
+
+        Returns:
+            typing.Tuple[torch.Tensor]: The inputs
+        """
+        if len(x) == 1:
+            return x[0]
+        return x
+    
+    def reverse(self, *x: torch.Tensor) -> typing.Tuple[torch.Tensor]:
+        """Send multiple single value forward
+
+        Returns:
+            typing.Tuple[torch.Tensor]: The inputs
+        """
+        if len(x) == 1:
+            return x[0]
+        return x

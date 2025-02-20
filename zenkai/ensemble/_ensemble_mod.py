@@ -8,7 +8,7 @@ import torch.nn.functional
 from torch.nn.functional import one_hot
 
 # local
-from ..nnz import step_ste, sign_ste
+from ..utils import step_ste, sign_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:

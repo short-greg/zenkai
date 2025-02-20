@@ -308,7 +308,7 @@ class TestToSelectProb:
     # # TODO: Complete this functionality
     def test_select_from_prob2_converts_probability_on_dim0(self):
         x = torch.softmax(torch.randn(4), dim=0)
-        selected = _selection.select_from_prob2(
+        selected = _selection.select_from_prob(
             x, None, 2, 0, True
         )
         assert selected.shape == torch.Size([2])
@@ -316,7 +316,7 @@ class TestToSelectProb:
 
     def test_select_from_prob2_converts_probability_on_dim0_with_k2(self):
         x = torch.softmax(torch.randn(4), dim=0)
-        selected = _selection.select_from_prob2(
+        selected = _selection.select_from_prob(
             x, 2, 2, 0, True
         )
         assert selected.shape == torch.Size([2, 2])
@@ -328,7 +328,7 @@ class TestToSelectProb:
         )
         k = 2
         prob = torch.softmax(torch.randn(4), dim=0)
-        selection = _selection.select_from_prob2(
+        selection = _selection.select_from_prob(
             prob, k, 2, 0, True
         )
         selected = _selection.select(
@@ -343,7 +343,7 @@ class TestToSelectProb:
         )
         k = None
         prob = torch.softmax(torch.randn(4), dim=0)
-        selection = _selection.select_from_prob2(
+        selection = _selection.select_from_prob(
             prob, k, 2, 0, True
         )
         selected = _selection.select(
@@ -359,7 +359,7 @@ class TestToSelectProb:
         prob = torch.softmax(
             torch.randn(1, 2, 4), dim=1
         )
-        selection = _selection.select_from_prob2(
+        selection = _selection.select_from_prob(
             prob, k, 2, 1, True
         )
         selected = _selection.select(
@@ -375,7 +375,7 @@ class TestToSelectProb:
         prob = torch.softmax(
             torch.randn(1, 2, 4), dim=1
         )
-        selection = _selection.select_from_prob2(
+        selection = _selection.select_from_prob(
             prob, k, 2, 1, True
         )
         selected = _selection.select(
@@ -391,7 +391,7 @@ class TestToSelectProb:
         prob = torch.softmax(
             torch.randn(1, 2, 4), dim=1
         )
-        selection = _selection.select_from_prob2(
+        selection = _selection.select_from_prob(
             prob, k, 2, 1, True
         )
         selected = _selection.select(

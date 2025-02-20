@@ -33,3 +33,10 @@ from ._reshape import(
     # deflatten_dim0,
     shape_as,
 )
+from ._ste import (
+    sign_ste,
+    SignSTE,
+    step_ste,
+    StepSTE
+)
+from . import nnz

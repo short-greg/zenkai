@@ -36,66 +36,6 @@ class Reversible(nn.Module):
         raise NotImplementedError
 
 
-class Null(Reversible):
-    """
-    Module that does not act on the inputs
-    """
-
-    def __init__(self, multi: bool = False):
-        """Create a Null module that can be reversed
-
-        Args:
-            multi (bool, optional): Whether the module can be reversed. Defaults to False.
-        """
-        super().__init__()
-        if multi:
-            self.forward = self.multi_forward
-            self.reverse = self.multi_reverse
-        else:
-            self.forward = self.single_forward
-            self.reverse = self.single_reverse
-
-        self.multi = multi
-
-    def multi_forward(self, *x: torch.Tensor) -> typing.Tuple[torch.Tensor]:
-        """Send multiple single value forward
-
-        Returns:
-            typing.Tuple[torch.Tensor]: The inputs
-        """
-        return x
-
-    def single_forward(self, x: torch.Tensor) -> torch.Tensor:
-        """The output
-
-        Args:
-            x (torch.Tensor): The input
-
-        Returns:
-            torch.Tensor: The output
-        """
-        return x
-
-    def multi_reverse(self, *y) -> typing.Tuple[torch.Tensor]:
-        """Reverse multiple values multiple values
-
-        Returns:
-            typing.Tuple[torch.Tensor]: The input
-        """
-        return y
-
-    def single_reverse(self, y) -> torch.Tensor:
-        """Reverse a single value
-
-        Args:
-            y: The output 
-
-        Returns:
-            torch.Tensor: The input
-        """
-        return y
-
-
 class SequenceReversible(Reversible):
     """Reverse a sequence"""
 

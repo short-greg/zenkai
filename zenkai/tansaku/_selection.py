@@ -123,7 +123,7 @@ def gather_indices(
     return indices, assessment
 
 
-def select_from_prob2(
+def select_from_prob(
     prob: torch.Tensor, k: typing.Optional[int], n: int, prob_dim: int, replace: bool=False, g: torch.Generator=None
 ) -> torch.Tensor:
     """ Select instances from the probability vector that was calculated using ToProb
