@@ -14,11 +14,15 @@ license = "LICENSE"
 readme = "README.md"
 packages = [
     {include="zenkai"},
-    {include="zenkai/tansaku"},
-    {include="zenkai/utils"},
+    {include="zenkai/bio"},
     {include="zenkai/ensemble"},
+    {include="zenkai/memory"},
+    {include="zenkai/optim"},
+    {include="zenkai/params"},
+    {include="zenkai/rev"},
     {include="zenkai/scikit"},
-    {include="zenkai/bio"}
+    {include="zenkai/tansaku"},
+    {include="zenkai/utils"}
 ]
 
 
