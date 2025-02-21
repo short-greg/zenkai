@@ -3,3 +3,5 @@ from ._reversible_mods import (
     BatchNorm1DReversible, BoolToSigned, 
     SignedToBool
 )
+
+from ._reversible import ReversibleMachine

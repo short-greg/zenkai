@@ -7,4 +7,3 @@ from ._least_squares import (
     LeastSquaresStepX
 )
 
-from ._reversible import ReversibleMachine

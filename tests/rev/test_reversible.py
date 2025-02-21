@@ -1,7 +1,7 @@
 import torch
 
 from zenkai import Criterion, State, iou
-from zenkai.bio._reversible import ReversibleMachine
+from zenkai.rev._reversible import ReversibleMachine
 # from zenkai.kaku._backtarget import BackTarget
 from zenkai.rev import _reversible_mods
 
