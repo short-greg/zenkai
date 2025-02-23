@@ -39,12 +39,12 @@ from ._evolutionary import (
     es_dx
 )
 
-from ._module import (
-    PopModule,
-    AdaptBatch,
-    AdaptFeature,
-    PopParams,
-)
+# from ._module import (
+#     PopModule,
+#     AdaptBatch,
+#     AdaptFeature,
+#     PopParams,
+# )
 
 from ._aggregate import (
     pop_mean,
@@ -53,17 +53,17 @@ from ._aggregate import (
     pop_normalize
 )
 
-# move to params
-from ..params._pop_params import (
-    loop_select,
-    to_pop_pvec,
-    align_pop_vec,
-    set_pop_gradvec,
-    acc_pop_gradvec,
-    set_pop_gradtvec,
-    acc_pop_gradtvec,
-    set_pop_pvec,
-    acc_pop_pvec,
-    to_pop_gradvec,
-    pop_parameters
-)
+# # move to params
+# from ..params._pop_params import (
+#     loop_select,
+#     to_pop_pvec,
+#     align_pop_vec,
+#     set_pop_gradvec,
+#     acc_pop_gradvec,
+#     set_pop_gradtvec,
+#     acc_pop_gradtvec,
+#     set_pop_pvec,
+#     acc_pop_pvec,
+#     to_pop_gradvec,
+#     pop_parameters
+# )

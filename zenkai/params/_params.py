@@ -205,7 +205,7 @@ def get_params(model: nn.Module) -> torch.Tensor:
         return None
 
 
-def to_df(name: str, obj: PObj) -> pd.DataFrame:
+def params_to_df(name: str, obj: PObj) -> pd.DataFrame:
     """Convert parameters to a dataframe
 
     Args:
@@ -220,7 +220,7 @@ def to_df(name: str, obj: PObj) -> pd.DataFrame:
     )
 
 
-def to_series(obj: PObj) -> pd.DataFrame:
+def params_to_series(obj: PObj) -> pd.DataFrame:
     """Convert the PObj to a Pandas series
 
     Args:

@@ -1,12 +1,12 @@
 from torch import Tensor
-from zenkai.tansaku import _module
+from zenkai.params import _pop_params
 from typing_extensions import Self
 
 import torch
 import torch.nn as nn
 
 
-class PopLinear(_module.PopModule):
+class PopLinear(_pop_params.PopModule):
     
     def __init__(self, n_members: int = None):
         super().__init__(n_members)
