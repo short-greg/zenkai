@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional
 
 # local
-from ..utils._reshape import unsqueeze_vector
+from ..thz._reshape import unsqueeze_vector
 
 
 def normalize_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:

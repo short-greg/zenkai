@@ -3,5 +3,6 @@ from ._modules import (
     ExpandDim,
     FreezeDropout,
     Null,
-    Sign
+    Sign,
+    Updater
 )

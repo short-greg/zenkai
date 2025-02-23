@@ -12,9 +12,6 @@ from ._convert import (
     checkattr,
 )
 
-
-# Move to "shape" ... also move utils.shape there
-#
 # TODO: Reconsider these
 from ._reshape import(
     unsqueeze_to,
@@ -28,9 +25,6 @@ from ._reshape import(
     cat1d,
     combine_dims,
     separate_dim,
-    # expand_dim0,
-    # flatten_dim0,
-    # deflatten_dim0,
     shape_as,
 )
 from ._ste import (
@@ -39,4 +33,8 @@ from ._ste import (
     step_ste,
     StepSTE
 )
-from . import nnz
+from ._update import (
+    update_feature, update_mean,
+    update_momentum, update_var, rand_update, decay,
+    calc_scale, calc_slope, mix_cur
+)

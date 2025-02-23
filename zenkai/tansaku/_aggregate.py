@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ..utils._reshape import unsqueeze_to
+from ..thz._reshape import unsqueeze_to
 
 
 def pop_mean(
@@ -99,7 +99,8 @@ def pop_median(x: torch.Tensor, norm_weight: torch.Tensor=None, dim: int=0, keep
 
 
 def pop_normalize(
-    x: torch.Tensor, mean: torch.Tensor=None, 
+    x: torch.Tensor, 
+    mean: torch.Tensor=None, 
     std: torch.Tensor=None, 
     dim: int=0, 
     eps: float=1e-6

@@ -1,13 +1,36 @@
-from abc import abstractmethod, ABC
 import typing
-
 import torch
-import torch.nn as nn
 
-from ..utils._reshape import align
+from ..thz._reshape import align
 from ..kaku import Reduction
 from . import _weight as W
-from ..utils import _reshape as tansaku_utils
+from ..params._params import PObj, get_p
+
+
+def loop_param_select(
+    obj: PObj, selection: torch.LongTensor, dim: int=0
+) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
+    """Loop over a parameter object and call a function
+
+    Args:
+        obj (PObj): The parameter object
+        selection (Selection): The selection for the parameter object
+        f (typing.Callable): The function to execute
+
+    Yields:
+        typing.Tuple[torch.Tensor, torch.Tensor]: The selected parameter and assessment
+    """
+    for p in get_p(obj):
+
+        selected = select(
+            p, selection, dim
+        )
+        # assessment_i = tansaku_utils.unsqueeze_to(
+        #     selection.assessment, selected
+        # )
+        # if f is not None:
+        #     res = f(selected, assessment_i, selection.n, selection.k)
+        yield selected
 
 
 def select_best(

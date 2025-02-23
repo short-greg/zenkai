@@ -1,3 +1,20 @@
+
+from ._pop_params import (
+    PopParams, PopModule,
+    to_pop_gradvec,
+    to_pop_pvec,
+    pop_modules,
+    pop_parameters,
+    ind_pop_params,
+    align_pop_vec,
+    set_pop_pvec,
+    acc_pop_pvec,
+    set_pop_gradtvec,
+    acc_pop_gradvec,
+    set_pop_gradvec,
+    acc_pop_gradtvec,
+)
+
 from ._params import (
     get_p,
     get_grad,
@@ -25,23 +42,4 @@ from ._params import (
     update_model_params,
     reg_p,
     undo_grad
-)
-from ._pop_params import (
-    PopParams, PopModule, 
-    loop_select,
-    to_pop_gradvec,
-    to_pop_pvec,
-    pop_modules,
-    pop_parameters,
-    ind_parameters,
-    align_pop_vec,
-    set_pop_pvec,
-    acc_pop_pvec,
-    set_pop_gradtvec,
-    acc_pop_gradvec,
-    set_pop_gradvec,
-    acc_pop_gradtvec,
-    AdaptBatch,
-    AdaptFeature,
-    NullAdapt
 )

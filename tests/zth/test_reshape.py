@@ -1,5 +1,5 @@
 import torch
-from zenkai.utils import _reshape
+from zenkai.thz import _reshape
 import pytest
 
 

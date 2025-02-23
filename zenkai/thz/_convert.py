@@ -153,7 +153,6 @@ def binary_encoding(
     Returns:
         torch.Tensor: The binary encoding
     """
-
     if not bit_size:
         n_size = int(math.ceil(math.log2(n_size)))
     results = []

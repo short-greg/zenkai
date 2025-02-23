@@ -1,5 +1,6 @@
 import torch
-from zenkai.utils.nnz import FreezeDropout, Null
+from zenkai.nnz import FreezeDropout, Null, Updater
+from zenkai.thz import update_momentum
 
 
 class TestFreezeDropout:
@@ -75,3 +76,35 @@ class TestNull:
         y, y1 = null.reverse(x, x1)
         assert x is y
         assert x1 is y1
+
+
+class TestUpdater:
+
+    def test_updater_returns_x(self):
+
+        updater = Updater(
+            update_momentum, momentum=0.9
+        )
+        x = torch.randn(4, 4)
+        y1 = updater(x)
+        assert (y1 == x).all()
+
+    def test_cur_val_is_x_if_first_val(self):
+
+        updater = Updater(
+            update_momentum, momentum=0.9
+        )
+        x = torch.randn(4, 4)
+        updater(x)
+        assert (updater.cur_val is x)
+
+    def test_cur_val_is_updated_after_one(self):
+
+        updater = Updater(
+            update_momentum, momentum=0.9
+        )
+        x = torch.randn(4, 4)
+        x2 = torch.randn(4, 4)
+        updater(x)
+        updater(x2)
+        assert (updater.cur_val != x).any()

@@ -1,5 +1,9 @@
 # 1st party
 import typing
+from abc import abstractmethod, ABC
+import typing
+from dataclasses import dataclass
+
 
 # 3rd party
 import torch
@@ -7,36 +11,22 @@ import torch.nn as nn
 # local
 from . import _params as param_utils
 from ._params import PObj
-from ..tansaku._selection import select
-
-# 1st party
-from abc import abstractmethod, ABC
-import typing
-from dataclasses import dataclass
-
-
-# 1st party
-from abc import abstractmethod, ABC
-import typing
-from dataclasses import dataclass
-
-# 3rd party
-import torch
-import torch.nn as nn
+# from ..tansaku._selection import select
 
 # local
 # from . import _params
-from ..utils._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
+from ..thz._reshape import (
+    collapse_batch, collapse_feature, separate_batch, separate_feature
+)
 from . import _params as param_utils
 
 
 # 3rd party
 
 # local
-# from . import _params
-from ..params import _params as base_params
-from ..utils._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
-from ..params import _params as param_utils
+from . import _params as base_params
+from ..thz._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
+from . import _params as param_utils
 
 
 @dataclass
@@ -240,184 +230,9 @@ class PopModule(nn.Module, ABC):
                 )
 
 
-# def chained(*mods: nn.Module) -> nn.ModuleList:
-
-#     return nn.ModuleList(mods)
-
-
-# TODO: add tests
-class AdaptBatch(nn.Module):
-    """Use to adapt a population of samples for evaluating perturbations
-    of samples. Useful for optimizing "x"
-
-    """
-    def __init__(self, module: nn.Module):
-        """Instantiate the AdaptBatch model
-
-        Args:
-            module (nn.Module): 
-        """
-        super().__init__()
-        self.module = module
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Adapt the module with  apopulation separating by the batch dimension
-
-        Returns:
-            torch.Tensor: The output of the module
-        """
-        k = x[0].size(0)
-        
-        x = tuple(collapse_batch(x_i) for x_i in x)
-        x = self.module(*x)
-        if isinstance(x, typing.Tuple):
-            return tuple(
-                separate_batch(x_i, k) for x_i in x
-            )
-        
-        return separate_batch(x, k)
-
-
-class AdaptFeature(PopModule):
-    """Use to adapt a population of samples for evaluating perturbations of models. 
-    """
-
-    def __init__(
-        self, module: nn.Module, n_members: int=None, feature_dim: int=1
-    ):
-        """Adapt module to work with a population of inputs
-
-        Args:
-            module (nn.Module): The module to a adapt
-        """
-        super().__init__(n_members, feature_dim, True)
-        self.module = module
-        self.feature_dim = feature_dim
-
-    def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        """Adapt the module with  apopulation separating by feature
-
-        Returns:
-            torch.Tensor: The output of the module
-        """
-        k = x[0].size(0)
-        
-        x = tuple(collapse_feature(x_i, self.feature_dim) for x_i in x)
-        x = self.module(*x)
-
-        if isinstance(x, typing.Tuple):
-            return tuple(
-                separate_feature(x_i, k, self.feature_dim) for x_i in x
-            )
-        return separate_feature(x, k, self.feature_dim)
-
-
-class NullAdapt(PopModule):
-    """Use for modules that already have a population component
-    """
-
-    def __init__(self, module: nn.Module, n_members: int=None, dim: int=0):
-        """Adapt module to work with a population of inputs
-
-        Args:
-            module (nn.Module): The module to a adapt
-        """
-        super().__init__(n_members, out_dim=dim, p_dim=dim, mixed=False)
-        self.module = module
-
-    def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        """Adapt the module with  apopulation separating by feature
-
-        Returns:
-            torch.Tensor: The output of the module
-        """
-        return self.module(*x)
-
-
-class PopModule(nn.Module, ABC):
-    """Parent class for a module that outputs a population
-    """
-    def __init__(
-        self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
-        """
-
-        Args:
-            n_members (int): The population size
-            out_dim (int, optional): The dimension for the population for the output. Defaults to 0.
-            p_dim (int, optional): The dimension for the pouplation for the parameters. Defaults to 0.
-            mixed (bool, optional): Whether the population dim is mixed with another dimension. Defaults to False.
-        """
-        super().__init__()
-        self._n_members = n_members
-        self._out_dim = out_dim
-        self._p_dim = p_dim
-        self._mixed = mixed
-
-    @property
-    def n_members(self) -> int:
-        """
-        Returns:
-            int: The number of members in the module
-        """
-        return self._n_members
-
-    @abstractmethod
-    def forward(
-        self, x: torch.Tensor, 
-        ind: int=None
-    ) -> torch.Tensor:
-        """Output the population
-
-        Args:
-            x (torch.Tensor): The input
-
-
-        Returns:
-            torch.Tensor: The population output
-        """
-        pass 
-
-    def pop_parameters(self, recurse: bool=True, pop_params: bool=True) -> typing.Iterator[typing.Union[PopParams, nn.parameter.Parameter]]:
-
-        for p in self.parameters(recurse):
-            if not pop_params:
-                yield separate_feature(
-                    p, self._n_members, self._p_dim, False
-                )
-            else:
-                yield PopParams(
-                    p, self._n_members, self._p_dim, self._mixed
-                )
-
-
 PopM = typing.Union[typing.List[nn.Module], nn.Module]
 
 # TODO: Loop
-
-def loop_select(
-    obj: PObj, selection: torch.LongTensor, dim: int=0
-) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
-    """Loop over a parameter object and call a function
-
-    Args:
-        obj (PObj): The parameter object
-        selection (Selection): The selection for the parameter object
-        f (typing.Callable): The function to execute
-
-    Yields:
-        typing.Tuple[torch.Tensor, torch.Tensor]: The selected parameter and assessment
-    """
-    for p in param_utils.get_p(obj):
-
-        selected = select(
-            p, selection, dim
-        )
-        # assessment_i = tansaku_utils.unsqueeze_to(
-        #     selection.assessment, selected
-        # )
-        # if f is not None:
-        #     res = f(selected, assessment_i, selection.n, selection.k)
-        yield selected
 
 
 def to_pop_pvec(obj: PopM, n: int) -> torch.Tensor:
@@ -490,7 +305,7 @@ def pop_parameters(m: PopModule, visited: typing.Optional [typing.Set]=None) -> 
             yield p
 
 
-def ind_parameters(m: PopModule, visited: typing.Optional [typing.Set]=None) -> typing.Iterator[nn.parameter.Parameter]:
+def ind_pop_params(m: PopModule, visited: typing.Optional [typing.Set]=None) -> typing.Iterator[nn.parameter.Parameter]:
 
     visited = visited if visited is not None else set()
     for m_i in m.children():
@@ -498,7 +313,7 @@ def ind_parameters(m: PopModule, visited: typing.Optional [typing.Set]=None) -> 
             continue
         else:
             for child in m_i.children():
-                for p in ind_parameters(child):
+                for p in ind_pop_params(child):
                     yield p
                 for p in child.parameters(False):
                     yield p
@@ -610,3 +425,59 @@ def acc_pop_gradtvec(
     for p, cur_vec in align_pop_vec(obj, vec):
         p.acc_gradt(cur_vec)
         # param_utils.acc_gradt(p, cur_vec)
+
+
+class PopModule(nn.Module, ABC):
+    """Parent class for a module that outputs a population
+    """
+    def __init__(
+        self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
+        """
+
+        Args:
+            n_members (int): The population size
+            out_dim (int, optional): The dimension for the population for the output. Defaults to 0.
+            p_dim (int, optional): The dimension for the pouplation for the parameters. Defaults to 0.
+            mixed (bool, optional): Whether the population dim is mixed with another dimension. Defaults to False.
+        """
+        super().__init__()
+        self._n_members = n_members
+        self._out_dim = out_dim
+        self._p_dim = p_dim
+        self._mixed = mixed
+
+    @property
+    def n_members(self) -> int:
+        """
+        Returns:
+            int: The number of members in the module
+        """
+        return self._n_members
+
+    @abstractmethod
+    def forward(
+        self, x: torch.Tensor, 
+        ind: int=None
+    ) -> torch.Tensor:
+        """Output the population
+
+        Args:
+            x (torch.Tensor): The input
+
+
+        Returns:
+            torch.Tensor: The population output
+        """
+        pass 
+
+    def pop_parameters(self, recurse: bool=True, pop_params: bool=True) -> typing.Iterator[typing.Union[PopParams, nn.parameter.Parameter]]:
+
+        for p in self.parameters(recurse):
+            if not pop_params:
+                yield separate_feature(
+                    p, self._n_members, self._p_dim, False
+                )
+            else:
+                yield PopParams(
+                    p, self._n_members, self._p_dim, self._mixed
+                )

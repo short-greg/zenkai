@@ -1,7 +1,7 @@
 import typing
 import torch
 import torch.nn as nn
-from ..utils import freshen
+from ..thz import freshen
 from typing_extensions import Self
 from torch.utils import data as torch_data
 
