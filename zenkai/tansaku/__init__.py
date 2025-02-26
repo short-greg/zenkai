@@ -33,13 +33,6 @@ from ._crossover import (
 from ._evolutionary import (
     es_dx
 )
-
-from ._module import (
-    AdaptPopBatch,
-    AdaptPopFeature,
-    NullPopAdapt,
-)
-
 from ._aggregate import (
     pop_mean,
     pop_median,

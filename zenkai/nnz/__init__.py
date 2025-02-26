@@ -6,3 +6,8 @@ from ._modules import (
     Sign,
     Updater
 )
+from ._pop import (
+    AdaptPopBatch,
+    AdaptPopFeature,
+    NullPopAdapt,
+)
