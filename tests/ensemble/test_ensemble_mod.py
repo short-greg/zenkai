@@ -25,6 +25,7 @@ class TestMeanVoteAggregator:
 
 
 class TestBinaryVoteAggregator:
+    
     def test_mean_voter_returns_mean(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
