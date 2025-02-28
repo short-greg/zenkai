@@ -1,6 +1,8 @@
 import torch
-from zenkai.nnz import FreezeDropout, Null, Updater
-from zenkai.thz import update_momentum
+from zenkai.utils import Null
+from zenkai.utils.update import Updater
+from zenkai.tansaku._noise import FreezeDropout
+from zenkai.utils import update_momentum
 
 
 class TestFreezeDropout:

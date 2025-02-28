@@ -1,6 +1,14 @@
 # flake8: noqa
 
-from ._convert import (
+# TODO: Rename back to "utils"
+
+from ._modules import (
+    Lambda,
+    Null
+)
+
+
+from .convert._convert import (
     binary_encoding,
     freshen,
     to_np,
@@ -13,7 +21,7 @@ from ._convert import (
 )
 
 # TODO: Reconsider these
-from ._reshape import(
+from .reshape._shape import(
     unsqueeze_to,
     align,
     unsqueeze_vector,
@@ -26,14 +34,16 @@ from ._reshape import(
     combine_dims,
     separate_dim,
     shape_as,
+    ExpandDim
 )
-from ._ste import (
-    sign_ste,
-    SignSTE,
-    step_ste,
-    StepSTE
-)
-from ._update import (
+# from ._ste import (
+#     sign_ste,
+#     SignSTE,
+#     step_ste,
+#     StepSTE
+# )
+
+from .update._update import (
     update_feature, update_mean,
     update_momentum, update_var, rand_update, decay,
     calc_scale, calc_slope, mix_cur

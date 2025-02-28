@@ -1,5 +1,5 @@
 import torch
-from zenkai.memory._memory import BatchMemory
+from zenkai.utils.memory import BatchMemory
 
 
 class TestBatchMemory(object):

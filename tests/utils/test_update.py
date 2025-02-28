@@ -2,7 +2,7 @@
 import torch
 
 # local
-from zenkai.thz import _update
+from zenkai.utils.update import _update
 
 
 class TestRandUpdate:

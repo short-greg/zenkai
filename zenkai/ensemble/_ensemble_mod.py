@@ -8,7 +8,7 @@ import torch.nn.functional
 from torch.nn.functional import one_hot
 
 # local
-from ..thz import step_ste, sign_ste
+from ..utils.hard import step_ste, sign_ste
 
 
 def weighted_votes(votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
@@ -85,11 +85,13 @@ class MeanVoteAggregator(VoteAggregator):
 class BinaryVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def __init__(self, use_sign: bool = False):
+    def __init__(
+        self, f: typing.Callable[[torch.Tensor], torch.Tensor]=None
+    ):
         """initializer
 
         Args:
-            use_sign (bool, optional): Whether to use the sign on the output for binary results. Defaults to False.
+            f (bool, typing.Callable): The function to use to compute the binary output. Defaults to False.
             n_classes (int, optional): Whether the inputs are . Defaults to None.
 
         Raises:
@@ -100,7 +102,7 @@ class BinaryVoteAggregator(VoteAggregator):
         # I will split the voter up at that point though
         #
         super().__init__()
-        self._use_sign = use_sign
+        self._f = f
 
     def forward(
         self, votes: torch.Tensor, weights: torch.Tensor = None
@@ -116,10 +118,10 @@ class BinaryVoteAggregator(VoteAggregator):
         """
         chosen = weighted_votes(votes, weights)
 
-        if self._use_sign:
-            return sign_ste(chosen)
+        if self._f is not None:
+            return self._f(chosen)
 
-        return step_ste(chosen)
+        return chosen.sign()
 
 
 class MulticlassVoteAggregator(VoteAggregator):

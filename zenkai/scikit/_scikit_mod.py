@@ -52,8 +52,8 @@ from sklearn.exceptions import NotFittedError
 
 
 # local
-from .. import nnz
-from .. import thz
+from ..utils import hard, reshape
+from .. import utils
 
 
 class ScikitModule(nn.Module, ABC):
@@ -195,8 +195,8 @@ class ScikitBinary(ScikitModule):
         Returns:
         None
         """
-        x = thz.freshen(x, False, False).numpy()
-        t = thz.freshen(t, False, False).numpy()
+        x = utils.freshen(x, False, False).numpy()
+        t = utils.freshen(t, False, False).numpy()
         if self._estimator_out is None:
             t = t.squeeze(-1)
         if self.is_partial:
@@ -212,7 +212,7 @@ class ScikitBinary(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = thz.freshen(x, False, False)
+        x = utils.freshen(x, False, False)
         if not self.fitted:
             return self._surrogate(x)
         y = self._estimator.predict(x.numpy())
@@ -247,7 +247,7 @@ class ScikitBinary(ScikitModule):
 
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features),
-            nnz.Sign()
+            hard.Sign()
         )
 
 
@@ -280,8 +280,8 @@ class ScikitMulticlass(ScikitModule):
         Returns:
         None
         """
-        x = thz.freshen(x, False, False).numpy()
-        t = thz.freshen(t, False, False).numpy()
+        x = utils.freshen(x, False, False).numpy()
+        t = utils.freshen(t, False, False).numpy()
 
         if self._estimator_out is None:
             t = t.squeeze(-1)
@@ -299,7 +299,7 @@ class ScikitMulticlass(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = thz.freshen(x, False, False)
+        x = utils.freshen(x, False, False)
         if not self.fitted:
             return self._surrogate(x)
         y = self._estimator.predict(x.numpy())
@@ -340,8 +340,8 @@ class ScikitMulticlass(ScikitModule):
         """
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features * self.n_classes),
-            nnz.ExpandDim(1, self.out_features, self.n_classes),
-            nnz.Argmax()
+            reshape.ExpandDim(1, self.out_features, self.n_classes),
+            hard.Argmax()
         )
 
 
@@ -356,8 +356,8 @@ class ScikitRegressor(ScikitModule):
         Returns:
         None
         """
-        x = thz.freshen(x, False, False).numpy()
-        t = thz.freshen(t, False, False).numpy()
+        x = utils.freshen(x, False, False).numpy()
+        t = utils.freshen(t, False, False).numpy()
         print(t.shape, x.shape)
         if self._estimator_out is None:
             t = t.squeeze(-1)
@@ -375,7 +375,7 @@ class ScikitRegressor(ScikitModule):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        x = thz.freshen(x, False, False)
+        x = utils.freshen(x, False, False)
         if not self.fitted:
             return self._surrogate(x)
         y = self._estimator.predict(x.numpy())

@@ -3,16 +3,17 @@
 from ._noise import (
     gaussian_noise,
     binary_noise,
-    gaussian_sample
+    gaussian_sample,
 )
-
 from ._weight import (
     gauss_cdf_weight, log_weight, rank_weight,
     softmax_weight, normalize_weight
 )
 from ._selection import (
     select_best, gather_selection,
+    select_kbest,
     pop_assess, 
+    pop_shape,
     retrieve_selection, gather_indices,
     select_from_prob, select,
     shuffle_selection,
@@ -20,9 +21,8 @@ from ._selection import (
     softmax_prob,
     rank_prob,
     loop_param_select,
-    to_select_prob
+    to_select_prob,
 )
-
 from ._crossover import (
     CrossOver, 
     cross_pairs,
@@ -39,3 +39,4 @@ from ._aggregate import (
     pop_quantile,
     pop_normalize
 )
+from ._noise import FreezeDropout

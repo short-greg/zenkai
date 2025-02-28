@@ -1,12 +1,8 @@
-# 1st party
-import typing
-
 # 3rd party
 import torch
-from torch import nn
 
 # local
-from ._reshape import align
+from ..reshape._shape import align
 
 
 def rand_update(

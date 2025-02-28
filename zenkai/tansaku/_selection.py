@@ -1,10 +1,10 @@
 import typing
 import torch
 
-from ..thz._reshape import align
+from ..utils.reshape import align
 from ..kaku import Reduction
 from . import _weight as W
-from ..params._params import PObj, get_p
+from ..utils.params import PObj, get_p
 
 
 def loop_param_select(
@@ -54,6 +54,29 @@ def select_best(
     return assessment.min(dim=dim, keepdim=keepdim)
 
 
+
+def select_kbest(
+    assessment: torch.Tensor, k: int,
+    maximize: bool=False, dim: int=-1
+) -> typing.Tuple[torch.Tensor, torch.LongTensor]:
+    """Get the best assessment from the population
+    It wraps torch.topk, but only returns the indices
+
+    Args:
+        assessment (torch.Tensor): The assessment
+        maximize (bool, optional): Whether to maximize or minimize. Defaults to False.
+        dim (int, optional): The dimension to get the best on. Defaults to -1.
+        keepdim (int, optional): Whether to keep the dimension or not. Defaults to False.
+
+    Returns:
+        typing.Tuple[torch.Tensor, torch.LongTensor]: The best tensor
+    """
+    _, ind = torch.topk(
+        assessment, k, dim, maximize
+    )
+    return ind
+
+
 def gather_selection(
     x: torch.Tensor,
     selection: torch.LongTensor, 
@@ -74,6 +97,26 @@ def gather_selection(
         dim = selection.dim() + dim
     selection = align(selection, x)
     return torch.gather(x, dim, selection)
+
+
+def pop_shape(
+    x: torch.Tensor, k: int, pop_dim: int=0
+) -> torch.Size:
+    """Get the shape of the tensor after adding a 
+    population dimension to it. Assumes the tensor passed
+    in does not have a population dimension.
+
+    Args:
+        x (torch.Tensor): The tensor
+        k (int): The size of the population
+        pop_dim (int, optional): The dimension for the population. Defaults to 0.
+
+    Returns:
+        torch.Size: the size of the population tensor
+    """
+    shape = list(x.shape)
+    shape.insert(pop_dim, k)
+    return torch.Size(shape)
 
 
 def pop_assess(

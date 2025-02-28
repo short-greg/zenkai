@@ -15,17 +15,15 @@ from ._params import PObj
 
 # local
 # from . import _params
-from ..thz._reshape import (
+from ..reshape._shape import (
     collapse_batch, collapse_feature, separate_batch, separate_feature
 )
 from . import _params as param_utils
 
 
-# 3rd party
-
 # local
 from . import _params as base_params
-from ..thz._reshape import collapse_batch, collapse_feature, separate_batch, separate_feature
+from ..reshape._shape import collapse_batch, collapse_feature, separate_batch, separate_feature
 from . import _params as param_utils
 
 
@@ -426,57 +424,57 @@ def acc_pop_gradtvec(
         # param_utils.acc_gradt(p, cur_vec)
 
 
-# class PopModule(nn.Module, ABC):
-#     """Parent class for a module that outputs a population
-#     """
-#     def __init__(
-#         self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
-#         """
+class PopModule(nn.Module, ABC):
+    """Parent class for a module that outputs a population
+    """
+    def __init__(
+        self, n_members: int, out_dim: int=0, p_dim: int=0, mixed: bool=False):
+        """
 
-#         Args:
-#             n_members (int): The population size
-#             out_dim (int, optional): The dimension for the population for the output. Defaults to 0.
-#             p_dim (int, optional): The dimension for the pouplation for the parameters. Defaults to 0.
-#             mixed (bool, optional): Whether the population dim is mixed with another dimension. Defaults to False.
-#         """
-#         super().__init__()
-#         self._n_members = n_members
-#         self._out_dim = out_dim
-#         self._p_dim = p_dim
-#         self._mixed = mixed
+        Args:
+            n_members (int): The population size
+            out_dim (int, optional): The dimension for the population for the output. Defaults to 0.
+            p_dim (int, optional): The dimension for the pouplation for the parameters. Defaults to 0.
+            mixed (bool, optional): Whether the population dim is mixed with another dimension. Defaults to False.
+        """
+        super().__init__()
+        self._n_members = n_members
+        self._out_dim = out_dim
+        self._p_dim = p_dim
+        self._mixed = mixed
 
-#     @property
-#     def n_members(self) -> int:
-#         """
-#         Returns:
-#             int: The number of members in the module
-#         """
-#         return self._n_members
+    @property
+    def n_members(self) -> int:
+        """
+        Returns:
+            int: The number of members in the module
+        """
+        return self._n_members
 
-#     @abstractmethod
-#     def forward(
-#         self, x: torch.Tensor, 
-#         ind: int=None
-#     ) -> torch.Tensor:
-#         """Output the population
+    @abstractmethod
+    def forward(
+        self, x: torch.Tensor, 
+        ind: int=None
+    ) -> torch.Tensor:
+        """Output the population
 
-#         Args:
-#             x (torch.Tensor): The input
+        Args:
+            x (torch.Tensor): The input
 
 
-#         Returns:
-#             torch.Tensor: The population output
-#         """
-#         pass 
+        Returns:
+            torch.Tensor: The population output
+        """
+        pass 
 
-#     def pop_parameters(self, recurse: bool=True, pop_params: bool=True) -> typing.Iterator[typing.Union[PopParams, nn.parameter.Parameter]]:
+    def pop_parameters(self, recurse: bool=True, pop_params: bool=True) -> typing.Iterator[typing.Union[PopParams, nn.parameter.Parameter]]:
 
-#         for p in self.parameters(recurse):
-#             if not pop_params:
-#                 yield separate_feature(
-#                     p, self._n_members, self._p_dim, False
-#                 )
-#             else:
-#                 yield PopParams(
-#                     p, self._n_members, self._p_dim, self._mixed
-#                 )
+        for p in self.parameters(recurse):
+            if not pop_params:
+                yield separate_feature(
+                    p, self._n_members, self._p_dim, False
+                )
+            else:
+                yield PopParams(
+                    p, self._n_members, self._p_dim, self._mixed
+                )

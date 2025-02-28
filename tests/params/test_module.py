@@ -1,5 +1,5 @@
 from torch import Tensor
-from zenkai.params import _pop_params
+from zenkai.utils.params import _pop_params
 from typing_extensions import Self
 
 import torch

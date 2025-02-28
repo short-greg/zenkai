@@ -2,6 +2,7 @@ from zenkai.ensemble import _ensemble_mod as modules
 import torch
 from torch import nn
 from torch.nn.functional import one_hot
+from zenkai.utils import hard
 
 
 class TestMeanVoteAggregator:
@@ -9,7 +10,7 @@ class TestMeanVoteAggregator:
 
         votes = torch.rand(3, 4, 2)
         voter = modules.MeanVoteAggregator()
-        assert (voter(votes) == votes.mean(dim=0)).all()
+        assert torch.isclose(voter(votes), votes.mean(dim=0)).all()
 
     def test_mean_voter_returns_weighted_mean(self):
 
@@ -27,13 +28,18 @@ class TestBinaryVoteAggregator:
     def test_mean_voter_returns_mean(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
-        voter = modules.BinaryVoteAggregator()
-        assert (voter(votes) == votes.mean(dim=0).round()).all()
+        voter = modules.BinaryVoteAggregator(
+            hard.step_ste
+        )
+
+        assert torch.isclose(voter(votes), votes.mean(dim=0).round()).all()
 
     def test_binary_voter_returns_mean_with_value(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
-        voter = modules.BinaryVoteAggregator(use_sign=True)
+        voter = modules.BinaryVoteAggregator(
+            hard.sign_ste
+        )
         assert (voter(votes) == votes.mean(dim=0).sign()).all()
 
 

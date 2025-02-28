@@ -5,7 +5,7 @@ import numpy as np
 
 import pytest
 
-from zenkai.thz import _convert
+from zenkai.utils.convert import _convert
 
 
 class TestToTH:

@@ -5,10 +5,12 @@ import typing
 import torch
 import torch.nn as nn
 # local
-from ..thz._reshape import (
+from .. import (
     collapse_batch, collapse_feature, separate_batch, separate_feature
 )
 from ..params._pop_params import PopModule
+
+# TODO: REMOVE!
 
 
 # TODO: add tests

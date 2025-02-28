@@ -25,7 +25,7 @@ from ..kaku._lm2 import (
     StepX as StepX,
 
 )
-from ..thz import to_np, to_th_as
+from ..utils import to_np, to_th_as
 from ..kaku._grad import GradStepTheta
 
 

@@ -9,7 +9,7 @@ from zenkai import NNLoss
 from zenkai.kaku._lm2 import IO as IO, iou, Idx as Idx
 from zenkai.kaku import _grad
 from zenkai.kaku import State
-from zenkai.params import _params as utils
+from zenkai.utils.params import _params as utils
 
 
 class THGradLearnerT1(_grad.GradLearner):

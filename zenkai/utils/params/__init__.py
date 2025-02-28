@@ -13,9 +13,11 @@ from ._pop_params import (
     acc_pop_gradvec,
     set_pop_gradvec,
     acc_pop_gradtvec,
+    PopM
 )
 
 from ._params import (
+    PObj,
     get_p,
     get_grad,
     to_pvec,

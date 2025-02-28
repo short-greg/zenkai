@@ -2,7 +2,7 @@
 import torch
 
 # local
-from ..thz._reshape import unsqueeze_to
+from ..utils.reshape import unsqueeze_to
 
 
 def pop_mean(

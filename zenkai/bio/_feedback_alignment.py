@@ -13,10 +13,10 @@ from ..kaku import (
     NNLoss,
 )
 from ..optim import OptimFactory
-from ..params import _params as param_utils
-from ..nnz import Null
+from ..utils import params as param_utils
+from ..utils import Null
 from ..kaku._grad import GradLearner
-from ..kaku import GradLearner, IO, iou, Idx, forward_dep, State
+from ..kaku import GradLearner, IO, iou, forward_dep, State
 from ..kaku._lm2 import LearningMachine as LearningMachine
 
 
@@ -31,7 +31,6 @@ def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
     Returns:
         IO: the resulting target
     """
-
     return iou(y.f, y_prime.f, detach=detach)
 
 

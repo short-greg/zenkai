@@ -1,5 +1,5 @@
 import torch
-from zenkai.thz import _reshape
+from zenkai.utils import reshape as _shape
 import pytest
 
 
@@ -8,7 +8,7 @@ class TestSeparate:
     def test_separate_feature_with_reshape(self):
 
         x = torch.randn(4, 2)
-        x2 = _reshape.separate_feature(
+        x2 = _shape.separate_feature(
             x, 2, reshape=True
         )
         assert x2.shape == torch.Size([2,4, 1])
@@ -16,7 +16,7 @@ class TestSeparate:
     def test_separate_feature_with_feature_dim3(self):
 
         x = torch.randn(4, 2, 4)
-        x2 = _reshape.separate_feature(
+        x2 = _shape.separate_feature(
             x, 2, 3, reshape=True
         )
         assert x2.shape == torch.Size([2,4, 2, 2])
@@ -24,7 +24,7 @@ class TestSeparate:
     def test_separate_feature_with_view(self):
 
         x = torch.randn(4, 2)
-        x2 = _reshape.separate_feature(
+        x2 = _shape.separate_feature(
             x, 2, reshape=False
         )
         assert x2.shape == torch.Size([2,4, 1])
@@ -32,7 +32,7 @@ class TestSeparate:
     def test_separate_batch_with_reshape(self):
 
         x = torch.randn(4, 2)
-        x2 = _reshape.separate_batch(
+        x2 = _shape.separate_batch(
             x, 2, reshape=True
         )
         assert x2.shape == torch.Size([2,2, 2])
@@ -40,7 +40,7 @@ class TestSeparate:
     def test_separate_batch_with_view(self):
 
         x = torch.randn(4, 2)
-        x2 = _reshape.separate_batch(
+        x2 = _shape.separate_batch(
             x, 2, reshape=False
         )
         assert x2.shape == torch.Size([2,2, 2])
@@ -50,7 +50,7 @@ class TestCollapse:
     def test_collapse_feature_with_reshape(self):
 
         x = torch.randn(2, 4, 1)
-        x2 = _reshape.collapse_feature(
+        x2 = _shape.collapse_feature(
             x, reshape=True
         )
         assert x2.shape == torch.Size([4, 2])
@@ -58,7 +58,7 @@ class TestCollapse:
     def test_collapse_feature_with_view(self):
 
         x = torch.randn(2, 4, 1)
-        x2 = _reshape.collapse_feature(
+        x2 = _shape.collapse_feature(
             x, reshape=False
         )
         assert x2.shape == torch.Size([4, 2])
@@ -66,7 +66,7 @@ class TestCollapse:
     def test_collapse_feature_with_feature_dim3(self):
 
         x = torch.randn(2, 4, 1, 3)
-        x2 = _reshape.collapse_feature(
+        x2 = _shape.collapse_feature(
             x, 3, reshape=True
         )
         assert x2.shape == torch.Size([4, 1, 6])
@@ -74,7 +74,7 @@ class TestCollapse:
     def test_collapse_batch_with_reshape(self):
 
         x = torch.randn(2, 2, 2)
-        x2 = _reshape.collapse_batch(
+        x2 = _shape.collapse_batch(
             x, reshape=True
         )
         assert x2.shape == torch.Size([4, 2])
@@ -82,7 +82,7 @@ class TestCollapse:
     def test_collapse_batch_with_view(self):
 
         x = torch.randn(2, 2, 2)
-        x2 = _reshape.collapse_batch(
+        x2 = _shape.collapse_batch(
             x, reshape=False
         )
         assert x2.shape == torch.Size([4, 2])
@@ -142,7 +142,7 @@ def x_trial_collapsed():
 
 class TestCollapseK:
     def test_collapse_k_collapses_the_trial_dimension(self, x_trial: torch.Tensor):
-        shape = _reshape.collapse_batch(x_trial).shape
+        shape = _shape.collapse_batch(x_trial).shape
         assert shape[0] == x_trial.shape[0] * x_trial.shape[1]
 
 
@@ -150,7 +150,7 @@ class TestExpandK:
     def test_collapse_k_collapses_the_trial_dimension(
         self, x_trial_collapsed: torch.Tensor
     ):
-        shape = _reshape.separate_batch(x_trial_collapsed, N_TRIALS).shape
+        shape = _shape.separate_batch(x_trial_collapsed, N_TRIALS).shape
         assert shape[0] == N_TRIALS
         assert shape[1] == N_SAMPLES
 

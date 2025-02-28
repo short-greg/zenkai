@@ -6,10 +6,12 @@ import torch
 import torch.nn.functional
 
 # local
-from ..thz._reshape import unsqueeze_vector
+from ..utils.reshape import unsqueeze_vector
 
 
-def normalize_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
+def normalize_weight(
+    weight: torch.Tensor, pop_dim: int=0
+) -> torch.Tensor:
     """Normalize a weight vector
 
     Args:
@@ -92,7 +94,9 @@ def log_weight(
     return -torch.log(norm_weight + eps)
     
 
-def gauss_cdf_weight(weight: torch.Tensor, pop_dim: int=0) -> torch.Tensor:
+def gauss_cdf_weight(
+    weight: torch.Tensor, pop_dim: int=0
+) -> torch.Tensor:
     """Calculate the weight using the Gaussian CDF
 
     Args:
