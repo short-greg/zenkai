@@ -19,7 +19,7 @@ packages = [
     {include="zenkai/optim"},
     {include="zenkai/rev"},
     {include="zenkai/scikit"},
-    {include="zenkai/tansaku"}
+    {include="zenkai/tansaku"},
     {include="zenkai/utils"},
     {include="zenkai/utils/convert"},
     {include="zenkai/utils/hard"},
@@ -27,7 +27,7 @@ packages = [
     {include="zenkai/utils/params"},
     {include="zenkai/utils/pop"},
     {include="zenkai/utils/reshape"},
-    {include="zenkai/utils/update"},
+    {include="zenkai/utils/update"}
 ]
 
 [tool.poetry.dependencies]
