@@ -107,7 +107,7 @@ def collapse_batch(x: torch.Tensor, reshape: bool = True) -> torch.Tensor:
     return x.view(-1, *x.shape[2:])
 
 
-def collapse_feature(x: torch.Tensor, feature_dim: int=2, reshape: bool=True) -> torch.Tensor:
+def collapse_feature(x: torch.Tensor, dim: int=2, reshape: bool=True) -> torch.Tensor:
     """Collapse the feature dimension and population dimensions into one dimension
 
     Args:
@@ -119,12 +119,12 @@ def collapse_feature(x: torch.Tensor, feature_dim: int=2, reshape: bool=True) ->
     """
     permutation = list(range(x.dim()))
     permutation = [
-        *permutation[1:feature_dim],
-        0, *permutation[feature_dim:]
+        *permutation[1:dim],
+        0, *permutation[dim:]
     ]
 
     shape = list(x.shape)
-    shape[feature_dim] = shape[0] * shape[feature_dim]
+    shape[dim] = shape[0] * shape[dim]
     shape.pop(0)
 
     x = x.permute(permutation)
@@ -157,8 +157,25 @@ def separate_feature(x: torch.Tensor, k: int, feature_dim: int=2, reshape: bool=
         *permutation[:feature_dim - 1],
         *permutation[feature_dim:]
     ]
-    print(permutation)
     return x.permute(permutation)
+
+
+def separate_dim(
+    x: torch.Tensor, n: int, dim: int
+) -> torch.Tensor:
+
+    shape = list(x.shape)
+    shape[dim] = -1
+    shape.insert(dim, n)
+    return x.reshape(x)
+
+
+def combine_dims(x: torch.Tensor, from_dim: int):
+
+    shape = list(x.shape)
+    shape[from_dim] = shape[from_dim] * shape[from_dim + 1]
+    shape.pop(from_dim + 1)
+    return x.view(shape)
 
 
 def undo_cat1d(model: nn.Module, x: torch.Tensor) -> typing.List[torch.Tensor]:
@@ -202,22 +219,6 @@ def cat1d(
     )
 
 
-def separate_dim(
-    x: torch.Tensor, n: int, dim: int
-) -> torch.Tensor:
-
-    shape = list(x.shape)
-    shape[dim] = -1
-    shape.insert(dim, n)
-    return x.reshape(x)
-
-
-def combine_dims(x: torch.Tensor, from_dim: int):
-
-    shape = list(x.shape)
-    shape[from_dim] = shape[from_dim] * shape[from_dim + 1]
-    shape.pop(from_dim + 1)
-    return x.view(shape)
 
 
 # TODO: Depracate the following

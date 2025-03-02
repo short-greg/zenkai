@@ -21,7 +21,6 @@ def es_dx(dw: torch.Tensor, assessment: torch.Tensor, assessment_ref: typing.Uni
     Returns:
         torch.Tensor: The estimation of dx using evolution strategies
     """
-
     assessment = pop_normalize(
         assessment, assessment_ref if assessment_ref != 'mean' else None, dim=pop_dim
     )

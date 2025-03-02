@@ -58,7 +58,6 @@ class TestMedian:
         result = A.pop_median(
             x, w, dim=0
         )[0]
-        print(result)
         assert (
             result == torch.tensor([2., 3.])
         ).all()

@@ -335,7 +335,7 @@ def shuffle_selection(
             resize.append(selection.shape[i])
             permutation = permutation.unsqueeze(i)
 
-    print(resize, permutation.shape)
+    # print(resize, permutation.shape)
     return permutation.repeat(*resize)
 
 

@@ -40,3 +40,27 @@ from ._aggregate import (
     pop_normalize
 )
 from ._noise import FreezeDropout
+
+
+from ._pop_params import (
+    PopParams, PopModule,
+    to_pop_gradvec,
+    to_pop_pvec,
+    pop_modules,
+    pop_parameters,
+    ind_pop_params,
+    align_pop_vec,
+    set_pop_pvec,
+    acc_pop_pvec,
+    set_pop_gradtvec,
+    acc_pop_gradvec,
+    set_pop_gradvec,
+    acc_pop_gradtvec,
+    PopM
+)
+
+from ._pop_mod import (
+    PopModule, NullPopAdapt, 
+    AdaptPopBatch, AdaptPopFeature,
+    adapt_batch, adapt_feature
+)

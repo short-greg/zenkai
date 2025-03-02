@@ -24,8 +24,6 @@ packages = [
     {include="zenkai/utils/convert"},
     {include="zenkai/utils/hard"},
     {include="zenkai/utils/memory"},
-    {include="zenkai/utils/params"},
-    {include="zenkai/utils/pop"},
     {include="zenkai/utils/reshape"},
     {include="zenkai/utils/update"}
 ]

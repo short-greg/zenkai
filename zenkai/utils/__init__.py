@@ -32,7 +32,7 @@ from .reshape._shape import(
     undo_cat1d,
     cat1d,
     combine_dims,
-    separate_dim,
+    separate_feature,
     shape_as,
     ExpandDim
 )

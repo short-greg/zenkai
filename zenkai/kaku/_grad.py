@@ -124,8 +124,7 @@ class GradLearner(LearningMachine):
 
         Args:
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
-            optimf (OptimFactory, optional): The optim factory to use. Defaults to None.
-            learn_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to None.
+            learn_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to use the Sum of Squared Errors.
         """
         super().__init__()
         self._module = module

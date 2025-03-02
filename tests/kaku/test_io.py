@@ -65,7 +65,6 @@ class TestIO:
         )
         dx = io.dx([data_prime])
         t = io.t(dx)
-        print(dx[0])
 
         assert (t[0] == data_prime).all()
 
@@ -211,10 +210,8 @@ class TestIdx:
         idx = _io.Idx(torch.tensor([0, 2, 1]).long())
         x = _io.iou(torch.rand(3, 3))
         x2 = _io.iou(torch.rand(4, 3))
-        print(x2.f[idx.idx])
         
         x2 = idx.update(x, x2)
-        print(x2.f[idx.idx])
         assert (x2.f[idx.idx] == x.f).all()
 
     def test_update_updates_with_both(self):

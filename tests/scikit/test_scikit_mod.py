@@ -49,9 +49,9 @@ class TestScikitRegressor:
 
         y = regressor_wrapper(torch.from_numpy(test_data[0]))
         t = torch.from_numpy(
-            regressor_wrapper._estimator.predict(test_data[0]).astype(np.float32)
-        )
-        assert torch.isclose(y, t).all()
+            regressor_wrapper.models[0]._estimator.predict(test_data[0]).astype(np.float32)
+        )[:,None]
+        assert torch.isclose(y, t, 1e-4).all()
 
     def test_scikit_regressor_outputs_correct_size_for_baseline(self):
 

@@ -68,7 +68,6 @@ class TestRankWeight:
         t = torch.tensor([[1, 2], [2, 1]], dtype=torch.float)
 
         ranked = W.rank_weight(weight, maximize=True)
-        print(ranked)
         assert torch.isclose(ranked, t).all()
 
 

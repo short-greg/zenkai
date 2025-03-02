@@ -5,10 +5,10 @@ import typing
 import torch
 import torch.nn as nn
 # local
-from .. import (
+from ..utils import (
     collapse_batch, collapse_feature, separate_batch, separate_feature
 )
-from ..params._pop_params import PopModule
+from ._pop_params import PopModule
 
 # TODO: REMOVE!
 
@@ -100,3 +100,33 @@ class NullPopAdapt(PopModule):
             torch.Tensor: The output of the module
         """
         return self.module(*x)
+
+
+def adapt_feature(module: nn.Module, *x: torch.Tensor, dim: int=2) -> torch.Tensor | typing.Tuple[torch.Tensor]:        
+    
+    k = x[0].size(0)
+        
+    x = tuple(collapse_feature(x_i, dim) for x_i in x)
+    x = module(*x)
+
+    if isinstance(x, typing.Tuple):
+        return tuple(
+            separate_feature(x_i, k, dim) for x_i in x
+        )
+    return separate_feature(x, k, dim)
+
+
+def adapt_batch(module: nn.Module, *x: torch.Tensor) -> torch.Tensor | typing.Tuple[torch.Tensor]:
+
+    k = x[0].size(0)
+    
+    x = tuple(collapse_batch(x_i) for x_i in x)
+    x = module(*x)
+    if isinstance(x, typing.Tuple):
+        return tuple(
+            separate_batch(x_i, k) for x_i in x
+        )
+    
+    return separate_batch(x, k)
+
+

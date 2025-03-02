@@ -484,7 +484,7 @@ class MulticlassClassifyFunc(torch.autograd.Function):
 
 class MulticlassLoss(nn.Module):
     """Multiclass Criterion to be used on categorical outputs. Made to be used with machines that require the output labels.
-
+z
     This is kind of a hack to get the framework to work with learning machines that require the targets to be categorical
     """
     

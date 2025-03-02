@@ -51,6 +51,13 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 
+import torch
+import torch.nn as nn
+import copy
+from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
+
+
+
 # local
 from ..utils import hard, reshape
 from .. import utils
@@ -101,6 +108,10 @@ class ScikitModule(nn.Module, ABC):
         return self._estimator_out
     
     @property
+    def multi_out(self) -> int:
+        return self._estimator_out is not None
+    
+    @property
     def estimator_in(self) -> int:
         return self._estimator_in
     
@@ -111,6 +122,10 @@ class ScikitModule(nn.Module, ABC):
     @abstractmethod
     def build_surrogate(self) -> nn.Module:
         pass
+
+    @property
+    def surrogate(self) -> nn.Module:
+        return self._surrogate
 
     @property
     def is_partial(self) -> bool:
@@ -179,6 +194,11 @@ class ScikitModule(nn.Module, ABC):
         """
         pass
 
+    @abstractmethod
+    def clone(self):
+        """ Clone the base estimator (deepcopy or re-instantiate). """
+        pass
+
 
 class ScikitBinary(ScikitModule):
     """
@@ -232,10 +252,10 @@ class ScikitBinary(ScikitModule):
         Returns:
         BinaryScikit: An instance of BinaryScikit wrapping the MultiOutputClassifier.
         """
-        return ScikitBinary(
-            MultiOutputClassifier(
-                estimator
-            ), in_features, out_features)
+        return MultiOutputAdapter(
+            ScikitBinary(
+                estimator, in_features
+            ), out_features)
 
     def build_surrogate(self) -> nn.Module:
         """
@@ -250,6 +270,17 @@ class ScikitBinary(ScikitModule):
             hard.Sign()
         )
 
+    def clone(self):
+        """ Clone the base estimator (deepcopy or re-instantiate). """
+        if hasattr(self._estimator, "get_params"):
+            estimator = type(self._estimator)(**self._estimator.get_params())
+        else:
+            estimator = copy.deepcopy(self._estimator)
+    
+        return ScikitBinary(
+            estimator, self._estimator_in,
+            self._estimator_out
+        )
 
 class ScikitMulticlass(ScikitModule):
     """
@@ -326,10 +357,10 @@ class ScikitMulticlass(ScikitModule):
         Returns:
         ScikitBinary: An instance of BinaryScikit wrapping the MultiOutputClassifier.
         """
-        return ScikitMulticlass(
-            MultiOutputClassifier(
-                estimator
-            ), in_features, n_classes, out_features)
+        return MultiOutputAdapter(
+            ScikitMulticlass(
+                estimator, in_features, n_classes
+            ), out_features)
 
     def build_surrogate(self):
         """
@@ -342,6 +373,19 @@ class ScikitMulticlass(ScikitModule):
             nn.Linear(self.in_features, self.out_features * self.n_classes),
             reshape.ExpandDim(1, self.out_features, self.n_classes),
             hard.Argmax()
+        )
+
+    def clone(self):
+        """ Clone the base estimator (deepcopy or re-instantiate). """
+        if hasattr(self._estimator, "get_params"):
+            estimator = type(self._estimator)(**self._estimator.get_params())
+        else:
+            estimator = copy.deepcopy(self._estimator)
+    
+        return ScikitMulticlass(
+            estimator, self._estimator_in,
+            self._n_classes,
+            self._estimator_out
         )
 
 
@@ -397,10 +441,10 @@ class ScikitRegressor(ScikitModule):
         Returns:
         ScikitRegressor: An instance of RegressionScikit wrapping the MultioutputRegressor.
         """
-        return ScikitRegressor(
-            MultiOutputRegressor(
-                estimator
-            ), in_features, out_features)
+        return MultiOutputAdapter(
+            ScikitRegressor(
+                estimator, in_features
+            ), out_features)
 
     def build_surrogate(self):
         """
@@ -411,4 +455,127 @@ class ScikitRegressor(ScikitModule):
         """
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features)
+        )
+
+    def clone(self):
+        """ Clone the base estimator (deepcopy or re-instantiate). """
+        if hasattr(self._estimator, "get_params"):
+            estimator = type(self._estimator)(**self._estimator.get_params())
+        else:
+            estimator = copy.deepcopy(self._estimator)
+    
+        return ScikitRegressor(
+            estimator, self._estimator_in,
+            self._estimator_out
+        )
+
+
+class Parallel(nn.Module):
+
+    def __init__(self, *module):
+
+        self._modules = nn.ModuleList(module)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+
+        return torch.hstack(
+            [module(x) for module in self._modules]
+        )
+
+
+class MultiOutputAdapter(nn.Module):
+    """
+    A Multi-Output Adapter for adapting ScikitBinary, ScikitMulticlass, and ScikitRegressor
+    to handle multi-output learning in PyTorch.
+    """
+
+    def __init__(self, base_estimator: ScikitModule, out_features: int):
+        """
+        Initialize the MultiOutputAdapter.
+
+        Args:
+            base_estimator: An instance of ScikitBinary, ScikitMulticlass, or ScikitRegressor.
+            in_features (int): Number of input features.
+            out_features (int): Number of output features (number of target variables).
+            n_classes (int, optional): Number of classes (only for multi-class classification).
+        """
+        super().__init__()
+        self.base_estimator = base_estimator
+        self._out_features = out_features
+        assert self.base_estimator.multi_out is False
+        self.models = [self.base_estimator.clone() for _ in range(self._out_features)]
+    
+    @property
+    def in_features(self) -> int:
+        return self.base_estimator.in_features
+
+    @property
+    def out_features(self) -> int:
+        return self._out_features
+
+    @property
+    def n_classes(self) -> int | None:
+
+        if isinstance(self.base_estimator, ScikitMulticlass):
+            return self.base_estimator.n_classes
+        return None
+
+    def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
+        """
+        Fit multiple estimators, one per output variable.
+        Args:
+            x (torch.Tensor): The input data tensor.
+            t (torch.Tensor): The target data tensor.
+        """
+        for i, model_i in enumerate(self.models):            
+            model_i.fit(x, t[:,i:i+1])
+
+    def multi_out(self) -> int:
+        return True
+
+    # def partial_fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
+    #     """
+    #     Incrementally train each model for each output.
+    #     Args:
+    #         x (torch.Tensor): The input data tensor.
+    #         t (torch.Tensor): The target data tensor.
+    #     """
+    #     x = x.detach().cpu().numpy()
+    #     t = t.detach().cpu().numpy()
+
+    #     num_outputs = t.shape[1]
+    #     if self.models is None:
+    #         self.models = [self._clone_model() for _ in range(num_outputs)]
+
+    #     for i in range(num_outputs):
+    #         self.models[i].partial_fit(x, t[:, i], **kwargs)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Perform a forward pass using the provided input tensor.
+        Args:
+            x (torch.Tensor): Input tensor.
+        Returns:
+            torch.Tensor: Output tensor after applying the estimator's prediction.
+        """
+        return torch.hstack(
+            [model(x) for model in self.models]
+        )
+
+        # x_np = x.detach().cpu().numpy()
+        # predictions = [model.predict(x_np) for model in self.models]
+
+        # predictions = torch.tensor(np.column_stack(predictions)).float()
+        # return predictions
+
+    def build_surrogate(self) -> nn.Module:
+        """
+        Builds a surrogate module based on a neural network.
+        Returns:
+            nn.Module: A sequential neural network module consisting of a linear layer 
+            followed by a custom sign activation function.
+        """
+
+        return Parallel(
+            [self.base_estimator.surrogate for _ in range(self.out_features)]
         )
