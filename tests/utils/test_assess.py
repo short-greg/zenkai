@@ -3,46 +3,11 @@ import torch
 import torch.nn as nn
 
 
-from zenkai.kaku import _assess as _evaluation, NNLoss, IO, iou, Reduction
-from zenkai.kaku._assess import MulticlassLoss
-from zenkai.kaku import AssessmentLog
-
-
-class TestReduction:
-    
-    def test_is_torch_checks_if_it_is_torch(self):
-        assert Reduction.is_torch("mean")
-
-    def test_reduction_with_mean_calculates_the_mean(self):
-
-        x = torch.rand(4)
-        reduction = Reduction.mean.reduce(x)
-        assert x.mean() == reduction
-
-    def test_reduction_with_sum_calculates_the_mean(self):
-
-        x = torch.rand(4)
-        reduction = Reduction.sum.reduce(x)
-        assert x.sum() == reduction
-
-    def test_reduction_batchmean_returns_batch_mean(self):
-
-        x = torch.rand(4)
-        reduction = Reduction.sum.reduce(x)
-        assert x.sum() == reduction
-
-    def test_reduction_batchmean_returns_batchmean(self):
-
-        x = torch.rand(4)
-        reduction = Reduction.batchmean.reduce(x)
-        assert x.sum() / len(x) == reduction
-
-    def test_reduction_batchmean_returns_samplemeans(self):
-
-        x = torch.rand(2, 4)
-        reduction = Reduction.samplemeans.reduce(x)
-        assert (x.mean(dim=1) == reduction).all()
-
+from zenkai.utils import assess as _evaluation
+from zenkai.utils.assess import Reduction
+from zenkai.kaku import NNLoss, iou
+from zenkai.utils.assess import MulticlassLoss
+from zenkai.utils.assess import AssessmentLog
 
 class TestThLoss:
 
@@ -89,7 +54,7 @@ class TestThLoss:
         t = torch.rand(4, 2)
         loss = NNLoss("MSELoss", "none")
         evaluation = loss.assess(iou(x), iou(t), "mean")
-        assert isinstance(evaluation, _evaluation.torch.Tensor)
+        assert isinstance(evaluation, torch.Tensor)
 
     def test_maximize_returns_true_if_maximize(self):
 
@@ -108,6 +73,43 @@ class TestLookup:
 
         with pytest.raises(KeyError):
             _evaluation.lookup_loss("XLoss")
+
+
+
+class TestReduction:
+    
+    def test_is_torch_checks_if_it_is_torch(self):
+        assert Reduction.is_torch("mean")
+
+    def test_reduction_with_mean_calculates_the_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.mean.reduce(x)
+        assert x.mean() == reduction
+
+    def test_reduction_with_sum_calculates_the_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.sum.reduce(x)
+        assert x.sum() == reduction
+
+    def test_reduction_batchmean_returns_batch_mean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.sum.reduce(x)
+        assert x.sum() == reduction
+
+    def test_reduction_batchmean_returns_batchmean(self):
+
+        x = torch.rand(4)
+        reduction = Reduction.batchmean.reduce(x)
+        assert x.sum() / len(x) == reduction
+
+    def test_reduction_batchmean_returns_samplemeans(self):
+
+        x = torch.rand(2, 4)
+        reduction = Reduction.samplemeans.reduce(x)
+        assert (x.mean(dim=1) == reduction).all()
 
 
 class TestAssessmentLog:

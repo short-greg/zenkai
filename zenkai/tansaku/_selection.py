@@ -2,7 +2,7 @@ import typing
 import torch
 
 from ..utils.reshape import align
-from ..kaku import Reduction
+from ..utils.assess import Reduction
 from . import _weight as W
 from ..utils.params import PObj, get_p
 

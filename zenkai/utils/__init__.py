@@ -20,6 +20,8 @@ from .convert._convert import (
     checkattr,
 )
 
+from . import assess
+
 # TODO: Reconsider these
 from .reshape._shape import(
     unsqueeze_to,

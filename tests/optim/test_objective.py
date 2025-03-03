@@ -1,5 +1,5 @@
 import torch
-from zenkai.kaku import Reduction
+from zenkai.utils.assess import Reduction
 from zenkai.optim._objective import (
     Objective,
     Constraint,

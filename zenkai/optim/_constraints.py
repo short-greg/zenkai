@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import Criterion, Reduction, IO
+from ..kaku import Criterion, IO
+from ..utils.assess import Reduction
 from ._objective import impose, Constraint, Objective
 
 

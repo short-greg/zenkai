@@ -1,17 +1,11 @@
 # flake8: noqa
 
 from ._assess import (
-    LOSS_MAP,
     Criterion,
-    Reduction,
     NNLoss,
-    Criterion,
     XCriterion,
-    AssessmentLog, 
-    reduce,
-    zip_assess,
-    MulticlassLoss
 )
+
 from ._io2 import (
     IO, Idx, 
     iou, pipe, io_loop
@@ -59,10 +53,3 @@ from ._grad import (
     GradStepX,
 )
 from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
-
-from ._assess import (
-    Criterion, XCriterion, zip_assess
-)
-from ._limit import (
-    FeatureLimitGen, RandomFeatureIdxGen
-)
