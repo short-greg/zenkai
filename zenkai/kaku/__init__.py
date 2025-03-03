@@ -31,12 +31,7 @@ from ._lm2 import (
     set_lmode,
     LearnerPostHook
 )
-from ._lm_assess import (
-    LayerAssessor,
-    StepAssessHook,
-    StepXLayerAssessor,
-    StepFullLayerAssessor
-)
+
 from ._null import (
     NullLearner,
     NullStepTheta, 
@@ -44,9 +39,6 @@ from ._null import (
 )
 from ._state import IDable, State
 
-from ._null import (
-    NullLearner, NullStepTheta, NullStepX
-)
 from ._grad import (
     GradStepTheta,
     GradLearner,
