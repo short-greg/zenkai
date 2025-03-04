@@ -2,13 +2,13 @@
 
 # TODO: Rename back to "utils"
 
-from ._modules import (
+from ..nnz._modules import (
     Lambda,
     Null
 )
 
 
-from .convert._convert import (
+from ._convert import (
     binary_encoding,
     freshen,
     to_np,
@@ -20,10 +20,8 @@ from .convert._convert import (
     checkattr,
 )
 
-from . import assess
-
 # TODO: Reconsider these
-from .reshape._shape import(
+from ._shape import(
     unsqueeze_to,
     align,
     unsqueeze_vector,
@@ -45,7 +43,7 @@ from .reshape._shape import(
 #     StepSTE
 # )
 
-from .update._update import (
+from ._update import (
     update_feature, update_mean,
     update_momentum, update_var, rand_update, decay,
     calc_scale, calc_slope, mix_cur

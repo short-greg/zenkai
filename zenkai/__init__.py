@@ -3,7 +3,6 @@
 __version__ = "0.0.9"
 
 from . import (
-    bio, ensemble, optim, 
-    rev, scikit, tansaku, utils
+    optim, lm,
+    nnz, tansaku, utils
 )
-from .kaku import *

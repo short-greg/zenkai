@@ -1,5 +1,5 @@
 import torch
-from zenkai.utils.assess import Reduction
+from zenkai.nnz._assess import Reduction
 from zenkai.optim._objective import (
     Objective,
     Constraint,
@@ -9,7 +9,7 @@ from zenkai.optim._objective import (
 
 class ObjectiveSample(Objective):
     def forward(self, reduction: str, **kwargs: torch.Tensor) -> torch.Tensor:
-        return Reduction[reduction].reduce(kwargs["x"])
+        return Reduction[reduction].forward(kwargs["x"])
 
 
 class EqualityConstraint(Constraint):

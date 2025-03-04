@@ -1,10 +1,10 @@
 import typing
 import torch
 
-from ..utils.reshape import align
-from ..utils.assess import Reduction
+from ..utils._shape import align
+from ..nnz._assess import Reduction
 from . import _weight as W
-from ..utils.params import PObj, get_p
+from ..utils._params import PObj, get_p
 
 
 def loop_param_select(
@@ -136,7 +136,7 @@ def pop_assess(
     """
     shape = list(value.shape)
     
-    result = Reduction[reduction].reduce(
+    result = Reduction[reduction].forward(
         value.reshape(
             *shape[:from_dim], -1
         ), dim=from_dim, keepdim=False

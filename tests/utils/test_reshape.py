@@ -1,5 +1,5 @@
 import torch
-from zenkai.utils import reshape as _shape
+from zenkai.utils import _shape
 import pytest
 
 

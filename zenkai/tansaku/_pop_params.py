@@ -9,24 +9,24 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 # local
-from ..utils.params import _params as param_utils
-from ..utils.params._params import PObj
+from ..utils import _params as param_utils
+from ..utils._params import PObj
 # from ..tansaku._selection import select
 
 # local
 # from . import _params
-from ..utils.reshape._shape import (
+from ..utils._shape import (
     separate_feature
 )
-from ..utils.params import _params as param_utils
+from ..utils import _params as param_utils
 
 
 # local
-from ..utils.params import _params as base_params
-from ..utils.reshape._shape import (
+from ..utils import _params as base_params
+from ..utils._shape import (
     separate_feature
 )
-from ..utils.params import _params as param_utils
+from ..utils import _params as param_utils
 
 
 @dataclass

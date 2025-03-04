@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 
 # local
-from ..kaku import Criterion, IO
-from ..utils.assess import Reduction
+from ..lm import Criterion, IO
+from ..nnz._assess import Reduction
 from ._objective import impose, Constraint, Objective
 
 
@@ -158,7 +158,7 @@ class FuncObjective(Objective):
         value = self._f(**kwargs)
         constraint = self._constraint(**kwargs)
         value = impose(value, constraint, self._penalty)
-        return Reduction[reduction].reduce(value)
+        return Reduction[reduction].forward(value)
 
 
 class CriterionObjective(Objective):
