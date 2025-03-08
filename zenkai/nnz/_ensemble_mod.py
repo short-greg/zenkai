@@ -205,6 +205,7 @@ class EnsembleVoter(Voter):
         temporary: nn.Module = None,
         spawner_args: typing.List = None,
         spawner_kwargs: typing.Dict = None,
+        train_only_last: bool=True
     ):
         """Create a machine that runs an ensemble of sub machines
 
@@ -227,6 +228,7 @@ class EnsembleVoter(Voter):
                 spawner(*self._spawner_args, **self._spawner_kwargs)
             )
         self._n_votes = n_keep
+        self.train_only_last = train_only_last
 
     @property
     def max_votes(self) -> int:
@@ -288,8 +290,19 @@ class EnsembleVoter(Voter):
         if len(self._estimators) == 0:
             return [self._temporary(*x)]
 
+        if self.train_only_last:
+            res = []
+            for i, estimator in enumerate(self._estimators):
+                y = estimator(*x)
+                if i == len(self._estimators) - 1:
+                    res.append(y)
+                else:
+                    res.append(y.detach())
+        else:
+            res = [estimator(*x) for estimator in self._estimators]
+
         return torch.stack(
-            [estimator(*x) for estimator in self._estimators]
+            res
         )
 
 

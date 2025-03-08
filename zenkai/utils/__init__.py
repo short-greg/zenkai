@@ -6,8 +6,6 @@ from ..nnz._modules import (
     Lambda,
     Null
 )
-
-
 from ._convert import (
     binary_encoding,
     freshen,
@@ -36,12 +34,11 @@ from ._shape import(
     shape_as,
     ExpandDim
 )
-# from ._ste import (
-#     sign_ste,
-#     SignSTE,
-#     step_ste,
-#     StepSTE
-# )
+from ._loop import (
+    minibatch,
+    filter_module,
+    apply_module
+)
 
 from ._update import (
     update_feature, update_mean,

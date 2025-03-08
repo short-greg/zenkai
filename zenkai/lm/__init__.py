@@ -72,3 +72,7 @@ from ._scikit import (
 from ._reversible import (
     ReversibleMachine,
 )
+from ._global_step import (
+    GlobalStepLearner,
+    LMAligner
+)

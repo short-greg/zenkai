@@ -1,15 +1,19 @@
 # TODO: Add modules for ensemble
 # 1st party
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import typing
 
 # local
-from zenkai.lm._io2 import IO as IO
+from ._io2 import IO as IO, iou
 from ._state import State
-from ._lm2 import LearningMachine as LearningMachine
+from ._lm2 import (
+    LearningMachine as LearningMachine, LMode,
+    StepTheta, StepX
+)
+from ..nnz._ensemble_mod import EnsembleVoter, VoteAggregator
 
 
-class EnsembleLearner(LearningMachine):
+class EnsembleLearner(LearningMachine, ABC):
     """Base class for A LearningMachine that optimizes over an ensemble of otehr machines"""
 
     @abstractmethod
@@ -43,24 +47,60 @@ class EnsembleLearner(LearningMachine):
         return self.reduce(self.vote(x, state), state) 
 
 
-# # Decide whether to use this
+class EnsembleVoteLearner(EnsembleLearner):
+    """A LearningMachine that optimizes over an ensemble of other machines"""
 
-# class EnsembleLearnerVoter(nn.Module):
-#     """Wraps a learner in order to collect its votes"""
+    def __init__(
+        self, ensemble_voter: EnsembleVoter, 
+        aggregator: VoteAggregator, 
+        step_x: StepX=None,
+        step_theta: StepTheta=None,
+        lmode = LMode.Standard,
+        train_only_last: bool=True
+    ):
+        super().__init__(lmode)
+        self.ensemble_voter = ensemble_voter
+        self.aggregator = aggregator
+        self._step_x = step_x
+        self._step_theta = step_theta
+        self._train_only_last = train_only_last
 
-#     def __init__(self, ensemble_learner: EnsembleLearner):
-#         """Wrap an ensemble_learner within a module
+    def vote(self, x, state):
+        y = state._vote_y = self.ensemble_voter(x.f)
+        return y
+    
+    def reduce(self, x, state):
+        return self.aggregator(x.f)
+    
+    def adv(self):
+        self.ensemble_voter.adv()
+    
+    @property
+    def max_votes(self):
+        return self.ensemble_voter.max_votes
+    
+    @max_votes.setter
+    def max_votes(self, value):
+        self.ensemble_voter.max_votes = value
 
-#         Args:
-#             ensemble_learner (EnsembleLearner): The learner to wrap
-#         """
+    def _get_y(self, state):
+        if self._train_only_last:
+            return state._vote_y[-1]
+        return state._y
 
-#         super().__init__()
-#         self.ensemble_learner = ensemble_learner
+    def accumulate(self, x, t, state, **kwargs):
+        if self._step_theta is None:
+            raise NotImplementedError("The step_theta has not been defined")
+        return self._step_theta.accumulate(x, self._get_y(state), t, state, **kwargs)
+    
+    def step_x(self, x, t, state, **kwargs):
 
-#     def forward(self, *x: torch.Tensor) -> torch.Tensor:
+        if self._step_x is None:
+            raise NotImplementedError("The step_x has not been defined")
+        return self._step_x.step_x(x, self._get_y(state), t, state, **kwargs)
+        
+    def step_theta(self, x, t, state, **kwargs):
+        if self._step_theta is None:
+            raise NotImplementedError("The step_theta has not been defined")
 
-#         y = self.ensemble_learner.vote(IO(*x))
-#         if len(y) > 1:
-#             return y.u
-#         return y.f
+        return self._step_theta.step(x, self._get_y(state), t, state, **kwargs)

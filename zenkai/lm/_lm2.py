@@ -492,6 +492,17 @@ class LearningF(Function):
 
     @staticmethod
     def forward(ctx, self, kwargs: typing.Dict, *args: typing.Any) -> typing.Any:
+        """
+        This function is used to extend the standard functionality of Torch's forward.
+        It ensures that the input tensors are cloned and detached, and sets the gradient to enabled.
+        Args:
+            ctx: The context object that can be used to stash information for backward computation.
+            self: The instance of the class containing the forward method.
+            kwargs (typing.Dict): Additional keyword arguments for the forward method.
+            *args (typing.Any): Input tensors for the forward method.
+        Returns:
+            typing.Any: The output of the forward method, which can be a single tensor or a tuple of tensors.
+        """
 
         # ensure cloned and detached
         # set grad to enabled
@@ -516,6 +527,15 @@ class LearningF(Function):
     
     @staticmethod
     def backward(ctx, *grad_outputs: typing.Any) -> typing.Any:
+        """
+        This function is used to extend the standard functionality of Torch's backward.
+        It makes it possible to execute update functions other than those that update the gradient.
+        Args:
+            ctx: The context object that can be used to stash information for backward computation.
+            *grad_outputs (typing.Any): Gradients of the outputs with respect to some scalar value.
+        Returns:
+            typing.Any: The gradients of the inputs with respect to some scalar value.
+        """
         
         self = ctx.self
         # calculate t
@@ -640,13 +660,13 @@ class LearningMachine(nn.Module, ABC):
         """
         return x.clone()
 
-    def forward_hook(self, hook: ForwardHook) -> "LearningMachine":
+    def forward_hook(self, hook: ForwardHook, consummable: bool=False) -> "LearningMachine":
         """Add hook to call after forward
 
         Args:
             hook (ForwardHook): _description_
         """
-        self._y_hooks.append(hook)
+        self._y_hooks.append((hook, consummable))
         return self
 
     def _forward_hook_runner(
@@ -659,8 +679,14 @@ class LearningMachine(nn.Module, ABC):
             t (IO): The target
         """
         y = self._base_forward(x, state, *args, **kwargs)
-        for hook in self._y_hooks:
+        consume = []
+        for i, (hook, consummable) in enumerate(self._y_hooks):
             y = hook(self, x, y, state)
+            if consummable:
+                consume.append(i)
+        for i in consume:
+            del self._y_hooks[i]
+
         return y
 
     @abstractmethod
@@ -722,10 +748,15 @@ class LearningMachine(nn.Module, ABC):
         """
         self._base_accumulate(x, t, state, *args, **kwargs)
 
-        for posthook in self._accumulate_hooks:
-            posthook(self, x, state._y, t, state)
+        consume = []
+        for i, (posthook, consummable) in enumerate(self._accumulate_hooks):
+            posthook(self, x, state._y, state)
+            if consummable:
+                consume.append(i)
+        for i in consume:
+            del self._accumulate_hooks[i]
 
-    def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
+    def accumulate_posthook(self, hook: StepHook,  consummable: bool=False) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -733,7 +764,7 @@ class LearningMachine(nn.Module, ABC):
         """
         if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
-        self._accumulate_hooks.append(hook)
+        self._accumulate_hooks.append((hook, consummable))
         return self
 
     def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
@@ -743,13 +774,17 @@ class LearningMachine(nn.Module, ABC):
             x (IO): the incoming IO
             t (IO): The target IO
         """
-        result = self._base_step(x, t, state, *args, **kwargs)
+        self._base_step(x, t, state, *args, **kwargs)
 
-        for posthook in self._step_hooks:
-            x, t = posthook(self, x, state._y, t, state)
-        return result
+        consume = []
+        for i, (posthook, consummable) in enumerate(self._step_hooks):
+            posthook(self, x, state._y, t, state)
+            if consummable:
+                consume.append(i)
+        for i in consume:
+            del self._step_hooks[i]
 
-    def step_posthook(self, hook: StepHook) -> "StepTheta":
+    def step_posthook(self, hook: StepHook, consummable: bool=False) -> "StepTheta":
         """Add hook to call after StepTheta
 
         Args:
@@ -757,7 +792,7 @@ class LearningMachine(nn.Module, ABC):
         """
         if not hasattr(self, "_step_hook_initialized"):
             self.__init__()
-        self._step_hooks.append(hook)
+        self._step_hooks.append((hook, consummable))
         return self
 
     def _step_x_hook_runner(self, x: IO, t: IO, state: State,  *args, **kwargs) -> IO:
@@ -772,13 +807,17 @@ class LearningMachine(nn.Module, ABC):
         x_prime = self._base_step_x(
             x, t, state, *args, **kwargs
         )
-
-        for posthook in self._step_x_posthooks:
+        consume = []
+        for i, (posthook, consummable) in enumerate(self._step_x_posthooks):
             x_prime, t = posthook(self, x, state._y, x_prime, t, state)
+            if consummable:
+                consume.append(i)
+        for i in consume:
+            del self._step_x_posthooks[i]
 
         return x_prime
 
-    def step_x_hook(self, hook: StepXHook) -> "StepX":
+    def step_x_hook(self, hook: StepXHook,  consummable: bool=False) -> "StepX":
         """Add hook to call after StepX
 
         Args:
@@ -786,7 +825,7 @@ class LearningMachine(nn.Module, ABC):
         """
         if not hasattr(self, "_step_x_hook_initialized"):
             self.__init__()
-        self._step_x_posthooks.append(hook)
+        self._step_x_posthooks.append((hook, consummable))
         return self
 
 
