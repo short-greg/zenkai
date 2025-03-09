@@ -273,7 +273,7 @@ class TestIOLoop:
             [torch.rand(4, 1), torch.rand(4, 2)]
         )
 
-        for x1_i, in _io.io_loop(x1, batch_size=2):
+        for x1_i, in _io.minibatch_io(x1, batch_size=2):
             assert x1_i[0].shape == torch.Size([2, 1])
             assert x1_i[1].shape == torch.Size([2, 2])
 
@@ -286,7 +286,7 @@ class TestIOLoop:
             [torch.rand(4, 2), torch.rand(4, 1)]
         )
 
-        for x1_i, x2_i in _io.io_loop([x1, x2], batch_size=2):
+        for x1_i, x2_i in _io.minibatch_io([x1, x2], batch_size=2):
             assert x1_i[0].shape == torch.Size([2, 1])
             assert x1_i[1].shape == torch.Size([2, 2])
             assert x2_i[0].shape == torch.Size([2, 2])

@@ -22,7 +22,7 @@ def acc_dep(check_field: str):
     Will raise an error if it has not been called
 
     Args:
-        check_field (str): The field to check if forward has been called
+        check_field (str): The field to check in the state if accumulate has been called
     """
 
     def inner(func):
@@ -46,7 +46,7 @@ def step_dep(check_field: str):
     Will raise an error if it has not been called
 
     Args:
-        check_field (str): The field to check if forward has been called
+        check_field (str): The field to check in the state if step has been called
     """
 
     def inner(func):
@@ -69,7 +69,7 @@ def forward_dep(check_field: str):
     """Wrap step or step_x by automatically calling forward if it has not been called
 
     Args:
-        check_field (str): The field to check if forward has been called
+        check_field (str): The field to check in the state if forward has been called
     """
 
     def inner(func):
@@ -435,6 +435,8 @@ class StepTheta(ABC):
     #         self.__init__()
     #     self._step_hooks.append(hook)
     #     return self
+
+
 
 
 class BatchIdxStepTheta(StepTheta):

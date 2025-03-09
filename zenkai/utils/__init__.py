@@ -2,9 +2,35 @@
 
 # TODO: Rename back to "utils"
 
-from ..nnz._modules import (
-    Lambda,
-    Null
+from ._params import (
+    get_p,
+    get_grad,
+    to_gradvec,
+    to_pvec,
+    align_pvec,
+    set_pvec,
+    acc_pvec,
+    set_grad,
+    set_gradt,
+    set_gradtvec,
+    set_gradvec,
+    set_params,
+    acc_params,
+    acc_grad,
+    acc_gradt,
+    acc_gradtvec,
+    acc_gradvec,
+    apply_grad,
+    apply_p,
+    params_to_df,
+    params_to_series,
+    get_multp,
+    loop_p,
+    transfer_p,
+    undo_grad,
+    reg_p,
+    update_model_params
+
 )
 from ._convert import (
     binary_encoding,

@@ -1,6 +1,5 @@
 
 # 1st Party
-import math
 import typing
 
 # 3rd party
@@ -95,7 +94,7 @@ def to_gradvec(obj: PObj) -> torch.Tensor:
     return torch.cat(result, dim=0)
 
 
-def align_vec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
+def align_pvec(obj: PObj, vec: torch.Tensor) -> typing.Iterator[typing.Tuple[torch.Tensor, torch.Tensor]]:
     """Align a vector to parmaters for a PObject
 
     Args:
@@ -124,7 +123,7 @@ def set_pvec(obj: PObj, vec: torch.Tensor):
         vec (torch.Tensor): The vector to set
     """
 
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         set_params(p, cur_vec)
 
 
@@ -135,7 +134,7 @@ def acc_pvec(obj: PObj, vec: torch.Tensor):
         obj (PObj): The parameter object to accumulate
         vec (torch.Tensor): The vector to accumulate with
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         acc_params(p, cur_vec)
 
 
@@ -147,7 +146,7 @@ def set_gradvec(obj: PObj, vec: torch.Tensor):
         vec (torch.Tensor): The vector to set the grad with
     """
     
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         set_grad(p, cur_vec)
 
 
@@ -158,7 +157,7 @@ def acc_gradvec(obj: PObj, vec: torch.Tensor):
         obj (PObj): The Parameter object to accumulate for
         vec (torch.Tensor): The vector of gradients to accumulate
     """
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         acc_grad(p, cur_vec)
 
 
@@ -170,7 +169,7 @@ def set_gradtvec(obj: PObj, vec: torch.Tensor):
         vec (torch.Tensor): The target vector
     """
     
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         set_gradt(p, cur_vec)
 
 
@@ -182,7 +181,7 @@ def acc_gradtvec(obj: PObj, vec: torch.Tensor):
         vec (torch.Tensor): The target vector to use 
     """
 
-    for p, cur_vec in align_vec(obj, vec):
+    for p, cur_vec in align_pvec(obj, vec):
         acc_gradt(p, cur_vec)
 
     # return torch.cat([p_i.flatten() for p_i in get_p(obj)], dim=0)

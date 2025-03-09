@@ -1,21 +1,22 @@
 from ._lm2 import LearningMachine, LMode
 
 
-class DualMachine(LearningMachine):
+class DualLearner(LearningMachine):
     """
-    DualMachine allows wrapping two LearningMachine instances, providing flexibility in training and inference.
+    DualLearner allows wrapping two LearningMachine instances, providing flexibility in training and inference.
     This class is useful when the user wants to train one machine first or use one machine for the forward pass 
     and another for the backward pass.
     """
     def __init__(
-        self, machine1: LearningMachine, machine2: LearningMachine, 
+        self, machine1: LearningMachine, 
+        machine2: LearningMachine, 
         use1: bool = True,
         train1: bool=True,
         train2: bool=False,
         lmode: LMode = LMode.Standard
     ):
         """
-        Initialize a Dual Learning Machine.
+        Initialize a Dual Learner.
         Args:
             machine1 (LearningMachine): The first learning machine.
             machine2 (LearningMachine): The second learning machine.
@@ -45,11 +46,14 @@ class DualMachine(LearningMachine):
         Tensor
             The output of the neural network after processing the input tensor.
         """
-
         if self.use1:
-            return self.machine1(x.f, state, **kwargs)
-        return self.machine2(x.f, state, **kwargs)
-    
+            y = self.machine1.forward_io(x, state.sub('_sub'),**kwargs)
+        else:
+            y = self.machine2.forward_io(x, state.sub('_sub'), **kwargs)
+        if len(y) == 1:
+            return y[0]
+        return tuple(y)
+        
     def accumulate(self, x, t, state, **kwargs):
         """
         Accumulate parameter updates based on the training mode.
@@ -63,11 +67,10 @@ class DualMachine(LearningMachine):
         Returns:
             None
         """
-        
         if self.train1:
-            self.machine1.accumulate(x, t, state, **kwargs)
-        else:
-            self.machine2.accumulate(x, t, state, **kwargs)
+            self.machine1.accumulate(x, t, state.sub('_sub'), **kwargs)
+        if self.train2:
+            self.machine2.accumulate(x, t, state.sub('_sub'), **kwargs)
 
     def step(self, x, t, state, **kwargs):
         """
@@ -82,11 +85,11 @@ class DualMachine(LearningMachine):
         Returns:
             None
         """
-        
         if self.train1:
-            self.machine1.step(x, t, state, **kwargs)
+            print('Training 1')
+            self.machine1.step(x, t, state.sub('_sub'), **kwargs)
         if self.train2:
-            self.machine2.step(x, t, state, **kwargs)
+            self.machine2.step(x, t, state.sub('_sub'), **kwargs)
     
     def step_x(self, x, t, state, **kwargs):
         """
@@ -104,7 +107,6 @@ class DualMachine(LearningMachine):
         Tensor
             The output tensor after processing through the appropriate machine.
         """
-        
         if self.use1:
-            return self.machine1.step_x(x, t, state, **kwargs)
-        return self.machine2.step_x(x, t, state, **kwargs)
+            return self.machine1.step_x(x, t, state.sub('_sub'), **kwargs)
+        return self.machine2.step_x(x, t, state.sub('_sub'), **kwargs)

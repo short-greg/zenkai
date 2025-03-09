@@ -203,6 +203,23 @@ class IO(tuple):
             typing.Any: The first element of the IO
         """
         return self[0] if len(self) > 0 else None
+    
+    def to_x(self) -> typing.Tuple | typing.Any:
+        """Convenience function to convert the IO to
+        a tuple or single tensor so that it can be easily returned
+
+        It will only return a tuple if there is more than
+        one value.
+
+        Returns:
+            typing.Tuple | typing.Any: The value of the IO
+        """
+
+        if len(self) == 1:
+            return self[0]
+        if len(self) > 1:
+            return tuple(self)
+        return None
 
 
 def iou(*x) -> IO:
@@ -365,6 +382,13 @@ class Idx(object):
         return IO(selected)
 
 
+def merge_io(x: typing.List[IO], f: typing.Callable=None) -> IO:
+    """Merge a list of IOs together with the function f."""
+    return iou(
+        f(*x_i) if f is not None else x_i for x_i in zip(*x)
+    )
+
+
 def pipe(modules: typing.Iterable[nn.Module], x: torch.Tensor, freshen_h: bool=False, get_h: bool=False) -> typing.Union[torch.Tensor, typing.Tuple[torch.Tensor, IO]]:
     """Send the input through a pipe and get the hidden
     outputs if needed
@@ -389,7 +413,7 @@ def pipe(modules: typing.Iterable[nn.Module], x: torch.Tensor, freshen_h: bool=F
     return x, IO(hs) if get_h else x
 
 
-def io_loop(xs: typing.Union[typing.Iterable[IO], IO], shuffle: bool=False, batch_size: int=1, drop_last: bool=False) -> typing.Iterator[typing.Tuple[torch.Tensor]]:
+def minibatch_io(xs: typing.Union[typing.Iterable[IO], IO], shuffle: bool=False, batch_size: int=1, drop_last: bool=False) -> typing.Iterator[typing.Tuple[torch.Tensor]]:
     """Use to loop over a set of ios assuming all elements
     are tensors
 

@@ -13,7 +13,7 @@ from . import (
 )
 from ..optim import OptimFactory
 from ..utils import _params as param_utils
-from ..utils import Null
+from ..nnz import Null
 from ._grad import GradLearner
 from . import GradLearner, IO, iou, forward_dep, State
 from ._lm2 import LearningMachine as LearningMachine

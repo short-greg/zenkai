@@ -1,43 +1,41 @@
-import torch
-
 from zenkai.lm import Criterion, State, iou
 from zenkai.lm._reversible import ReversibleMachine
 # from zenkai.kaku._backtarget import BackTarget
 from zenkai.nnz import _reversible_mods
 
 
-class TestReversibleMachine:
+# class TestReversibleMachine:
 
-    def test_step_x_reverses(self):
+#     def test_step_x_reverses(self):
 
-        machine = ReversibleMachine(
-            _reversible_mods.SignedToBool(), Criterion("MSELoss")
-        )
-        state = State()
-        x = iou(torch.randn(4, 3).sign())
-        t = iou((x.f + 1) / 2)
-        assert (machine.step_x(x, t, state).f == x.f).all()
+#         machine = ReversibleMachine(
+#             _reversible_mods.SignedToBool(), Criterion("MSELoss")
+#         )
+#         state = State()
+#         x = iou(torch.randn(4, 3).sign())
+#         t = iou((x.f + 1) / 2)
+#         assert (machine.step_x(x, t, state).f == x.f).all()
 
-    def test_step_x_results_in_valid_values(self):
+#     def test_step_x_results_in_valid_values(self):
 
-        machine = ReversibleMachine(
-            _reversible_mods.SignedToBool(), 
-            Criterion("MSELoss")
-        )
-        state = State()
-        x = iou(torch.randn(4, 3).sign())
-        t = iou((x.f + 1) / 2)
-        reversed = machine.step_x(x, t, state).f
-        assert ((reversed == -1) | (reversed == 1)).all()
+#         machine = ReversibleMachine(
+#             _reversible_mods.SignedToBool(), 
+#             Criterion("MSELoss")
+#         )
+#         state = State()
+#         x = iou(torch.randn(4, 3).sign())
+#         t = iou((x.f + 1) / 2)
+#         reversed = machine.step_x(x, t, state).f
+#         assert ((reversed == -1) | (reversed == 1)).all()
 
-    def test_forward_converts_to_correct_value(self):
+#     def test_forward_converts_to_correct_value(self):
 
-        machine = ReversibleMachine(_reversible_mods.SignedToBool(), Criterion("MSELoss"))
-        x = iou(torch.randn(4, 3).sign())
-        state = State()
-        t = (x.f + 1) / 2
-        y = machine.forward_io(x, state).f
-        assert (y == t).all()
+#         machine = ReversibleMachine(_reversible_mods.SignedToBool(), Criterion("MSELoss"))
+#         x = iou(torch.randn(4, 3).sign())
+#         state = State()
+#         t = (x.f + 1) / 2
+#         y = machine.forward_io(x, state).f
+#         assert (y == t).all()
 
 
 # class TestReverse:

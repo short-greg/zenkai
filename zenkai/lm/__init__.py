@@ -9,7 +9,7 @@ from ._assess import (
 
 from ._io2 import (
     IO, Idx, 
-    iou, pipe, io_loop
+    iou, pipe, minibatch_io
 )
 from ._lm2 import (
     # TODO: Separate out hooks
@@ -45,7 +45,7 @@ from ._grad import (
     GradLearner,
     GradStepX,
 )
-from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
+# from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
 
 from ._ensemble import (
     EnsembleLearner,
@@ -69,10 +69,11 @@ from ._least_squares import (
 from ._scikit import (
     ScikitMachine
 )
-from ._reversible import (
-    ReversibleMachine,
-)
+# from ._reversible import (
+#     ReversibleMachine,
+# )
 from ._global_step import (
-    GlobalStepLearner,
-    LMAligner
+    GlobalTargetLearner,
+    # LMAligner
 )
+from ._autoencoder import AutoencoderLearner
