@@ -1,40 +1,40 @@
-# 1st party
-from abc import abstractmethod
+# # 1st party
+# from abc import abstractmethod
 
-# local
-from ._state import State
-from ._io2 import (
-    IO as IO
-)
-from ._lm2 import (
-    LearningMachine as LearningMachine,
-    StepTheta as StepTheta,
-    StepX as StepX,
-)
+# # local
+# from ._state import State
+# from ._io2 import (
+#     IO as IO
+# )
+# from ._lm2 import (
+#     LearningMachine as LearningMachine,
+#     StepTheta as StepTheta,
+#     StepX as StepX,
+# )
 
 
-class ReverseLearner(LearningMachine):
-    """
-    ReverseLearner is a learner that is designed to reverse an operation.
-    The first value in the IO `x` is assumed to be the input to the machine to reverse,
-    and the second value is assumed to be its output. Therefore, `x` is an IO whose 
-    first two elements are IOs.
-    """
-    @abstractmethod
-    def forward_nn(self, x: IO, state: State, **kwargs) -> IO:
-        pass
+# class ReverseLearner(LearningMachine):
+#     """
+#     ReverseLearner is a learner that is designed to reverse an operation.
+#     The first value in the IO `x` is assumed to be the input to the machine to reverse,
+#     and the second value is assumed to be its output. Therefore, `x` is an IO whose 
+#     first two elements are IOs.
+#     """
+#     @abstractmethod
+#     def forward_nn(self, x: IO, state: State, **kwargs) -> IO:
+#         pass
 
-    @abstractmethod
-    def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
-        pass
+#     @abstractmethod
+#     def step_x(self, x: IO, t: IO, state: State, **kwargs) -> IO:
+#         pass
 
-    @abstractmethod
-    def accumulate(self, x, t, state, **kwargs):
-        pass
+#     @abstractmethod
+#     def accumulate(self, x, t, state, **kwargs):
+#         pass
 
-    @abstractmethod
-    def step(self, x, t, state, **kwargs):
-        pass
+#     @abstractmethod
+#     def step(self, x, t, state, **kwargs):
+#         pass
 
 
 # class ReversibleMachine(LearningMachine):

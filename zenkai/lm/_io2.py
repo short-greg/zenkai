@@ -54,6 +54,18 @@ class IO(tuple):
         return IO(
             x.detach() if isinstance(x, torch.Tensor) else x for x in self
         )
+    
+    def apply(self, f: typing.Callable):
+        """
+        Applies a given function to all elements in the iterable.
+        Args:
+            f (typing.Callable): A function to apply to each element.
+        Returns:
+            An iterable with the results of applying the function to each element.
+        """
+        return iou(
+            f(x_i) for x_i in self
+        )
 
     def freshen_(self, requires_grad: bool=True, retains_grad: bool=True) -> Self:
         """Detach all tensors in the IO in place and then set to require the gradient
