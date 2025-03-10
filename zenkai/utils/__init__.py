@@ -42,6 +42,7 @@ from ._convert import (
     to_zero_neg,
     module_factory,
     checkattr,
+    to_out
 )
 
 # TODO: Reconsider these

@@ -9,6 +9,7 @@ from ._ensemble_mod import (
     BinaryVoteAggregator,
     Voter
 )
+from ._autoencoder import Autoencoder
 from ._hard import Argmax, Sign
 from ._mod import Updater
 from ._reversible_mods import (

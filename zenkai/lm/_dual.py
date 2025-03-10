@@ -1,7 +1,7 @@
 from ._lm2 import LearningMachine, LMode
 
 
-class DualLearner(LearningMachine):
+class SwapLearner(LearningMachine):
     """
     DualLearner allows wrapping two LearningMachine instances, providing flexibility in training and inference.
     This class is useful when the user wants to train one machine first or use one machine for the forward pass 
@@ -16,7 +16,7 @@ class DualLearner(LearningMachine):
         lmode: LMode = LMode.Standard
     ):
         """
-        Initialize a Dual Learner.
+        Initialize a Swap Learner.
         Args:
             machine1 (LearningMachine): The first learning machine.
             machine2 (LearningMachine): The second learning machine.
@@ -110,3 +110,5 @@ class DualLearner(LearningMachine):
         if self.use1:
             return self.machine1.step_x(x, t, state.sub('_sub'), **kwargs)
         return self.machine2.step_x(x, t, state.sub('_sub'), **kwargs)
+
+# 

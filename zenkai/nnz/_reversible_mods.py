@@ -270,3 +270,30 @@ class SignedToBool(Reversible):
             torch.Tensor: The tensor with zeros for negatives
         """
         return (x + 1) / 2
+
+
+class Reverse(nn.Module):
+
+    """
+    An adapter for a reversible module that calls the reverse method on the 
+    reversible module in its forward method.
+    """
+
+    def __init__(self, reversible: Reversible):
+        """Initialize the Reverse adapter.
+        Args:
+            reversible (Reversible): An instance of a reversible module that 
+            implements a reverse method."
+        """
+        super().__init__()
+        self.reversible = reversible
+
+    def forward(self, *x) -> torch.Tensor:
+        """
+        Executes the reverse method of the adapted module.
+        Args:
+            *x: Variable length argument list.
+        Returns:
+            torch.Tensor: The result of the reversible module's reverse method.
+        """
+        return self.reversible.reverse(*x)

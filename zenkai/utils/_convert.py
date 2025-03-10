@@ -185,3 +185,22 @@ def module_factory(module: typing.Union[str, nn.Module], *args, **kwargs) -> nn.
         return module
 
     return getattr(nn, module)(*args, **kwargs)
+
+def to_out(x: typing.Tuple) -> typing.Tuple | typing.Any:
+    """
+    Convert the tuple output to a single value if it is length 1. 
+
+    Args:
+        x (tuple): A tuple containing one or more elements.
+
+    Returns:
+        tuple | Any: The first element if the tuple has a length of 1,
+                     the original tuple if it has more than one element,
+                     or None if the tuple is empty.
+    """
+
+    if len(x) == 1:
+        return x[0]
+    if len(x) > 1:
+        return x
+    return None

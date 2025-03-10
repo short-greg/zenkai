@@ -240,6 +240,7 @@ def iou(*x) -> IO:
     return IO(x)
 
 
+# TODO: Remove
 class Idx(object):
     """
     Wrap an index for an IO or a Tensor to make it easy index them.
@@ -396,7 +397,7 @@ class Idx(object):
 
 def merge_io(x: typing.List[IO], f: typing.Callable=None) -> IO:
     """Merge a list of IOs together with the function f."""
-    return iou(
+    return IO(
         f(*x_i) if f is not None else x_i for x_i in zip(*x)
     )
 

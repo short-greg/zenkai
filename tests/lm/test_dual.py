@@ -1,5 +1,5 @@
 import torch
-from zenkai.lm._dual import DualLearner
+from zenkai.lm._dual import SwapLearner
 from .test_grad import THGradLearnerT1
 from zenkai.utils import to_pvec
 
@@ -11,7 +11,7 @@ class TestDualLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = DualLearner(learner1, learner2)
+        dual_learner = SwapLearner(learner1, learner2)
         x = torch.rand(5, 2)
 
         y = dual_learner(x)
@@ -25,7 +25,7 @@ class TestDualLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = DualLearner(learner1, learner2, use1=False)
+        dual_learner = SwapLearner(learner1, learner2, use1=False)
         x = torch.rand(5, 2)
 
         y = dual_learner(x)
@@ -38,7 +38,7 @@ class TestDualLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = DualLearner(learner1, learner2)
+        dual_learner = SwapLearner(learner1, learner2)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -57,7 +57,7 @@ class TestDualLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = DualLearner(learner1, learner2, train1=False)
+        dual_learner = SwapLearner(learner1, learner2, train1=False)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -76,7 +76,7 @@ class TestDualLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = DualLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SwapLearner(learner1, learner2, train1=False, train2=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
