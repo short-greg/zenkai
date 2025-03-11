@@ -76,4 +76,4 @@ from ._global_step import (
     GlobalTargetLearner,
     # LMAligner
 )
-from ._autoencoder import AutoencodedLearner
+from ._autoencoder import AutoregLearner

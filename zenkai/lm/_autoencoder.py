@@ -17,9 +17,10 @@ from ._lm2 import (
     
 )
 
-class AutoencodedLearner(LearningMachine):
+
+class AutoregLearner(LearningMachine):
     """
-    AutoencoderLearner is a learning machine that learns both forward and reverse mappings.
+    AutoregLearner is a learning machine that learns both forward and reverse mappings.
     It utilizes two learners: a forward learner and a reverse learner, to perform autoencoding tasks.
     """
     def __init__(
@@ -71,7 +72,6 @@ class AutoencodedLearner(LearningMachine):
         Raises:
             RuntimeError: If the reconstruction weight is 0 and the target is None.
         """
-
         if self.rec_with_x:
             x_rev = iou(state._y.to_x(), x.to_x())
         else:
@@ -132,8 +132,112 @@ class AutoencodedLearner(LearningMachine):
             t (typing.Optional[IO]): Target data.
             state (State): The current state of the model.
         """
-
         self.forward_learner.step(x, state._t, state.sub('_sub'))
     
         if self.lmode != LMode.StepPriority and not self.rev_priority:
             self.reverse_learner.step(state._x_rev, state._t, state.sub('_rev_sub'))
+
+    def autoencode(self, *x, **kwargs) -> torch.Tensor:
+        """
+        Encodes the input data using the forward learner and then reconstructs it using the reverse learner.
+
+        Args:
+            *x: Variable length argument list representing the input data.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            The reconstructed input data after passing through the autoencoder.
+        """
+        y = self.forward_learner(*x, **kwargs)
+        return self.reverse_learner(y)
+
+
+# class AutoencodeLearner(LearningMachine):
+#     """
+#     AutoencoderLearner is a learning machine that learns  an autoencoder. 
+#     It utilizes two learners: a forward learner and a reverse learner, to perform autoencoding tasks.
+#     """
+#     def __init__(
+#         self, forward_learner: LearningMachine,
+#         reverse_learner: LearningMachine,
+#         rec_weight: typing.Optional[float] = 1.0,
+#         rev_priority: bool=False,
+#         rec_with_x: bool=False,
+#         lmode: LMode=LMode.Standard
+#     ):
+#         """
+#         Initializes the Autoencoder with forward and reverse learners.
+
+#         Args:
+#             forward_learner (LearningMachine): 
+#             reverse_learner (LearningMachine): 
+#             rec_weight (typing.Optional[float], optional): . Defaults to None.
+#             rev_priority (bool, optional): . Defaults to False.
+#         """
+#         super().__init__(lmode)
+#         self.forward_learner = forward_learner
+#         self.reverse_learner = reverse_learner
+#         self.rec_weight = rec_weight
+#         self.rev_priority = rev_priority
+#         self.rec_with_x = rec_with_x
+
+#     def forward_nn(self, x: IO, state, **kwargs):
+#         """
+#         Executes the forward learner.
+#         Args:
+#             x: Input data.
+#             state: The current state.
+#             **kwargs: Additional keyword arguments.
+#         Returns:
+#             The result of the forward learner's forward_io method.
+#         """
+#         y = self.forward_learner.forward_io(
+#             x, state.sub('sub'), **kwargs
+#         )
+#         if self.rec_with_x:
+#             y = iou(y.to_x(), x.to_x())
+#         state._rev_x = y
+#         return self.reverse_learner.forward_io(
+#             y, state.sub('rev'), **kwargs
+#         ).to_x()
+
+#     def accumulate(self, x, t: typing.Optional[IO], state, **kwargs):
+#         """
+#         Accumulates the backward learner and propagates the target and the backward learner error backward.
+#         Args:
+#             x: The input data.
+#             t (typing.Optional[IO]): The target data.
+#             state: The current state of the learner.
+#             **kwargs: Additional keyword arguments.
+#         Raises:
+#             RuntimeError: If the reconstruction weight is 0 and the target is None.
+#         """
+#         x_t = x.detach()
+        
+#         self.reverse_learner.accumulate(state._rev_x, x_t, state.sub('rev'))
+#         y_t = state._y_t = self.reverse_learner.step_x(state._rev_x, x_t, state.sub('rev'))
+#         self.forward_learner.accumulate(x, y_t, state.sub('sub'))
+
+#     def step_x(self, x, t: typing.Optional[IO], state, **kwargs) -> IO:
+#         """
+#         Updates the input `x` based on the error with the target `t`.
+#         Args:
+#             x: The input data to be updated.
+#             t (typing.Optional[IO]): The target data used to compute the error. Can be None.
+#             state: The current state of the model.
+#             **kwargs: Additional keyword arguments.
+#         Returns:
+#             IO: The updated input data after applying the step.
+#         """
+#         return self.forward_learner.step_x(x, state._y_t, state.sub('sub'))
+
+#     def step(self, x: IO, t: typing.Optional[IO], state: State):
+#         """
+#         Updates the parameters of the forward learner and the reverse learner.
+#         Args:
+#             x (IO): Input data.
+#             t (typing.Optional[IO]): Target data.
+#             state (State): The current state of the model.
+#         """
+#         self.reverse_learner.step(state._rev_x, x.detach(), state.sub('rev'))
+#         self.forward_learner.step(x, state._y_t, state.sub('sub'))

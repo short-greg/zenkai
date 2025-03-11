@@ -2,7 +2,7 @@ import torch
 
 from zenkai.lm._io2 import IO, iou
 from zenkai.lm._lm2 import LearningMachine, LMode, State
-from zenkai.lm._autoencoder import AutoencodedLearner
+from zenkai.lm._autoencoder import AutoregLearner
 from zenkai.utils import to_pvec
 import torch.nn as nn
 
@@ -21,7 +21,7 @@ class TestAutoencoderLearner:
 
         learner = THGradLearnerT1(3, 4)
         learner2 = THGradLearnerT1(4, 3)
-        autoencoded = AutoencodedLearner(
+        autoencoded = AutoregLearner(
             learner, learner2, 1.0
         )
         x = torch.randn(4, 3)
@@ -34,7 +34,7 @@ class TestAutoencoderLearner:
 
         learner = THGradLearnerT1(3, 4)
         learner2 = THGradLearnerT1(4, 3)
-        autoencoded = AutoencodedLearner(
+        autoencoded = AutoregLearner(
             learner, learner2, 1.0, lmode=LMode.WithStep
         )
         x = torch.randn(4, 3)
@@ -50,7 +50,7 @@ class TestAutoencoderLearner:
 
         learner = THGradLearnerT1(3, 4)
         learner2 = THGradLearnerT1(4, 3)
-        autoencoded = AutoencodedLearner(
+        autoencoded = AutoregLearner(
             learner, learner2, None, lmode=LMode.WithStep
         )
         x = torch.randn(4, 3)
@@ -68,7 +68,7 @@ class TestAutoencoderLearner:
 
         learner = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(4, 2)
-        autoencoded = AutoencodedLearner(
+        autoencoded = AutoregLearner(
             learner, learner2, 1.0, lmode=LMode.WithStep
         )
         x = torch.randn(4, 3)
