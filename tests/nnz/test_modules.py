@@ -1,5 +1,5 @@
 import torch
-from zenkai.utils import Null
+from zenkai.nnz import Null
 from zenkai.nnz._mod import Updater
 from zenkai.tansaku._noise import FreezeDropout
 from zenkai.utils import update_momentum

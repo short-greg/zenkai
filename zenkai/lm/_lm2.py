@@ -96,6 +96,56 @@ def to_grad(flattened_dx: typing.List) -> typing.List:
     )
 
 
+
+import torch
+import torch.nn as nn
+
+class _OutT(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, module, *x):
+        ctx.save_for_backward(*x)
+        ctx.module = module
+        if len(x) == 0:
+            return None
+        if len(x) == 1:
+            return x
+        return x
+
+    @staticmethod
+    def backward(ctx, *grad_output):
+
+        x = ctx.saved_tensors
+        module = ctx.module
+        module.t = IO(
+            x_i - g_i for x_i, g_i in zip(x, grad_output)
+        )
+        return tuple([None, *grad_output])
+
+
+class OutT(nn.Module):
+    """Use to store the value to set T to be
+    """
+
+    def __init__(self, t: IO=None):
+        """Initialize a module that will store a target to be defined later
+
+        Args:
+            t (IO, optional): The target. Defaults to None.
+        """
+        self.t = t
+
+    def forward(self, *x: torch.Tensor):
+        """
+        This method allows you to set the target based on the gradient on the backward pass.
+        Args:
+            *x (torch.Tensor): Variable length input tensor(s).
+        Returns:
+            torch.Tensor: The output tensor after applying the forward pass.
+        """
+        return _OutT.apply(self, x)
+
+
 class LMode(Enum):
 
     OnlyStepX = 'step_x'
@@ -868,3 +918,58 @@ class InDepStepX(StepX):
             IO: The updated input
         """
         pass
+
+# %%
+
+import torch
+import torch.nn as nn
+
+class _ExampleModule(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, module, *x):
+        ctx.save_for_backward(*x)
+        ctx.module = module
+        if len(x) == 0:
+            return None
+        if len(x) == 1:
+            return x
+        return x
+
+    @staticmethod
+    def backward(ctx, *grad_output):
+
+        x = ctx.saved_tensors
+        module = ctx.module
+        module.t = tuple(
+            x_i - g_i for x_i, g_i in zip(x, grad_output)
+        )
+        return tuple([None, *grad_output])
+
+
+class ExampleModule(nn.Module):
+    def __init__(self):
+        super(ExampleModule, self).__init__()
+        self.t = None
+
+    def forward(self, x):
+        y = _ExampleModule.apply(self, x)
+        return y[0]
+
+    # def backward(self, module, x, grad_input, grad_output):
+
+    #     module.t = tuple(
+    #         x_i - g_i for x_i, g_i in zip(x, grad_output)
+    #     )
+    #     return grad_input
+
+# Example usage
+
+model = ExampleModule()
+print(model.t)
+x = torch.randn(1, 10, requires_grad=True)
+output = model(x)
+output.backward(torch.ones_like(output))
+print(model.t)
+
+# %%

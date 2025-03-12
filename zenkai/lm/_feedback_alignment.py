@@ -16,7 +16,7 @@ from ..utils import _params as param_utils
 from ..nnz import Null
 from ._grad import GradLearner
 from . import GradLearner, IO, iou, forward_dep, State
-from ._lm2 import LearningMachine as LearningMachine
+from ._lm2 import LearningMachine as LearningMachine, OutT
 
 
 def fa_target(y: IO, y_prime: IO, detach: bool = True) -> IO:
@@ -115,14 +115,6 @@ class FALearner(GradLearner):
         self.netB.zero_grad()
 
 
-@dataclass
-class OutT:
-    """Use to store the value to set T to be
-    """
-
-    t: IO = None
-
-
 class DFALearner(GradLearner):
     """Learner for implementing feedback alignment."""
 
@@ -164,7 +156,7 @@ class DFALearner(GradLearner):
         self.B = nn.Linear(out_features, t_features, bias=False)
         self._optim = optim_factory(self.net.parameters())
 
-    def forward_nn(self, x: IO, state: State,  out_t: OutT=None) -> Tensor:
+    def forward_nn(self, x: IO, state: State) -> Tensor:
 
         y = self.net(x.f)
         y = y.detach()
@@ -172,10 +164,11 @@ class DFALearner(GradLearner):
         y.requires_grad = True
         y.retain_grad()
         y = state._y = self.activation(y)
-        return y
+        state.out_t = OutT()
+        return y, state.out_t
 
     @forward_dep('_y')
-    def accumulate(self, x: IO, t: IO, state: State, out_t: OutT=None):
+    def accumulate(self, x: IO, t: IO, state: State):
         """Update the net parameters
 
         Args:
@@ -186,16 +179,20 @@ class DFALearner(GradLearner):
            
             IO: the updated target
         """
-        if out_t.t is None:
+        if state.out_t.t is None:
             # TODO: Add warning
-            return
+            raise RuntimeError(
+                'Must set the target of the OutT passed '
+                'on forward to execute.'
+            )
 
         y2 = self.netB(x.f)
 
         y_det = state._y_det
         y = state._y
         y = self.B(y.f)
-        self._learn_criterion(iou(y), out_t.t).backward()
+        print(state.out_t.t)
+        self._learn_criterion(iou(y), state.out_t.t).backward()
         y2.backward(y_det.grad)
 
         # param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))
@@ -206,13 +203,18 @@ class DFALearner(GradLearner):
         assert x.f.grad is not None
     
     @forward_dep('_y')
-    def step(self, x: IO, t: IO, state: State, out_t: OutT=None):
+    def step(self, x: IO, t: IO, state: State):
         self._optim.step()
         self._optim.zero_grad()
         self.netB.zero_grad()
 
-    def step_x(self, x: IO, t: IO, state: State, out_t: OutT) -> IO:
+    def step_x(self, x: IO, t: IO, state: State) -> IO:
+
+        if state.out_t.t is None:
+            raise RuntimeError(
+                'The target for the output has not been set.'
+            )
         
         return super().step_x(
-            x, out_t.t, state
+            x, state.out_t.t, state
         )

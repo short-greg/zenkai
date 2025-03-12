@@ -1,7 +1,7 @@
-from zenkai.lm import Criterion, State, iou
-from zenkai.lm._reversible import ReversibleMachine
-# from zenkai.kaku._backtarget import BackTarget
-from zenkai.nnz import _reversible_mods
+# from zenkai.lm import Criterion, State, iou
+# from zenkai.lm._reversible import ReversibleMachine
+# # from zenkai.kaku._backtarget import BackTarget
+# from zenkai.nnz import _reversible_mods
 
 
 # class TestReversibleMachine:

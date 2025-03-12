@@ -69,6 +69,7 @@ from ._least_squares import (
 from ._scikit import (
     ScikitMachine
 )
+from ._dual import SwapLearner
 # from ._reversible import (
 #     ReversibleMachine,
 # )
