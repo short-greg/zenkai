@@ -18,14 +18,14 @@ from ._lm2 import (
 )
 
 
-class AutoregLearner(LearningMachine):
+class AutoencodedLearner(LearningMachine):
     """
     AutoregLearner is a learning machine that learns both forward and reverse mappings.
     It utilizes two learners: a forward learner and a reverse learner, to perform autoencoding tasks.
     """
     def __init__(
-        self, forward_learner: LearningMachine,
-        reverse_learner: LearningMachine,
+        self, encoder: LearningMachine,
+        decoder: LearningMachine,
         rec_weight: typing.Optional[float] = 1.0,
         rev_priority: bool=False,
         rec_with_x: bool=False,
@@ -41,8 +41,8 @@ class AutoregLearner(LearningMachine):
             rev_priority (bool, optional): . Defaults to False.
         """
         super().__init__(lmode)
-        self.forward_learner = forward_learner
-        self.reverse_learner = reverse_learner
+        self.encoder = encoder
+        self.decoder = decoder
         self.rec_weight = rec_weight
         self.rev_priority = rev_priority
         self.rec_with_x = rec_with_x
@@ -57,7 +57,7 @@ class AutoregLearner(LearningMachine):
         Returns:
             The result of the forward learner's forward_io method.
         """
-        return self.forward_learner.forward_io(
+        return self.encoder.forward_io(
             x, state.sub('_sub'), **kwargs
         ).to_x()
 
@@ -77,25 +77,25 @@ class AutoregLearner(LearningMachine):
         else:
             x_rev = state._y
         state._x_rev = x_rev
-        self.reverse_learner.forward_io(
+        self.decoder.forward_io(
             x_rev, state.sub('_rev'), **kwargs
         )
         rev_t = x.detach()
-        self.reverse_learner.accumulate(
+        self.decoder.accumulate(
             x_rev, x.detach(), state.sub('_rev'), **kwargs
         )
         if self.lmode == LMode.StepPriority:
-            rec_t = self.reverse_learner.step(
+            rec_t = self.decoder.step(
                 x_rev, rev_t, state.sub('_rev'), **kwargs
             )
 
-        rec_t: IO = self.reverse_learner.step_x(
+        rec_t: IO = self.decoder.step_x(
             x_rev, rev_t, state.sub('_rev'), 
             **kwargs
         )
 
         if self.lmode != LMode.StepPriority and self.rev_priority:
-            rec_t = self.reverse_learner.step(
+            rec_t = self.decoder.step(
                 x_rev, rev_t, state.sub('_rev'), 
                 x, **kwargs
             )
@@ -109,7 +109,7 @@ class AutoregLearner(LearningMachine):
                 'Cannot accumulate because the rec weight is 0 and the target is None'
             )
         state._t = t
-        self.forward_learner.accumulate(x, t, state.sub('_sub'), **kwargs)
+        self.encoder.accumulate(x, t, state.sub('_sub'), **kwargs)
         
     def step_x(self, x, t: typing.Optional[IO], state, **kwargs) -> IO:
         """
@@ -122,7 +122,7 @@ class AutoregLearner(LearningMachine):
         Returns:
             IO: The updated input data after applying the step.
         """
-        return self.forward_learner.step_x(x, state._t, state.sub('_sub'), **kwargs)
+        return self.encoder.step_x(x, state._t, state.sub('_sub'), **kwargs)
 
     def step(self, x: IO, t: typing.Optional[IO], state: State):
         """
@@ -132,10 +132,10 @@ class AutoregLearner(LearningMachine):
             t (typing.Optional[IO]): Target data.
             state (State): The current state of the model.
         """
-        self.forward_learner.step(x, state._t, state.sub('_sub'))
+        self.encoder.step(x, state._t, state.sub('_sub'))
     
         if self.lmode != LMode.StepPriority and not self.rev_priority:
-            self.reverse_learner.step(state._x_rev, state._t, state.sub('_rev_sub'))
+            self.decoder.step(state._x_rev, state._t, state.sub('_rev_sub'))
 
     def autoencode(self, *x, **kwargs) -> torch.Tensor:
         """
@@ -148,8 +148,8 @@ class AutoregLearner(LearningMachine):
         Returns:
             The reconstructed input data after passing through the autoencoder.
         """
-        y = self.forward_learner(*x, **kwargs)
-        return self.reverse_learner(y)
+        y = self.encoder(*x, **kwargs)
+        return self.decoder(y)
 
 
 # class AutoencodeLearner(LearningMachine):
