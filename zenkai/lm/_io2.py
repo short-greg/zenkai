@@ -63,7 +63,7 @@ class IO(tuple):
         Returns:
             An iterable with the results of applying the function to each element.
         """
-        return iou(
+        return IO(
             f(x_i) for x_i in self
         )
 

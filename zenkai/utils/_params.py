@@ -350,7 +350,9 @@ def set_grad(
         grad (torch.Tensor): The gradient 
     """
     with torch.no_grad():
-        if cur.grad is None:
+        if grad is None:
+            cur.grad = None
+        elif cur.grad is None:
             cur.grad = grad.clone()
         else:
             with torch.no_grad():
@@ -453,11 +455,11 @@ class undo_grad(object):
         Args:
             values (typing.Iterable[typing.Union[typing.Callable[[], typing.Iterator], nn.Module, torch.Tensor, nn.parameter.Parameter]]): The values
         """
-        self._values = values
+        if isinstance(values, nn.Module) or isinstance(values, torch.Tensor):
+            values = [values]
+        
+        self._values = values        
         self._stored = []
-
-    def __enter__(self):
-
         for value in self._values:
             if (
                 isinstance(value, torch.Tensor) or isinstance(value, torch.nn.parameter.Parameter)
@@ -466,10 +468,16 @@ class undo_grad(object):
                     value.grad.clone() if value.grad is not None else None
                 )
             else:
-                self._stored.extend(
-                    list(loop_p(value, ))
+                print('Storing')
+                self._stored.append(
+                    list(loop_p(value, lambda v: v.grad.clone() if v.grad is not None else None))
                     # get_model_grads(value)
                 )
+                print(self._stored)
+
+    def __enter__(self):
+
+        pass
         
     def __exit__(self, exc_type, exc_val, exc_tb):
         
@@ -489,7 +497,7 @@ class undo_grad(object):
                     value.grad = stored
             else:
                 transfer_p(
-                    stored, value, lambda p1, p2: set_grad(
+                    value, stored, lambda p1, p2: set_grad(
                         p1, p2
                     )
                 )

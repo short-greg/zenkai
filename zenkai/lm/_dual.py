@@ -1,18 +1,28 @@
 from ._lm2 import LearningMachine, LMode
+from ._io2 import merge_io, IO
+from ._state import State
+from .. import utils
+
+SUB1 = "sub1"
+SUB2 = "sub2"
 
 
 class SwapLearner(LearningMachine):
     """
-    DualLearner allows wrapping two LearningMachine instances, providing flexibility in training and inference.
+    SwapLearner allows wrapping two LearningMachine instances, providing flexibility in training and inference.
     This class is useful when the user wants to train one machine first or use one machine for the forward pass 
     and another for the backward pass.
     """
     def __init__(
-        self, machine1: LearningMachine, 
-        machine2: LearningMachine, 
+        self, learner1: LearningMachine, 
+        learner2: LearningMachine, 
         use1: bool = True,
         train1: bool=True,
         train2: bool=False,
+        train1_t: float=1.0,
+        train2_t: float=1.0,
+        train1_y2: float=0.0,
+        train2_y1: float=0.0,
         lmode: LMode = LMode.Standard
     ):
         """
@@ -26,11 +36,15 @@ class SwapLearner(LearningMachine):
             lmode (LMode, optional): The learning mode. Defaults to LMode.Standard.
         """
         super().__init__(lmode=lmode)
-        self.machine1 = machine1
-        self.machine2 = machine2
+        self.learner1 = learner1
+        self.learner2 = learner2
         self.use1 = use1
         self.train1 = train1
         self.train2 = train2
+        self.train1_y2 = train1_y2
+        self.train1_t = train1_t
+        self.train2_y1 = train2_y1
+        self.train2_t = train2_t
 
     def forward_nn(self, x, state, **kwargs):
         """
@@ -47,12 +61,19 @@ class SwapLearner(LearningMachine):
             The output of the neural network after processing the input tensor.
         """
         if self.use1:
-            y = self.machine1.forward_io(x, state.sub('_sub'),**kwargs)
+            y = self.learner1.forward_io(x, state.sub(SUB1),**kwargs)
         else:
-            y = self.machine2.forward_io(x, state.sub('_sub'), **kwargs)
+            y = self.learner2.forward_io(x, state.sub(SUB2), **kwargs)
         if len(y) == 1:
             return y[0]
         return tuple(y)
+    
+    def merge_t(self, t: IO, y: IO, t_weight: float=0.0, y_weight: float=0.0):
+        if t is not None and y is not None:
+            return merge_io([t, y], lambda ti, yi: ti * t_weight + yi * y_weight)
+        if t is not None:
+            return t.apply(lambda ti: ti * t_weight)
+        return y.apply(lambda yi: yi * y_weight)
         
     def accumulate(self, x, t, state, **kwargs):
         """
@@ -67,10 +88,62 @@ class SwapLearner(LearningMachine):
         Returns:
             None
         """
-        if self.train1:
-            self.machine1.accumulate(x, t, state.sub('_sub'), **kwargs)
-        if self.train2:
-            self.machine2.accumulate(x, t, state.sub('_sub'), **kwargs)
+        # 1) Target 1
+        # 2) Target 2
+        # Y1 
+        # Y2
+
+        state.t1 = None
+        state.t2 = None
+
+        # 1) use1
+        # 2) train
+
+        if self.use1:
+            y1 = state._y
+        elif self.train1:            
+            y1 = self.learner1.forward_io(
+                x, state.sub(SUB1)
+            )
+        else:
+            y1 = None
+    
+        if not self.use1:
+            y2 = state._y
+        elif self.train2:            
+            y2 = self.learner2.forward_io(
+                x, state.sub(SUB2)
+            )
+        else:
+            y2 = None
+
+        state.t1 = None
+        state.t2 = None
+        if self.train1:        
+            state.t1 = self.merge_t(
+                t, y2, self.train1_t, self.train1_y2
+            )
+            self.learner1.accumulate(
+                x, state.t1.detach(), state.sub(SUB1), **kwargs
+            )
+        elif self.use1:
+            print('Accumulating')
+
+            with utils.undo_grad(self.learner1):
+                print('Accumulating2')
+                self.learner1.accumulate(
+                    x, t.detach(), state.sub(SUB1), **kwargs
+                )
+        if self.train2:   
+            state.t2 = self.merge_t(t, y1, self.train2_t, self.train2_y1)         
+            self.learner2.accumulate(
+                x, state.t2.detach(), state.sub(SUB2), **kwargs
+            )
+        elif not self.use1:
+            with utils.undo_grad(self.learner2):
+                self.learner2.accumulate(
+                    x, t.detach(), state.sub(SUB2), **kwargs
+                )
 
     def step(self, x, t, state, **kwargs):
         """
@@ -85,11 +158,10 @@ class SwapLearner(LearningMachine):
         Returns:
             None
         """
-        if self.train1:
-            print('Training 1')
-            self.machine1.step(x, t, state.sub('_sub'), **kwargs)
-        if self.train2:
-            self.machine2.step(x, t, state.sub('_sub'), **kwargs)
+        if state.train1 is True:
+            self.learner1.step(x, state.t1, state.sub(SUB1), **kwargs)
+        if state.train2 is True:
+            self.learner2.step(x, state.t2, state.sub(SUB2), **kwargs)
     
     def step_x(self, x, t, state, **kwargs):
         """
@@ -108,7 +180,7 @@ class SwapLearner(LearningMachine):
             The output tensor after processing through the appropriate machine.
         """
         if self.use1:
-            return self.machine1.step_x(x, t, state.sub('_sub'), **kwargs)
-        return self.machine2.step_x(x, t, state.sub('_sub'), **kwargs)
-
-# 
+            t = state.get('t1', t)
+            return self.learner1.step_x(x, t, state.sub(SUB1), **kwargs)
+        t = state.get('t2', t)
+        return self.learner2.step_x(x, t, state.sub(SUB2), **kwargs)

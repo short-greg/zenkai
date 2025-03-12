@@ -88,4 +88,4 @@ class TestDualLearner:
         optim.step()
         after = to_pvec(learner2)
 
-        assert (before == after).all()
+        assert (before != after).any()
