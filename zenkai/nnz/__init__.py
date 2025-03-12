@@ -20,6 +20,13 @@ from ._reversible_mods import (
     BoolToSigned,
     SequenceReversible,
 )
+from ._scikit_mod import (
+    ScikitBinary,
+    ScikitModule,
+    ScikitMulticlass,
+    ScikitRegressor,
+    MultiOutputAdapter,
+)
 from ._ste import (
     SignSTE,
     sign_ste,
