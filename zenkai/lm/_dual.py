@@ -19,10 +19,10 @@ class SwapLearner(LearningMachine):
         use1: bool = True,
         train1: bool=True,
         train2: bool=False,
-        train1_t: float=1.0,
-        train2_t: float=1.0,
-        train1_y2: float=0.0,
-        train2_y1: float=0.0,
+        w1_t: float=1.0,
+        w2_t: float=1.0,
+        w1_y2: float=0.0,
+        w2_y1: float=0.0,
         lmode: LMode = LMode.Standard
     ):
         """
@@ -41,10 +41,10 @@ class SwapLearner(LearningMachine):
         self.use1 = use1
         self.train1 = train1
         self.train2 = train2
-        self.train1_y2 = train1_y2
-        self.train1_t = train1_t
-        self.train2_y1 = train2_y1
-        self.train2_t = train2_t
+        self.w1_y2 = w1_y2
+        self.w1_t = w1_t
+        self.w2_y1 = w2_y1
+        self.w2_t = w2_t
 
     def forward_nn(self, x, state, **kwargs):
         """
@@ -121,7 +121,7 @@ class SwapLearner(LearningMachine):
         state.t2 = None
         if self.train1:        
             state.t1 = self.merge_t(
-                t, y2, self.train1_t, self.train1_y2
+                t, y2, self.w1_t, self.w1_y2
             )
             self.learner1.accumulate(
                 x, state.t1.detach(), state.sub(SUB1), **kwargs
@@ -135,7 +135,7 @@ class SwapLearner(LearningMachine):
                     x, t.detach(), state.sub(SUB1), **kwargs
                 )
         if self.train2:   
-            state.t2 = self.merge_t(t, y1, self.train2_t, self.train2_y1)         
+            state.t2 = self.merge_t(t, y1, self.w2_t, self.w2_y1)         
             self.learner2.accumulate(
                 x, state.t2.detach(), state.sub(SUB2), **kwargs
             )
