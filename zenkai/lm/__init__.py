@@ -8,15 +8,11 @@ from ._assess import (
 
 
 from ._io2 import (
-    IO, Idx, 
+    IO, 
     iou, pipe, minibatch_io
 )
 from ._lm2 import (
     # TODO: Separate out hooks
-    BatchIdxStepTheta,
-    BatchIdxStepX,
-    FeatureIdxStepTheta,
-    FeatureIdxStepX,
     LearningMachine,
     StepHook,
     StepTheta,
@@ -45,7 +41,6 @@ from ._grad import (
     GradLearner,
     GradStepX,
 )
-# from ._iterable import IdxLoop, IterStepTheta, IterHiddenStepTheta, IterStepX
 
 from ._ensemble import (
     EnsembleLearner,

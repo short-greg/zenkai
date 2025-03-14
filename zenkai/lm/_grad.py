@@ -8,7 +8,7 @@ import torch
 # Local
 from ._assess import Criterion
 from ._lm2 import (
-    Idx as Idx, IO as IO, iou,
+    IO as IO, iou,
     StepTheta as StepTheta, StepX as StepX, forward_dep, LMode,
     LearningMachine as LearningMachine
 )

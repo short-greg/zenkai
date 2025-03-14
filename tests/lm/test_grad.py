@@ -6,7 +6,7 @@ from torch import nn
 from zenkai.lm._assess import NNLoss
 
 # local
-from zenkai.lm._lm2 import IO as IO, iou, Idx as Idx
+from zenkai.lm._lm2 import IO as IO, iou
 from zenkai.lm import _grad
 from zenkai.lm import State
 from zenkai.utils import _params as utils

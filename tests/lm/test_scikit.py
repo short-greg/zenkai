@@ -55,13 +55,3 @@ class TestSklearnMachine(object):
         machine.step(x2, t2, state)
         y = machine.forward_io(iou(torch.rand(8, 3)), state)
         assert y.f.shape == torch.Size([8, 1])
-
-
-# class TestScikitLimitGen(object):
-#     def test_scikit_limit_gen_returns_empty_if_not_fitted(self):
-#         limit_gen = ScikitLimitGen(RandomFeatureIdxGen(3, 2))
-#         assert limit_gen(False) is None
-
-#     def test_scikit_limit_gen_returns_limit_if_fitted(self):
-#         limit_gen = ScikitLimitGen(RandomFeatureIdxGen(3, 2))
-#         assert len(limit_gen(True)) == 2

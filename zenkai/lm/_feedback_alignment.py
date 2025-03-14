@@ -73,7 +73,7 @@ class FALearner(GradLearner):
         Args:
             x (IO): The input
             state (State): The learning state
-            batch_idx (Idx, optional): The index to use. Defaults to None.
+            Defaults to None.
 
         Returns:
             torch.Tensor: The 

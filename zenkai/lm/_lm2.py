@@ -14,7 +14,7 @@ from torch.autograd.function import Function #, once_differentiable
 
 # local
 from ._state import State
-from ._io2 import Idx, iou, IO
+from ._io2 import iou, IO
 
 
 def acc_dep(check_field: str):
@@ -437,108 +437,6 @@ class StepTheta(ABC):
             t (IO): The output
         """
         pass
-
-    # def _accumulate_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
-    #     """Call step wrapped with the hooks
-
-    #     Args:
-    #         x (IO): the incoming IO
-    #         t (IO): The target IO
-    #     """
-    #     self._base_accumulate(x, t, state, *args, **kwargs)
-
-    #     for posthook in self._accumulate_hooks:
-    #         posthook(self, x, t, state)
-
-    # def accumulate_posthook(self, hook: StepHook) -> "StepTheta":
-    #     """Add hook to call after StepTheta
-
-    #     Args:
-    #         hook (StepHook): The hook to add
-    #     """
-    #     if not hasattr(self, "_step_hook_initialized"):
-    #         self.__init__()
-    #     self._accumulate_hooks.append(hook)
-    #     return self
-
-    # def _step_hook_runner(self, x: IO, t: IO, state: State, *args, **kwargs):
-    #     """Call step wrapped with the hooks
-
-    #     Args:
-    #         x (IO): the incoming IO
-    #         t (IO): The target IO
-    #     """
-
-    #     result = self._base_step(x, t, state, *args, **kwargs)
-
-    #     for posthook in self._step_hooks:
-    #         x, t = posthook(self, x, t, state)
-    #     return result
-
-    # def step_posthook(self, hook: StepHook) -> "StepTheta":
-    #     """Add hook to call after StepTheta
-
-    #     Args:
-    #         hook (StepHook): The hook to add
-    #     """
-    #     if not hasattr(self, "_step_hook_initialized"):
-    #         self.__init__()
-    #     self._step_hooks.append(hook)
-    #     return self
-
-
-
-
-class BatchIdxStepTheta(StepTheta):
-    """Mixin for when only to update based on a limited set of indexes in the minibatch"""
-
-    @abstractmethod
-    def step(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
-        """Update the parameters of the learning machine
-
-        Args:
-            x (IO): The input
-            t (IO): The target
-            state (State): The learning state
-            batch_idx (Idx, optional): The index to use in updating. Defaults to None.
-        """
-        pass
-
-    def accumulate(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs):
-        pass
-
-
-class FeatureIdxStepTheta(StepTheta):
-    """Mixin for when only to train on a limited set of neurons"""
-
-    @abstractmethod
-    def step(self, x: IO, y: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs):
-        """Update the parameters of the learning machine
-
-        Args:
-            x (IO): The input
-            t (IO): The target
-            state (State): The learning state
-            feature_idx (Idx, optional): The index to use in updating. Defaults to None.
-        """
-        pass
-
-
-class BatchIdxStepX(StepX):
-    """Mixin for when only to update based on a limited set of indexes in the minibatch"""
-
-    @abstractmethod
-    def step_x(self, x: IO, y: IO, t: IO, state: State, batch_idx: Idx = None, **kwargs) -> IO:
-        pass
-
-
-class FeatureIdxStepX(StepX):
-    """Mixin for when only to train on a limited set of neurons"""
-
-    @abstractmethod
-    def step_x(self, x: IO, y: IO, t: IO, state: State, feature_idx: Idx = None, **kwargs) -> IO:
-        pass
-
 
 class LearningF(Function):
 

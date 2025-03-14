@@ -13,7 +13,6 @@ zenkai (kaku)
    zenkai.LearningMachine
    zenkai.GradLearner
    zenkai.IO
-   zenkai.Idx
    zenkai.Reduction
    zenkai.Criterion
    zenkai.XCriterion
@@ -23,11 +22,7 @@ zenkai (kaku)
    zenkai.GradStepTheta
    zenkai.GradStepX
    zenkai.GradLearner
-   zenkai.GradIdxLearner
-   zenkai.IdxLoop
    zenkai.IterStepTheta
-   zenkai.FeatureLimitGen
-   zenkai.RandomFeatureIdxGen
    zenkai.LayerAssessor
    zenkai.StepXLayerAssessor
    zenkai.StepFullLayerAssessor

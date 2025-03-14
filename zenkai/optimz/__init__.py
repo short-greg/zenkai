@@ -8,10 +8,8 @@ from ._objective import (
     Constraint,
     CompoundConstraint,
     impose,
-    # TODO: keep only the core modules (i.e. the base classes)
 )
 
-# Move to Zenkai
 from ._constraints import (
     FuncObjective,
     CriterionObjective,
@@ -20,7 +18,6 @@ from ._constraints import (
     LT,
     GT,
     GTE,
-    # NNLinearObjective,
     NullConstraint,
 )
 

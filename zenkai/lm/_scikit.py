@@ -7,7 +7,6 @@ import typing
 from ._lm2 import (
     IO as IO,
     StepX as StepX,
-    Idx as Idx,
     LearningMachine as LearningMachine
 )
 from ._state import State
@@ -26,7 +25,7 @@ class ScikitMachine(LearningMachine):
 
         Args:
             module (ScikitEstimator): The
-            step_x (FeatureIdxStepX): The function that does step_x
+            step_x: The function that does step_x
             loss (Loss): The loss function for the estimator
             preprocessor (nn.Module, optional): Module to preprocess the input sent to the estimator. Defaults to None.
         """
@@ -40,8 +39,6 @@ class ScikitMachine(LearningMachine):
         Args:
             x (IO): Input
             t (IO): Target
-            feature_idx (Idx, optional): . Defaults to None.
-
         """
         self._module.fit(x.f, t.f, **kwargs)
 
@@ -51,8 +48,6 @@ class ScikitMachine(LearningMachine):
         Args:
             x (IO): Input
             t (IO): Target
-            feature_idx (Idx, optional): . Defaults to None.
-
         Returns:
             IO: the updated x
         """
