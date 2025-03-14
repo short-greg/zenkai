@@ -9,11 +9,11 @@ import torch
 from ._assess import Criterion
 from ._lm2 import (
     Idx as Idx, IO as IO, iou,
-    StepTheta as StepTheta, StepX as StepX, forward_dep,
+    StepTheta as StepTheta, StepX as StepX, forward_dep, LMode,
     LearningMachine as LearningMachine
 )
 from ._state import State
-from ..optim._optimize import (
+from ..optimz._optimize import (
     # CompOptim, 
     OptimFactory
 )
@@ -115,24 +115,27 @@ class GradLearner(LearningMachine):
     """
     A learner who updates the machine with gradients
     """
-
     def __init__(
         self, module: nn.Module=None, 
-        learn_criterion: typing.Union[XCriterion, Criterion]=None
+        criterion: typing.Union[XCriterion, Criterion]=None,
+        lmode: LMode= LMode.Standard,
+        optimf: OptimFactory=None
     ):
         """Create a learner that backpropagates using Torch's grad functionality
 
         Args:
             module (nn.Module, optional): The default module to use if not overridden. Defaults to None.
-            learn_criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to use the Sum of Squared Errors.
+            criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to use the Sum of Squared Errors.
         """
-        super().__init__()
-        self._module = module
-        self._learn_criterion = learn_criterion or NNLoss(
+        super().__init__(lmode)
+        self.module = module
+        self.criterion = criterion or NNLoss(
             'MSELoss', 'sum', 0.5
         )
+        self.optimf = optimf
+        self.optim = None
 
-    def learn_assess(
+    def assess(
         self, x: IO, y: IO, t: IO
     ) -> torch.Tensor:
         """Use this to assess the input/output for the accumulate method
@@ -145,12 +148,11 @@ class GradLearner(LearningMachine):
         Returns:
             torch.Tensor: The assessment
         """
-
-        if isinstance(self._learn_criterion, XCriterion):
-            return self._learn_criterion.assess(
+        if isinstance(self.criterion, XCriterion):
+            return self.criterion.assess(
                 x, y, t
             )
-        return self._learn_criterion.assess(
+        return self.criterion.assess(
             y, t)
 
     @forward_dep('_y')
@@ -158,10 +160,9 @@ class GradLearner(LearningMachine):
         """
         Args:
             x (IO): The input
-            t (IO): The target
-            batch_idx (Idx, optional): The Idx to index the input and target with. Defaults to None.
+            t (IO): The targetDefaults to None.
         """
-        self.learn_assess(x, state._y, t).backward()
+        self.assess(x, state._y, t).backward()
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update x by accumulating the gradients
@@ -184,7 +185,13 @@ class GradLearner(LearningMachine):
             t (IO): The target
             state (State): The learning state
         """
-        pass
+
+        if self.optim is None and self.optimf is not None:
+            self.optim = self.optimf(self.parameters())
+
+        if self.optim is not None:
+            self.optim.step()
+            self.optim.zero_grad()
 
     def forward_nn(self, x: IO, state: State) -> torch.Tensor:
         """Pass the first element of x through the module member variable
@@ -197,8 +204,8 @@ class GradLearner(LearningMachine):
             torch.Tensor: The output of the module
         """
         y = state._y = (
-            self._module(x[0]) 
-            if self._module is not None else x[0]
+            self.module(x[0]) 
+            if self.module is not None else x[0]
         )
         return y
 

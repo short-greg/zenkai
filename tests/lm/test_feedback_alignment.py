@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from zenkai.optim import OptimFactory
+from zenkai.optimz import OptimFactory
 from zenkai.lm._io2 import IO as IO, iou
 from zenkai.lm._state import State
 from zenkai.utils._params import get_params

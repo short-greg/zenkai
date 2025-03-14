@@ -127,10 +127,8 @@ class SwapLearner(LearningMachine):
                 x, state.t1.detach(), state.sub(SUB1), **kwargs
             )
         elif self.use1:
-            print('Accumulating')
 
             with utils.undo_grad(self.learner1):
-                print('Accumulating2')
                 self.learner1.accumulate(
                     x, t.detach(), state.sub(SUB1), **kwargs
                 )
@@ -158,10 +156,15 @@ class SwapLearner(LearningMachine):
         Returns:
             None
         """
-        if state.train1 is True:
+        if self.train1 is True:
             self.learner1.step(x, state.t1, state.sub(SUB1), **kwargs)
-        if state.train2 is True:
-            self.learner2.step(x, state.t2, state.sub(SUB2), **kwargs)
+        if self.train2 is True:
+            before = utils.to_pvec(self.learner2)
+            self.learner2.step(
+                x, state.t2, 
+                state.sub(SUB2), **kwargs
+            )
+            assert (before != utils.to_pvec(self.learner2)).any()
     
     def step_x(self, x, t, state, **kwargs):
         """

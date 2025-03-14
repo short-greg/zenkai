@@ -11,7 +11,7 @@ import torch
 from . import (
     Criterion, NNLoss,
 )
-from ..optim import OptimFactory
+from ..optimz import OptimFactory
 from ..utils import _params as param_utils
 from ..nnz import Null
 from ._grad import GradLearner
@@ -59,7 +59,7 @@ class FALearner(GradLearner):
 
         super().__init__(
             module=net,
-            learn_criterion=learn_criterion
+            criterion=learn_criterion
         )
         self.net = net
         self.netB = netB
@@ -98,7 +98,7 @@ class FALearner(GradLearner):
         y = state._y
         y2 = self.netB(x.f)
         
-        self._learn_criterion.assess(y, t).backward()
+        self.criterion.assess(y, t).backward()
         y_det = state._y_det
         y2.backward(y_det.grad)
         param_utils.transfer_p(
@@ -147,7 +147,7 @@ class DFALearner(GradLearner):
         
         super().__init__(
             module=net,
-            learn_criterion=learn_criterion
+            criterion=learn_criterion
         )
         self.net = net
         self.netB = netB
@@ -191,8 +191,7 @@ class DFALearner(GradLearner):
         y_det = state._y_det
         y = state._y
         y = self.B(y.f)
-        print(state.out_t.t)
-        self._learn_criterion(iou(y), state.out_t.t).backward()
+        self.criterion(iou(y), state.out_t.t).backward()
         y2.backward(y_det.grad)
 
         # param_utils.set_model_grads(self.net, param_utils.get_model_grads(self.netB))

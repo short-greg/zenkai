@@ -14,7 +14,7 @@ from ._assess import (
     NNLoss,
     
 )
-from ..optim import OptimFactory
+from ..optimz import OptimFactory
 from ._state import State
 from ._io2 import (
     IO as IO, iou

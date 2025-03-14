@@ -16,7 +16,6 @@ class TestDualLearner:
 
         y = dual_learner(x)
         t = learner1(x)
-        print(y, t)
 
         assert (y == t).all()
 

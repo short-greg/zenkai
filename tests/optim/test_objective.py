@@ -1,6 +1,6 @@
 import torch
 from zenkai.nnz._assess import Reduction
-from zenkai.optim._objective import (
+from zenkai.optimz._objective import (
     Objective,
     Constraint,
     impose,

@@ -468,12 +468,10 @@ class undo_grad(object):
                     value.grad.clone() if value.grad is not None else None
                 )
             else:
-                print('Storing')
                 self._stored.append(
                     list(loop_p(value, lambda v: v.grad.clone() if v.grad is not None else None))
                     # get_model_grads(value)
                 )
-                print(self._stored)
 
     def __enter__(self):
 

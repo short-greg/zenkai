@@ -3,6 +3,6 @@
 __version__ = "0.0.9"
 
 from . import (
-    optim, lm,
+    optimz, lm,
     nnz, tansaku, utils
 )

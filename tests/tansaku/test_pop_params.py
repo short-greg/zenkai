@@ -32,14 +32,12 @@ class TestPVec(object):
         linear = PopLinear(4, 2, 2)
         linear2 = PopLinear(4, 2, 2)
         
-        print(linear.w[0], linear2.w[0])
         pvec = p_utils.to_pop_pvec(
             linear, 4
         )
         p_utils.set_pop_pvec(
             linear2, pvec
         )
-        print(linear.w[0], linear2.w[0])
         assert torch.isclose(linear.w, linear2.w).all()
 
     def test_acc_pvec_is_two_times_original(self):

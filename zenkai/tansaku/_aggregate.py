@@ -62,7 +62,6 @@ def pop_quantile(
 
     # When using max with torch, the first value that
     # maximizes it will be returned
-    print(sorted_weight)
     _, median_idx = (
         sorted_weight >= q
     ).float().max(dim=dim, keepdim=True)

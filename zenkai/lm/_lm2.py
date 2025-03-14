@@ -656,18 +656,18 @@ class LearningMachine(nn.Module, ABC):
         """
         return self._lmode
 
-    def lmode_(self, lmode: LMode, cascade: bool=False) -> Self:
+    def lmode_(self, lmode: LMode, recurse: bool=False) -> Self:
         """Alter the 'LearningMode' of the machine
 
         Args:
             lmode (LMode): The learning mode to set to
-            cascade (bool, optional): Whether to cascade. Defaults to False.
+            recurse (bool, optional): Whether to recurse. Defaults to False.
 
         Returns:
             Self
         """
-        if cascade:
-            for module in self.modules:
+        if recurse:
+            for module in self.children():
                 if isinstance(module, LearningMachine):
                     module.lmode_(lmode)
         else:
@@ -945,31 +945,3 @@ class _ExampleModule(torch.autograd.Function):
             x_i - g_i for x_i, g_i in zip(x, grad_output)
         )
         return tuple([None, *grad_output])
-
-
-class ExampleModule(nn.Module):
-    def __init__(self):
-        super(ExampleModule, self).__init__()
-        self.t = None
-
-    def forward(self, x):
-        y = _ExampleModule.apply(self, x)
-        return y[0]
-
-    # def backward(self, module, x, grad_input, grad_output):
-
-    #     module.t = tuple(
-    #         x_i - g_i for x_i, g_i in zip(x, grad_output)
-    #     )
-    #     return grad_input
-
-# Example usage
-
-model = ExampleModule()
-print(model.t)
-x = torch.randn(1, 10, requires_grad=True)
-output = model(x)
-output.backward(torch.ones_like(output))
-print(model.t)
-
-# %%
