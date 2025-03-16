@@ -438,6 +438,7 @@ class StepTheta(ABC):
         """
         pass
 
+
 class LearningF(Function):
 
     @staticmethod

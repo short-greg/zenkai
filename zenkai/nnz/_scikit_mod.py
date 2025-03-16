@@ -41,7 +41,6 @@ from abc import abstractmethod
 
 # 3rd party
 import sklearn
-from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 import numpy as np
 from abc import ABC
 import sklearn.multioutput
@@ -50,11 +49,9 @@ import torch.nn.functional
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
-
 import torch
 import torch.nn as nn
 import copy
-from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 
 
 # local
@@ -205,7 +202,6 @@ class ScikitBinary(ScikitModule):
     ScikitBinary is a wrapper class for binary Scikit-learn estimators, providing integration with PyTorch tensors.
     This class allows fitting and predicting using Scikit-learn estimators while handling data in the form of PyTorch tensors. It also provides methods for creating multi-output classifiers and building surrogate neural network modules.
     """
-
     def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
         """
         Fit the model to the given data.
@@ -264,7 +260,6 @@ class ScikitBinary(ScikitModule):
             nn.Module: A sequential neural network module consisting of a linear layer 
             followed by a custom sign activation function.
         """
-
         return nn.Sequential(
             nn.Linear(self.in_features, self.out_features),
             hard.Sign()
@@ -281,6 +276,7 @@ class ScikitBinary(ScikitModule):
             estimator, self._estimator_in,
             self._estimator_out
         )
+
 
 class ScikitMulticlass(ScikitModule):
     """
@@ -342,6 +338,12 @@ class ScikitMulticlass(ScikitModule):
     
     @property
     def n_classes(self) -> int:
+        """
+        Returns the number of classes.
+        Returns:
+            int: The number of classes.
+        """
+
         return self._n_classes
 
     @classmethod
@@ -390,6 +392,18 @@ class ScikitMulticlass(ScikitModule):
 
 
 class ScikitRegressor(ScikitModule):
+    """
+    This module adapts a scikit-learn regressor to use PyTorch.
+    Classes:
+        ScikitRegressor: A class that wraps a scikit-learn regressor to be used with PyTorch tensors.
+    Methods:
+        fit(x: torch.Tensor, t: torch.Tensor, **kwargs):
+        forward(x: torch.Tensor) -> torch.Tensor:
+        multi(cls, estimator: sklearn.base.BaseEstimator, in_features: int, out_features: int):
+        build_surrogate():
+        clone():
+            Clone the base estimator (deepcopy or re-instantiate).
+    """
 
     def fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
         """
@@ -470,6 +484,9 @@ class ScikitRegressor(ScikitModule):
 
 
 class Parallel(nn.Module):
+    """
+    A custom PyTorch module that executes multiple sub-modules in parallel and concatenates their outputs.
+    """
 
     def __init__(self, *module):
 
@@ -488,7 +505,10 @@ class MultiOutputAdapter(nn.Module):
     to handle multi-output learning in PyTorch.
     """
 
-    def __init__(self, base_estimator: ScikitModule, out_features: int):
+    def __init__(
+        self, base_estimator: ScikitModule, out_features: int,
+        n_splits: int=None
+    ):
         """
         Initialize the MultiOutputAdapter.
 
@@ -502,14 +522,32 @@ class MultiOutputAdapter(nn.Module):
         self.base_estimator = base_estimator
         self._out_features = out_features
         assert self.base_estimator.multi_out is False
-        self.models = [self.base_estimator.clone() for _ in range(self._out_features)]
-    
+
+        if n_splits is not None:
+            self._n_splits = n_splits if n_splits > 0 else len(n_splits) + n_splits + 1
+            self._split_size = self._out_features // n_splits + (1 if self._out_features % n_splits > 0 else 0)
+            self.models = [self.base_estimator.clone() for _ in range(self._n_splits)]
+        else:
+            self._n_splits = None
+            self._split_size = 1
+            self.models = [self.base_estimator.clone() for _ in range(self._out_features)]
+            
     @property
     def in_features(self) -> int:
+        """
+        Returns the number of input features.
+        Returns:
+            int: The number of input features.
+        """
         return self.base_estimator.in_features
 
     @property
     def out_features(self) -> int:
+        """
+        Returns the number of output features.
+        Returns:
+            int: The number of output features.
+        """
         return self._out_features
 
     @property
@@ -526,8 +564,12 @@ class MultiOutputAdapter(nn.Module):
             x (torch.Tensor): The input data tensor.
             t (torch.Tensor): The target data tensor.
         """
-        for i, model_i in enumerate(self.models):            
-            model_i.fit(x, t[:,i:i+1])
+        cur = 0
+        upto = self._split_size
+        for _, model_i in enumerate(self.models):            
+            model_i.fit(x, t[:,cur:upto])
+            cur = upto
+            upto += self._split_size
 
     def multi_out(self) -> int:
         return True
@@ -557,10 +599,14 @@ class MultiOutputAdapter(nn.Module):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        return torch.hstack(
-            [model(x) for model in self.models]
+        # if self._n_splits is None:
+        #     return torch.hstack(
+        #         [model(x) for model in self.models]
+        #     )
+        
+        return torch.cat(
+            [model(x) for model in self.models], dim=-1
         )
-
         # x_np = x.detach().cpu().numpy()
         # predictions = [model.predict(x_np) for model in self.models]
 
