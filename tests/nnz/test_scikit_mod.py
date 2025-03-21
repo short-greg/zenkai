@@ -49,7 +49,7 @@ class TestScikitRegressor:
 
         y = regressor_wrapper(torch.from_numpy(test_data[0]))
         t = torch.from_numpy(
-            regressor_wrapper.models[0]._estimator.predict(test_data[0]).astype(np.float32)
+            regressor_wrapper._models[0]._estimator.predict(test_data[0]).astype(np.float32)
         )[:,None]
         assert torch.isclose(y, t, 1e-4).all()
 

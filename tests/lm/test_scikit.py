@@ -4,7 +4,7 @@ import torch
 from zenkai.lm._io2 import iou, IO as IO
 from zenkai.lm._lm2 import StepX as StepX
 from zenkai.lm import State
-from zenkai.lm._scikit import ScikitMachine
+from zenkai.lm._scikit import ScikitLearner
 from zenkai.nnz._scikit_mod import ScikitRegressor
 
 from sklearn import linear_model
@@ -20,7 +20,7 @@ class TestSklearnMultiMachine(object):
     def test_fit_fits_regressor(self):
         torch.manual_seed(1)
         regressor = linear_model.SGDRegressor()
-        machine = ScikitMachine(ScikitRegressor.multi(regressor, 3, 2), NullStepX())
+        machine = ScikitLearner(ScikitRegressor.multi(regressor, 3, 2), NullStepX())
         x1 = iou(torch.randn(8, 3))
         t1 = iou(torch.randn(8, 2))
         x2 = iou(torch.randn(8, 3))
@@ -38,7 +38,7 @@ class TestSklearnMachine(object):
     def test_fit_fits_regressor(self):
         torch.manual_seed(1)
         regressor = linear_model.SGDRegressor()
-        machine = ScikitMachine(ScikitRegressor(regressor, 3, None), NullStepX())
+        machine = ScikitLearner(ScikitRegressor(regressor, 3, None), NullStepX())
         state = State()
         x1 = iou(torch.randn(8, 3))
         t1 = iou(torch.randn(8, 1))

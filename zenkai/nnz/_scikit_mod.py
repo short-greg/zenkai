@@ -506,8 +506,7 @@ class MultiOutputAdapter(nn.Module):
     """
 
     def __init__(
-        self, base_estimator: ScikitModule, out_features: int,
-        n_splits: int=None
+        self, base_estimator: ScikitModule, count: int
     ):
         """
         Initialize the MultiOutputAdapter.
@@ -520,17 +519,10 @@ class MultiOutputAdapter(nn.Module):
         """
         super().__init__()
         self.base_estimator = base_estimator
-        self._out_features = out_features
-        assert self.base_estimator.multi_out is False
-
-        if n_splits is not None:
-            self._n_splits = n_splits if n_splits > 0 else len(n_splits) + n_splits + 1
-            self._split_size = self._out_features // n_splits + (1 if self._out_features % n_splits > 0 else 0)
-            self.models = [self.base_estimator.clone() for _ in range(self._n_splits)]
-        else:
-            self._n_splits = None
-            self._split_size = 1
-            self.models = [self.base_estimator.clone() for _ in range(self._out_features)]
+        self._out_features = count * self.base_estimator.out_features
+        self._count = count
+        self._split_size = self._out_features // count
+        self._models = [self.base_estimator.clone() for _ in range(self._count)]
             
     @property
     def in_features(self) -> int:
@@ -566,30 +558,13 @@ class MultiOutputAdapter(nn.Module):
         """
         cur = 0
         upto = self._split_size
-        for _, model_i in enumerate(self.models):            
+        for _, model_i in enumerate(self._models):            
             model_i.fit(x, t[:,cur:upto])
             cur = upto
             upto += self._split_size
 
     def multi_out(self) -> int:
         return True
-
-    # def partial_fit(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
-    #     """
-    #     Incrementally train each model for each output.
-    #     Args:
-    #         x (torch.Tensor): The input data tensor.
-    #         t (torch.Tensor): The target data tensor.
-    #     """
-    #     x = x.detach().cpu().numpy()
-    #     t = t.detach().cpu().numpy()
-
-    #     num_outputs = t.shape[1]
-    #     if self.models is None:
-    #         self.models = [self._clone_model() for _ in range(num_outputs)]
-
-    #     for i in range(num_outputs):
-    #         self.models[i].partial_fit(x, t[:, i], **kwargs)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -599,19 +574,9 @@ class MultiOutputAdapter(nn.Module):
         Returns:
             torch.Tensor: Output tensor after applying the estimator's prediction.
         """
-        # if self._n_splits is None:
-        #     return torch.hstack(
-        #         [model(x) for model in self.models]
-        #     )
-        
         return torch.cat(
-            [model(x) for model in self.models], dim=-1
+            [model(x) for model in self._models], dim=-1
         )
-        # x_np = x.detach().cpu().numpy()
-        # predictions = [model.predict(x_np) for model in self.models]
-
-        # predictions = torch.tensor(np.column_stack(predictions)).float()
-        # return predictions
 
     def build_surrogate(self) -> nn.Module:
         """
@@ -622,5 +587,5 @@ class MultiOutputAdapter(nn.Module):
         """
 
         return Parallel(
-            [self.base_estimator.surrogate for _ in range(self.out_features)]
+            [self.base_estimator.surrogate for _ in range(self._n_splits)]
         )

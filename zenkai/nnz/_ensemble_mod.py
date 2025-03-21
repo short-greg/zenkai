@@ -75,7 +75,6 @@ class MeanVoteAggregator(VoteAggregator):
         Returns:
             torch.Tensor: The aggregated result
         """
-
         return weighted_votes(votes, weights)
 
 
@@ -200,8 +199,6 @@ class EnsembleVoter(Voter):
         spawner: typing.Callable[[], nn.Module],
         n_keep: int,
         temporary: nn.Module = None,
-        spawner_args: typing.List = None,
-        spawner_kwargs: typing.Dict = None,
         train_only_last: bool=True
     ):
         """Create a machine that runs an ensemble of sub machines
@@ -210,19 +207,15 @@ class EnsembleVoter(Voter):
             spawner (typing.Callable[[], nn.Module]): A factory to spawn the module to use
             n_keep (int): The number of modules to keep in the ensemble
             temporary (nn.Module, optional): The module to use initially. Defaults to None.
-            spawner_args (typing.List, optional): The args for the spawner. Defaults to None.
-            spawner_kwargs (typing.Dict, optional): The kwargs for the spawner. Defaults to None.
         """
         super().__init__()
 
         self._estimators = nn.ModuleList()
         self._temporary = temporary
-        self._spawner = spawner
-        self._spawner_args = spawner_args or []
-        self._spawner_kwargs = spawner_kwargs or {}
+        self.spawner = spawner
         if self._temporary is None:
             self._estimators.append(
-                spawner(*self._spawner_args, **self._spawner_kwargs)
+                spawner()
             )
         self._n_votes = n_keep
         self.train_only_last = train_only_last
@@ -273,7 +266,7 @@ class EnsembleVoter(Voter):
 
     def adv(self):
         """Spawn a new voter. If exceeds n_keep will remove the first voter"""
-        spawned = self._spawner(*self._spawner_args, **self._spawner_kwargs)
+        spawned = self.spawner()
         if len(self._estimators) == self._n_votes:
             self._estimators = self._estimators[1:]
         self._estimators.append(spawned)
@@ -298,15 +291,12 @@ class EnsembleVoter(Voter):
         else:
             res = [estimator(*x) for estimator in self._estimators]
 
-        return torch.stack(
-            res
-        )
+        return torch.stack(res)
 
 
 class StochasticVoter(Voter):
     """Voter that chooses an output stochastically
     """
-
     def __init__(self, stochastic_model: nn.Module, n_votes: int):
         """Create a voter for voting stochastically (such as dropout)
 
@@ -328,7 +318,7 @@ class StochasticVoter(Voter):
             torch.Tensor: The n votes - Shape[votes, batch size, *feature_shape]
         """
 
-        y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).view(
+        y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).reshape(
             self._n_votes * x.shape[0], *x.shape[1:]
         )
         y = self.stochastic_model(y)

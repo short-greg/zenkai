@@ -143,7 +143,7 @@ def pop_assess(
     )
     if keepdim:
         view = shape[:from_dim] + [1] * (len(shape) - from_dim)
-        return result.view(view)
+        return result.reshape(view)
     return result
 
 

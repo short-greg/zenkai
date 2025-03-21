@@ -45,6 +45,7 @@ class TestSeparate:
         )
         assert x2.shape == torch.Size([2,2, 2])
 
+
 class TestCollapse:
 
     def test_collapse_feature_with_reshape(self):

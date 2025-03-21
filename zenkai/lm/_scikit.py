@@ -7,19 +7,21 @@ import typing
 from ._lm2 import (
     IO as IO,
     StepX as StepX,
+    LMode,
     LearningMachine as LearningMachine
 )
 from ._state import State
 from ..nnz._scikit_mod import ScikitModule
 
 
-class ScikitMachine(LearningMachine):
+class ScikitLearner(LearningMachine):
     """Machine used to train a Scikit Learn estimator"""
 
     def __init__(
         self,
         module: ScikitModule,
-        step_x: typing.Optional[StepX]=None
+        step_x: typing.Optional[StepX]=None,
+        lmode: LMode=LMode.Standard
     ):
         """Create a machine that wraps the scikit estimator specifying how to update x
 
@@ -29,7 +31,7 @@ class ScikitMachine(LearningMachine):
             loss (Loss): The loss function for the estimator
             preprocessor (nn.Module, optional): Module to preprocess the input sent to the estimator. Defaults to None.
         """
-        super().__init__()
+        super().__init__(lmode)
         self._module = module
         self._step_x = step_x
 

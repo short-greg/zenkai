@@ -152,7 +152,7 @@ class TestLM:
     def test_learning_works_with_a_view(self):
 
         x = torch.rand(2, 4)
-        x = x.view(4, 2)
+        x = x.reshape(4, 2)
         mod = GradLM(2, 4)
         mod2 = GradLM(4, 4)
         mod.lmode_(_lm2.LMode.OnlyStepX)
@@ -163,5 +163,3 @@ class TestLM:
         (y2 - t).pow(2).sum().backward()
         assert (mod.w.grad is None)
         assert (mod2.w.grad is None)
-
-# TODO: Test with hook

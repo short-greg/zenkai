@@ -160,7 +160,7 @@ def calc_slope(val: torch.Tensor, assessment: torch.Tensor) -> torch.Tensor:
     """
     evaluation = align(assessment, val)
     base_shape = val.shape
-    val = val.view(
+    val = val.reshape(
         val.size(0), val.size(1), -1
     )
     ssx = (val**2).sum(0) - (1 / len(val)) * (val.sum(0)) ** 2

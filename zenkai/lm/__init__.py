@@ -41,10 +41,8 @@ from ._grad import (
     GradLearner,
     GradStepX,
 )
-
 from ._ensemble import (
-    EnsembleLearner,
-    # EnsembleLearnerVoter
+    EnsembleVoterLearner
 )
 from ._feedback_alignment import (
     FALearner,
@@ -62,7 +60,7 @@ from ._least_squares import (
 
 )
 from ._scikit import (
-    ScikitMachine
+    ScikitLearner
 )
 from ._dual import SwapLearner
 # from ._reversible import (

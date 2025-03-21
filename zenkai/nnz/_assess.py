@@ -51,9 +51,9 @@ class Reduction(Enum):
         """
         view = torch.Size([loss.size(0), -1])
         if self == Reduction.mean or self == Reduction.batchmean:
-            return loss.view(view).mean(1)
+            return loss.reshape(view).mean(1)
         if self == Reduction.sum:
-            return loss.view(view).sum(1)
+            return loss.reshape(view).sum(1)
 
         raise ValueError(f"{self.name} cannot be reduced by sample.")
 

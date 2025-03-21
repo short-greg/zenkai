@@ -1,4 +1,9 @@
 {
     "esbonio.sphinx.confDir": "",
-    "editor.wordWrap": "on"
+    "editor.wordWrap": "on",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }

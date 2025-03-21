@@ -4,6 +4,7 @@ import torch.nn as nn
 from ..utils import freshen
 from typing_extensions import Self
 from torch.utils import data as torch_data
+import numpy as np
 
 
 class IO(tuple):
@@ -226,12 +227,35 @@ class IO(tuple):
         Returns:
             typing.Tuple | typing.Any: The value of the IO
         """
-
         if len(self) == 1:
             return self[0]
         if len(self) > 1:
             return tuple(self)
         return None
+    
+    def split(self) -> typing.List['IO']:
+        """
+        Splits the IO on the first dimension to retrieve a group of IOs.
+        For any item that is not an array or tensor, it will be repeated.
+        Returns:
+            List[IO]: A list of IO objects, each representing a split of the original IO.
+        """
+        res = []
+        sz = 1
+        for xi in self:
+            if isinstance(xi, torch.Tensor) or isinstance(xi, np.ndarray):
+                sz = len(xi)
+                break
+        
+        for xi in self:
+            if isinstance(xi, torch.Tensor) or isinstance(xi, np.ndarray):
+                res.append(list(xi))
+            else:
+                res.append([xi] * sz)
+        
+        return [IO(r) for r in zip(*res)]
+
+
 
 
 def iou(*x) -> IO:
