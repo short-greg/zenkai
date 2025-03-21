@@ -69,12 +69,12 @@ class TestMulticlassVoteAggregator:
 class TestEnsembleVoter:
     def test_ensemble(self):
 
-        mod = modules.EnsembleVoter(nn.Linear, 4, spawner_args=[3, 4])
+        mod = modules.EnsembleVoter(lambda : nn.Linear(3, 4), 4)
         assert mod(torch.rand(3, 3))[0].shape == torch.Size([3, 4])
 
     def test_ensemble_with_two_modules(self):
 
-        mod = modules.EnsembleVoter(nn.Linear, 4, spawner_args=[3, 4])
+        mod = modules.EnsembleVoter(lambda: nn.Linear(3, 4), 4)
         mod.adv()
         y = mod(torch.rand(3, 3))
         assert len(y) == 2
@@ -83,7 +83,7 @@ class TestEnsembleVoter:
     def test_ensemble_with_temporary(self):
 
         mod = modules.EnsembleVoter(
-            nn.Linear, 4, temporary=nn.Linear(3, 4), spawner_args=[3, 4]
+            lambda: nn.Linear(3, 4), 4, temporary=nn.Linear(3, 4)
         )
         mod.adv()
         y = mod(torch.rand(3, 3))
@@ -91,7 +91,7 @@ class TestEnsembleVoter:
 
     def test_ensemble_with_five_advances(self):
 
-        mod = modules.EnsembleVoter(nn.Linear, 4, spawner_args=[3, 4])
+        mod = modules.EnsembleVoter(lambda: nn.Linear(3, 4), 4)
         mod.adv()
         mod.adv()
         mod.adv()
