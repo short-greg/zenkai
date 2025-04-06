@@ -23,6 +23,7 @@ class SwapLearner(LearningMachine):
         sub_wt: float=1.0,
         main_wy2: float=0.0,
         sub_wy1: float=0.0,
+        step_x_main: bool=True,
         lmode: LMode = LMode.Standard
     ):
         """
@@ -44,6 +45,8 @@ class SwapLearner(LearningMachine):
         self.main_wt = main_wt
         self.sub_wy1 = sub_wy1
         self.sub_wt = sub_wt
+        self._swapped = False
+        self.step_x_main = step_x_main
 
     def forward_nn(self, x, state, **kwargs):
         """
@@ -61,6 +64,8 @@ class SwapLearner(LearningMachine):
         """
         state.mainl = self.main
         state.subl = self.sub
+        if not self.step_x_main:
+            x = x.detach()
         y = state.mainl.forward_io(x, state.sub(SUB1),**kwargs)
         if len(y) == 1:
             return y[0]
@@ -69,15 +74,33 @@ class SwapLearner(LearningMachine):
     def swap(self):
         """
         """
+        self._swapped = not self._swapped
         self.main, self.sub = self.sub, self.main
     
+    @property
+    def swapped(self) -> bool:
+
+        return self._swapped
+
     def merge_t(
         self, t: IO, y: IO, t_weight: float=0.0, 
         y_weight: float=0.0):
-        if t is not None and y is not None:
+        """Merge the 
+
+        Args:
+            t (IO): _description_
+            y (IO): _description_
+            t_weight (float, optional): _description_. Defaults to 0.0.
+            y_weight (float, optional): _description_. Defaults to 0.0.
+
+        Returns:
+            _type_: _description_
+        """
+        if t is not None and y is not None and t_weight != 0.0 and y_weight != 0.0:
             return merge_io([t, y], lambda ti, yi: ti * t_weight + yi * y_weight)
         if t is not None:
             return t.apply(lambda ti: ti * t_weight)
+        
         return y.apply(lambda yi: yi * y_weight)
         
     def accumulate(self, x, t, state, **kwargs):
@@ -106,9 +129,11 @@ class SwapLearner(LearningMachine):
 
         y1 = state._y
     
-        if self.train2:   
+        if self.train2 or not self.step_x_main:   
+
+            x_ = x.detach() if self.step_x_main else x
             y2 = state.subl.forward_io(
-                x, state.sub(SUB2)
+                x_, state.sub(SUB2)
             )
         else:
             y2 = None
@@ -124,18 +149,26 @@ class SwapLearner(LearningMachine):
         )
         if self.train1:
             state.mainl.accumulate(
-                x, state.t1.detach(), state.sub(SUB1), **kwargs
+                state._x, state.t1.detach(), state.sub(SUB1), **kwargs
             )
-        else:
+        elif self.step_x_main:
             with utils.undo_grad(state.mainl):
                 state.mainl.accumulate(
                     x, state.t1.detach(), state.sub(SUB1), **kwargs
                 )
-        if self.train2:   
-            state.t2 = self.merge_t(t, y1, self.sub_wt, self.sub_wy1)         
-            state.subl.accumulate(
-                x, state.t2.detach(), state.sub(SUB2), **kwargs
+        if self.train2 or not self.step_x_main:  
+            state.t2 = self.merge_t(
+                t, y1, self.sub_wt, self.sub_wy1
             )
+            
+            state.subl.accumulate(
+                x_, state.t2.detach(), state.sub(SUB2), **kwargs
+            )
+        elif not self.step_x_main:
+            with utils.undo_grad(state.subl):
+                state.subl.accumulate(
+                    x, state.t2.detach(), state.sub(SUB2), **kwargs
+                )
 
     def step(self, x, t, state, **kwargs):
         """
@@ -151,14 +184,14 @@ class SwapLearner(LearningMachine):
             None
         """
         if self.train1 is True:
+            # before = utils.to_pvec(state.subl)
             state.mainl.step(x, state.t1, state.sub(SUB1), **kwargs)
+            # assert (before != utils.to_pvec(state.subl)).any()
         if self.train2 is True:
-            before = utils.to_pvec(state.sub)
             state.subl.step(
                 x, state.t2, 
                 state.sub(SUB2), **kwargs
             )
-            assert (before != utils.to_pvec(state.sub)).any()
     
     def step_x(self, x, t, state, **kwargs):
         """
@@ -177,6 +210,7 @@ class SwapLearner(LearningMachine):
             The output tensor after processing through the appropriate machine.
         """
         return state.mainl.step_x(x, t, state.sub(SUB1), **kwargs)
+
 
 
 class SepSwapLearner(SwapLearner):
@@ -235,9 +269,11 @@ class SepSwapLearner(SwapLearner):
 
         y1 = state._y
     
-        if self.train2:   
+        if self.train2 or not self.step_x_main:   
+
+            x_ = x.detach() if self.step_x_main else x
             y2 = state.subl.forward_io(
-                x, state.sub(SUB2)
+                x_, state.sub(SUB2)
             )
         else:
             y2 = None
@@ -248,32 +284,30 @@ class SepSwapLearner(SwapLearner):
         state.t1 = None
         state.t2 = None
         
-        if self.step_x_y2 is not None:
-            y2 = (
-                state._y2 if state._y2 is not None 
-                else state.subl.forward_io(
-                    x, state.sub(SUB1)
-                )
-            )
-        else:
-            y2 = None
-        t = self.merge_t(t, y2, self.step_x_t, self.step_x_y2)
-
-        with utils.undo_grad(state.mainl):
-            state.mainl.accumulate(x, t, state.sub(SUB1))
-
+        state.t1 = self.merge_t(
+            t, y2, self.main_wt, self.main_wy2
+        )
         if self.train1:
-            y2 = state.mainl.forward_io(
-                x.detach(), state=state.sub(SUB1b)
-            )
-            state.t1 = self.merge_t(
-                t, y2, self.main_wt, self.main_wy2
-            )
             state.mainl.accumulate(
-                x, state.t1.detach(), state.sub(SUB1b), **kwargs
+                state._x, state.t1.detach(), state.sub(SUB1), **kwargs
             )
-        if self.train2:   
-            state.t2 = self.merge_t(t, y1, self.sub_wt, self.sub_wy1)         
+        if self.step_x_main:
+            state.mainl.forward_io(x, state.sub(SUB1b))
+            with utils.undo_grad(state.mainl):
+                state.mainl.accumulate(
+                    x, state.t1.detach(), state.sub(SUB1b), **kwargs
+                )
+        if self.train2:
+            state.t2 = self.merge_t(
+                t, y1, self.sub_wt, self.sub_wy1
+            )
+            
             state.subl.accumulate(
-                x, state.t2.detach(), state.sub(SUB2), **kwargs
+                x_, state.t2.detach(), state.sub(SUB2), **kwargs
             )
+        if not self.step_x_main:
+            state.mainl.forward_io(x, state.sub(SUB1b))
+            with utils.undo_grad(state.subl):
+                state.subl.accumulate(
+                    x, state.t2.detach(), state.sub(SUB1b), **kwargs
+                )

@@ -183,7 +183,6 @@ class TestSepSwapLearner:
 
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
-
         in_learner = nn.Linear(3, 2)
 
         dual_learner = SepSwapLearner(learner1, learner2, train1=False, train2=True)

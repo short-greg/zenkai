@@ -6,7 +6,6 @@ from ._assess import (
     XCriterion,
 )
 
-
 from ._io2 import (
     IO, 
     iou, pipe, minibatch_io
@@ -62,7 +61,7 @@ from ._least_squares import (
 from ._scikit import (
     ScikitLearner
 )
-from ._dual import SwapLearner
+from ._dual import SwapLearner, SepSwapLearner
 # from ._reversible import (
 #     ReversibleMachine,
 # )
