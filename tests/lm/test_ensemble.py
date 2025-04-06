@@ -33,7 +33,6 @@ class TestEnsemble:
         x = IO([torch.randn(8, 3)])
         state = State()
         result = ensemble.forward_io(x, state)
-        print(result)
         assert isinstance(result, IO)
         assert len(result) == 1 or len(result) == 3
         assert all(isinstance(r, torch.Tensor) for r in result)

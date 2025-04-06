@@ -349,7 +349,7 @@ class GradLeastSquaresLearner(LearningMachine):
         )
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
         self._step_theta = GradStepTheta(
-            self, learn_criterion=NNLoss('MSELoss'), optimf=optim_factory
+            self, criterion=NNLoss('MSELoss'), optimf=optim_factory
         )
 
     def accumulate(self, x: IO, t: IO, state: State):

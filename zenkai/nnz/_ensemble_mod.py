@@ -255,6 +255,19 @@ class EnsembleVoter(Voter):
         """
         return self._n_votes
 
+    @n_votes.setter
+    def n_votes(self, n_votes: int) -> int:
+        """The number of votes currently for the 
+
+        Returns:
+            int: The number of votes
+        """
+        if n_votes < 1:
+            raise ValueError(f'Arg n_votes must be greater than 0 not {n_votes}')
+        self._n_votes = n_votes
+        return self._n_votes
+
+
     @property
     def cur(self) -> nn.Module:
         """The current module

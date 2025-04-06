@@ -28,7 +28,7 @@ class GradStepTheta(StepTheta):
 
     def __init__(
         self, module: nn.Module, 
-        learn_criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, 
+        criterion: typing.Union[XCriterion, Criterion, LearningMachine]=None, 
         optimf: OptimFactory=None  
     ):
         """
@@ -44,10 +44,13 @@ class GradStepTheta(StepTheta):
         self.optim = optimf(
             module.parameters()
         ) if optimf is not None else None
-        learn_criterion = learn_criterion or "mean"
-        if isinstance(learn_criterion, str):
-            learn_criterion = NNLoss('MSELoss', learn_criterion)
-        self.learn_criterion = learn_criterion
+        if criterion is None:
+            criterion = NNLoss(
+                'MSELoss', reduction='sum', weight=0.5
+            )
+        if isinstance(criterion, str):
+            criterion = NNLoss('MSELoss', criterion)
+        self.criterion = criterion
 
     def accumulate(self, x: IO, y: IO, t: IO, state: State, **kwargs):
         """Accumulate the gradients
@@ -64,10 +67,10 @@ class GradStepTheta(StepTheta):
             else:
                 y = iou(self.module(*x.u))
         
-        if isinstance(self.learn_criterion, XCriterion):
-            assessment = self.learn_criterion.assess(x, y, t)
+        if isinstance(self.criterion, XCriterion):
+            assessment = self.criterion.assess(x, y, t)
         else:
-            assessment = self.learn_criterion.assess(y, t)
+            assessment = self.criterion.assess(y, t)
         assessment.backward()
 
     def step(self, x: IO, y: IO, t: IO, state: State, **kwargs):

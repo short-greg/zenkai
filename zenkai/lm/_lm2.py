@@ -16,6 +16,9 @@ from torch.autograd.function import Function #, once_differentiable
 from ._state import State
 from ._io2 import iou, IO
 
+import torch
+import torch.nn as nn
+
 
 def acc_dep(check_field: str):
     """Wrap step_x by requiring step to have been called.
@@ -32,7 +35,7 @@ def acc_dep(check_field: str):
             val = state.get(check_field)
             if val is None:
                 raise RuntimeError(
-                    "Method depends on accumulate() but accumulate has not been called"
+                    f"Method {func} for {type(self)} depends on accumulate() but accumulate() has not been executed"
                 )
             return func(self, x, t, state, *args, **kwargs)
 
@@ -56,7 +59,7 @@ def step_dep(check_field: str):
             val = state.get(check_field)
             if val is None:
                 raise RuntimeError(
-                    "Method depends on step() but step has not been called"
+                    f"Method {func} for {type(self)} depends on step() but step() has not been executed"
                 )
             return func(self, x, t, state, *args, **kwargs)
 
@@ -80,7 +83,7 @@ def forward_dep(check_field: str):
             val = state.get(check_field)
             if val is None:
                 raise RuntimeError(
-                    "Method depends on forward but forward has not been executed"
+                    f"Method {func} for {type(self)} depends on forward but forward has not been executed"
                 )
             return func(self, x, t, state, *args, **kwargs)
 
@@ -95,10 +98,6 @@ def to_grad(flattened_dx: typing.List) -> typing.List:
         dx if isinstance(dx, torch.Tensor) else None for dx in flattened_dx
     )
 
-
-
-import torch
-import torch.nn as nn
 
 class _OutT(torch.autograd.Function):
 
@@ -566,9 +565,9 @@ class LearningMachine(nn.Module, ABC):
             Self
         """
         if recurse:
-            for module in self.children():
+            for module in self.modules():
                 if isinstance(module, LearningMachine):
-                    module.lmode_(lmode)
+                    module.lmode_(lmode, False)
         else:
             self._lmode = lmode
         return self
@@ -707,7 +706,7 @@ class LearningMachine(nn.Module, ABC):
         for i in consume:
             del self._accumulate_hooks[i]
 
-    def accumulate_posthook(self, hook: StepHook,  consummable: bool=False) -> "StepTheta":
+    def accumulate_posthook(self, hook: StepHook,  consummable: bool=False) -> Self:
         """Add hook to call after StepTheta
 
         Args:
@@ -735,7 +734,7 @@ class LearningMachine(nn.Module, ABC):
         for i in consume:
             del self._step_hooks[i]
 
-    def step_posthook(self, hook: StepHook, consummable: bool=False) -> "StepTheta":
+    def step_posthook(self, hook: StepHook, consummable: bool=False) -> Self:
         """Add hook to call after StepTheta
 
         Args:
@@ -768,7 +767,7 @@ class LearningMachine(nn.Module, ABC):
 
         return x_prime
 
-    def step_x_hook(self, hook: StepXHook,  consummable: bool=False) -> "StepX":
+    def step_x_hook(self, hook: StepXHook,  consummable: bool=False) -> Self:
         """Add hook to call after StepX
 
         Args:

@@ -17,9 +17,7 @@ def mean_x_agg(x: IO) -> IO:
     Returns:
         IO: 
     """
-
     transposed = list(zip(*x))
-    print(transposed)
     return IO(
         torch.mean(torch.stack(xi), dim=0) for xi in transposed
     )
@@ -50,20 +48,20 @@ class EnsembleVoterLearner(LearningMachine):
         self.spawner = spawner
         self._n_votes = n_keep
         self._temporary = temporary
-        self._learners = []
+        self._learners = nn.ModuleList()
         if self._temporary is None:
             self._learners.append(spawner())
+            self._learners[-1].lmode_(lmode)
         self.train_only_last = train_only_last
 
-        # option 1) agg all of the step x's
-        # option 2) use a different step x
-        # The best approach is to 
         self.x_agg = x_agg or mean_x_agg
 
     def adv(self):
         """Spawn a new voter. If exceeds n_keep will remove the first voter"""
         spawned = self.spawner()
-        if len(self._learners) == self._n_votes:
+        lmode = self._learners[-1].lmode
+        spawned.lmode_(lmode)
+        if len(self._learners) > self._n_votes:
             self._learners = self._learners[1:]
         self._learners.append(spawned)
 
@@ -104,7 +102,7 @@ class EnsembleVoterLearner(LearningMachine):
         if self.train_only_last:
             self._learners[-1].accumulate(
                 state._xs[-1], ts[-1], 
-                state.sub(len(self._modules) - 1)
+                state.sub(len(self._learners) - 1)
             )
         else:
             for i, (learner, ti, xi) in enumerate(zip(self._learners, ts, state._xs)):
@@ -144,7 +142,6 @@ class EnsembleVoterLearner(LearningMachine):
         Returns:
             IO: The aggregated result after processing `x` with each learner.
         """
-
         ts = t.split()
         xs = []
         for i, (learner, xi, ti) in enumerate(zip(self._learners, state._xs, ts)):
@@ -152,3 +149,16 @@ class EnsembleVoterLearner(LearningMachine):
                 learner.accumulate(xi, ti, state.sub(i))
             xs.append(learner.step_x(xi, ti, state.sub(i)))
         return self.x_agg(xs)
+
+    @property
+    def n_votes(self) -> int:
+        return self._n_votes
+    
+    @n_votes.setter
+    def n_votes(self, n_votes: int):
+
+        if n_votes < 1:
+            raise ValueError(f'N votes must be greater than 0 not {n_votes}')
+        
+        res = max(len(self._learners) - n_votes, 0)
+        self._learners = self._learners[res:]

@@ -119,6 +119,7 @@ class State(dict):
         Returns:
             State: The sub state
         """
+
         if key not in self._subs:
             self._subs[key] = State()
         return self._subs[key]
