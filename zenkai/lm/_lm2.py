@@ -817,29 +817,69 @@ class InDepStepX(StepX):
         """
         pass
 
-# %%
 
-import torch
-import torch.nn as nn
+def backward(
+    lm: LearningMachine, x: IO, t: IO, state: State,
+    lmode: LMode=None
+) -> IO:
+    """
+    Executes a backward pass on the learning machine (lm) based on its learning mode.
+    The behavior of the backward pass depends on the `lmode` attribute.
 
-class _ExampleModule(torch.autograd.Function):
+    Args:
+        lm (LearningMachine): The learning machine
+        x (IO): The input to the learning machine
+        t (IO): The target for the learning machine
+        state (State): The learning machine state
+        lmode (LMode, optional): The lmode, if it is None it will use the lmode on the learning machine. Defaults to None.
 
-    @staticmethod
-    def forward(ctx, module, *x):
-        ctx.save_for_backward(*x)
-        ctx.module = module
-        if len(x) == 0:
-            return None
-        if len(x) == 1:
-            return x
-        return x
+    Returns:
+        IO: The output of step_x
+    """
+    lmode = lmode or lm.lmode
+    if lmode == LMode.OnlyStepX:
+        return lm.step_x(x, t, state)
+    elif lmode == LMode.WithStep:
+        lm.accumulate(x, t, state)
+        x_prime = lm.step_x(x, t, state)
+        lm.step(x, t, state)
+        return x_prime
+    elif lmode == LMode.Standard:
+        lm.accumulate(x, t, state)
+        return lm.step_x(x, t, state)
+    elif lm.lmode == LMode.StepPriority:
+        lm.accumulate(x, t, state)
+        lm.step(x, t, state)
+        x_prime = lm.step_x(x, t, state)
+        return x_prime
+    raise RuntimeError(
+        f'Unknown mode {lm.lmode}'
+    )
+    
 
-    @staticmethod
-    def backward(ctx, *grad_output):
+# # %%
 
-        x = ctx.saved_tensors
-        module = ctx.module
-        module.t = tuple(
-            x_i - g_i for x_i, g_i in zip(x, grad_output)
-        )
-        return tuple([None, *grad_output])
+# import torch
+# import torch.nn as nn
+
+# class _ExampleModule(torch.autograd.Function):
+
+#     @staticmethod
+#     def forward(ctx, module, *x):
+#         ctx.save_for_backward(*x)
+#         ctx.module = module
+#         if len(x) == 0:
+#             return None
+#         if len(x) == 1:
+#             return x
+#         return x
+
+#     @staticmethod
+#     def backward(ctx, *grad_output):
+
+#         x = ctx.saved_tensors
+#         module = ctx.module
+#         module.t = tuple(
+#             x_i - g_i for x_i, g_i in zip(x, grad_output)
+#         )
+#         return tuple([None, *grad_output])

@@ -4,19 +4,28 @@ import typing
 
 
 class Lambda(nn.Module):
+    """Wrap a general function within a module
+    """
 
     def __init__(self, f: typing.Callable, *args, **kwargs):
+        """Wrap the function specified by f in a module
 
+        Args:
+            f (typing.Callable): The function to wrap
+        """
         super().__init__()
         self.f = f
         self.args = args
         self.kwargs = kwargs
 
-    def forward(self, *x: torch.Tensor):
+    def forward(self, *x: torch.Tensor) -> typing.Any:
+        """Get the output of the wrapped function
 
-        y = self.f(*x)
-        if len(x) == 1:
-            return y[0]
+        Returns:
+            The output of the function
+        """
+
+        y = self.f(*x, *self.args, **self.kwargs)
         return y
 
 

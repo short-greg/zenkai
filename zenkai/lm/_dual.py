@@ -232,6 +232,7 @@ class SepSwapLearner(SwapLearner):
         sub_wy1: float=0.0,
         step_x_t: float=1.0,
         step_x_y2: float=0.0,
+        step_x_main: bool=True,
         lmode: LMode = LMode.Standard
     ):
         """
@@ -246,7 +247,7 @@ class SepSwapLearner(SwapLearner):
         super().__init__(
             main, sub, 
             train1, train2, main_wt, sub_wt,
-            main_wy2, sub_wy1, lmode
+            main_wy2, sub_wy1, step_x_main, lmode
         )
         self.step_x_t = step_x_t
         self.step_x_y2 = step_x_y2

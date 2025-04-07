@@ -20,6 +20,7 @@ from ..optimz._optimize import (
 from ._assess import (
     XCriterion, Criterion, NNLoss
 )
+from ..nnz import Lambda
 
 
 class GradStepTheta(StepTheta):
@@ -131,6 +132,8 @@ class GradLearner(LearningMachine):
             criterion (typing.Union[XCriterion, Criterion], optional): The default criterion to use for backpropagation. Defaults to use the Sum of Squared Errors.
         """
         super().__init__(lmode)
+        if not isinstance(module, nn.Module):
+            module = Lambda(module)
         self.module = module
         self.criterion = criterion or NNLoss(
             'MSELoss', 'sum', 0.5
@@ -207,7 +210,7 @@ class GradLearner(LearningMachine):
             torch.Tensor: The output of the module
         """
         y = state._y = (
-            self.module(x[0]) 
+            self.module(*x) 
             if self.module is not None else x[0]
         )
         return y

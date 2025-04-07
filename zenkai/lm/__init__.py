@@ -25,7 +25,8 @@ from ._lm2 import (
     ForwardHook,
     LMode,
     set_lmode,
-    LearnerPostHook
+    LearnerPostHook,
+    backward
 )
 
 from ._null import (
@@ -41,7 +42,7 @@ from ._grad import (
     GradStepX,
 )
 from ._ensemble import (
-    EnsembleVoterLearner
+    EnsembleVoterLearner, EnsembleLearner
 )
 from ._feedback_alignment import (
     FALearner,
