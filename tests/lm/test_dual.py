@@ -58,7 +58,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SwapLearner(learner1, learner2, train1=False)
+        dual_learner = SwapLearner(learner1, learner2, train_main=False)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -77,7 +77,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -146,7 +146,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False)
+        dual_learner = SepSwapLearner(learner1, learner2, train_main=False)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -165,7 +165,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SepSwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -185,7 +185,7 @@ class TestSepSwapLearner:
         learner2 = THGradLearnerT1(2, 4)
         in_learner = nn.Linear(3, 2)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SepSwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 3)
         t = torch.rand(5, 4)

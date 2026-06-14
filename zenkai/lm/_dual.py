@@ -17,12 +17,12 @@ class SwapLearner(LearningMachine):
     def __init__(
         self, main: LearningMachine, 
         sub: LearningMachine, 
-        train1: bool=True,
-        train2: bool=False,
+        train_main: bool=True,
+        train_sub: bool=False,
         main_wt: float=1.0,
         sub_wt: float=1.0,
-        main_wy2: float=0.0,
-        sub_wy1: float=0.0,
+        main_wysub: float=0.0,
+        sub_wymain: float=0.0,
         step_x_main: bool=True,
         lmode: LMode = LMode.Standard
     ):
@@ -32,18 +32,18 @@ class SwapLearner(LearningMachine):
             machine1 (LearningMachine): The first learning machine.
             machine2 (LearningMachine): The second learning machine.
             use1 (bool, optional): Flag to indicate whether to use the first machine. Defaults to True.
-            train1 (bool, optional): Flag to indicate whether to train the first machine. Defaults to True.
-            train2 (bool, optional): Flag to indicate whether to train the second machine. Defaults to False.
+            train_main (bool, optional): Flag to indicate whether to train the first machine. Defaults to True.
+            train_sub (bool, optional): Flag to indicate whether to train the second machine. Defaults to False.
             lmode (LMode, optional): The learning mode. Defaults to LMode.Standard.
         """
         super().__init__(lmode=lmode)
         self.main = main
         self.sub = sub
-        self.train1 = train1
-        self.train2 = train2
-        self.main_wy2 = main_wy2
+        self.train_main = train_main
+        self.train_sub = train_sub
+        self.main_wysub = main_wysub
         self.main_wt = main_wt
-        self.sub_wy1 = sub_wy1
+        self.sub_wymain = sub_wymain
         self.sub_wt = sub_wt
         self._swapped = False
         self.step_x_main = step_x_main
@@ -97,11 +97,13 @@ class SwapLearner(LearningMachine):
             _type_: _description_
         """
         if t is not None and y is not None and t_weight != 0.0 and y_weight != 0.0:
-            return merge_io([t, y], lambda ti, yi: ti * t_weight + yi * y_weight)
-        if t is not None:
-            return t.apply(lambda ti: ti * t_weight)
+            res = merge_io([t, y], lambda ti, yi: ti * t_weight + yi * y_weight)
+            # print('After: ', res.f[0])
+            return res
+        if y is not None and y != 0.0:
+            return y.apply(lambda yi: yi * y_weight)
         
-        return y.apply(lambda yi: yi * y_weight)
+        return t.apply(lambda ti: ti * t_weight)
         
     def accumulate(self, x, t, state, **kwargs):
         """
@@ -116,20 +118,12 @@ class SwapLearner(LearningMachine):
         Returns:
             None
         """
-        # 1) Target 1
-        # 2) Target 2
-        # Y1 
-        # Y2
-
         state.t1 = None
         state.t2 = None
-
-        # 1) use1
-        # 2) train
-
         y1 = state._y
     
-        if self.train2 or not self.step_x_main:   
+        state.step_x_main = self.step_x_main
+        if self.train_sub or not self.step_x_main:   
 
             x_ = x.detach() if self.step_x_main else x
             y2 = state.subl.forward_io(
@@ -145,9 +139,12 @@ class SwapLearner(LearningMachine):
         state.t2 = None
         
         state.t1 = self.merge_t(
-            t, y2, self.main_wt, self.main_wy2
+            t, y2, self.main_wt, self.main_wysub
         )
-        if self.train1:
+        state.sub_x_main = self.step_x_main
+
+        # print('Sub t: ', t.f[0], y2.f[0], self.main_wt, self.main_wysub, state.t1.f[0])
+        if self.train_main:
             state.mainl.accumulate(
                 state._x, state.t1.detach(), state.sub(SUB1), **kwargs
             )
@@ -156,9 +153,9 @@ class SwapLearner(LearningMachine):
                 state.mainl.accumulate(
                     x, state.t1.detach(), state.sub(SUB1), **kwargs
                 )
-        if self.train2 or not self.step_x_main:  
+        if self.train_sub or not self.step_x_main:  
             state.t2 = self.merge_t(
-                t, y1, self.sub_wt, self.sub_wy1
+                t, y1, self.sub_wt, self.sub_wymain
             )
             
             state.subl.accumulate(
@@ -183,11 +180,13 @@ class SwapLearner(LearningMachine):
         Returns:
             None
         """
-        if self.train1 is True:
+        if self.train_main is True:
             # before = utils.to_pvec(state.subl)
+            # print('stepping main')
             state.mainl.step(x, state.t1, state.sub(SUB1), **kwargs)
             # assert (before != utils.to_pvec(state.subl)).any()
-        if self.train2 is True:
+        if self.train_sub is True:
+            # print('Stepping sub')
             state.subl.step(
                 x, state.t2, 
                 state.sub(SUB2), **kwargs
@@ -209,7 +208,9 @@ class SwapLearner(LearningMachine):
         Tensor
             The output tensor after processing through the appropriate machine.
         """
-        return state.mainl.step_x(x, t, state.sub(SUB1), **kwargs)
+        if state.step_x_main:
+            return state.mainl.step_x(x, t, state.sub(SUB1), **kwargs)
+        return state.subl.step_x(x, t, state.sub(SUB2), **kwargs)
 
 
 
@@ -224,14 +225,14 @@ class SepSwapLearner(SwapLearner):
     def __init__(
         self, main: LearningMachine, 
         sub: LearningMachine, 
-        train1: bool=True,
-        train2: bool=False,
+        train_main: bool=True,
+        train_sub: bool=False,
         main_wt: float=1.0,
         sub_wt: float=1.0,
-        main_wy2: float=0.0,
-        sub_wy1: float=0.0,
+        main_wysub: float=0.0,
+        sub_wymain: float=0.0,
         step_x_t: float=1.0,
-        step_x_y2: float=0.0,
+        step_x_y: float=0.0,
         step_x_main: bool=True,
         lmode: LMode = LMode.Standard
     ):
@@ -246,11 +247,11 @@ class SepSwapLearner(SwapLearner):
         """
         super().__init__(
             main, sub, 
-            train1, train2, main_wt, sub_wt,
-            main_wy2, sub_wy1, step_x_main, lmode
+            train_main, train_sub, main_wt, sub_wt,
+            main_wysub, sub_wymain, step_x_main, lmode
         )
         self.step_x_t = step_x_t
-        self.step_x_y2 = step_x_y2
+        self.step_x_y = step_x_y
 
     def accumulate(self, x, t, state, **kwargs):
         """
@@ -270,7 +271,7 @@ class SepSwapLearner(SwapLearner):
 
         y1 = state._y
     
-        if self.train2 or not self.step_x_main:   
+        if self.train_sub or not self.step_x_main:   
 
             x_ = x.detach() if self.step_x_main else x
             y2 = state.subl.forward_io(
@@ -286,11 +287,11 @@ class SepSwapLearner(SwapLearner):
         state.t2 = None
         
         state.t1 = self.merge_t(
-            t, y2, self.main_wt, self.main_wy2
+            t, y2, self.main_wt, self.main_wysub
         )
-        if self.train1:
+        if self.train_main:
             state.mainl.accumulate(
-                state._x, state.t1.detach(), state.sub(SUB1), **kwargs
+                x.detach(), state.t1.detach(), state.sub(SUB1), **kwargs
             )
         if self.step_x_main:
             state.mainl.forward_io(x, state.sub(SUB1b))
@@ -298,11 +299,10 @@ class SepSwapLearner(SwapLearner):
                 state.mainl.accumulate(
                     x, state.t1.detach(), state.sub(SUB1b), **kwargs
                 )
-        if self.train2:
+        if self.train_sub:
             state.t2 = self.merge_t(
-                t, y1, self.sub_wt, self.sub_wy1
+                t, y1, self.sub_wt, self.sub_wymain
             )
-            
             state.subl.accumulate(
                 x_, state.t2.detach(), state.sub(SUB2), **kwargs
             )

@@ -181,8 +181,6 @@ class EnsembleLearner(LearningMachine):
         self._learners = self._learners[res:]
 
 
-
-
 class EnsembleVoterLearner(LearningMachine):
     """A LearningMachine that optimizes over an ensemble of other machines"""
 

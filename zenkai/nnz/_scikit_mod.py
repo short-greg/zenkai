@@ -219,6 +219,7 @@ class ScikitBinary(ScikitModule):
             self._estimator.partial_fit(x, t, **kwargs)
         else:
             self._estimator.fit(x, t, **kwargs)
+        self._fitted = True
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -317,6 +318,7 @@ class ScikitMulticlass(ScikitModule):
             self._estimator.partial_fit(x, t, **kwargs)
         else:
             self._estimator.fit(x, t, **kwargs)
+        self._fitted = True
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -422,7 +424,11 @@ class ScikitRegressor(ScikitModule):
             self._estimator.partial_fit(x, t, **kwargs)
         else:
             self._estimator.fit(x, t, **kwargs)
-        self._surrogate = self.build_surrogate()
+            # if self.fitted:
+            #     y = self._estimator.predict(x)
+            #     print('Y: ', y[0], 'T: ', t[0])
+        self._fitted = True
+        # self._surrogate = self.build_surrogate()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

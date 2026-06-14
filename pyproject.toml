@@ -1,6 +1,6 @@
 [build-system]
-requires = ["poetry"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "zenkai"
@@ -27,7 +27,7 @@ python = ">=3.8,<4.0"
 numpy = ">=1"
 pandas = ">=1"
 scikit-learn = ">=1.0.0"
-# torch = {version = ">=2,<3"}
+torch = ">=2,<3"
 tqdm = ">=4.0"
 scipy = ">=1.5"
 
