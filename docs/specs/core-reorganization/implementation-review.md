@@ -51,3 +51,22 @@ Plan version implemented: **v3**.
   - Top-level router `CLAUDE.md` and `docs/source/api.rst` intentionally NOT updated mid-rebuild (they
     describe the final package); deferred to the final sign-off.
 - **Decision** — proceed.
+
+---
+
+## Chunk 2 — `zenkai/utils/` (2 modules + `memory/`)
+
+- **Implemented vs. planned** — Rebuilt `utils/_convert.py` (`checkattr`, `module_factory`) and
+  `utils/_grad.py` (`grad_undo`, renamed from `undo_grad`); `grad_undo` now imports its helpers from
+  `_core` under the new names (`from .._core import p_loop, p_transfer, grad_set`). Copied the
+  un-inventoried `utils/memory/` sub-package (`BatchMemory`) verbatim. Wired `utils/__init__.py`
+  (re-exports `checkattr`, `module_factory`, `grad_undo`, `memory`, `BatchMemory`).
+- **Chunk acceptance tests** — `poetry run pytest tests/utils` → **18 passed**; full suite
+  `poetry run pytest tests` → **206 passed**. `checkattr`/`module_factory`/`undo_grad` had no archived
+  tests, so fresh minimal tests were written; `tests/utils/test_memory.py` restored from the archive.
+- **Gates** — flake8/black/isort clean over `zenkai tests` (47 files).
+- **Boundary interface** — `from zenkai.utils import grad_undo, module_factory, checkattr` and
+  `from zenkai.utils.memory import BatchMemory` resolve. `utils` depends on `_core` only (correct direction).
+- **Issues carried forward** — `utils/memory/_memory.py` and its `__init__` keep `# flake8: noqa` (carried
+  verbatim with the archive's pre-existing long-line/F401/F541 issues; faithful move, not silently fixed).
+- **Decision** — proceed.

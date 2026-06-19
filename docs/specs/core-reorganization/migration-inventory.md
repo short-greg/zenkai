@@ -36,8 +36,8 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 
 | Status | Module | Defs | Renamed | Tests pass | Commit |
 |--------|--------|------|---------|------------|--------|
-| ☐ | `utils/_convert.py` | 2 | 0 | ☐ | |
-| ☐ | `utils/_grad.py` | 1 | 1 | ☐ | |
+| ☑ | `utils/_convert.py` | 2 | 0 | ☑ | Chunk 2 |
+| ☑ | `utils/_grad.py` | 1 | 1 | ☑ | Chunk 2 |
 
 ## `zenkai/nnz/` — 15 modules, 56 defs (0 renamed)
 
