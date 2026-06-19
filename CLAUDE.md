@@ -10,8 +10,8 @@ in `docs/`. Keep it lean (see [maintenance](#maintenance)).
 
 | Path | What it is |
 |------|------------|
-| [zenkai/](zenkai/CLAUDE.md) | The package. Five sub-packages — see its map node for the breakdown. |
-| [tests/](tests/) | Test suite, mirroring `zenkai/`'s layout (`tests/lm/`, `tests/tansaku/`, …). |
+| [zenkai/](zenkai/CLAUDE.md) | The package. A `_core` foundation + four sub-packages — see its map node for the breakdown. |
+| [tests/](tests/) | Test suite, mirroring `zenkai/`'s layout (`tests/_core/`, `tests/lm/`, `tests/nnz/`, `tests/optim/`, …). |
 | [docs/](docs/) | Sphinx docs (`docs/source/`), developer guides ([docs/guides/](docs/guides/)), and specs. |
 | [docs/specs/](docs/specs/README.md) | **Where specs live** — PRDs, plans, and their filled forms, one folder per feature. |
 | [local/](local/) | Personal experiments & notebooks (git-ignored contents). Not part of the package. |

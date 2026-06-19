@@ -137,3 +137,5 @@ integrations/*
 
 # Per-developer agent context (machine-specific, not shared)
 CLAUDE.local.md
+# Sphinx autosummary output (regenerated on build)
+docs/source/generated/

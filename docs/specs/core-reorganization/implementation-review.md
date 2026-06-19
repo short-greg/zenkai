@@ -145,3 +145,36 @@ Plan version implemented: **v3**.
   - **Test helper duplication:** `THGradLearnerT1` was inlined into a few lm test files because the rebuilt
     `tests/lm/test_grad.py` doesn't export the shared helpers; consider a `tests/lm/fixtures.py` home later.
 - **Decision** — proceed. All 46 module sub-chunks complete; teardown (Chunk 6) is next.
+
+---
+
+## Chunk 6 — Teardown & final sign-off (v1)
+
+- **Plan version implemented** — v3.
+- **Todo points complete** — all 46 module sub-chunks across `_core` (17), `utils` (2), `nnz` (15),
+  `optimz` (2), `lm` (10) verified with proceed decisions (Chunks 1–5); see `migration-inventory.md`.
+- **Archive census** — AST enumeration of `archive/zenkai` found **238 top-level defs/classes; 0
+  unaccounted** — each maps (by its new name, via the rename map) to a symbol in the rebuilt tree (240
+  top-level, the +2 being the private STE helpers in `_core/_ste`). Module-level helpers/aliases (`PObj`,
+  `OPTIM_MAP`, `optimf`, `LOSS_MAP`) were carried verbatim; `utils/memory/` migrated. Evidence: census
+  script over the new tree before deletion.
+- **Acceptance tests** — `poetry run pytest` → **397 passed** (with `archive/` deleted). Re-verified after
+  removal.
+- **Gates** — flake8 / black --check / isort --check clean over `zenkai tests` (107 files). pre-commit
+  green on every chunk commit.
+- **Definition of done** — met except one item (below). All packages import; `_core` flattened at the
+  `zenkai` root; CLAUDE.md map nodes added (`zenkai/`, `_core`, `nnz`, `optimz`, `lm`); router + tests-row
+  updated; `docs/source/api.rst` rewritten to an accurate per-package recursive autosummary; stale
+  `generated/` stubs removed and gitignored.
+- **AI-readiness maintenance** — `zenkai/CLAUDE.md` (+ per-package nodes), root `CLAUDE.md`, `api.rst`,
+  `migration-inventory.md`, this file.
+- **Deviations from plan** — (1) `sphinx-build -W` HTML docs gate NOT run locally: Sphinx is not in the
+  dev venv (it lives in the tox `docs` env); api.rst was made accurate and the stale stubs removed, but the
+  warnings-as-errors build must be run in the docs environment (`tox -e docs` / CI) to close this DoD item.
+  (2) Behavioral fixes made during moves to satisfy the rebuilt contracts / go green, each verified to be a
+  pre-existing bug against the archive baseline (not a move regression): `FuncObjective` super()/impose,
+  `GradLearner` None-guard, a `_lm` torch-2.x grad-cleared test, `SplitTargetSwapLearner` state key. (3)
+  `_core.State` raises `KeyError` on a missing key where the archived `State` returned `None` — confirm
+  this is the intended semantics. (4) Shared test helper `THGradLearnerT1` inlined into a few lm test files.
+- **Decision** — **submit**, with the `sphinx -W` docs build flagged as the one DoD item to run in the
+  docs environment.
