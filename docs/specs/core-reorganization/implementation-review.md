@@ -70,3 +70,33 @@ Plan version implemented: **v3**.
 - **Issues carried forward** — `utils/memory/_memory.py` and its `__init__` keep `# flake8: noqa` (carried
   verbatim with the archive's pre-existing long-line/F401/F541 issues; faithful move, not silently fixed).
 - **Decision** — proceed.
+
+---
+
+## Chunk 3 — `zenkai/nnz/` (15 module sub-chunks)
+
+- **Implemented vs. planned** — Rebuilt all 15 `nnz` modules from the archived sources per the spreadsheet.
+  Built tier-A (depends only on `_core`) in parallel, then tier-B intra-nnz deps (`_constraints`→
+  `_assess`/`_objective`, `_scikit_mod`→`_hard`/`_shape`). Brought in the cross-package moves: criteria/
+  losses to `_assess` (from lm), `Objective`/`Constraint` to `_objective` and the constraint subclasses to
+  `_constraints` (from optimz), `FreezeDropout` to `_dropout` + `CrossOver`/`AdaptPop*` to `_pop_mod` (from
+  tansaku), `ExpandDim` to `_shape` (from utils), `SignSTE`/`StepSTE` to `_ste`. Converted the three
+  least-squares solvers to `nn.Module`s (`solve` aliases `forward`, `super().__init__()` called) per the
+  v2 design note. Imports rewired to `zenkai._core` / sibling `nnz` modules. Wired `nnz/__init__.py`
+  (56 symbols), added `nnz/CLAUDE.md`, and added `from . import utils, nnz` to the root.
+- **Chunk acceptance tests** — `poetry run pytest tests/nnz` green; full suite `poetry run pytest tests`
+  → **315 passed**. Spot-checked `Criterion`, `LeastSquaresSolver`, `ScikitRegressor`, `CrossOver`,
+  `FreezeDropout`, `Objective` import from `zenkai.nnz`.
+- **Gates** — flake8/black/isort clean over `zenkai tests` (79 files).
+- **Boundary interface** — `nnz` public symbols importable as `zenkai.nnz.X`; `nnz` imports only `_core`/
+  `utils` (no optimz/lm) — confirms direction for the optimz/lm chunks.
+- **Issues carried forward**
+  - `FuncObjective` (in `_constraints`) had two latent bugs fixed to satisfy the (already-built, immutable)
+    `_objective` contract: missing `super().__init__()`, and passing a dict to `impose` instead of a
+    BoolTensor. These are behavior fixes, not pure moves — flagged for owner review.
+  - Several moved symbols had no archived tests (`Argmax`/`Sign`, `Autoencoder`, `Lambda`, `ExpandDim`,
+    constraint subclasses, solvers via learner-only fixtures); fresh minimal tests written. `votes_weighted`
+    still uncovered (consistent with archive).
+  - `nnz._least_squares` is the load-bearing nn.Module conversion; solver `.solve(...)==.forward(...)`
+    verified in tests.
+- **Decision** — proceed.

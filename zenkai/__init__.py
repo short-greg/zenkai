@@ -3,5 +3,8 @@
 
 __version__ = "0.0.9"
 
+# Sub-packages
+from . import nnz, utils
+
 # _core holds the framework's shared primitives, re-exported at the zenkai root.
 from ._core import *

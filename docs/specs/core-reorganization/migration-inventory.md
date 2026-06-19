@@ -43,21 +43,21 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 
 | Status | Module | Defs | Renamed | Tests pass | Commit |
 |--------|--------|------|---------|------------|--------|
-| ☐ | `nnz/_assess.py` | 5 | 0 | ☐ | |
-| ☐ | `nnz/_autoencoder.py` | 1 | 0 | ☐ | |
-| ☐ | `nnz/_constraints.py` | 8 | 0 | ☐ | |
-| ☐ | `nnz/_dropout.py` | 1 | 0 | ☐ | |
-| ☐ | `nnz/_ensemble_mod.py` | 7 | 0 | ☐ | |
-| ☐ | `nnz/_hard.py` | 2 | 0 | ☐ | |
-| ☐ | `nnz/_least_squares.py` | 3 | 0 | ☐ | |
-| ☐ | `nnz/_mod.py` | 1 | 0 | ☐ | |
-| ☐ | `nnz/_modules.py` | 2 | 0 | ☐ | |
-| ☐ | `nnz/_objective.py` | 4 | 0 | ☐ | |
-| ☐ | `nnz/_pop_mod.py` | 4 | 0 | ☐ | |
-| ☐ | `nnz/_reversible_mods.py` | 9 | 0 | ☐ | |
-| ☐ | `nnz/_scikit_mod.py` | 6 | 0 | ☐ | |
-| ☐ | `nnz/_shape.py` | 1 | 0 | ☐ | |
-| ☐ | `nnz/_ste.py` | 2 | 0 | ☐ | |
+| ☑ | `nnz/_assess.py` | 5 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_autoencoder.py` | 1 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_constraints.py` | 8 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_dropout.py` | 1 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_ensemble_mod.py` | 7 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_hard.py` | 2 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_least_squares.py` | 3 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_mod.py` | 1 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_modules.py` | 2 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_objective.py` | 4 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_pop_mod.py` | 4 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_reversible_mods.py` | 9 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_scikit_mod.py` | 6 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_shape.py` | 1 | 0 | ☑ | Chunk 3 |
+| ☑ | `nnz/_ste.py` | 2 | 0 | ☑ | Chunk 3 |
 
 ## `zenkai/optimz/` — 2 modules, 7 defs (0 renamed)
 
