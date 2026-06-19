@@ -117,3 +117,31 @@ Plan version implemented: **v3**.
 - **Issues carried forward** — `PopOptimBase.accumulate_assessment` preserves a pre-existing fall-through
   (first accumulation applies twice); kept faithful, test asserts actual behavior. Flag for owner.
 - **Decision** — proceed.
+
+---
+
+## Chunk 5 — `zenkai/lm/` (10 module sub-chunks)
+
+- **Implemented vs. planned** — Rebuilt all 10 lm modules from the archived sources. `_lm2`→`_lm` (the
+  25-symbol core). Built `_lm` first, then tier-1 (`_grad`, `_null`, `_global_step`, `_dual`,
+  `_autoencoder`, `_scikit`), then tier-2 (`_least_squares`, `_ensemble`, `_feedback_alignment`). Imports
+  rewired to `zenkai._core` (IO/State/iou/to_np/...), `zenkai.nnz` (Criterion/NNLoss/Lambda/Null/
+  ScikitModule/LeastSquares*Solver), `zenkai.optimz` (OptimFactory), and sibling lm modules. Applied
+  renames `SepSwapLearner`→`SplitTargetSwapLearner` and `apply_module`→`module_apply`. Wired
+  `lm/__init__.py` (43 symbols), added `lm/CLAUDE.md`, exposed `lm` at the root.
+- **Chunk acceptance tests** — `poetry run pytest tests/lm` → 67 passed; full suite
+  `poetry run pytest tests` → **397 passed**. Spot-checked the main learners import from `zenkai.lm`.
+- **Gates** — flake8/black/isort clean over lm (two tier-2 modules were formatted post-hoc after their
+  build agents hit a session limit mid-run; modules + tests were already complete and passing).
+- **Boundary interface** — `zenkai.lm.X` importable; lm sits atop `_core`/`nnz`/`optimz` (correct top of stack).
+- **Issues carried forward**
+  - **State behavior difference:** the rebuilt `_core.State` raises `KeyError` on a missing key where the
+    archived `State` returned `None`. `SplitTargetSwapLearner.accumulate` needed an explicit
+    `state.step_x_main = ...` (mirroring the base class) to accommodate this. Worth confirming `_core/_state`
+    matches intended semantics — flag for owner.
+  - **Pre-existing bugs fixed to go green (verified against the archive baseline, not move regressions):**
+    `GradLearner.__init__` wrapped `None` in `Lambda(None)` (guard fixed); a `_lm` test asserted on a grad
+    cleared by torch-2.x `zero_grad(set_to_none)` (rewritten to assert weights changed).
+  - **Test helper duplication:** `THGradLearnerT1` was inlined into a few lm test files because the rebuilt
+    `tests/lm/test_grad.py` doesn't export the shared helpers; consider a `tests/lm/fixtures.py` home later.
+- **Decision** — proceed. All 46 module sub-chunks complete; teardown (Chunk 6) is next.

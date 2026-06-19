@@ -70,16 +70,16 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 
 | Status | Module | Defs | Renamed | Tests pass | Commit |
 |--------|--------|------|---------|------------|--------|
-| ☐ | `lm/_autoencoder.py` | 1 | 0 | ☐ | |
-| ☐ | `lm/_dual.py` | 2 | 1 | ☐ | |
-| ☐ | `lm/_ensemble.py` | 3 | 0 | ☐ | |
-| ☐ | `lm/_feedback_alignment.py` | 3 | 0 | ☐ | |
-| ☐ | `lm/_global_step.py` | 1 | 0 | ☐ | |
-| ☐ | `lm/_grad.py` | 3 | 0 | ☐ | |
-| ☐ | `lm/_least_squares.py` | 4 | 0 | ☐ | |
-| ☐ | `lm/_lm.py` | 25 | 0 | ☐ | |
-| ☐ | `lm/_null.py` | 3 | 0 | ☐ | |
-| ☐ | `lm/_scikit.py` | 1 | 0 | ☐ | |
+| ☑ | `lm/_autoencoder.py` | 1 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_dual.py` | 2 | 1 | ☑ | Chunk 5 |
+| ☑ | `lm/_ensemble.py` | 3 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_feedback_alignment.py` | 3 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_global_step.py` | 1 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_grad.py` | 3 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_least_squares.py` | 4 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_lm.py` | 25 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_null.py` | 3 | 0 | ☑ | Chunk 5 |
+| ☑ | `lm/_scikit.py` | 1 | 0 | ☑ | Chunk 5 |
 
 ## Teardown
 
