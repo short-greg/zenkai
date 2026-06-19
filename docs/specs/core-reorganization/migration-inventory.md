@@ -14,23 +14,23 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 
 | Status | Module | Defs | Renamed | Tests pass | Commit |
 |--------|--------|------|---------|------------|--------|
-| ☐ | `_core/_aggregate.py` | 5 | 1 | ☐ | |
-| ☐ | `_core/_assess.py` | 4 | 0 | ☐ | |
-| ☐ | `_core/_convert.py` | 8 | 1 | ☐ | |
-| ☐ | `_core/_crossover.py` | 4 | 4 | ☐ | |
-| ☐ | `_core/_evolutionary.py` | 1 | 1 | ☐ | |
-| ☐ | `_core/_io.py` | 5 | 0 | ☐ | |
-| ☐ | `_core/_loop.py` | 3 | 3 | ☐ | |
-| ☐ | `_core/_noise.py` | 4 | 4 | ☐ | |
-| ☐ | `_core/_params.py` | 27 | 23 | ☐ | |
-| ☐ | `_core/_pop_adapt.py` | 2 | 2 | ☐ | |
-| ☐ | `_core/_pop_params.py` | 14 | 8 | ☐ | |
-| ☐ | `_core/_selection.py` | 16 | 14 | ☐ | |
-| ☐ | `_core/_shape.py` | 12 | 7 | ☐ | |
-| ☐ | `_core/_state.py` | 4 | 0 | ☐ | |
-| ☐ | `_core/_ste.py` | 2 | 0 | ☐ | |
-| ☐ | `_core/_update.py` | 9 | 4 | ☐ | |
-| ☐ | `_core/_weight.py` | 5 | 5 | ☐ | |
+| ☑ | `_core/_aggregate.py` | 5 | 1 | ☑ | Chunk 1 |
+| ☑ | `_core/_assess.py` | 4 | 0 | ☑ | Chunk 1 |
+| ☑ | `_core/_convert.py` | 8 | 1 | ☑ | Chunk 1 |
+| ☑ | `_core/_crossover.py` | 4 | 4 | ☑ | Chunk 1 |
+| ☑ | `_core/_evolutionary.py` | 1 | 1 | ☑ | Chunk 1 |
+| ☑ | `_core/_io.py` | 5 | 0 | ☑ | Chunk 1 |
+| ☑ | `_core/_loop.py` | 3 | 3 | ☑ | Chunk 1 |
+| ☑ | `_core/_noise.py` | 4 | 4 | ☑ | Chunk 1 |
+| ☑ | `_core/_params.py` | 27 | 23 | ☑ | Chunk 1 |
+| ☑ | `_core/_pop_adapt.py` | 2 | 2 | ☑ | Chunk 1 |
+| ☑ | `_core/_pop_params.py` | 14 | 8 | ☑ | Chunk 1 |
+| ☑ | `_core/_selection.py` | 16 | 14 | ☑ | Chunk 1 |
+| ☑ | `_core/_shape.py` | 12 | 7 | ☑ | Chunk 1 |
+| ☑ | `_core/_state.py` | 4 | 0 | ☑ | Chunk 1 |
+| ☑ | `_core/_ste.py` | 2 | 0 | ☑ | Chunk 1 |
+| ☑ | `_core/_update.py` | 9 | 4 | ☑ | Chunk 1 |
+| ☑ | `_core/_weight.py` | 5 | 5 | ☑ | Chunk 1 |
 
 ## `zenkai/utils/` — 2 modules, 3 defs (1 renamed)
 
