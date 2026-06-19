@@ -14,12 +14,6 @@ license = "LICENSE"
 readme = "README.md"
 packages = [
     {include="zenkai"},
-    {include="zenkai/lm"},
-    {include="zenkai/optimz"},
-    {include="zenkai/tansaku"},
-    {include="zenkai/nnz"},
-    {include="zenkai/utils"},
-    {include="zenkai/utils/memory"},
 ]
 
 [tool.poetry.dependencies]
@@ -39,3 +33,19 @@ flake8 = "*"
 isort = "*"
 black = "*"
 blacken-docs = "*"
+
+[tool.black]
+line-length = 120
+extend-exclude = '''
+/(
+  archive
+)/
+'''
+
+[tool.isort]
+profile = "black"
+skip = ["archive"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--ignore=archive"
