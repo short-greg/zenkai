@@ -100,3 +100,20 @@ Plan version implemented: **v3**.
   - `nnz._least_squares` is the load-bearing nn.Module conversion; solver `.solve(...)==.forward(...)`
     verified in tests.
 - **Decision** — proceed.
+
+---
+
+## Chunk 4 — `zenkai/optimz/` (2 module sub-chunks)
+
+- **Implemented vs. planned** — Rebuilt `optimz/_optim.py` (`PopOptimBase`) and `optimz/_optimize.py`
+  (`NullOptim`, `OptimFactory`, `ParamFilter`, `_OptimF`, `Fit`, `lookup_optim`, + `OPTIM_MAP`/`optimf`).
+  Both sources had no intra-package imports; the optimizers reference no moved symbols. Wired
+  `optimz/__init__.py`, added `optimz/CLAUDE.md`, exposed `optimz` at the root. Objectives/constraints are
+  NOT here (moved to `nnz` in Chunk 3).
+- **Chunk acceptance tests** — `tests/optim/` (note: optimz tests live in `tests/optim/` per conventions);
+  full suite **330 passed**. `OptimFactory`/`ParamFilter`/`PopOptimBase`/`Fit` import from `zenkai.optimz`.
+- **Gates** — flake8/black/isort clean (85 files).
+- **Boundary interface** — `zenkai.optimz.X` importable; `optimz` depends only on `_core` — ready for `lm`.
+- **Issues carried forward** — `PopOptimBase.accumulate_assessment` preserves a pre-existing fall-through
+  (first accumulation applies twice); kept faithful, test asserts actual behavior. Flag for owner.
+- **Decision** — proceed.

@@ -63,8 +63,8 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 
 | Status | Module | Defs | Renamed | Tests pass | Commit |
 |--------|--------|------|---------|------------|--------|
-| ☐ | `optimz/_optim.py` | 1 | 0 | ☐ | |
-| ☐ | `optimz/_optimize.py` | 6 | 0 | ☐ | |
+| ☑ | `optimz/_optim.py` | 1 | 0 | ☑ | Chunk 4 |
+| ☑ | `optimz/_optimize.py` | 6 | 0 | ☑ | Chunk 4 |
 
 ## `zenkai/lm/` — 10 modules, 46 defs (1 renamed)
 
