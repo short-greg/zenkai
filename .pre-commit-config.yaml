@@ -1,0 +1,39 @@
+# Pre-commit hooks mirroring the tox lint envs (black, isort, flake8, blacken-docs).
+# The lint hooks call the in-project ./.venv tools directly, so versions match the
+# project venv exactly (no drift from independently-pinned hook revisions) and the
+# hooks are unaffected by whatever environment happens to be active at commit time.
+# `archive/` is excluded ahead of the reorg's archive-then-rebuild step.
+exclude: '^archive/'
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: .venv/bin/black
+        language: system
+        types: [python]
+      - id: isort
+        name: isort
+        entry: .venv/bin/isort
+        language: system
+        types: [python]
+      - id: flake8
+        name: flake8
+        entry: .venv/bin/flake8
+        language: system
+        types: [python]
+      - id: blacken-docs
+        name: blacken-docs
+        entry: .venv/bin/blacken-docs
+        language: system
+        types: [python]

@@ -32,8 +32,10 @@ tqdm = ">=4.0"
 scipy = ">=1.5"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^6"
-flake8 = "^3"
-isort = "^5"
-black = "^21"
-blacken-docs = "^1"
+# Dev tooling is intentionally unpinned: this is a library, and the lint/test tools
+# track their latest releases (tox already installs them unpinned).
+pytest = "*"
+flake8 = "*"
+isort = "*"
+black = "*"
+blacken-docs = "*"
