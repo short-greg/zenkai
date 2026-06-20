@@ -33,6 +33,11 @@ flake8 = "*"
 isort = "*"
 black = "*"
 blacken-docs = "*"
+# docs toolchain (matches the tox `docs` env; lets `poetry run sphinx-build` work locally)
+sphinx = "*"
+sphinx-rtd-theme = "*"
+pyenchant = "*"
+sphinxcontrib-spelling = "*"
 
 [tool.black]
 line-length = 120

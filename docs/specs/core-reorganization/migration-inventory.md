@@ -86,7 +86,7 @@ all its module sub-chunks are ☑ and its mirrored tests pass.
 | Status | Step | Done |
 |--------|------|------|
 | ☑ | `archive/` reconciled — census: 0 unaccounted of 238 archive defs/classes | ☑ |
-| ☑ | Full suite (397) + flake8/black/isort green; `sphinx -W` pending (docs env) | ◐ |
+| ☑ | Full suite (397) + flake8/black/isort + `sphinx -W` html build green | ☑ |
 | ☑ | `git rm -r archive/` committed | ☑ |
 
 **Totals:** 46 module sub-chunks across 5 package chunks · 237 top-level defs · 79 renames. (tansaku is dissolved — its members are

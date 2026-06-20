@@ -178,3 +178,15 @@ Plan version implemented: **v3**.
   this is the intended semantics. (4) Shared test helper `THGradLearnerT1` inlined into a few lm test files.
 - **Decision** — **submit**, with the `sphinx -W` docs build flagged as the one DoD item to run in the
   docs environment.
+
+### Sign-off addendum — docs gate closed
+
+- Added the docs toolchain to dev deps (`sphinx`, `sphinx-rtd-theme`, `pyenchant`, `sphinxcontrib-spelling`)
+  so `poetry run sphinx-build` works locally.
+- Fixed `docs/source/conf.py` (removed the deprecated `sphinx_rtd_theme.get_html_theme_path()` call that
+  tripped `-W`), wired the orphaned `intro/*` pages into the `index.rst` toctree, and removed the empty
+  `usage.rst` stub.
+- **`poetry run python -m sphinx -W -b html docs/source docs/_build` → build succeeded** (warnings-as-errors).
+  api.rst's per-package recursive autosummary generates the full API; `docs/source/generated/` and
+  `docs/_build/` are gitignored.
+- The outstanding DoD item from the v1 sign-off is now **closed**. Decision stands: **submit**.

@@ -14,11 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import sphinx_rtd_theme
-import sys
 import os
-
-
+import sys
 
 # -- Project information -----------------------------------------------------
 
@@ -30,26 +27,22 @@ author = "Greg Short"
 release = "0.0.8"
 
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 print("Resolved project root:", project_root)
 
 # sys.path.insert(0, project_root)
 
-sys.path.insert(0, project_root) # os.path.abspath('../'))
+sys.path.insert(0, project_root)  # os.path.abspath('../'))
 
-import zenkai
+import zenkai  # noqa: F401,E402  (after sys.path so autodoc can import the package)
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'
-]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary", "sphinx.ext.napoleon"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -66,7 +59,6 @@ autosummary_generate = True  # Turn on autosummary
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
 html_sidebars = {

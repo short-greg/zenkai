@@ -17,9 +17,9 @@ Get Developing With Zenkai
    intro/overview
    intro/getting_started
    api
-..    intro/examples
-..    intro/troubleshooting
-..    intro/feedback_and_support
+   intro/examples
+   intro/troubleshooting
+   intro/feedback_and_support
 
 
 :doc:`intro/overview`
