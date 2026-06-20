@@ -30,27 +30,27 @@ Each learning machine can compute targets for its inputs, enabling:
 
 ### LearningMachine
 
-The [`LearningMachine`](zenkai/lm/_lm2.py#L517) is the fundamental abstraction, analogous to PyTorch's `nn.Module` but with explicit learning mechanics.
+The [`LearningMachine`](zenkai/lm/_lm.py) is the fundamental abstraction, analogous to PyTorch's `nn.Module` but with explicit learning mechanics.
 
 **Essential Methods:**
 ```python
 class LearningMachine(nn.Module):
     def forward_nn(self, x: IO, state: State) -> torch.Tensor:
         """Define the forward computation"""
-        
+
     def step(self, x: IO, t: IO, state: State):
         """Update parameters based on input x and target t"""
-        
+
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Compute updated inputs (targets for previous machine)"""
-        
+
     def accumulate(self, x: IO, t: IO, state: State):
         """Accumulate gradients/updates before applying them"""
 ```
 
 ### IO Container
 
-[`IO`](zenkai/lm/_io2.py#L10) extends Python tuples to provide convenient operations for inputs/outputs:
+[`IO`](zenkai/_core/_io.py) (re-exported at the `zenkai` root) extends Python tuples to provide convenient operations for inputs/outputs:
 
 ```python
 x = IO([tensor1, tensor2])
@@ -59,7 +59,7 @@ x = IO([tensor1, tensor2])
 x_updated = x.acc_grad(lr=0.01)    # Apply accumulated gradients
 x.zero_grad()                      # Clear gradients
 
-# Target operations  
+# Target operations
 target = x.t()                     # Get target
 x.acc_t(target)                    # Accumulate target
 
@@ -74,7 +74,7 @@ first_tensor = x.f                 # Shorthand for x[0]
 
 ### State Management
 
-[`State`](zenkai/lm/_state.py#L64) manages learning context across forward and backward passes:
+[`State`](zenkai/_core/_state.py) (re-exported at the `zenkai` root) manages learning context across forward and backward passes:
 
 ```python
 state = State()
@@ -93,17 +93,17 @@ state.mark_path('important_tensor')
 
 ### Learning Update Abstractions
 
-**[`StepTheta`](zenkai/lm/_lm2.py#L363)**: Defines parameter update strategies
+**[`StepTheta`](zenkai/lm/_lm.py)**: Defines parameter update strategies
 ```python
 class StepTheta:
     def step(self, x: IO, y: torch.Tensor, t: IO, state: State):
         """Execute parameter update"""
-        
+
     def accumulate(self, x: IO, y: torch.Tensor, t: IO, state: State):
         """Accumulate updates (optional)"""
 ```
 
-**[`StepX`](zenkai/lm/_lm2.py#L318)**: Defines input target computation
+**[`StepX`](zenkai/lm/_lm.py)**: Defines input target computation
 ```python
 class StepX:
     def step_x(self, x: IO, y: torch.Tensor, t: IO, state: State) -> IO:
@@ -112,16 +112,16 @@ class StepX:
 
 ### Learning Modes
 
-[`LMode`](zenkai/lm/_lm2.py#L148) controls which learning methods are active:
+[`LMode`](zenkai/lm/_lm.py) controls which learning methods are active:
 
 - **`Standard`**: Only `accumulate()` and `step_x()` - gradient accumulation without parameter updates
-- **`WithStep`**: Full learning - `accumulate()`, `step_x()`, and `step()` 
+- **`WithStep`**: Full learning - `accumulate()`, `step_x()`, and `step()`
 - **`StepPriority`**: Parameter updates before target propagation - `accumulate()`, `step()`, then `step_x()`
 - **`OnlyStepX`**: Only target propagation - useful for frozen parameters
 
 ```python
-import zenkai
-zenkai.set_lmode(learning_machine, LMode.WithStep)
+from zenkai.lm import LMode, set_lmode
+set_lmode(learning_machine, LMode.WithStep)
 ```
 
 ## Specialized Learning Machines
@@ -129,6 +129,7 @@ zenkai.set_lmode(learning_machine, LMode.WithStep)
 ### Gradient-Based Learning
 ```python
 from zenkai.lm import GradLearner, GradStepTheta, GradStepX
+from zenkai.optimz import OptimFactory
 
 # Standard backpropagation-style learning
 learner = GradLearner(
@@ -163,6 +164,7 @@ dfa_learner = DFALearner(module=nn.Linear(10, 5), ...)
 ### Ensemble Learning
 ```python
 from zenkai.lm import EnsembleLearner
+from zenkai.nnz import MeanVoteAggregator
 
 # Train multiple learning machines with voting
 ensemble = EnsembleLearner(
@@ -175,33 +177,34 @@ ensemble = EnsembleLearner(
 
 ```python
 import zenkai
-from zenkai.lm import LearningMachine, GradStepTheta, GradStepX, IO, State, LMode
+from zenkai import IO, State
+from zenkai.lm import LearningMachine, GradStepTheta, GradStepX, LMode, set_lmode
 
 class DecisionTreeMachine(LearningMachine):
     """Example: Decision tree as a learning machine"""
-    
+
     def __init__(self, n_features, n_classes):
         super().__init__()
         self.tree = DecisionTreeClassifier()
         self._step_theta = CustomTreeStepTheta()
         self._step_x = CustomTreeStepX()
-        
+
     def forward_nn(self, x: IO, state: State):
         # Convert to sklearn format and predict
         predictions = self.tree.predict_proba(x.f.detach().numpy())
         return torch.tensor(predictions, requires_grad=True)
-        
+
     def step(self, x: IO, t: IO, state: State):
         # Custom tree parameter updates (e.g., evolutionary optimization)
         return self._step_theta.step(x, state._y, t, state)
-        
+
     def step_x(self, x: IO, t: IO, state: State):
         # Compute input targets for previous machine
         return self._step_x.step_x(x, state._y, t, state)
 
 # Training setup
 learner = DecisionTreeMachine(n_features=10, n_classes=3)
-zenkai.set_lmode(learner, LMode.WithStep)
+set_lmode(learner, LMode.WithStep)
 
 # Training loop
 for x_batch, targets in dataloader:
@@ -230,7 +233,7 @@ Enforce execution order between learning machines:
 from zenkai.lm import forward_dep, step_dep
 
 @forward_dep(dependency_machine)
-@step_dep(dependency_machine) 
+@step_dep(dependency_machine)
 class DependentMachine(LearningMachine):
     # This machine will execute after dependency_machine
     pass
@@ -242,7 +245,7 @@ Build complex architectures by stacking learning machines:
 # Sequential composition
 sequence = SequentialLearner([
     DecisionTreeMachine(10, 20),
-    NeuralMachine(20, 15), 
+    NeuralMachine(20, 15),
     SVMMachine(15, 3)
 ])
 
@@ -264,9 +267,9 @@ parallel = EnsembleLearner([
 
 ## Integration with Other Modules
 
-- **`zenkai.nnz`**: Provides PyTorch modules that can be wrapped in learning machines
-- **`zenkai.optimz`**: Provides optimizer factories for gradient-based learning machines  
-- **`zenkai.tansaku`**: Provides population-based optimizers for evolutionary learning machines
-- **`zenkai.utils`**: Utilities for parameter manipulation and memory management
+- **`zenkai.nnz`**: Provides PyTorch modules that can be wrapped in learning machines (criteria/losses, ensembles, reversible modules, scikit wrappers, STE classes, least-squares solvers, and population modules)
+- **`zenkai.optimz`**: Provides optimizer factories (`OptimFactory`) for gradient-based learning machines
+- **`zenkai`** (root) / **`zenkai._core`**: Provides shared primitives (`IO`, `State`, assessment, param/shape helpers) and the population/search functions formerly in `tansaku` (now dissolved) for evolutionary learning machines
+- **`zenkai.utils`**: Utilities for parameter manipulation (`module_factory`, `checkattr`, `grad_undo`) and memory management (`BatchMemory`)
 
 This framework enables research into learning algorithms that go far beyond traditional backpropagation while maintaining the expressiveness and efficiency of modern deep learning frameworks.

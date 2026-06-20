@@ -2,7 +2,9 @@
 
 ## Overview
 
-The `zenkai.nnz` module provides PyTorch `nn.Module` implementations that serve as building blocks for deep learning machines. These modules are **not** traditional neural network layers, but rather diverse computational components that can be integrated into learning machines. The modules support various computational paradigms including ensemble aggregation, reversible transformations, and integration with scikit-learn algorithms.
+The `zenkai.nnz` module provides PyTorch `nn.Module` implementations that serve as building blocks for deep learning machines. These modules are **not** traditional neural network layers, but rather diverse computational components that can be integrated into learning machines. The modules support various computational paradigms including criteria/losses, objectives and constraints, ensemble aggregation, reversible transformations, straight-through estimators, least-squares solvers, population modules, and integration with scikit-learn algorithms.
+
+> **Note on package layout.** Shared primitives (`IO`, `State`, assessment helpers such as `Reduction`/`reduce`/`lookup_loss`, the population/search *functions*, and the functional STE `step_ste`/`sign_ste`) live in `zenkai._core` and are re-exported at the `zenkai` root — import them as `from zenkai import IO` or `from zenkai._core import step_ste`. `zenkai.nnz` holds the `nn.Module` *classes*. When the `tansaku` package was dissolved, its population/search **functions** moved to `zenkai._core` (the root) and its **modules** (`CrossOver`, the `AdaptPop*` adapters) moved here into `zenkai.nnz`.
 
 ## Core Design Philosophy
 
@@ -23,6 +25,51 @@ All modules are designed to work seamlessly within learning machines, providing:
 These modules represent computational units that may not have learnable parameters but provide essential functionality for complex learning architectures.
 
 ## Core API
+
+### Criteria and Losses
+
+Criteria evaluate a prediction `IO` against a target `IO` and return a tensor. `Criterion` is the base
+class; `XCriterion` additionally takes the input `IO`; `NNLoss` wraps any `torch.nn` loss (or a loss name)
+for use inside zenkai's assessment framework.
+
+```python
+from zenkai.nnz import Criterion, XCriterion, NNLoss
+from zenkai import IO
+import torch.nn as nn
+
+# Wrap a PyTorch loss (by instance, callable, or name)
+mse_criterion = NNLoss(nn.MSELoss())
+ce_criterion = NNLoss("CrossEntropyLoss")
+
+# Criteria operate on IO objects, not raw tensors
+loss = mse_criterion.assess(IO([predictions]), IO([targets]))
+# or call it directly: mse_criterion(IO([predictions]), IO([targets]))
+```
+
+### Objectives and Constraints
+
+Objectives wrap a function or criterion as something to optimize; constraints restrict the search space and
+can be imposed onto an objective. (These were previously in `zenkai.optimz` and now live in `zenkai.nnz`.)
+
+```python
+import torch
+from zenkai.nnz import (
+    Objective, FuncObjective, CriterionObjective,
+    Constraint, CompoundConstraint, impose,
+    LT, LTE, GT, GTE, ValueConstraint, NullConstraint,
+)
+
+# Build an objective from a function or a criterion, optionally with a constraint and penalty
+objective = FuncObjective(lambda x: -(x ** 2).sum(), maximize=True)
+
+# Value constraints are keyed by the name of the value they constrain;
+# LT/GT/... return a dict of boolean masks marking *violations*
+constraint = CompoundConstraint([LT(w=1.0), GT(w=-1.0)])
+violations = constraint(w=weights)            # {"w": bool mask of out-of-range entries}
+
+# impose() penalizes a value tensor wherever a boolean constraint mask is True
+penalized = impose(value, violations["w"], penalty=torch.inf)
+```
 
 ### Ensemble Modules
 
@@ -74,7 +121,7 @@ softmax_rev = SoftMaxReversible(dim=-1)
 y = softmax_rev(x)
 x_reconstructed = softmax_rev.invert(y)  # Analytical inverse
 
-# Reversible sigmoid  
+# Reversible sigmoid
 sigmoid_inv = SigmoidInvertable()
 y = sigmoid_inv(x)
 x_reconstructed = sigmoid_inv.invert(y)
@@ -113,7 +160,7 @@ class ScikitModule(nn.Module):
         super().__init__()
         self.model = sklearn_model
         self.device = device
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert to numpy, predict, return as tensor"""
 ```
@@ -132,7 +179,7 @@ binary_forest = ScikitBinary(
     device='cuda'
 )
 
-# Multiclass classification  
+# Multiclass classification
 multiclass_svm = ScikitMulticlass(
     SVC(kernel='rbf', probability=True),
     device='cpu'
@@ -190,6 +237,82 @@ sign = Sign()
 binary_output = sign(continuous_input)  # Returns -1 or 1
 ```
 
+#### Straight-Through Estimators
+
+`SignSTE` and `StepSTE` apply a hard, non-differentiable operation on the forward pass while passing
+gradients straight through on the backward pass. They are `torch.autograd.Function` classes, so call them
+via `.apply(...)` on the class (do not instantiate them):
+
+```python
+from zenkai.nnz import SignSTE, StepSTE
+
+y = SignSTE.apply(x)   # forward: sign(x); backward: identity gradient
+y = StepSTE.apply(x)   # forward: step(x); backward: identity gradient
+```
+
+The convenience **functional** wrappers live in `zenkai._core` (re-exported at the root), not in `nnz`:
+
+```python
+from zenkai import step_ste, sign_ste   # functional STE (zenkai._core)
+y = sign_ste(x)
+```
+
+#### Regularization
+
+```python
+from zenkai.nnz import FreezeDropout
+
+# Dropout whose mask can be frozen so the same units drop across calls
+drop = FreezeDropout(p=0.5, freeze=True)
+y = drop(x)
+```
+
+### Least-Squares Solvers
+
+Closed-form solvers for `Ax = b`-style problems. They are now `nn.Module`s whose `solve` method is an alias
+of `forward`, so they can be called directly or via `.solve(...)`:
+
+```python
+from zenkai.nnz import (
+    LeastSquaresSolver, LeastSquaresStandardSolver, LeastSquaresRidgeSolver,
+)
+
+solver = LeastSquaresStandardSolver(bias=False)
+w = solver.solve(a, b)   # equivalent to solver(a, b)
+
+ridge = LeastSquaresRidgeSolver(lam=1e-2)
+w_ridge = ridge(a, b)
+```
+
+(The corresponding step/learner classes — `LeastSquaresStepTheta`, `LeastSquaresStepX`,
+`LeastSquaresLearner` — live in `zenkai.lm`.)
+
+### Population Modules
+
+Modules for population-based / evolutionary search. These are the module counterparts of the population
+**functions** that now live in `zenkai._core`:
+
+```python
+from zenkai.nnz import CrossOver, AdaptPopBatch, AdaptPopFeature, NullPopAdapt
+
+crossover = CrossOver()                       # combine parents into offspring
+adapt_batch = AdaptPopBatch(module)           # adapt a module across a population batch dim
+adapt_feature = AdaptPopFeature(module)       # adapt across the feature dim
+no_adapt = NullPopAdapt(module)               # pass-through adapter
+```
+
+### Shape Modules
+
+```python
+import torch
+from zenkai.nnz import ExpandDim
+
+# Reshape by inserting/expanding a dimension: ExpandDim(dim, size1, size2)
+# e.g. a length-3 vector -> shape (3, 1)
+expand = ExpandDim(dim=0, size1=3, size2=1)
+y = expand(torch.tensor([1, 2, 3]))
+```
+
 ### Assessment Utilities
 
 #### Loss and Criterion Wrappers
@@ -197,14 +320,15 @@ Integration with zenkai's assessment framework:
 
 ```python
 from zenkai.nnz import NNLoss
+from zenkai import IO
 import torch.nn as nn
 
 # Wrap PyTorch losses for zenkai compatibility
 mse_criterion = NNLoss(nn.MSELoss())
 ce_criterion = NNLoss(nn.CrossEntropyLoss())
 
-# Use in learning machine assessment
-loss = mse_criterion.assess(predictions, targets)
+# Use in learning machine assessment (assess takes IO objects)
+loss = mse_criterion.assess(IO([predictions]), IO([targets]))
 ```
 
 ## Usage Patterns
@@ -221,7 +345,7 @@ class EnsembleMachine(LearningMachine):
             voters=base_modules,
             aggregator=MeanVoteAggregator()
         )
-    
+
     def forward_nn(self, x, state):
         return self.ensemble(x.f)
 ```
@@ -230,15 +354,16 @@ class EnsembleMachine(LearningMachine):
 ```python
 from zenkai.nnz import SoftMaxReversible, SigmoidInvertable
 from zenkai.lm import LearningMachine
+from zenkai import IO
 
 class ReversibleMachine(LearningMachine):
     def __init__(self):
         super().__init__()
         self.transform = SigmoidInvertable()
-    
+
     def forward_nn(self, x, state):
         return self.transform(x.f)
-    
+
     def step_x(self, x, t, state):
         # Use analytical inverse for target propagation
         target_x = self.transform.invert(t.f)
@@ -263,7 +388,7 @@ class HybridMachine(LearningMachine):
         self.classifier = ScikitMulticlass(
             RandomForestClassifier(n_estimators=100)
         )
-    
+
     def forward_nn(self, x, state):
         features = self.neural_preprocess(x.f)
         return self.classifier(features)
@@ -276,16 +401,16 @@ from zenkai.nnz import Lambda, Null
 def build_conditional_module(use_nonlinearity=True, use_normalization=True):
     """Build module with conditional components"""
     components = []
-    
+
     # Always include linear transformation
     components.append(nn.Linear(10, 10))
-    
+
     # Conditional nonlinearity
     components.append(nn.ReLU() if use_nonlinearity else Null())
-    
+
     # Conditional normalization
     components.append(nn.BatchNorm1d(10) if use_normalization else Null())
-    
+
     return nn.Sequential(*components)
 ```
 
@@ -299,7 +424,7 @@ ensemble_voter = EnsembleVoter([module1, module2])
 lambda_module = Lambda(lambda x: x.pow(2))
 ```
 
-### Non-Gradient Modules  
+### Non-Gradient Modules
 Some modules require special handling in learning machines:
 ```python
 # ScikitModule requires custom learning logic
@@ -315,7 +440,7 @@ Reversible modules enable sophisticated target propagation:
 ```python
 # Analytical target computation instead of gradient-based
 reversible = SoftMaxReversible()
-# Forward: y = softmax(x)  
+# Forward: y = softmax(x)
 # Target propagation: x_target = inverse_softmax(y_target)
 ```
 
@@ -329,9 +454,10 @@ reversible = SoftMaxReversible()
 
 ## Integration with Other Zenkai Modules
 
-- **`zenkai.lm`**: All modules designed to work within LearningMachine framework
-- **`zenkai.optimz`**: Gradient-based modules use optimization abstractions
-- **`zenkai.tansaku`**: Population-based optimization can optimize module parameters
-- **`zenkai.utils`**: Parameter and shape utilities for module construction
+- **`zenkai.lm`**: All modules designed to work within the `LearningMachine` framework
+- **`zenkai.optimz`**: Gradient-based modules use optimization abstractions (`OptimFactory`, `ParamFilter`, …)
+- **`zenkai._core`** (re-exported at the `zenkai` root): population/search **functions**, assessment helpers,
+  and the functional STE used by the population modules and STE classes here
+- **`zenkai.utils`**: parameter/shape utilities (`module_factory`, `checkattr`, `grad_undo`, `memory`) for module construction
 
 These modules provide the computational building blocks for creating diverse and powerful learning machines that extend far beyond traditional neural network architectures.

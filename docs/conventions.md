@@ -9,7 +9,9 @@ The conventions this repo holds code to — for humans and AI agents alike. The 
 - **Linting:** `flake8` (ignores `E203`, `W291`). Run `tox -e flake8` or `poetry run flake8 .`.
 - **Imports:** group **stdlib → third-party → local**, as `# 1st party / # 3rd Party / # Local` blocks.
 - **Module layout:** implementation in `_private.py` modules; the public API is re-exported from each
-  package's `__init__.py`. Import from the package, never from a `_private` module.
+  package's `__init__.py`. Import from the package, never from a `_private` module. Additionally, the
+  shared primitives in `zenkai/_core/` are re-exported at the **`zenkai` root** (e.g. `zenkai.IO`,
+  `zenkai.State`), so framework primitives can be imported directly from `zenkai`.
 - **Type hints:** used throughout (incl. `typing_extensions.Self`). Hints are documentation here — there is
   **no enforced type checker** (see [tooling](tooling.md) for the optional `mypy`/`pyright` path).
 

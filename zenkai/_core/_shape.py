@@ -163,7 +163,7 @@ def dim_separate(x: torch.Tensor, n: int, dim: int) -> torch.Tensor:
     shape = list(x.shape)
     shape[dim] = -1
     shape.insert(dim, n)
-    return x.reshape(x)
+    return x.reshape(shape)
 
 
 def dim_combine(x: torch.Tensor, from_dim: int):

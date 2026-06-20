@@ -7,7 +7,7 @@ concern sub-packages. Compose them to build learning machines that train beyond 
 
 | Sub-package | Scope | Map · Guide |
 |-------------|-------|-------------|
-| `_core/` | Shared primitives, **flattened onto the `zenkai` root**: `IO`, `State`, assessment (`Reduction`, `reduce`, `lookup_loss`), param/shape/convert/update/loop helpers, STE, and the population/search functions (aggregate, selection, weight, crossover, noise, evolutionary, pop-params). | [map](_core/CLAUDE.md) |
+| `_core/` | Shared primitives, **flattened onto the `zenkai` root**: `IO`, `State`, assessment (`Reduction`, `reduce`, `lookup_loss`), param/shape/convert/update/loop helpers, STE, and the population/search functions (aggregate, selection, weight, crossover, noise, evolutionary, pop-params). | [map](_core/CLAUDE.md) · [guide](../docs/guides/population.md) |
 | `lm/` | Learning machines: `LearningMachine`, `StepTheta`/`StepX`, `LMode`, and the concrete learners (grad, least-squares, feedback-alignment, ensemble, dual, scikit, …). | [map](lm/CLAUDE.md) · [guide](../docs/guides/lm.md) |
 | `nnz/` | Neural-network modules: criteria/losses, objectives & constraints, ensembles/voting, reversible modules, scikit wrappers, STE classes, dropout, least-squares solvers, population modules. | [map](nnz/CLAUDE.md) · [guide](../docs/guides/nnz.md) |
 | `optimz/` | Optimization machinery: optimizer factories, param filters, population-optimizer base. | [map](optimz/CLAUDE.md) · [guide](../docs/guides/optimz.md) |

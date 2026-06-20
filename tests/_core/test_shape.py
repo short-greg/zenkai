@@ -106,3 +106,23 @@ class TestExpandK:
         shape = _shape.batch_separate(x_trial_collapsed, N_TRIALS).shape
         assert shape[0] == N_TRIALS
         assert shape[1] == N_SAMPLES
+
+
+class TestDimSeparate:
+    def test_dim_separate_splits_dim_into_n_and_inferred(self):
+        import torch
+
+        from zenkai._core import _shape
+
+        x = torch.arange(24).reshape(4, 6)
+        y = _shape.dim_separate(x, 2, 1)
+        assert tuple(y.shape) == (4, 2, 3)
+
+    def test_dim_separate_is_reversible_via_reshape(self):
+        import torch
+
+        from zenkai._core import _shape
+
+        x = torch.arange(24).reshape(4, 6)
+        y = _shape.dim_separate(x, 2, 1)
+        assert torch.equal(y.reshape(4, 6), x)
