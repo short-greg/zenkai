@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 
-from zenkai.optimz import OptimFactory
-from zenkai.lm._io2 import IO as IO, iou
-from zenkai.lm._state import State
-from zenkai.utils._params import get_params
+from zenkai._core import State, iou
+from zenkai._core._params import params_get
 from zenkai.lm import _feedback_alignment
+from zenkai.optimz import OptimFactory
 
 
 class TestFALearner:
@@ -22,12 +21,12 @@ class TestFALearner:
         )
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
-        before = get_params(net)
+        before = params_get(net)
         state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        assert (get_params(net) != before).any()
+        assert (params_get(net) != before).any()
 
     def test_fa_learner_does_not_auto_adv_if_false(self):
 
@@ -42,10 +41,10 @@ class TestFALearner:
         state = State()
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
-        before = get_params(net)
+        before = params_get(net)
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
-        assert (get_params(net) == before).all()
+        assert (params_get(net) == before).all()
 
     def test_fa_learner_adv_when_adv_called(self):
 
@@ -59,13 +58,13 @@ class TestFALearner:
         )
         t = iou(torch.rand(3, 4))
         x = iou(torch.rand(3, 3))
-        before = get_params(net)
+        before = params_get(net)
         state = State()
 
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        assert (get_params(net) != before).any()
+        assert (params_get(net) != before).any()
 
     def test_fa_learner_updates_x_with_correct_size(self):
 
@@ -102,14 +101,13 @@ class TestDFALearner:
         )
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
-        before = get_params(net)
+        before = params_get(net)
         state = State()
-        # out_t = _feedback_alignment.OutT(t)
         _, out_t = learner.forward_io(x, state)
         out_t.t = t
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        assert (get_params(net) != before).any()
+        assert (params_get(net) != before).any()
 
     def test_dfa_learner_does_not_auto_adv_if_false(self):
 
@@ -126,12 +124,11 @@ class TestDFALearner:
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
         state = State()
-        # out_t = _feedback_alignment.OutT(t=t)
-        before = get_params(net)
+        before = params_get(net)
         _, out_t = learner.forward_io(x, state)
         out_t.t = t
         learner.accumulate(x, t, state)
-        assert (get_params(net) == before).all()
+        assert (params_get(net) == before).all()
 
     def test_dfa_learner_adv_when_adv_called(self):
 
@@ -148,13 +145,12 @@ class TestDFALearner:
         t = iou(torch.rand(3, 3))
         x = iou(torch.rand(3, 3))
         state = State()
-        # out_t = _feedback_alignment.OutT(t=t)
-        before = get_params(net)
+        before = params_get(net)
         _, out_t = learner.forward_io(x, state)
         out_t.t = t
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        assert (get_params(net) != before).any()
+        assert (params_get(net) != before).any()
 
     def test_dfa_learner_updates_x_with_correct_size(self):
 

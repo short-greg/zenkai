@@ -1,13 +1,10 @@
 # 1st Party
 import typing
 
-# 3rd Party
-import torch
-
 # Local
-from ._lm2 import IO as IO, StepTheta as StepTheta, StepX as StepX, LearningMachine as LearningMachine
-from ._assess import Criterion, NNLoss
-from ._state import State
+from zenkai._core import IO, State
+
+from ._lm import LearningMachine, StepTheta, StepX
 
 
 class NullStepTheta(StepTheta):

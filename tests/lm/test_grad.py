@@ -3,13 +3,12 @@
 # 3rd party
 import torch
 from torch import nn
-from zenkai.lm._assess import NNLoss
 
 # local
-from zenkai.lm._lm2 import IO as IO, iou
+from zenkai._core import IO as IO
+from zenkai._core import State, iou, params_get
 from zenkai.lm import _grad
-from zenkai.lm import State
-from zenkai.utils import _params as utils
+from zenkai.nnz import NNLoss
 
 
 class THGradLearnerT1(_grad.GradLearner):
@@ -19,12 +18,10 @@ class THGradLearnerT1(_grad.GradLearner):
             linear,
             criterion=NNLoss(nn.MSELoss),
         )
-        self._optim = torch.optim.Adam(
-            linear.parameters(), lr=1e-3
-        )
-    
+        self._optim = torch.optim.Adam(linear.parameters(), lr=1e-3)
+
     def step(self, x: IO, t: IO, state: State):
-        
+
         self._optim.step()
         self._optim.zero_grad()
 
@@ -36,26 +33,15 @@ class THGradLearnerT2(_grad.GradLearner):
             linear,
             criterion=NNLoss(nn.MSELoss),
         )
-        self._optim = torch.optim.Adam(
-            linear.parameters(), lr=1e-3
-        )
-    
+        self._optim = torch.optim.Adam(linear.parameters(), lr=1e-3)
+
     def step(self, x: IO, t: IO, state: State):
-        
+
         self._optim.step()
         self._optim.zero_grad()
 
 
 class TestGradLearner1:
-
-    # def test_assess_y_uses_correct_reduction(self):
-
-    #     learner = THGradLearnerT1(2, 3)
-    #     y = IO([torch.rand(2, 3)])
-    #     t = IO([torch.rand(2, 3)])
-    #     result = learner.assess_y(y, t, "sum")
-    #     target = nn.MSELoss(reduction="sum")(y.f, t.f)
-    #     assert result.item() == target.item()
 
     def test_forward_does_not_detach_y(self):
 
@@ -90,12 +76,12 @@ class TestGradLearner1:
         learner = THGradLearnerT1(2, 3)
         x = iou(torch.rand(2, 2))
         t = iou(torch.rand(2, 3))
-        before = utils.get_params(learner)
+        before = params_get(learner)
         state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        after = utils.get_params(learner)
+        after = params_get(learner)
         assert (before != after).any()
 
 

@@ -1,13 +1,12 @@
 import torch
+from sklearn import linear_model
 
 # local
-from zenkai.lm._io2 import iou, IO as IO
-from zenkai.lm._lm2 import StepX as StepX
-from zenkai.lm import State
+from zenkai._core import IO as IO
+from zenkai._core import State, iou
+from zenkai.lm._lm import StepX as StepX
 from zenkai.lm._scikit import ScikitLearner
-from zenkai.nnz._scikit_mod import ScikitRegressor
-
-from sklearn import linear_model
+from zenkai.nnz import ScikitRegressor
 
 
 class NullStepX(StepX):

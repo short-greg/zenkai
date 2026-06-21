@@ -1,145 +1,30 @@
 # 1st party
 import typing
-from abc import ABC, abstractmethod
 
 # 3rd party
 import torch
 import torch.nn as nn
-import numpy as np
-import scipy.linalg
 
 # local
-from ._assess import (
+from zenkai._core import IO as IO
+from zenkai._core import State, iou
+from zenkai.nnz import (
     Criterion,
+    LeastSquaresRidgeSolver,
+    LeastSquaresSolver,
+    LeastSquaresStandardSolver,
     NNLoss,
-    
 )
-from ..optimz import OptimFactory
-from ._state import State
-from ._io2 import (
-    IO as IO, iou
-)
-from ._lm2 import (
-    LearningMachine as LearningMachine,
-    StepTheta as StepTheta,
-    StepX as StepX,
+from zenkai.optimz import OptimFactory
 
-)
-from ..utils import to_np, to_th_as
 from ._grad import GradStepTheta
-
-
-class LeastSquaresSolver(ABC):
-    """ABC for solvers using least squares
-    """
-
-    @abstractmethod
-    def solve(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-        """Abstract method for the least squares solver
-
-        Args:
-            a (torch.Tensor): Input
-            b (torch.Tensor): Target
-
-        Returns:
-            torch.Tensor: the least squares solution
-        """
-        pass
-
-
-class LeastSquaresStandardSolver(LeastSquaresSolver):
-    """Solve least squares"""
-
-    def __init__(self, bias: bool = False):
-        """Create a least squares solver
-
-        Args:
-            bias (bool, optional): Whether there is a bias. Defaults to False.
-        """
-
-        if bias:
-            self._prepare = self._prepare_with_bias
-        else:
-            self._prepare = self._prepare_without_bias
-
-    def _prepare_without_bias(
-        self, a: np.ndarray, b: np.ndarray
-    ) -> typing.Tuple[np.ndarray, np.ndarray]:
-        return a, b
-
-    def _prepare_with_bias(
-        self, a: np.ndarray, b: np.ndarray
-    ) -> typing.Tuple[np.ndarray, np.ndarray]:
-        m, _ = np.shape(a)
-        a = np.hstack([a, np.ones((m, 1))])
-        return a, b
-
-    def solve(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-        """Solve least squares between a and b
-
-        Args:
-            a (torch.Tensor): input
-            b (torch.Tensor): target
-
-        Returns:
-            torch.Tensor: the least squares solution
-        """
-        new_, _, _, _ = scipy.linalg.lstsq(*self._prepare(to_np(a), to_np(b)))
-        return to_th_as(new_, a).T
-
-
-class LeastSquaresRidgeSolver(LeastSquaresSolver):
-    """Solve least squares using ridge regression"""
-
-    def __init__(self, lam: float = 1e-1, bias: bool = False):
-        """Create a solver that will use ridge regression
-
-        Args:
-            lam (float, optional): The penalty on the regression. Defaults to 1e-1.
-            bias (bool, optional): Whether to use a bias or not. Defaults to False.
-        """
-        self._bias = bias
-        self._lambda = lam
-        if self._bias:
-            self._prepare = self._prepare_with_bias
-        else:
-            self._prepare = self._prepare_without_bias
-
-    def _prepare_without_bias(self, a: np.ndarray, b: np.ndarray):
-        _, n = np.shape(a)
-        lower_half = np.zeros((n, n))
-        np.fill_diagonal(lower_half, np.sqrt(self._lambda))
-        return (np.vstack((a, lower_half)), np.vstack([b, np.zeros((n, b.shape[1]))]))
-
-    def _prepare_with_bias(self, a: np.ndarray, b: np.ndarray):
-        m, n = np.shape(a)
-        upper_half = np.hstack([a, np.ones((m, 1))])
-        lower = np.zeros((n, n))
-        np.fill_diagonal(lower, np.sqrt(self._lambda))
-        lower_half = np.hstack([lower, np.zeros((n, 1))])
-        return (
-            np.vstack((upper_half, lower_half)),
-            np.vstack([b, np.zeros((n, b.shape[1]))]),
-        )
-
-    def solve(self, a: torch.Tensor, b: torch.Tensor):
-        """Solve least squares between a and b
-
-        Args:
-            a (torch.Tensor): input
-            b (torch.Tensor): target
-
-        Returns:
-            torch.Tensor: the least squares solution
-        """
-        A, B = self._prepare(to_np(a), to_np(b))
-        new_, _, _, _ = scipy.linalg.lstsq(A.T @ A, A.T @ B)
-
-        return to_th_as(new_, a).T
+from ._lm import LearningMachine as LearningMachine
+from ._lm import StepTheta as StepTheta
+from ._lm import StepX as StepX
 
 
 class LeastSquaresStepTheta(StepTheta):
-    """A StepTheta that uses least squares """
+    """A StepTheta that uses least squares"""
 
     def __init__(
         self,
@@ -147,11 +32,11 @@ class LeastSquaresStepTheta(StepTheta):
         solver: LeastSquaresSolver = LeastSquaresStandardSolver,
         optimize_dw: bool = False,
     ):
-        """Create a StepTheta that uses 
+        """Create a StepTheta that uses least squares
 
         Args:
             linear (nn.Linear): The linear model to optmize theta for
-            solver (LeastSquaresSolver, optional): _description_. Defaults to LeastSquaresStandardSolver.
+            solver (LeastSquaresSolver, optional): The solver to use. Defaults to LeastSquaresStandardSolver.
             optimize_dw (bool, optional): Whether to optimize the delta or the raw value.
               In general recommended to optimize delta to minimize the change bewteen updates. Defaults to False.
         """
@@ -205,9 +90,9 @@ class LeastSquaresStepX(StepX):
 
         Args:
             linear (nn.Linear): The linear model to use
-            solver (LeastSquaresSolver, optional): The solver to use for updating. 
+            solver (LeastSquaresSolver, optional): The solver to use for updating.
                 Defaults to LeastSquaresStandardSolver.
-            optimize_dx (bool, optional): Whether to minimize the delta of x or x. 
+            optimize_dx (bool, optional): Whether to minimize the delta of x or x.
                 In general recommended to use delta. Defaults to False.
         """
         self.linear = linear
@@ -228,26 +113,24 @@ class LeastSquaresStepX(StepX):
             t = t - self.linear.bias[None]
         return self.solver.solve(self.linear.weight, t.T)
 
-    def step_x(
-        self, x: IO, y: IO, t: IO, 
-        state: State, **kwargs
-    ) -> IO:
+    def step_x(self, x: IO, y: IO, t: IO, state: State, **kwargs) -> IO:
         """Update x
 
         Args:
-            conn (Conn): The connection to update with
+            x (IO): The input
+            y (IO): The output
+            t (IO): The target
+            state (State): The learning state
 
         Returns:
-            Conn: The connection with x updated
+            IO: The connection with x updated
         """
         x_prime = self._optimize(x.f, t.f)
         return iou(x_prime)
 
-        # return update_io(IO(x_prime), x)
-
 
 class LeastSquaresLearner(LearningMachine):
-    """Learner that uses least squares to optimize theta and x. It wraps a 
+    """Learner that uses least squares to optimize theta and x. It wraps a
     standard linear model. Uses a ridge regresion solver"""
 
     def __init__(
@@ -259,20 +142,20 @@ class LeastSquaresLearner(LearningMachine):
         lam_theta: float = 1e-3,
         lam_x: float = 1e-4,
     ):
-        """Create a learner to use gradient for the parameter update and least squares for the input update
+        """Create a learner to use least squares for the parameter and input update
 
         Args:
             in_features (int): The number of features into the linear model
             out_features (int): The number of features out of the model
             bias (bool, optional): Whether to use the bias. Defaults to True.
             optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
+            lam_theta (float, optional): The theta regularization parameter. Defaults to 1e-3.
+            lam_x (float, optional): The x regularization parameter. Defaults to 1e-4.
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
         self._loss = Criterion("MSELoss", "mean")
-        self._step_x = LeastSquaresStepX(
-            self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
-        )
+        self._step_x = LeastSquaresStepX(self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx)
         self._step_theta = LeastSquaresStepTheta(
             self._linear, LeastSquaresRidgeSolver(lam_theta, bias=bias), optimize_dx
         )
@@ -285,7 +168,7 @@ class LeastSquaresLearner(LearningMachine):
             t (IO): The target
             state (State): The learning state
         """
-        self._step_theta.step(x, state.get('_y'), t, state)
+        self._step_theta.step(x, state.get("_y"), t, state)
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Update the input using least squares
@@ -298,7 +181,7 @@ class LeastSquaresLearner(LearningMachine):
         Returns:
             IO: Updated X
         """
-        return self._step_x.step_x(x, state.get('_y'), t, state)
+        return self._step_x.step_x(x, state.get("_y"), t, state)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         """Use a linear function on x
@@ -308,15 +191,13 @@ class LeastSquaresLearner(LearningMachine):
             state (State): The learning state
 
         Returns:
-            typing.Union[typing.Tuple, typing.Any]: The linear 
+            typing.Union[typing.Tuple, typing.Any]: The linear output
         """
-        return iou(
-            self._linear(x.f)
-        )
+        return iou(self._linear(x.f))
 
 
 class GradLeastSquaresLearner(LearningMachine):
-    """Learner that uses grad to optimize theta and least squares to optimize x. 
+    """Learner that uses grad to optimize theta and least squares to optimize x.
     It wraps a standard linear model. Uses a ridge regresion solver"""
 
     def __init__(
@@ -337,30 +218,26 @@ class GradLeastSquaresLearner(LearningMachine):
             bias (bool, optional): Whether to use the bias. Defaults to True.
             optimize_dx (bool, optional): Whether to minimize the delta. Defaults to True.
             optim_factory (OptimFactory, optional): The optimizer to use. Defaults to None.
-            loss (Objective, optional): The loss to minimize. Since this is grad 
+            loss (Criterion, optional): The loss to minimize. Since this is grad
                 descent it must be a minimization function. Defaults to None.
             lam_x (float, optional): The regularization parameter. Defaults to 1e-4.
         """
         super().__init__()
         self._linear = nn.Linear(in_features, out_features, bias)
         self._loss = loss or NNLoss("MSELoss", "mean")
-        self._step_x = LeastSquaresStepX(
-            self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx
-        )
+        self._step_x = LeastSquaresStepX(self._linear, LeastSquaresRidgeSolver(lam_x, False), optimize_dx)
         optim_factory = optim_factory or OptimFactory("Adam", lr=1e-3)
-        self._step_theta = GradStepTheta(
-            self, criterion=NNLoss('MSELoss'), optimf=optim_factory
-        )
+        self._step_theta = GradStepTheta(self, criterion=NNLoss("MSELoss"), optimf=optim_factory)
 
     def accumulate(self, x: IO, t: IO, state: State):
-        """Use least squares to update the weights
+        """Use grad to accumulate the weight update
 
         Args:
             x (IO): The input
             t (IO): The target
             state (State): The learning state
         """
-        self._step_theta.accumulate(x, state._y, t, state.sub('least'))
+        self._step_theta.accumulate(x, state._y, t, state.sub("least"))
 
     def step_x(self, x: IO, t: IO, state: State) -> IO:
         """Use least squares to update x
@@ -373,7 +250,7 @@ class GradLeastSquaresLearner(LearningMachine):
         Returns:
             IO: The updated x
         """
-        return self._step_x.step_x(x, state.get('_y'), t, state.sub('grad'))
+        return self._step_x.step_x(x, state.get("_y"), t, state.sub("grad"))
 
     def forward_nn(self, x: IO, state: State) -> IO:
         """Use the linear layer to output
@@ -388,13 +265,11 @@ class GradLeastSquaresLearner(LearningMachine):
         return self._linear(x.f)
 
     def step(self, x: IO, t: typing.Union[IO, None], state: State):
-        """Update the accumulated parameters using least squares
+        """Update the accumulated parameters
 
         Args:
             x (IO): The input
             t (typing.Union[IO, None]): The target
             state (State): The learning state
         """
-        self._step_theta.step(
-            x, state.get('_y'), t, state.sub('least')
-        )
+        self._step_theta.step(x, state.get("_y"), t, state.sub("least"))

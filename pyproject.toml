@@ -1,6 +1,6 @@
 [build-system]
-requires = ["poetry"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "zenkai"
@@ -14,12 +14,6 @@ license = "LICENSE"
 readme = "README.md"
 packages = [
     {include="zenkai"},
-    {include="zenkai/lm"},
-    {include="zenkai/optimz"},
-    {include="zenkai/tansaku"},
-    {include="zenkai/nnz"},
-    {include="zenkai/utils"},
-    {include="zenkai/utils/memory"},
 ]
 
 [tool.poetry.dependencies]
@@ -27,13 +21,36 @@ python = ">=3.8,<4.0"
 numpy = ">=1"
 pandas = ">=1"
 scikit-learn = ">=1.0.0"
-# torch = {version = ">=2,<3"}
+torch = ">=2,<3"
 tqdm = ">=4.0"
 scipy = ">=1.5"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^6"
-flake8 = "^3"
-isort = "^5"
-black = "^21"
-blacken-docs = "^1"
+# Dev tooling is intentionally unpinned: this is a library, and the lint/test tools
+# track their latest releases (tox already installs them unpinned).
+pytest = "*"
+flake8 = "*"
+isort = "*"
+black = "*"
+blacken-docs = "*"
+# docs toolchain (matches the tox `docs` env; lets `poetry run sphinx-build` work locally)
+sphinx = "*"
+sphinx-rtd-theme = "*"
+pyenchant = "*"
+sphinxcontrib-spelling = "*"
+
+[tool.black]
+line-length = 120
+extend-exclude = '''
+/(
+  archive
+)/
+'''
+
+[tool.isort]
+profile = "black"
+skip = ["archive"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--ignore=archive"

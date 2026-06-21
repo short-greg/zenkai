@@ -1,4 +1,2 @@
-from ._memory import (
-    BatchMemory
-)
-
+# flake8: noqa
+from ._memory import BatchMemory

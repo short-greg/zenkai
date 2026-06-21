@@ -1,17 +1,18 @@
 # 1st party
 import typing
 
-# 3rd party
+from zenkai._core import State
+from zenkai.nnz import ScikitModule
 
 # local
-from ._lm2 import (
-    IO as IO,
-    StepX as StepX,
+from ._lm import IO as IO
+from ._lm import LearningMachine as LearningMachine
+from ._lm import (
     LMode,
-    LearningMachine as LearningMachine
 )
-from ._state import State
-from ..nnz._scikit_mod import ScikitModule
+from ._lm import StepX as StepX
+
+# 3rd party
 
 
 class ScikitLearner(LearningMachine):
@@ -20,8 +21,8 @@ class ScikitLearner(LearningMachine):
     def __init__(
         self,
         module: ScikitModule,
-        step_x: typing.Optional[StepX]=None,
-        lmode: LMode=LMode.Standard
+        step_x: typing.Optional[StepX] = None,
+        lmode: LMode = LMode.Standard,
     ):
         """Create a machine that wraps the scikit estimator specifying how to update x
 
@@ -55,9 +56,7 @@ class ScikitLearner(LearningMachine):
         """
         if self._step_x is None:
             return x
-        return self._step_x.step_x(
-            x, state._y, t, state, **kwargs
-        )
+        return self._step_x.step_x(x, state._y, t, state, **kwargs)
 
     def forward_nn(self, x: IO, state: State, **kwargs) -> typing.Union[typing.Tuple, typing.Any]:
         """Pass through the scikit estimator

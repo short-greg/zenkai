@@ -4,10 +4,8 @@ import torch
 import torch.nn as nn
 
 # local
-from zenkai.lm._io2 import IO as IO, iou
-from zenkai.lm import State
+from zenkai._core import State, iou, params_get
 from zenkai.lm import _least_squares
-from zenkai.utils._params import get_params
 
 
 @pytest.fixture
@@ -100,16 +98,16 @@ class TestLeastSquaresStepX:
 
 
 class TestLeastSquaresGrad:
-    
+
     def test_step_with_optimize(self, linear2, conn2):
         x, t, y = conn2
         learner = _least_squares.GradLeastSquaresLearner(3, 2, False, True)
-        before = get_params(learner)
+        before = params_get(learner)
         state = State()
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        assert (before != get_params(learner)).any()
+        assert (before != params_get(learner)).any()
 
     def test_step_x(self, linear2, conn2):
         x, t, y = conn2

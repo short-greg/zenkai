@@ -1,60 +1,54 @@
 # 3rd Party
 import torch
-from torch import nn
-from torch import optim
+from torch import nn, optim
+
+from zenkai._core._params import params_get
 
 # Local
-from zenkai.optimz._optimize import ParamFilter, OptimFactory, NullOptim, optimf
-from zenkai.utils._params import get_params
+from zenkai.optimz._optimize import NullOptim, OptimFactory, ParamFilter, optimf
 
 
 class TestParamFilter:
     def test_filter_optim_updates_parameters_with_meta_step(self):
 
         linear = nn.Linear(2, 2)
-        before = get_params(linear)
-        optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
-        )
+        before = params_get(linear)
+        optim = ParamFilter(linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3))
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
         optim.adv()
-        after = get_params(linear)
+        after = params_get(linear)
         assert (before != after).any()
 
     def test_transfer_copies_parameters_to_active(self):
 
         linear = nn.Linear(2, 2)
-        before = get_params(linear)
-        optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
-        )
+        before = params_get(linear)
+        optim = ParamFilter(linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3))
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
         optim.transfer()
-        after = get_params(linear)
+        after = params_get(linear)
         assert (before == after).all()
 
     def test_copy_meta_to_copies_to_new_module(self):
 
         linear = nn.Linear(2, 2)
         linear_test = nn.Linear(2, 2)
-        before = get_params(linear_test)
-        optim = ParamFilter(
-            linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
-        )
+        before = params_get(linear_test)
+        optim = ParamFilter(linear.parameters(), OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3))
         optim.zero_grad()
         linear(torch.rand(3, 2)).sum().backward()
         optim.step()
         optim.step_filter()
         optim.copy_filter_optim_to(linear_test.parameters())
-        after = get_params(linear_test)
+        after = params_get(linear_test)
         assert (before != after).any()
 
     def test_copy_meta_to_copies_to_new_tensor(self):
@@ -63,9 +57,7 @@ class TestParamFilter:
 
         x_test = torch.rand(2, 3)
         before = torch.clone(x_test)
-        optim = ParamFilter(
-            [x], OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3)
-        )
+        optim = ParamFilter([x], OptimFactory("SGD", lr=1e-2), OptimFactory("SGD", 1e-3))
         optim.zero_grad()
         x.sum().backward()
         optim.step()
@@ -78,11 +70,11 @@ class TestNullOptim:
     def test_null_optim_does_not_update_parameters(self):
 
         mod = nn.Linear(2, 2)
-        before = get_params(mod)
+        before = params_get(mod)
         mod(torch.rand(4, 2)).mean().backward()
         optim = NullOptim(mod.parameters())
         optim.step()
-        assert (before == get_params(mod)).all()
+        assert (before == params_get(mod)).all()
 
     def test_load_state_dict_works(self):
 

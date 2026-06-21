@@ -3,51 +3,19 @@ import typing
 from abc import abstractmethod
 
 # 3rd party
+import torch
 import torch.nn as nn
-import torch.nn.functional
 from torch.nn.functional import one_hot
 
-
-def weighted_votes(votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
-    """Weight the votes
-
-    Args:
-        votes (torch.Tensor): votes to weight
-        weights (torch.Tensor, optional): the weights. Defaults to None.
-
-    Raises:
-        ValueError: if the weights are not one dimensional
-        ValueError: if the dimension size is incorrect
-
-    Returns:
-        torch.Tensor: _description_
-    """
-
-    # (voters, batch, vote)
-    if weights is None:
-        return votes.mean(dim=0)
-    if weights.dim() != 1:
-        raise ValueError(
-            f"Argument weights must be one dimensional not {weights.dim()} dimensional"
-        )
-    if weights.size(0) != votes.size(0):
-        raise ValueError(
-            "Argument weight must have the same dimension size as the "
-            f"number of voters {votes.size(1)} not {weights.size(0)}"
-        )
-
-    return (votes * weights[:, None, None]).sum(dim=0) / (
-        (weights[:, None, None] + 1e-7).sum(dim=0)
-    )
+# local
+from zenkai._core import votes_weighted
 
 
 class VoteAggregator(nn.Module):
     """Module that chooses the best"""
 
     @abstractmethod
-    def forward(
-        self, votes: torch.Tensor, weights: typing.List[float] = None
-    ) -> torch.Tensor:
+    def forward(self, votes: torch.Tensor, weights: typing.List[float] = None) -> torch.Tensor:
         """Aggregate the votes from the estimators
 
         Args:
@@ -63,9 +31,7 @@ class VoteAggregator(nn.Module):
 class MeanVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def forward(
-        self, votes: torch.Tensor, weights: torch.Tensor = None
-    ) -> torch.Tensor:
+    def forward(self, votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
         """Aggregate the votes from the estimators
 
         Args:
@@ -75,15 +41,13 @@ class MeanVoteAggregator(VoteAggregator):
         Returns:
             torch.Tensor: The aggregated result
         """
-        return weighted_votes(votes, weights)
+        return votes_weighted(votes, weights)
 
 
 class BinaryVoteAggregator(VoteAggregator):
     """Module that chooses the best"""
 
-    def __init__(
-        self, f: typing.Callable[[torch.Tensor], torch.Tensor]=None
-    ):
+    def __init__(self, f: typing.Callable[[torch.Tensor], torch.Tensor] = None):
         """initializer
 
         Args:
@@ -100,9 +64,7 @@ class BinaryVoteAggregator(VoteAggregator):
         super().__init__()
         self._f = f
 
-    def forward(
-        self, votes: torch.Tensor, weights: torch.Tensor = None
-    ) -> torch.Tensor:
+    def forward(self, votes: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
         """Aggregate the votes from the estimators
 
         Args:
@@ -112,7 +74,7 @@ class BinaryVoteAggregator(VoteAggregator):
         Returns:
             torch.Tensor: The aggregated result
         """
-        chosen = weighted_votes(votes, weights)
+        chosen = votes_weighted(votes, weights)
 
         if self._f is not None:
             return self._f(chosen)
@@ -145,9 +107,7 @@ class MulticlassVoteAggregator(VoteAggregator):
         self.input_one_hot = input_one_hot
         self.output_mean = output_mean
 
-    def forward(
-        self, votes: torch.Tensor, weights: typing.List[float] = None
-    ) -> torch.Tensor:
+    def forward(self, votes: torch.Tensor, weights: typing.List[float] = None) -> torch.Tensor:
         """Aggregate the votes from the estimators
 
         Args:
@@ -161,7 +121,7 @@ class MulticlassVoteAggregator(VoteAggregator):
         if not self.input_one_hot:
             votes = one_hot(votes, self._n_classes)
         votes = votes.float()
-        votes = weighted_votes(votes, weights)
+        votes = votes_weighted(votes, weights)
         if self.output_mean:
             return votes
 
@@ -169,8 +129,7 @@ class MulticlassVoteAggregator(VoteAggregator):
 
 
 class Voter(nn.Module):
-    """Use to choose which output from an ensemble to use.
-    """
+    """Use to choose which output from an ensemble to use."""
 
     @property
     @abstractmethod
@@ -199,7 +158,7 @@ class EnsembleVoter(Voter):
         spawner: typing.Callable[[], nn.Module],
         n_keep: int,
         temporary: nn.Module = None,
-        train_only_last: bool=True
+        train_only_last: bool = True,
     ):
         """Create a machine that runs an ensemble of sub machines
 
@@ -214,9 +173,7 @@ class EnsembleVoter(Voter):
         self._temporary = temporary
         self.spawner = spawner
         if self._temporary is None:
-            self._estimators.append(
-                spawner()
-            )
+            self._estimators.append(spawner())
         self._n_votes = n_keep
         self.train_only_last = train_only_last
 
@@ -248,7 +205,7 @@ class EnsembleVoter(Voter):
 
     @property
     def n_votes(self) -> int:
-        """The number of votes currently for the 
+        """The number of votes currently for the
 
         Returns:
             int: The number of votes
@@ -257,16 +214,15 @@ class EnsembleVoter(Voter):
 
     @n_votes.setter
     def n_votes(self, n_votes: int) -> int:
-        """The number of votes currently for the 
+        """The number of votes currently for the
 
         Returns:
             int: The number of votes
         """
         if n_votes < 1:
-            raise ValueError(f'Arg n_votes must be greater than 0 not {n_votes}')
+            raise ValueError(f"Arg n_votes must be greater than 0 not {n_votes}")
         self._n_votes = n_votes
         return self._n_votes
-
 
     @property
     def cur(self) -> nn.Module:
@@ -308,8 +264,8 @@ class EnsembleVoter(Voter):
 
 
 class StochasticVoter(Voter):
-    """Voter that chooses an output stochastically
-    """
+    """Voter that chooses an output stochastically"""
+
     def __init__(self, stochastic_model: nn.Module, n_votes: int):
         """Create a voter for voting stochastically (such as dropout)
 
@@ -331,9 +287,7 @@ class StochasticVoter(Voter):
             torch.Tensor: The n votes - Shape[votes, batch size, *feature_shape]
         """
 
-        y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).reshape(
-            self._n_votes * x.shape[0], *x.shape[1:]
-        )
+        y = (x[None].repeat(self.n_votes, *[1] * len(x.shape))).reshape(self._n_votes * x.shape[0], *x.shape[1:])
         y = self.stochastic_model(y)
         return y.reshape(self._n_votes, x.shape[0], *y.shape[1:])
 

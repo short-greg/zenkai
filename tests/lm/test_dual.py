@@ -1,11 +1,13 @@
 import torch
-from zenkai.lm._dual import SwapLearner, SepSwapLearner
-from .test_grad import THGradLearnerT1
-from zenkai.utils import to_pvec
 from torch import nn
 
+from zenkai._core import to_pvec
+from zenkai.lm._dual import SplitTargetSwapLearner, SwapLearner
 
-class TestSepSwapLearner:
+from .test_grad import THGradLearnerT1
+
+
+class TestSwapLearner:
 
     def test_dual_learner_returns_correct_forward(self):
 
@@ -58,7 +60,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SwapLearner(learner1, learner2, train1=False)
+        dual_learner = SwapLearner(learner1, learner2, train_main=False)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -77,7 +79,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -92,15 +94,14 @@ class TestSepSwapLearner:
         assert (before != after).any()
 
 
-
-class TestSepSwapLearner:
+class TestSplitTargetSwapLearner:
 
     def test_dual_learner_returns_correct_forward(self):
 
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2)
         x = torch.rand(5, 2)
 
         y = dual_learner(x)
@@ -113,7 +114,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2)
         dual_learner.swap()
         x = torch.rand(5, 2)
 
@@ -127,7 +128,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -146,7 +147,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2, train_main=False)
         optim = torch.optim.Adam(learner1.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -165,7 +166,7 @@ class TestSepSwapLearner:
         learner1 = THGradLearnerT1(2, 4)
         learner2 = THGradLearnerT1(2, 4)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 2)
         t = torch.rand(5, 4)
@@ -185,7 +186,7 @@ class TestSepSwapLearner:
         learner2 = THGradLearnerT1(2, 4)
         in_learner = nn.Linear(3, 2)
 
-        dual_learner = SepSwapLearner(learner1, learner2, train1=False, train2=True)
+        dual_learner = SplitTargetSwapLearner(learner1, learner2, train_main=False, train_sub=True)
         optim = torch.optim.Adam(learner2.parameters(), lr=1e-3)
         x = torch.rand(5, 3)
         t = torch.rand(5, 4)
@@ -198,4 +199,3 @@ class TestSepSwapLearner:
         after = to_pvec(learner2)
 
         assert (before != after).any()
-

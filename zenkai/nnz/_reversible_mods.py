@@ -1,6 +1,5 @@
 # 1st party
-from abc import ABC, abstractmethod
-import typing
+from abc import abstractmethod
 
 # 3rd party
 import torch
@@ -161,10 +160,7 @@ class BatchNorm1DReversible(Reversible):
         Returns:
             torch.Tensor: the inverted batch norm
         """
-        return (
-            y * torch.sqrt(self._batch_norm.running_var[None])
-            + self._batch_norm.running_mean[None]
-        )
+        return y * torch.sqrt(self._batch_norm.running_var[None]) + self._batch_norm.running_mean[None]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """batch normalize the input
@@ -244,8 +240,7 @@ class SignedToBool(Reversible):
     """Converts binary valued inputs so that 0 is negative, and 1 is positive"""
 
     def __init__(self):
-        """Convert a signed representation to a boolean representation
-        """
+        """Convert a signed representation to a boolean representation"""
         super().__init__()
         self._neg = BoolToSigned()
 
@@ -273,26 +268,27 @@ class SignedToBool(Reversible):
 
 
 class Reverse(nn.Module):
-
     """
-    An adapter for a reversible module that calls the reverse method on the 
+    An adapter for a reversible module that calls the reverse method on the
     reversible module in its forward method.
     """
 
     def __init__(self, reversible: Reversible):
         """Initialize the Reverse adapter.
+
         Args:
-            reversible (Reversible): An instance of a reversible module that 
-            implements a reverse method."
+            reversible (Reversible): An instance of a reversible module that
+                implements a reverse method.
         """
         super().__init__()
         self.reversible = reversible
 
     def forward(self, *x) -> torch.Tensor:
-        """
-        Executes the reverse method of the adapted module.
+        """Executes the reverse method of the adapted module.
+
         Args:
             *x: Variable length argument list.
+
         Returns:
             torch.Tensor: The result of the reversible module's reverse method.
         """

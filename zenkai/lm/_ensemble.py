@@ -1,52 +1,57 @@
-# TODO: Add modules for ensemble
+"""Ensemble learners that optimize over a collection of learning machines."""
+
 # 1st party
 import typing
-from torch import nn
+
+# 3rd party
 import torch
+from torch import nn
 
 # local
-from ._lm2 import (
-    LearningMachine as LearningMachine, LMode,
-    backward
-)
+from zenkai._core import IO
+
 from ._grad import GradLearner
-from ._io2 import IO
+from ._lm import LearningMachine, LMode, backward
 
 
 def mean_x_agg(x: IO) -> IO:
-    """Take the mean of all of the x inputs
+    """Take the mean of all of the x inputs.
+
+    Args:
+        x (IO): The collection of inputs to aggregate.
 
     Returns:
-        IO: 
+        IO: The mean of the inputs.
     """
     transposed = list(zip(*x))
-    return IO(
-        torch.mean(torch.stack(xi), dim=0) for xi in transposed
-    )
+    return IO(torch.mean(torch.stack(xi), dim=0) for xi in transposed)
 
 
 class EnsembleLearner(LearningMachine):
-    """A LearningMachine that optimizes over an ensemble of other machines"""
+    """A LearningMachine that optimizes over an ensemble of other machines."""
 
     def __init__(
-        self, spawner: typing.Callable[[], LearningMachine], 
+        self,
+        spawner: typing.Callable[[], LearningMachine],
         agg: nn.Module,
-        n_keep: int, 
+        n_keep: int,
         temporary: nn.Module = None,
-        lmode = LMode.Standard,
-        use_last: bool=False,
-        train_only_last: bool=False,
-        x_agg: typing.Callable[[typing.Iterable[IO]], IO]=None
+        lmode=LMode.Standard,
+        use_last: bool = False,
+        train_only_last: bool = False,
+        x_agg: typing.Callable[[typing.Iterable[IO]], IO] = None,
     ):
-        """
+        """Create an EnsembleLearner.
 
         Args:
-            spawner (typing.Callable[[], LearningMachine]): _description_
-            n_keep (int): _description_
-            temporary (nn.Module, optional): _description_. Defaults to None.
-            lmode (_type_, optional): _description_. Defaults to LMode.Standard.
-            train_only_last (bool, optional): _description_. Defaults to False.
-            x_agg (typing.Callable, optional): _description_. Defaults to None.
+            spawner (typing.Callable[[], LearningMachine]): Factory that creates a new voter.
+            agg (nn.Module): The module (or learner) used to aggregate the votes.
+            n_keep (int): The number of voters to keep.
+            temporary (nn.Module, optional): A temporary module used before any voters exist. Defaults to None.
+            lmode (optional): The learning mode. Defaults to LMode.Standard.
+            use_last (bool, optional): Whether to include the last voter in the aggregation. Defaults to False.
+            train_only_last (bool, optional): Whether to only train the last voter. Defaults to False.
+            x_agg (typing.Callable, optional): The function used to aggregate the inputs. Defaults to None.
         """
         super().__init__(lmode)
         self.spawner = spawner
@@ -64,7 +69,7 @@ class EnsembleLearner(LearningMachine):
         self.x_agg = x_agg or mean_x_agg
 
     def adv(self):
-        """Spawn a new voter. If exceeds n_keep will remove the first voter"""
+        """Spawn a new voter. If exceeds n_keep will remove the first voter."""
         spawned = self.spawner()
         lmode = self._learners[-1].lmode
         spawned.lmode_(lmode)
@@ -74,13 +79,14 @@ class EnsembleLearner(LearningMachine):
 
     @property
     def learners(self) -> LearningMachine:
+        """Return the list of voters."""
         return [*self._learners]
 
-    def forward_nn(self, x: IO, state):    
-        """Send the inputs through each of the ensembles
+    def forward_nn(self, x: IO, state):
+        """Send the inputs through each of the ensembles.
 
         Returns:
-            torch.Tensor: The output of the ensemble
+            torch.Tensor: The output of the ensemble.
         """
         state.use_last = self.use_last or len(self.learners) == 1
         if len(self._learners) == 0:
@@ -92,9 +98,7 @@ class EnsembleLearner(LearningMachine):
             cur_x = x.clone()
             state._xs.append(cur_x)
             y = estimator.forward_io(cur_x, state.sub(i))
-            is_last = i == len(
-                self._learners
-            ) - 1
+            is_last = i == len(self._learners) - 1
             if is_last and not state.use_last:
                 continue
 
@@ -104,11 +108,11 @@ class EnsembleLearner(LearningMachine):
                 res.append(y.detach())
 
         ensemble_y = state.ensemble_y = IO(torch.stack(xs) for xs in zip(*res))
-        return self._agg.forward_io(ensemble_y, state.sub('agg')).to_x()
-    
+        return self._agg.forward_io(ensemble_y, state.sub("agg")).to_x()
+
     def accumulate(self, x, t, state):
-        
-        agg_t = backward(self._agg, state.ensemble_y, t, state.sub('agg'))
+        """Accumulate the gradients for each of the voters."""
+        agg_t = backward(self._agg, state.ensemble_y, t, state.sub("agg"))
 
         ts = agg_t.split()
         if not state.use_last:
@@ -117,47 +121,39 @@ class EnsembleLearner(LearningMachine):
         state.sub_ts = ts
 
         if self.train_only_last:
-            self._learners[-1].accumulate(
-                state._xs[-1], ts[-1], 
-                state.sub(len(self._learners) - 1)
-            )
+            self._learners[-1].accumulate(state._xs[-1], ts[-1], state.sub(len(self._learners) - 1))
         else:
             for i, (learner, ti, xi) in enumerate(zip(self._learners, ts, state._xs)):
                 learner.accumulate(xi, ti, state.sub(i))
-        
+
     def step(self, x, t, state):
-        """
-        Perform a training step for the ensemble of learners.
-        Parameters:
-        x : Any
-            The input data for the training step.
-        t : Any
-            The target data, which is split for each learner.
-        state : Any
-            The state object that is used to manage the state of each learner.
-        **kwargs : dict
-            Additional keyword arguments.
-        If `train_only_last` is True, only the final learner in the ensemble is updated.
-        Otherwise, each learner in the ensemble is updated with its corresponding split of the target data.
+        """Perform a training step for the ensemble of learners.
+
+        Args:
+            x: The input data for the training step.
+            t: The target data, which is split for each learner.
+            state: The state object used to manage the state of each learner.
+
+        If ``train_only_last`` is True, only the final learner in the ensemble is updated. Otherwise, each
+        learner in the ensemble is updated with its corresponding split of the target data.
         """
         ts = state.sub_ts
         if self.train_only_last:
-            self._learners[-1].step(
-                x, ts[-1], state.sub(len(self._learners) - 1)
-            )
+            self._learners[-1].step(x, ts[-1], state.sub(len(self._learners) - 1))
         else:
             for i, (learner, xi, ti) in enumerate(zip(self._learners, state._xs, ts)):
                 learner.step(xi, ti, state.sub(i))
 
     def step_x(self, x, t, state) -> IO:
-        """
-        Updates the input `x` for each learner and then aggregates the results.
+        """Update the input ``x`` for each learner and then aggregate the results.
+
         Args:
             x: The input data to be processed by each learner.
             t: A tensor or sequence of tensors to be split and passed to each learner.
             state: The current state, which can be subdivided for each learner.
+
         Returns:
-            IO: The aggregated result after processing `x` with each learner.
+            IO: The aggregated result after processing ``x`` with each learner.
         """
         ts = state.sub_ts
         xs = []
@@ -169,40 +165,39 @@ class EnsembleLearner(LearningMachine):
 
     @property
     def n_votes(self) -> int:
+        """Return the number of votes to keep."""
         return self._n_votes
-    
+
     @n_votes.setter
     def n_votes(self, n_votes: int):
-
         if n_votes < 1:
-            raise ValueError(f'N votes must be greater than 0 not {n_votes}')
-        
+            raise ValueError(f"N votes must be greater than 0 not {n_votes}")
+
         res = max(len(self._learners) - n_votes, 0)
         self._learners = self._learners[res:]
 
 
-
-
 class EnsembleVoterLearner(LearningMachine):
-    """A LearningMachine that optimizes over an ensemble of other machines"""
+    """A LearningMachine that optimizes over an ensemble of other machines."""
 
     def __init__(
-        self, spawner: typing.Callable[[], LearningMachine], 
-        n_keep: int, 
+        self,
+        spawner: typing.Callable[[], LearningMachine],
+        n_keep: int,
         temporary: nn.Module = None,
-        lmode = LMode.Standard,
-        train_only_last: bool=False,
-        x_agg: typing.Callable[[typing.Iterable[IO]], IO]=None
+        lmode=LMode.Standard,
+        train_only_last: bool = False,
+        x_agg: typing.Callable[[typing.Iterable[IO]], IO] = None,
     ):
-        """
+        """Create an EnsembleVoterLearner.
 
         Args:
-            spawner (typing.Callable[[], LearningMachine]): _description_
-            n_keep (int): _description_
-            temporary (nn.Module, optional): _description_. Defaults to None.
-            lmode (_type_, optional): _description_. Defaults to LMode.Standard.
-            train_only_last (bool, optional): _description_. Defaults to False.
-            x_agg (typing.Callable, optional): _description_. Defaults to None.
+            spawner (typing.Callable[[], LearningMachine]): Factory that creates a new voter.
+            n_keep (int): The number of voters to keep.
+            temporary (nn.Module, optional): A temporary module used before any voters exist. Defaults to None.
+            lmode (optional): The learning mode. Defaults to LMode.Standard.
+            train_only_last (bool, optional): Whether to only train the last voter. Defaults to False.
+            x_agg (typing.Callable, optional): The function used to aggregate the inputs. Defaults to None.
         """
         super().__init__(lmode)
         self.spawner = spawner
@@ -217,7 +212,7 @@ class EnsembleVoterLearner(LearningMachine):
         self.x_agg = x_agg or mean_x_agg
 
     def adv(self):
-        """Spawn a new voter. If exceeds n_keep will remove the first voter"""
+        """Spawn a new voter. If exceeds n_keep will remove the first voter."""
         spawned = self.spawner()
         lmode = self._learners[-1].lmode
         spawned.lmode_(lmode)
@@ -227,13 +222,14 @@ class EnsembleVoterLearner(LearningMachine):
 
     @property
     def learners(self) -> LearningMachine:
+        """Return the list of voters."""
         return [*self._learners]
 
-    def forward_nn(self, x: IO, state):    
-        """Send the inputs through each of the ensembles
+    def forward_nn(self, x: IO, state):
+        """Send the inputs through each of the ensembles.
 
         Returns:
-            torch.Tensor: The output of the ensemble
+            torch.Tensor: The output of the ensemble.
         """
         if len(self._learners) == 0:
             return [self._temporary(*x)]
@@ -244,9 +240,7 @@ class EnsembleVoterLearner(LearningMachine):
             cur_x = x.clone()
             state._xs.append(cur_x)
             y = estimator.forward_io(cur_x, state.sub(i))
-            if self.train_only_last and i == len(
-                self._learners
-            ) - 1:
+            if self.train_only_last and i == len(self._learners) - 1:
                 res.append(y)
             else:
                 res.append(y.detach())
@@ -255,52 +249,44 @@ class EnsembleVoterLearner(LearningMachine):
         if len(res) == 1:
             return res[0]
         return res
-    
+
     def accumulate(self, x, t, state):
-        
+        """Accumulate the gradients for each of the voters."""
         ts = t.split()
         if self.train_only_last:
-            self._learners[-1].accumulate(
-                state._xs[-1], ts[-1], 
-                state.sub(len(self._learners) - 1)
-            )
+            self._learners[-1].accumulate(state._xs[-1], ts[-1], state.sub(len(self._learners) - 1))
         else:
             for i, (learner, ti, xi) in enumerate(zip(self._learners, ts, state._xs)):
                 learner.accumulate(xi, ti, state.sub(i))
-        
+
     def step(self, x, t, state):
-        """
-        Perform a training step for the ensemble of learners.
-        Parameters:
-        x : Any
-            The input data for the training step.
-        t : Any
-            The target data, which is split for each learner.
-        state : Any
-            The state object that is used to manage the state of each learner.
-        **kwargs : dict
-            Additional keyword arguments.
-        If `train_only_last` is True, only the final learner in the ensemble is updated.
-        Otherwise, each learner in the ensemble is updated with its corresponding split of the target data.
+        """Perform a training step for the ensemble of learners.
+
+        Args:
+            x: The input data for the training step.
+            t: The target data, which is split for each learner.
+            state: The state object used to manage the state of each learner.
+
+        If ``train_only_last`` is True, only the final learner in the ensemble is updated. Otherwise, each
+        learner in the ensemble is updated with its corresponding split of the target data.
         """
         ts = t.split()
         if self.train_only_last:
-            self._learners[-1].step(
-                x, ts[-1], state.sub(len(self._learners) - 1)
-            )
+            self._learners[-1].step(x, ts[-1], state.sub(len(self._learners) - 1))
         else:
             for i, (learner, xi, ti) in enumerate(zip(self._learners, state._xs, ts)):
                 learner.step(xi, ti, state.sub(i))
 
     def step_x(self, x, t, state) -> IO:
-        """
-        Updates the input `x` for each learner and then aggregates the results.
+        """Update the input ``x`` for each learner and then aggregate the results.
+
         Args:
             x: The input data to be processed by each learner.
             t: A tensor or sequence of tensors to be split and passed to each learner.
             state: The current state, which can be subdivided for each learner.
+
         Returns:
-            IO: The aggregated result after processing `x` with each learner.
+            IO: The aggregated result after processing ``x`` with each learner.
         """
         ts = t.split()
         xs = []
@@ -312,13 +298,13 @@ class EnsembleVoterLearner(LearningMachine):
 
     @property
     def n_votes(self) -> int:
+        """Return the number of votes to keep."""
         return self._n_votes
-    
+
     @n_votes.setter
     def n_votes(self, n_votes: int):
-
         if n_votes < 1:
-            raise ValueError(f'N votes must be greater than 0 not {n_votes}')
-        
+            raise ValueError(f"N votes must be greater than 0 not {n_votes}")
+
         res = max(len(self._learners) - n_votes, 0)
         self._learners = self._learners[res:]

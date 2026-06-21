@@ -1,39 +1,35 @@
-import torch
-from zenkai.lm._io2 import IO as IO
-from .test_grad import THGradLearnerT1
-from zenkai.lm._state import State
-
-
+# 3rd party
 import pytest
 import torch
-from zenkai.lm._ensemble import EnsembleVoterLearner, EnsembleLearner
-from zenkai.lm._io2 import IO
-from zenkai.lm._state import State
-from zenkai import utils
+
+# local
+from zenkai._core import IO, State, to_gradvec, to_pvec
+from zenkai.lm._ensemble import EnsembleLearner, EnsembleVoterLearner
+
+from .test_grad import THGradLearnerT1
 
 
 @pytest.fixture
 def ensemble_voter():
-    return EnsembleVoterLearner(
-        lambda: THGradLearnerT1(3, 4), n_keep=3
-    )
+    return EnsembleVoterLearner(lambda: THGradLearnerT1(3, 4), n_keep=3)
 
 
 @pytest.fixture
 def ensemble():
     return EnsembleLearner(
-        lambda: THGradLearnerT1(3, 4), n_keep=3,
-        agg=lambda io: torch.sum(io, dim=0)
-
+        lambda: THGradLearnerT1(3, 4),
+        n_keep=3,
+        agg=lambda io: torch.sum(io, dim=0),
     )
 
 
 @pytest.fixture
 def ensembleb():
     return EnsembleLearner(
-        lambda: THGradLearnerT1(3, 4), n_keep=3,
+        lambda: THGradLearnerT1(3, 4),
+        n_keep=3,
         agg=lambda io: torch.sum(io, dim=0),
-        use_last=False
+        use_last=False,
     )
 
 
@@ -62,7 +58,7 @@ class TestEnsemble:
         ensemble_voter.forward_io(x, state)
         ensemble_voter.accumulate(x, t, state)
         for learner in ensemble_voter.learners:
-            grads = utils.to_gradvec(learner)
+            grads = to_gradvec(learner)
             assert (grads != 0.0).any()
 
     def test_step(self, ensemble_voter):
@@ -73,10 +69,10 @@ class TestEnsemble:
         ensemble_voter.accumulate(x, t, state)
         befores = []
         for learner in ensemble_voter.learners:
-            befores.append(utils.to_pvec(learner))
+            befores.append(to_pvec(learner))
         ensemble_voter.step(x, t, state)
         for before, learner in enumerate(ensemble_voter.learners):
-            assert (utils.to_pvec(learner) != before).any()
+            assert (to_pvec(learner) != before).any()
 
     def test_step_x(self, ensemble_voter):
         x = IO([torch.randn(8, 3)])
@@ -124,10 +120,10 @@ class TestEnsembleLearner:
         ensemble.accumulate(x, t, state)
         befores = []
         for learner in ensemble.learners:
-            befores.append(utils.to_pvec(learner))
+            befores.append(to_pvec(learner))
         ensemble.step(x, t, state)
         for before, learner in enumerate(ensemble.learners):
-            assert (utils.to_pvec(learner) != before).any()
+            assert (to_pvec(learner) != before).any()
 
     def test_step_with_not_use_last(self, ensemble):
         x = IO([torch.randn(8, 3)])
@@ -138,11 +134,10 @@ class TestEnsembleLearner:
         ensemble.accumulate(x, t, state)
         befores = []
         for learner in ensemble.learners:
-            befores.append(utils.to_pvec(learner))
+            befores.append(to_pvec(learner))
         ensemble.step(x, t, state)
         for before, learner in enumerate(ensemble.learners):
-            assert (utils.to_pvec(learner) != before).any()
-
+            assert (to_pvec(learner) != before).any()
 
     def test_step_x(self, ensemble):
         x = IO([torch.randn(8, 3)])

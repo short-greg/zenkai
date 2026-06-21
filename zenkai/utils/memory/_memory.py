@@ -1,15 +1,16 @@
-import torch
+# flake8: noqa
 import typing
+
+import torch
 
 # TODO: for reinforcement learning => would probably do some modifications
 
 
 class BatchMemory(object):
-    """Use to store samples of inputs or weightsas the learning progresses
-    """
+    """Use to store samples of inputs or weightsas the learning progresses"""
 
-    def __init__(self, samples: typing.List[str], singular: typing.List[str]=None):
-        """Create tensor based memory to 
+    def __init__(self, samples: typing.List[str], singular: typing.List[str] = None):
+        """Create tensor based memory to
 
         Args:
             samples (typing.List[str]): The names of the batch samples
@@ -18,7 +19,7 @@ class BatchMemory(object):
         Raises:
             ValueError: If there is overlap between the names listed for singular and for samples
         """
-        
+
         singular = singular or []
         # if set(samples).intersection(set(singular)) == 0:
         #     raise ValueError(
@@ -34,7 +35,7 @@ class BatchMemory(object):
         self._idx = 0
         self._batch_count = None
 
-    def _cat_if(self, new_value: torch.Tensor, cur_value: torch.Tensor=None) -> torch.Tensor:
+    def _cat_if(self, new_value: torch.Tensor, cur_value: torch.Tensor = None) -> torch.Tensor:
         """helper function for updating tensors to handle the case where no tensors have been added yet more elegantly
 
         Args:
@@ -49,10 +50,8 @@ class BatchMemory(object):
             return new_value.detach()
         return torch.cat([cur_value.detach(), new_value.detach()])
 
-    def add_batch(
-        self, **kwargs
-    ):
-        """Add values to the batch. You must add values for 
+    def add_batch(self, **kwargs):
+        """Add values to the batch. You must add values for
         all of the keys specified in samples and singular
 
         Raises:
@@ -62,7 +61,7 @@ class BatchMemory(object):
 
         # 1) validate n_samples
         # 2) validate names
-        # 3) 
+        # 3)
         n_batch = None
         for name, sample in self._samples.items():
             cur_sample = kwargs[name]
@@ -70,27 +69,18 @@ class BatchMemory(object):
                 n_batch = len(cur_sample)
             else:
                 if n_batch != len(cur_sample):
-                    raise RuntimeError('The batch size for the samples is not equal')
-            self._samples[name] = self._cat_if(
-                cur_sample, sample
-            )
-            
+                    raise RuntimeError("The batch size for the samples is not equal")
+            self._samples[name] = self._cat_if(cur_sample, sample)
+
         for name, singular in self._singular.items():
 
-            self._singular[name] = self._cat_if(
-                kwargs[name][None], singular
-            )
-        
-        self._order = self._cat_if(
-            torch.full((n_batch,), self._idx, dtype=torch.long),
-            self._order
-        )
-        
-        self._batch_count = self._cat_if(
-            torch.LongTensor([n_batch]), self._batch_count
-        )
+            self._singular[name] = self._cat_if(kwargs[name][None], singular)
+
+        self._order = self._cat_if(torch.full((n_batch,), self._idx, dtype=torch.long), self._order)
+
+        self._batch_count = self._cat_if(torch.LongTensor([n_batch]), self._batch_count)
         self._idx += 1
-    
+
     def remove_batch(self, idx: int):
         """Remove a batch from memory
 
@@ -103,14 +93,11 @@ class BatchMemory(object):
         self._order[self._order > idx] -= 1
 
         for name, singular in self._singular.items():
-            self._singular[name] = torch.cat(
-                [singular[:idx], singular[idx + 1:]]
-            )
+            self._singular[name] = torch.cat([singular[:idx], singular[idx + 1 :]])
 
         for name, sample in self._samples.items():
             self._samples[name] = sample[to_keep]
-        self._batch_count = torch.cat(
-            [self._batch_count[:idx], self._batch_count[idx:]])
+        self._batch_count = torch.cat([self._batch_count[:idx], self._batch_count[idx:]])
         self._idx -= 1
 
     def remove_samples(self, idx):
@@ -126,9 +113,7 @@ class BatchMemory(object):
         chosen_order = self._order[chosen]
         self._order = self._order[~chosen]
 
-        self._batch_count = (
-            self._batch_count - torch.bincount(chosen_order)  
-        )      
+        self._batch_count = self._batch_count - torch.bincount(chosen_order)
 
         for name, sample in self._samples.items():
             self._samples[name] = sample[~chosen]
@@ -157,7 +142,7 @@ class BatchMemory(object):
         self.remove_samples(chosen)
 
     def __getitem__(self, idx) -> typing.Dict[str, torch.Tensor]:
-        """Retrieve memories. 
+        """Retrieve memories.
 
         Args:
             idx: The index or indices to retrieve
@@ -166,7 +151,7 @@ class BatchMemory(object):
             ValueError: If the index is invalid
 
         Returns:
-            typing.Dict[str, torch.Tensor]: A dictionary of the retrieved values and tensors. Note that any singular item 
+            typing.Dict[str, torch.Tensor]: A dictionary of the retrieved values and tensors. Note that any singular item
         """
 
         if isinstance(idx, typing.Tuple):
@@ -174,15 +159,15 @@ class BatchMemory(object):
 
         result = {}
         if self._order is None:
-            raise ValueError(f'No elements are been added to the memory')
+            raise ValueError(f"No elements are been added to the memory")
         for name, sample in self._samples.items():
             result[name] = sample[idx]
-        
+
         chosen_singular = self._order[idx]
         for name, singular in self._singular.items():
             result[name] = singular[chosen_singular]
         return result
-    
+
     def random_sample(self, n: int) -> typing.Dict[str, torch.Tensor]:
         """Randomly sample a set of tensors
 
@@ -190,7 +175,7 @@ class BatchMemory(object):
             n (int): The number of samples to retrieve
 
         Returns:
-            typing.Dict[str, torch.Tensor]: 
+            typing.Dict[str, torch.Tensor]:
         """
 
         return self[torch.randperm(len(self))[:n]]

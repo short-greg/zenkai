@@ -1,9 +1,16 @@
 import torch
 
-from zenkai.utils import _params as utils
-from zenkai.lm._io2 import IO as IO, iou
-from zenkai.lm._state import State
+from zenkai._core import State
+from zenkai._core import _params as utils
+from zenkai._core import iou
 from zenkai.lm._null import NullLearner
+
+
+def _params_or_none(model):
+    """``params_get`` raises on a parameter-less module, so treat that as ``None``."""
+    if next(model.parameters(), None) is None:
+        return None
+    return utils.params_get(model)
 
 
 class TestNullLearner:
@@ -15,11 +22,11 @@ class TestNullLearner:
         learner = NullLearner()
 
         state = State()
-        before = utils.get_params(learner)
+        before = _params_or_none(learner)
         learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         learner.step(x, t, state)
-        after = utils.get_params(learner)
+        after = _params_or_none(learner)
         assert (before == after) and before is None
 
     def test_step_x_does_not_change_y(self):
@@ -29,7 +36,7 @@ class TestNullLearner:
         learner = NullLearner()
 
         state = State()
-        y = learner.forward_io(x, state)
+        learner.forward_io(x, state)
         learner.accumulate(x, t, state)
         x_prime = learner.step_x(x, t, state)
         assert (x_prime.f == x.f).all()

@@ -1,8 +1,9 @@
-from zenkai.nnz import _ensemble_mod as modules
 import torch
 from torch import nn
 from torch.nn.functional import one_hot
-from zenkai.nnz import _ste as ste
+
+from zenkai._core import sign_ste, step_ste
+from zenkai.nnz import _ensemble_mod as modules
 
 
 class TestMeanVoteAggregator:
@@ -19,28 +20,23 @@ class TestMeanVoteAggregator:
         voter = modules.MeanVoteAggregator()
         assert torch.isclose(
             voter(votes, weights),
-            (votes * weights[:, None, None]).sum(dim=0)
-            / (weights[:, None, None]).sum(dim=0),
+            (votes * weights[:, None, None]).sum(dim=0) / (weights[:, None, None]).sum(dim=0),
         ).all()
 
 
 class TestBinaryVoteAggregator:
-    
+
     def test_mean_voter_returns_mean(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
-        voter = modules.BinaryVoteAggregator(
-            ste.step_ste
-        )
+        voter = modules.BinaryVoteAggregator(step_ste)
 
         assert torch.isclose(voter(votes), votes.mean(dim=0).round()).all()
 
     def test_binary_voter_returns_mean_with_value(self):
 
         votes = (torch.rand(3, 4, 2) > 0.5).float()
-        voter = modules.BinaryVoteAggregator(
-            ste.sign_ste
-        )
+        voter = modules.BinaryVoteAggregator(sign_ste)
         assert (voter(votes) == votes.mean(dim=0).sign()).all()
 
 
@@ -69,7 +65,7 @@ class TestMulticlassVoteAggregator:
 class TestEnsembleVoter:
     def test_ensemble(self):
 
-        mod = modules.EnsembleVoter(lambda : nn.Linear(3, 4), 4)
+        mod = modules.EnsembleVoter(lambda: nn.Linear(3, 4), 4)
         assert mod(torch.rand(3, 3))[0].shape == torch.Size([3, 4])
 
     def test_ensemble_with_two_modules(self):
@@ -82,9 +78,7 @@ class TestEnsembleVoter:
 
     def test_ensemble_with_temporary(self):
 
-        mod = modules.EnsembleVoter(
-            lambda: nn.Linear(3, 4), 4, temporary=nn.Linear(3, 4)
-        )
+        mod = modules.EnsembleVoter(lambda: nn.Linear(3, 4), 4, temporary=nn.Linear(3, 4))
         mod.adv()
         y = mod(torch.rand(3, 3))
         assert y.shape == torch.Size([1, 3, 4])

@@ -4,13 +4,12 @@ Factories for creating optimizers
 
 # 1st Party
 import typing
+from abc import ABC, abstractmethod
 from typing import Any
-from abc import abstractmethod, ABC
 
 # 3rd Party
 import torch
 import torch.nn as nn
-import torch.nn.functional
 import torch.optim as optim
 
 
@@ -26,8 +25,7 @@ class NullOptim(torch.optim.Optimizer):
         self.state = {}
 
     def step(self):
-        """Null optimizer so does nothing
-        """
+        """Null optimizer so does nothing"""
         pass
 
     def state_dict(self) -> dict:
@@ -47,8 +45,7 @@ class NullOptim(torch.optim.Optimizer):
         pass
 
     def zero_grad(self) -> None:
-        """
-        """
+        """ """
         pass
 
 
@@ -84,9 +81,7 @@ class OptimFactory(object):
         try:
             optim = lookup_optim(optim) if isinstance(optim, str) else optim
         except KeyError:
-            raise KeyError(
-                f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}"
-            )
+            raise KeyError(f"No optim named {optim} in the optim map {list(OPTIM_MAP.keys())}")
         self._optim = optim
         self._args = args
         self._kwargs = kwargs
@@ -148,13 +143,11 @@ class ParamFilter(optim.Optimizer):
         self._is_first = True
 
     def step(self):
-        """Update the parameters
-        """
+        """Update the parameters"""
         self.active_optim.step()
 
     def zero_grad(self):
-        """Zero the gradients
-        """
+        """Zero the gradients"""
         self.active_optim.zero_grad()
 
     @property
@@ -271,7 +264,7 @@ class Fit(ABC):
     """An optimizer to be used for finding the optimal fit"""
 
     @abstractmethod
-    def optim(self, objective, **kwargs)-> typing.Iterator[torch.Tensor]:
+    def optim(self, objective, **kwargs) -> typing.Iterator[torch.Tensor]:
         pass
 
 

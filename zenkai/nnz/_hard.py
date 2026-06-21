@@ -1,20 +1,18 @@
-import typing
-import torch.nn as nn
+# 3rd party
 import torch
+import torch.nn as nn
 
 
 class Argmax(nn.Module):
-    """
-    A custom PyTorch module that computes the index of the maximum value along a specified dimension.
+    """A module that computes the index of the maximum value along a specified dimension.
+
     Args:
         dim (int): The dimension along which to compute the argmax. Default is -1.
         keepdim (bool): Whether to retain the reduced dimension in the output tensor. Default is False.
-    Methods:
-        forward(x: torch.Tensor) -> torch.Tensor:
-            Computes the index of the maximum value along the specified dimension of the input tensor.
+
     Example:
         >>> import torch
-        >>> from zenkai.utils._modules import Argmax
+        >>> from zenkai.nnz._hard import Argmax
         >>> x = torch.tensor([[1, 3, 2], [4, 0, 5]])
         >>> argmax = Argmax(dim=1)
         >>> result = argmax(x)
@@ -22,9 +20,9 @@ class Argmax(nn.Module):
         tensor([1, 2])
     """
 
-    def __init__(self, dim: int=-1, keepdim: bool=False):
-        """
-        Initializes the instance with the specified dimension and keepdim flag.
+    def __init__(self, dim: int = -1, keepdim: bool = False):
+        """Initialize the instance with the specified dimension and keepdim flag.
+
         Args:
             dim (int, optional): The dimension to reduce. Default is -1.
             keepdim (bool, optional): Whether to retain the reduced dimension in the output. Default is False.
@@ -34,10 +32,11 @@ class Argmax(nn.Module):
         self.keepdim = keepdim
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Performs a forward pass by computing the index of the maximum value along a specified dimension.
+        """Compute the index of the maximum value along a specified dimension.
+
         Args:
             x (torch.Tensor): The input tensor.
+
         Returns:
             torch.Tensor: A tensor containing the indices of the maximum values along the specified dimension.
         """
@@ -45,14 +44,11 @@ class Argmax(nn.Module):
 
 
 class Sign(nn.Module):
-    """
-    A custom PyTorch module that computes the sign of each element in the input tensor.
-    Methods:
-        forward(x: torch.Tensor) -> torch.Tensor:
-            Computes the sign of each element in the input tensor.
+    """A module that computes the sign of each element in the input tensor.
+
     Example:
         >>> import torch
-        >>> from zenkai.utils._modules import Sign
+        >>> from zenkai.nnz._hard import Sign
         >>> x = torch.tensor([[-1.5, 0, 2.3], [4.1, -0.2, -3.3]])
         >>> sign = Sign()
         >>> result = sign(x)
@@ -62,16 +58,15 @@ class Sign(nn.Module):
     """
 
     def __init__(self):
-        """
-        Initializes the instance.
-        """
+        """Initialize the instance."""
         super().__init__()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Performs a forward pass by computing the sign of each element in the input tensor.
+        """Compute the sign of each element in the input tensor.
+
         Args:
             x (torch.Tensor): The input tensor.
+
         Returns:
             torch.Tensor: A tensor containing the signs of the input tensor elements.
         """

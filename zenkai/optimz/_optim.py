@@ -1,12 +1,12 @@
+from abc import ABC, abstractmethod
+
 import torch
-from abc import abstractmethod, ABC
 
 
 class PopOptimBase(ABC):
-    """Used for population based optmization
-    """
+    """Used for population based optmization"""
 
-    def __init__(self, decay: float=None):
+    def __init__(self, decay: float = None):
         """Create a Population Optimizer
 
         Args:
@@ -16,8 +16,7 @@ class PopOptimBase(ABC):
         self.assessment: torch.Tensor = None
 
     def zero_assessment(self):
-        """Set the assessment to zero
-        """
+        """Set the assessment to zero"""
         self.assessment = None
 
     def accumulate_assessment(self, assessment: torch.Tensor):
@@ -32,9 +31,8 @@ class PopOptimBase(ABC):
             self.assessment = self.assessment + assessment
         else:
             self.assessment = assessment + self.decay * self.assessment
-    
+
     @abstractmethod
     def step(self):
-        """Update the parameters
-        """
+        """Update the parameters"""
         pass
