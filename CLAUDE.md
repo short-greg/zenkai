@@ -43,6 +43,8 @@ are in **[docs/conventions.md](docs/conventions.md)**. The essentials:
 - **Tests:** mirror the source tree under `tests/`; `test_*.py`, `TestThing` classes, `test_behaviour` methods.
 - **Reuse first:** prefer existing abstractions (`LearningMachine`, `IO`, `State`, `StepTheta`/`StepX`,
   `zenkai.utils`) over re-implementing — see the guardrails in [docs/conventions.md](docs/conventions.md).
+- **Branches & PRs:** name them `YYYYMMDD-<fix|imp|chore>-<slug>` (e.g. `20260624-chore-exp-clone`). The
+  date prefix keeps work chronologically organized; `<slug>` is a short kebab-case description.
 
 ## Specs
 
