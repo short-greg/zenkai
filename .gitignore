@@ -135,6 +135,9 @@ local/*
 
 integrations/*
 
+# Experiment repo (private), cloned as a nested git clone — never tracked here
+exp/
+
 # Per-developer agent context (machine-specific, not shared)
 CLAUDE.local.md
 # Sphinx autosummary output (regenerated on build)
