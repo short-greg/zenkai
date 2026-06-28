@@ -108,7 +108,7 @@ class _OutT(torch.autograd.Function):
         if len(x) == 0:
             return None
         if len(x) == 1:
-            return x
+            return x[0]
         return x
 
     @staticmethod
@@ -121,7 +121,18 @@ class _OutT(torch.autograd.Function):
 
 
 class OutT(nn.Module):
-    """Use to store the value to set T to be"""
+    """A placeholder that carries an output target into a learner.
+
+    Used by direct feedback alignment (:class:`~zenkai.lm.DFALearner`) so a layer can be trained
+    against the **global** output target. There are two ways to populate ``.t``:
+
+    - **autograd**: call it on the network output and put the result in your loss
+      (``z = out_t(y); loss = 1/2 * ((z - t) ** 2).sum(); loss.backward()``). It is an identity on
+      the forward pass; on the backward pass it stores ``t = output - grad`` into ``self.t`` before
+      the learner's ``accumulate`` runs.
+    - **manual**: set ``out_t.t = target`` directly (an :class:`~zenkai.IO`), then call
+      ``accumulate``/``step`` yourself.
+    """
 
     def __init__(self, t: IO = None):
         """Initialize a module that will store a target to be defined later
@@ -129,6 +140,7 @@ class OutT(nn.Module):
         Args:
             t (IO, optional): The target. Defaults to None.
         """
+        super().__init__()
         self.t = t
 
     def forward(self, *x: torch.Tensor):
@@ -141,7 +153,7 @@ class OutT(nn.Module):
         Returns:
             torch.Tensor: The output tensor after applying the forward pass.
         """
-        return _OutT.apply(self, x)
+        return _OutT.apply(self, *x)
 
 
 class LMode(Enum):
@@ -419,7 +431,20 @@ class LearningF(Function):
 
 
 class LearningMachine(nn.Module, ABC):
-    """A learning machine is a machine that updates its parameters based on an evaluation of its output."""
+    """A module that defines its own learning, not just its forward pass.
+
+    Beyond ``forward_nn`` (the computation) it implements how it learns: ``accumulate`` (stage an
+    update toward a target), ``step`` (apply it), and ``step_x`` (produce a target for its input, to
+    hand upstream). A machine receives a **target**, not a gradient.
+
+    zenkai reuses Torch autograd to carry those targets: calling ``.backward()`` on a loss enters a
+    custom ``Function`` that turns the output gradient into a target (``t = y - grad``) and then
+    dispatches the methods per :class:`LMode` (``WithStep`` = accumulate -> step_x -> step). Ordinary
+    backprop is the special case where the target is the gradient one and each layer minimises
+    ``1/2``-SSE to it; other learners (feedback alignment, least squares, evolutionary) just produce
+    the target a different way. Compose machines like ``nn.Module``s (``m2(m1(x))`` then
+    ``loss.backward()``) and ``step_x`` relays each target to the previous machine.
+    """
 
     def __init__(self, lmode: LMode = LMode.Standard):
         """Create a learning machine
